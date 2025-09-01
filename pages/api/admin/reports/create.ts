@@ -39,14 +39,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type,
       content,
       summary,
-      readTime, // Agregar campo de tiempo de lectura
       videoMuxId,
       pdfUrl,
       imageUrl,
-      coverImage, // Agregar imagen de portada
       images, // Agregar imágenes adicionales
       status = 'published',
-      tags = [],
       isFeature = false,
       articles = [] // Nuevo campo para artículos
     } = req.body;
@@ -57,9 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type,
       content: content?.substring(0, 100) + '...',
       summary: summary?.substring(0, 100) + '...',
-      readTime,
-      hasCoverImage: !!coverImage,
-      imagesCount: images?.length || 0,
+      hasImages: images?.length || 0,
       articlesCount: articles?.length || 0,
       articles: articles
     });
@@ -72,42 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Validar tiempo de lectura
-    if (!readTime || isNaN(parseInt(readTime))) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tiempo de lectura es requerido y debe ser un número válido'
-      });
-    }
-
-    // Validar artículos si se proporcionan
-    if (articles && Array.isArray(articles)) {
-      console.log('📚 [API CREATE] Validando artículos:', articles.length);
-      
-      if (articles.length > 10) {
-        return res.status(400).json({
-          success: false,
-          message: 'Un informe no puede tener más de 10 artículos'
-        });
-      }
-
-      // Validar cada artículo
-      for (const article of articles) {
-        if (!article.title || !article.content || !article.order) {
-          console.log('❌ [API CREATE] Artículo inválido:', article);
-          return res.status(400).json({
-            success: false,
-            message: 'Cada artículo debe tener título, contenido y orden'
-          });
-        }
-        if (article.order < 1 || article.order > 10) {
-          return res.status(400).json({
-            success: false,
-            message: 'El orden de los artículos debe estar entre 1 y 10'
-          });
-        }
-      }
-    } else {
+    if (!Array.isArray(articles)) {
       console.log('⚠️ [API CREATE] No se recibieron artículos o no es un array');
     }
 
@@ -117,16 +77,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type,
       content,
       summary: summary.trim(),
-      readTime: parseInt(readTime), // Usar el tiempo de lectura enviado por el usuario
       videoMuxId,
       pdfUrl,
       imageUrl,
-      coverImage: coverImage || null, // Incluir imagen de portada
       images: images || [], // Incluir imágenes adicionales
       author: user.name || user.email,
       authorId: user._id.toString(),
       status,
-      tags: Array.isArray(tags) ? tags : [],
       isFeature,
       articles: articles || [] // Incluir artículos en el informe
     });
@@ -138,18 +95,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       articles: newReport.articles
     });
 
-    // Calcular tiempo de lectura total usando el valor del usuario + artículos
-    let totalReadTime = parseInt(readTime);
-    if (articles && articles.length > 0) {
-      articles.forEach((article: any) => {
-        // Usar el tiempo de lectura calculado del artículo
-        article.readTime = Math.ceil(article.content.length / 1000);
-        totalReadTime += article.readTime;
-      });
-    }
-
-    console.log('⏱️ [API CREATE] Tiempo de lectura calculado:', totalReadTime);
-
     await newReport.save();
 
     console.log('✅ [API CREATE] Informe guardado exitosamente. ID:', newReport._id);
@@ -159,8 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       success: true,
       message: 'Informe creado exitosamente',
       data: { 
-        report: newReport,
-        totalReadTime
+        report: newReport
       }
     });
 

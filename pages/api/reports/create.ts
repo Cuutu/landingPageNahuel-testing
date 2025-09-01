@@ -52,10 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type, 
       category,
       summary,
-      readTime,
-      tags,
       isFeature,
-      coverImage, 
       images,
       articles // Agregar campo de artículos
     } = req.body;
@@ -64,13 +61,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!title || !content) {
       return res.status(400).json({ 
         message: 'Título y contenido son requeridos' 
-      });
-    }
-
-    // Validar tiempo de lectura
-    if (!readTime || isNaN(parseInt(readTime))) {
-      return res.status(400).json({
-        message: 'Tiempo de lectura es requerido y debe ser un número válido'
       });
     }
 
@@ -107,30 +97,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type,
       category,
       summary,
-      readTime,
-      hasCoverImage: !!coverImage,
       imagesCount: images?.length || 0,
       articlesCount: articles?.length || 0,
       author: user.email
     });
-
-    // Procesar imagen de portada
-    let processedCoverImage: ProcessedImage | null = null;
-    if (coverImage && coverImage.public_id) {
-      processedCoverImage = {
-        public_id: coverImage.public_id,
-        url: coverImage.secure_url || coverImage.url,
-        secure_url: coverImage.secure_url || coverImage.url,
-        width: coverImage.width,
-        height: coverImage.height,
-        format: coverImage.format,
-        bytes: coverImage.bytes,
-        caption: coverImage.caption || '',
-        order: 0
-      };
-
-      console.log('🖼️ Imagen de portada procesada:', processedCoverImage.public_id);
-    }
 
     // Procesar imágenes adicionales
     let processedImages: ProcessedImage[] = [];
@@ -155,13 +125,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       title,
       content,
       summary: summary || '',
-      readTime: parseInt(readTime),
       author: user._id,
       type: type || 'text',
       category: category || 'general',
-      coverImage: processedCoverImage,
       images: processedImages,
-      tags: Array.isArray(tags) ? tags : [],
       isFeature: isFeature || false,
       articles: articles || [], // Incluir artículos en el informe
       isPublished: true,
@@ -202,14 +169,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Generar URLs optimizadas para Cloudinary
     const responseData = {
       ...savedReport.toJSON(),
-      // URL de imagen de portada optimizada
-      imageUrl: processedCoverImage ? 
-        getCloudinaryImageUrl(processedCoverImage.public_id, {
-          width: 800,
-          height: 600,
-          crop: 'fill',
-          format: 'webp'
-        }) : null,
       // URLs de imágenes adicionales optimizadas
       optimizedImages: processedImages.map((img: ProcessedImage) => ({
         ...img,

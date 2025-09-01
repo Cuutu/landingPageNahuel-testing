@@ -5,12 +5,11 @@ import Head from 'next/head';
 import styles from '../../styles/AdminReports.module.css';
 
 interface Article {
-  _id?: string;
+  _id: string;
   title: string;
   content: string;
   order: number;
   isPublished: boolean;
-  readTime: number;
   createdAt: string;
 }
 
@@ -22,12 +21,10 @@ interface Report {
   content: string;
   status: 'draft' | 'published' | 'archived';
   author: string | { name?: string; email?: string; _id?: string };
-  readTime?: number;
   views: number;
   isFeature: boolean;
   publishedAt?: string;
   createdAt: string;
-  tags: string[];
   articles?: Article[];
 }
 
@@ -46,11 +43,10 @@ const AdminReportsPage: React.FC = () => {
   
   const [newReport, setNewReport] = useState({
     title: '',
-    type: 'informe' as const,
+    type: 'informe' as 'informe' | 'video' | 'analisis',
     summary: '',
     content: '',
-    status: 'draft' as const,
-    tags: '',
+    status: 'draft' as 'draft' | 'published' | 'archived',
     isFeature: false,
     articles: [] as Article[]
   });
@@ -123,11 +119,6 @@ const AdminReportsPage: React.FC = () => {
     setCreating(true);
 
     try {
-      const tagsArray = newReport.tags
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0);
-
       const response = await fetch('/api/admin/reports/create', {
         method: 'POST',
         headers: {
@@ -135,8 +126,7 @@ const AdminReportsPage: React.FC = () => {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          ...newReport,
-          tags: tagsArray
+          ...newReport
         }),
       });
 
@@ -149,7 +139,6 @@ const AdminReportsPage: React.FC = () => {
           summary: '',
           content: '',
           status: 'draft',
-          tags: '',
           isFeature: false,
           articles: []
         });
@@ -174,46 +163,29 @@ const AdminReportsPage: React.FC = () => {
 
   const handleAddArticle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedReport) return;
-
-    setManagingArticles(true);
-    try {
-      const response = await fetch(`/api/admin/reports/${selectedReport.id}/articles`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify(newArticle),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Actualizar el informe local con el nuevo artículo
-        setReports(prev => prev.map(report => 
-          report.id === selectedReport.id 
-            ? { ...report, articles: [...(report.articles || []), data.data.article] }
-            : report
-        ));
-        
-        setNewArticle({
-          title: '',
-          content: '',
-          order: (selectedReport.articles?.length || 0) + 1,
-          isPublished: true
-        });
-        
-        alert('Artículo agregado exitosamente');
-      } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message}`);
-      }
-    } catch (error) {
-      console.error('Error al agregar artículo:', error);
-      alert('Error al agregar artículo');
-    } finally {
-      setManagingArticles(false);
+    
+    if (!newArticle.title.trim() || !newArticle.content.trim()) {
+      alert('Título y contenido son requeridos');
+      return;
     }
+
+    const articleToAdd = {
+      ...newArticle,
+      _id: Date.now().toString(), // ID temporal
+      createdAt: new Date().toISOString()
+    };
+
+    setNewReport(prev => ({
+      ...prev,
+      articles: [...prev.articles, articleToAdd]
+    }));
+    
+    setNewArticle({
+      title: '',
+      content: '',
+      order: newReport.articles.length + 1,
+      isPublished: true
+    });
   };
 
   const handleDeleteArticle = async (articleId: string) => {
@@ -254,7 +226,6 @@ const AdminReportsPage: React.FC = () => {
       const articleToAdd = {
         ...newArticle,
         _id: `temp-${Date.now()}`,
-        readTime: Math.ceil(newArticle.content.length / 1000),
         createdAt: new Date().toISOString()
       };
       
@@ -452,35 +423,39 @@ const AdminReportsPage: React.FC = () => {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label>Contenido Principal del Informe *</label>
+                    <label>Contenido</label>
                     <textarea
                       value={newReport.content}
                       onChange={(e) => setNewReport(prev => ({...prev, content: e.target.value}))}
-                      required
+                      placeholder="Contenido del informe..."
                       rows={6}
-                      placeholder="Contenido principal del informe (puede incluir HTML)..."
+                      required
                     />
                   </div>
 
-                  <div className={styles.formGroup}>
-                    <label>Tags (separados por comas)</label>
-                    <input
-                      type="text"
-                      value={newReport.tags}
-                      onChange={(e) => setNewReport(prev => ({...prev, tags: e.target.value}))}
-                      placeholder="trading, analisis, mercados, economia"
-                    />
-                  </div>
+                  <div className={styles.formRow}>
+                    <div className={styles.formGroup}>
+                      <label>Estado</label>
+                      <select
+                        value={newReport.status}
+                        onChange={(e) => setNewReport(prev => ({...prev, status: e.target.value as 'draft' | 'published' | 'archived'}))}
+                      >
+                        <option value="draft">Borrador</option>
+                        <option value="published">Publicado</option>
+                        <option value="archived">Archivado</option>
+                      </select>
+                    </div>
 
-                  <div className={styles.formGroup}>
-                    <label className={styles.checkboxLabel}>
-                      <input
-                        type="checkbox"
-                        checked={newReport.isFeature}
-                        onChange={(e) => setNewReport(prev => ({...prev, isFeature: e.target.checked}))}
-                      />
-                      Marcar como destacado
-                    </label>
+                    <div className={styles.formGroup}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={newReport.isFeature}
+                          onChange={(e) => setNewReport(prev => ({...prev, isFeature: e.target.checked}))}
+                        />
+                        Destacado
+                      </label>
+                    </div>
                   </div>
                 </div>
 
@@ -597,7 +572,6 @@ const AdminReportsPage: React.FC = () => {
                                   {article.content.substring(0, 100)}...
                                 </div>
                                 <div style={{ fontSize: '0.75rem', color: '#667eea', marginTop: '0.25rem' }}>
-                                  Tiempo de lectura: {article.readTime} min | 
                                   Estado: {article.isPublished ? 'Publicado' : 'Borrador'}
                                 </div>
                               </div>
@@ -756,7 +730,7 @@ const AdminReportsPage: React.FC = () => {
                             {article.content.substring(0, 150)}...
                           </p>
                           <small style={{ color: '#9ca3af' }}>
-                            Tiempo de lectura: {article.readTime} min | Creado: {new Date(article.createdAt).toLocaleDateString('es-ES')}
+                            Creado: {new Date(article.createdAt).toLocaleDateString('es-ES')}
                           </small>
                         </div>
                       ))}
@@ -794,21 +768,12 @@ const AdminReportsPage: React.FC = () => {
 
                 <div className={styles.reportMeta}>
                   <span>Por {typeof report.author === 'object' ? report.author?.name : report.author || 'Autor desconocido'}</span>
-                  <span>{report.readTime} min lectura</span>
-                  <span>{report.views} vistas</span>
-                  <span>{new Date(report.createdAt).toLocaleDateString('es-ES')}</span>
+                  <span>👁️ {report.views} vistas</span>
+                  <span>📅 {new Date(report.createdAt).toLocaleDateString('es-ES')}</span>
                   {report.articles && report.articles.length > 0 && (
                     <span>📚 {report.articles.length} artículo{report.articles.length !== 1 ? 's' : ''}</span>
                   )}
                 </div>
-
-                {report.tags && report.tags.length > 0 && (
-                  <div className={styles.tags}>
-                    {report.tags.map((tag, index) => (
-                      <span key={index} className={styles.tag}>#{tag}</span>
-                    ))}
-                  </div>
-                )}
 
                 <div className={styles.reportActions}>
                   <button

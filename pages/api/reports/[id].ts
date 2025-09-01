@@ -77,12 +77,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const processedReport = {
       ...report,
-      // URL de portada optimizada
-      imageUrl: optimizedImageUrl,
       // Imágenes adicionales optimizadas
       optimizedImages,
-      // Usar el tiempo de lectura almacenado en la base de datos
-      readTime: report.readTime || 1
     };
 
     // Incrementar contador de vistas de forma asíncrona

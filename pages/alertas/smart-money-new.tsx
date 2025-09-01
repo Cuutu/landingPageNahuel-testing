@@ -1753,50 +1753,15 @@ const SubscriberView: React.FC = () => {
                 return (
                   <div key={informe.id || informe._id} className={styles.informeCard}>
                     <div className={styles.informeHeader}>
-                      <h3>{informe.title}</h3>
-                      <div className={styles.informeMeta}>
-                        <span className={styles.informeDate}>
-                          📅 {reportDate.toLocaleDateString('es-ES', {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric'
-                          })}
-                          {isRecent && (
-                            <span className={styles.recentBadge}>NUEVO</span>
-                          )}
-                        </span>
-                        <span className={styles.informeType}>
-                          {informe.type === 'video' ? '🎥 Video' : 
-                           informe.type === 'analisis' ? '📊 Análisis' : 
-                           informe.type === 'mixed' ? '📋 Mixto' : '📄 Informe'}
-                        </span>
-                        {informe.category && (
-                          <span className={styles.informeCategory}>
-                            📂 {informe.category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                          </span>
-                        )}
-                      </div>
+                      <h3 className={styles.informeTitle}>{informe.title}</h3>
+                      <span className={styles.informeDate}>
+                        {reportDate.toLocaleDateString('es-ES', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
                     </div>
-                    
-                    {/* Imagen de portada si existe */}
-                    {informe.coverImage && (
-                      <div className={styles.informeCover}>
-                        <img 
-                          src={informe.coverImage.secure_url || informe.coverImage.url} 
-                          alt={informe.title}
-                          loading="lazy"
-                          onContextMenu={(e) => e.preventDefault()}
-                          onDragStart={(e) => e.preventDefault()}
-                          style={{
-                            userSelect: 'none',
-                            WebkitUserSelect: 'none',
-                            MozUserSelect: 'none',
-                            msUserSelect: 'none',
-                            pointerEvents: 'none'
-                          }}
-                        />
-                      </div>
-                    )}
                     
                     <p className={styles.informeDescription}>
                       {informe.content ? 
@@ -1811,9 +1776,6 @@ const SubscriberView: React.FC = () => {
                     <div className={styles.informeStats}>
                       <span className={styles.informeStat}>
                         👁️ {informe.views || 0} vistas
-                      </span>
-                      <span className={styles.informeStat}>
-                        ⏱️ {readTime} min lectura
                       </span>
                       {informe.images && informe.images.length > 0 && (
                         <span className={styles.informeStat}>
@@ -2538,11 +2500,10 @@ const ReportViewModal = ({ report, onClose }: {
             )}
 
             {/* Contenido del informe */}
-            <div className={styles.reportText}>
-              <div 
-                className={styles.reportBody}
-                dangerouslySetInnerHTML={{ __html: report.content }}
-              />
+            <div className={styles.reportContent}>
+              <div className={styles.contentText}>
+                {report.content}
+              </div>
             </div>
 
             {/* Imágenes adicionales */}
@@ -2592,10 +2553,6 @@ const ReportViewModal = ({ report, onClose }: {
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>👁️ Vistas</span>
                 <span className={styles.statValue}>{report.views || 0}</span>
-              </div>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>⏱️ Tiempo de Lectura</span>
-                <span className={styles.statValue}>{readTime} min</span>
               </div>
               {report.images && report.images.length > 0 && (
                 <div className={styles.statItem}>
@@ -2674,11 +2631,9 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   const [formData, setFormData] = useState({
     title: '',
     type: 'text',
-    category: 'trader-call',
+    category: 'smart-money',
     content: '',
     summary: '',
-    readTime: '',
-    tags: '',
     author: 'Nahuel Lozano',
     isFeature: false,
     publishedAt: new Date().toISOString().split('T')[0],
@@ -2686,8 +2641,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   });
 
   const [images, setImages] = useState<CloudinaryImage[]>([]);
-  const [coverImage, setCoverImage] = useState<CloudinaryImage | null>(null);
-  const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -2698,15 +2651,10 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
       return;
     }
 
-    const tagsArray = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-
     // Preparar datos con imágenes de Cloudinary
     const submitData = {
       ...formData,
-      tags: tagsArray,
-      readTime: formData.readTime ? parseInt(formData.readTime) : null,
       publishedAt: new Date(formData.publishedAt),
-      coverImage: coverImage,
       images: images
     };
     
@@ -2720,20 +2668,10 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     }));
   };
 
-  const handleCoverImageUploaded = (image: CloudinaryImage) => {
-    setCoverImage(image);
-    setUploadingCover(false);  // Asegurar que se actualice el estado
-    console.log('✅ Imagen de portada seleccionada:', image.public_id);
-  };
-
   const handleImageUploaded = (image: CloudinaryImage) => {
     setImages(prev => [...prev, image]);
     setUploadingImages(false);  // Asegurar que se actualice el estado
     console.log('✅ Imagen adicional agregada:', image.public_id);
-  };
-
-  const removeCoverImage = () => {
-    setCoverImage(null);
   };
 
   const removeImage = (publicId: string) => {
@@ -2784,20 +2722,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
 
           <div className={styles.formRow}>
             <div className={styles.formGroup}>
-              <label htmlFor="readTime">Tiempo de Lectura (min)</label>
-              <input
-                id="readTime"
-                type="number"
-                value={formData.readTime}
-                onChange={(e) => handleInputChange('readTime', e.target.value)}
-                placeholder="5"
-                min="1"
-                max="60"
-                disabled={loading}
-              />
-            </div>
-
-            <div className={styles.formGroup}>
               <label htmlFor="author">Autor</label>
               <input
                 id="author"
@@ -2821,18 +2745,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                 disabled={loading}
               />
             </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="tags">Tags (separados por comas)</label>
-              <input
-                id="tags"
-                type="text"
-                value={formData.tags}
-                onChange={(e) => handleInputChange('tags', e.target.value)}
-                placeholder="trading, análisis, señales"
-                disabled={loading}
-              />
-            </div>
           </div>
 
           <div className={styles.formGroup}>
@@ -2845,48 +2757,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
               rows={3}
               disabled={loading}
             />
-          </div>
-
-          {/* Imagen de portada */}
-          <div className={styles.formGroup}>
-            <label>Imagen de Portada</label>
-            {!coverImage ? (
-              <ImageUploader
-                onImageUploaded={handleCoverImageUploaded}
-                onUploadStart={() => setUploadingCover(true)}
-                onUploadProgress={() => {}}
-                onError={(error) => {
-                  console.error('Error subiendo imagen de portada:', error);
-                  alert('Error subiendo imagen: ' + error);
-                  setUploadingCover(false);
-                }}
-                maxFiles={1}
-                multiple={false}
-                buttonText="Subir Imagen de Portada"
-                className={styles.coverImageUploader}
-              />
-            ) : (
-              <div className={styles.uploadedImagePreview}>
-                <img 
-                  src={coverImage.secure_url} 
-                  alt="Imagen de portada"
-                  className={styles.previewImage}
-                />
-                <div className={styles.previewActions}>
-                  <span className={styles.imageInfo}>
-                    {coverImage.width} × {coverImage.height} | 
-                    {Math.round(coverImage.bytes / 1024)}KB
-                  </span>
-                  <button 
-                    type="button" 
-                    onClick={removeCoverImage}
-                    className={styles.removeImageButton}
-                  >
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           <div className={styles.formGroup}>
@@ -2902,7 +2772,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
             />
           </div>
 
-          {/* Imágenes adicionales */}
           <div className={styles.formGroup}>
             <label>Imágenes Adicionales</label>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
@@ -2964,9 +2833,9 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
             <button 
               type="submit" 
               className={styles.submitButton}
-              disabled={loading || uploadingCover || uploadingImages}
+              disabled={loading || uploadingImages}
             >
-              {loading ? 'Creando...' : (uploadingCover || uploadingImages) ? 'Subiendo...' : 'Crear Informe'}
+              {loading ? 'Creando...' : (uploadingImages) ? 'Subiendo...' : 'Crear Informe'}
             </button>
           </div>
         </form>

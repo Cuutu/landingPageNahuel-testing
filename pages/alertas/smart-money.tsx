@@ -339,33 +339,6 @@ const NonSubscriberView: React.FC<{
         </div>
       </section>
 
-      {/* Alertas Históricas */}
-      <section className={styles.historySection}>
-        <div className={styles.container}>
-          <motion.h2 
-            className={styles.sectionTitle}
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            Alertas Históricas
-          </motion.h2>
-          
-          <motion.div 
-            className={styles.historyImageContainer}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <img 
-              src="/logos/alertashistoricas.png" 
-              alt="Alertas Históricas - Rendimiento de Trading"
-              className={styles.historyImage}
-            />
-          </motion.div>
-        </div>
-      </section>
-
       {/* Preguntas Frecuentes */}
       <section className={styles.faqSection}>
         <div className={styles.container}>

@@ -103,7 +103,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         pdfUrl,
         imageUrl,
         status = 'draft',
-        tags = [],
         isFeature = false
       } = req.body;
 
@@ -127,12 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         author: user.name || user.email,
         authorId: user._id.toString(),
         status,
-        tags: Array.isArray(tags) ? tags : [],
         isFeature,
       });
-
-      // Calcular tiempo de lectura
-      newReport.calculateReadTime();
 
       await newReport.save();
 

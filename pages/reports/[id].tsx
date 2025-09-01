@@ -197,10 +197,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   <span>{formatDate(report.publishedAt)}</span>
                 </div>
                 <div className={styles.metaItem}>
-                  <Clock size={16} />
-                  <span>{report.readTime} min de lectura</span>
-                </div>
-                <div className={styles.metaItem}>
                   <Eye size={16} />
                   <span>{report.views} vistas</span>
                 </div>
@@ -211,17 +207,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   </div>
                 )}
               </div>
-
-              {/* Imagen de portada */}
-              {report.coverImage && (
-                <div className={styles.coverImage}>
-                  <img 
-                    src={report.coverImage.optimizedUrl || report.coverImage.url}
-                    alt={report.title}
-                    className={styles.coverImg}
-                  />
-                </div>
-              )}
             </div>
           </motion.section>
 
@@ -544,20 +529,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         ...reportDoc.author,
         _id: reportDoc.author._id.toString()
       },
-      // URL de portada optimizada
-      coverImage: reportDoc.coverImage ? {
-        ...reportDoc.coverImage,
-        optimizedUrl: optimizedImageUrl
-      } : null,
       // Imágenes adicionales optimizadas
       images: optimizedImages,
-      // Usar el tiempo de lectura almacenado en la base de datos
-      readTime: reportDoc.readTime || 1,
       // Procesar artículos si existen
       articles: reportDoc.articles ? reportDoc.articles.map((article: any) => ({
         ...article,
-        _id: article._id.toString(),
-        readTime: article.readTime || Math.ceil((article.content?.length || 0) / 1000) || 1
+        _id: article._id.toString()
       })) : []
     };
 
