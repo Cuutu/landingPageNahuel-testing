@@ -852,102 +852,217 @@ const SubscriberView: React.FC = () => {
 
         {/* Contenido Principal */}
         <main className={styles.mainContent}>
-          <div className={styles.dashboardContent}>
-            <h2 className={styles.sectionTitle}>Dashboard de Smart Money</h2>
-            
-            {/* Métricas principales */}
-            <div className={styles.modernMetricsGrid}>
-              <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.iconContainer}>
-                    <Activity size={20} />
-            </div>
-                  <div className={styles.statusDot}></div>
-              </div>
-                <div className={styles.metricContent}>
-                  <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
-                  <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
-                  <p className={styles.metricSubtext}>Posiciones abiertas</p>
-            </div>
-          </div>
+          {/* Dashboard Tab */}
+          {activeTab === 'dashboard' && (
+            <div className={styles.dashboardContent}>
+              <h2 className={styles.sectionTitle}>Dashboard de Smart Money</h2>
               
-              <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.iconContainer}>
-                    <TrendingUp size={20} />
-            </div>
-                  <div className={styles.statusDot}></div>
-                  </div>
-                <div className={styles.metricContent}>
-                  <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
-                  <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
-                  <p className={styles.metricSubtext}>Cerradas con ganancia</p>
-                </div>
-            </div>
-              
-              <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.iconContainer}>
-                    <TrendingDown size={20} />
-            </div>
-                  <div className={styles.statusDot}></div>
-              </div>
-                <div className={styles.metricContent}>
-                  <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
-                  <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
-                  <p className={styles.metricSubtext}>Cerradas con pérdida</p>
-            </div>
-          </div>
-
-              <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
-                <div className={styles.cardHeader}>
-                  <div className={styles.iconContainer}>
-                    <BarChart3 size={20} />
-              </div>
-                  <div className={styles.statusDot}></div>
-            </div>
-                <div className={styles.metricContent}>
-                  <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
-                  <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
-                  <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
-                        </div>
+              {/* Métricas principales */}
+              <div className={styles.modernMetricsGrid}>
+                <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <Activity size={20} />
                     </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
+                    <p className={styles.metricSubtext}>Posiciones abiertas</p>
+                  </div>
+                </div>
+                
+                <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <TrendingUp size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
+                    <p className={styles.metricSubtext}>Cerradas con ganancia</p>
+                  </div>
+                </div>
+                
+                <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <TrendingDown size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
+                    <p className={styles.metricSubtext}>Cerradas con pérdida</p>
+                  </div>
                 </div>
 
-            {/* Actividad Reciente */}
-            <div className={styles.activitySection}>
-              <div className={styles.activityHeader}>
-                <h3>Actividad Reciente</h3>
-                <div className={styles.activityActions}>
-            <button 
-                    className={styles.viewAllButton}
-                    onClick={() => setActiveTab('seguimiento')}
-            >
-                    Ver toda la actividad
-            </button>
-            <button 
-                    className={styles.refreshButton}
-                    onClick={() => {
-                      setRefreshingActivity(true);
-                      Promise.all([loadAlerts(), loadInformes()]).finally(() => setRefreshingActivity(false));
-                    }}
-                    disabled={refreshingActivity}
-                  >
-                    <Activity size={16} />
-                    {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
-                  </button>
+                <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <BarChart3 size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
+                    <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
+                  </div>
                 </div>
               </div>
-              <div className={styles.activityList}>
-                {recentActivity.slice(0, 5).map((activity, index) => (
-                  <div key={activity.id || index} className={styles.activityItem}>
-                    <span className={styles.activityTime}>{activity.timestamp}</span>
-                    <span className={styles.activityMessage}>{activity.message}</span>
+
+              {/* Actividad Reciente */}
+              <div className={styles.activitySection}>
+                <div className={styles.activityHeader}>
+                  <h3>Actividad Reciente</h3>
+                  <div className={styles.activityActions}>
+                    <button 
+                      className={styles.viewAllButton}
+                      onClick={() => setActiveTab('seguimiento')}
+                    >
+                      Ver toda la actividad
+                    </button>
+                    <button 
+                      className={styles.refreshButton}
+                      onClick={() => {
+                        setRefreshingActivity(true);
+                        Promise.all([loadAlerts(), loadInformes()]).finally(() => setRefreshingActivity(false));
+                      }}
+                      disabled={refreshingActivity}
+                    >
+                      <Activity size={16} />
+                      {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.activityList}>
+                  {recentActivity.slice(0, 5).map((activity, index) => (
+                    <div key={activity.id || index} className={styles.activityItem}>
+                      <span className={styles.activityTime}>{activity.timestamp}</span>
+                      <span className={styles.activityMessage}>{activity.message}</span>
                     </div>
                   ))}
                 </div>
               </div>
-          </div>
+            </div>
+          )}
+
+          {/* Seguimiento Tab */}
+          {activeTab === 'seguimiento' && (
+            <div className={styles.seguimientoContent}>
+              <h2 className={styles.sectionTitle}>Seguimiento de Alertas</h2>
+              <div className={styles.seguimientoGrid}>
+                {realAlerts.length > 0 ? (
+                  realAlerts.map((alert, index) => (
+                    <div key={alert._id || index} className={styles.alertCard}>
+                      <div className={styles.alertHeader}>
+                        <h3>{alert.symbol}</h3>
+                        <span className={`${styles.alertStatus} ${alert.status === 'ACTIVE' ? styles.statusActive : styles.statusClosed}`}>
+                          {alert.status === 'ACTIVE' ? 'Activa' : 'Cerrada'}
+                        </span>
+                      </div>
+                      <div className={styles.alertDetails}>
+                        <p><strong>Entrada:</strong> ${alert.entryPrice}</p>
+                        <p><strong>Precio Actual:</strong> ${alert.currentPrice}</p>
+                        {alert.profit && <p><strong>Ganancia:</strong> {alert.profit}</p>}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>No hay alertas para mostrar</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Alertas Vigentes Tab */}
+          {activeTab === 'vigentes' && (
+            <div className={styles.vigentesContent}>
+              <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
+              <div className={styles.vigentesGrid}>
+                {realAlerts.filter(alert => alert.status === 'ACTIVE').length > 0 ? (
+                  realAlerts
+                    .filter(alert => alert.status === 'ACTIVE')
+                    .map((alert, index) => (
+                      <div key={alert._id || index} className={styles.alertCard}>
+                        <div className={styles.alertHeader}>
+                          <h3>{alert.symbol}</h3>
+                          <span className={styles.alertStatus}>Activa</span>
+                        </div>
+                        <div className={styles.alertDetails}>
+                          <p><strong>Entrada:</strong> ${alert.entryPrice}</p>
+                          <p><strong>Precio Actual:</strong> ${alert.currentPrice}</p>
+                          <p><strong>Stop Loss:</strong> ${alert.stopLoss || 'No definido'}</p>
+                          <p><strong>Take Profit:</strong> ${alert.takeProfit || 'No definido'}</p>
+                        </div>
+                      </div>
+                    ))
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>No hay alertas vigentes</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Informes Tab */}
+          {activeTab === 'informes' && (
+            <div className={styles.informesContent}>
+              <h2 className={styles.sectionTitle}>Informes Disponibles</h2>
+              <div className={styles.informesGrid}>
+                {informes.length > 0 ? (
+                  informes.map((informe, index) => (
+                    <div key={informe._id || index} className={styles.informeCard}>
+                      <div className={styles.informeHeader}>
+                        <h3>{informe.title}</h3>
+                        <span className={styles.informeType}>{informe.type}</span>
+                      </div>
+                      <div className={styles.informeDetails}>
+                        <p>{informe.description}</p>
+                        <p><strong>Fecha:</strong> {new Date(informe.createdAt).toLocaleDateString('es-ES')}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className={styles.emptyState}>
+                    <p>No hay informes disponibles</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Consultas Tab */}
+          {activeTab === 'comunidad' && (
+            <div className={styles.comunidadContent}>
+              <h2 className={styles.sectionTitle}>Consultas y Comunidad</h2>
+              <div className={styles.comunidadInfo}>
+                <p>Aquí podrás hacer consultas sobre tus inversiones y conectarte con otros miembros de la comunidad.</p>
+                <div className={styles.comunidadFeatures}>
+                  <div className={styles.featureCard}>
+                    <h3>📊 Análisis Personalizado</h3>
+                    <p>Solicita análisis específicos de tus posiciones</p>
+                  </div>
+                  <div className={styles.featureCard}>
+                    <h3>💬 Chat en Vivo</h3>
+                    <p>Conecta con otros traders en tiempo real</p>
+                  </div>
+                  <div className={styles.featureCard}>
+                    <h3>📈 Estrategias</h3>
+                    <p>Comparte y aprende estrategias de trading</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
