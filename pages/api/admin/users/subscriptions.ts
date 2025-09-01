@@ -126,6 +126,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           tipo,
           precio: precio || 99,
           fechaInicio: new Date(),
+          fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Expira en 30 días
           activa: true
         };
 
@@ -196,6 +197,68 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       } catch (error) {
         console.error('Error al desactivar suscripción:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+      }
+
+    case 'PUT':
+      try {
+        const { action } = req.body;
+        
+        if (action === 'cleanup-expired') {
+          // Limpiar suscripciones expiradas automáticamente
+          const now = new Date();
+          
+          // Buscar usuarios con suscripciones expiradas
+          const usersWithExpiredSubs = await User.find({
+            'subscriptions': {
+              $elemMatch: {
+                'activa': true,
+                'fechaFin': { $lt: now }
+              }
+            }
+          });
+
+          let cleanedCount = 0;
+          
+          for (const user of usersWithExpiredSubs) {
+            // Desactivar suscripciones expiradas
+            await User.findByIdAndUpdate(user._id, {
+              $set: { 
+                'subscriptions.$[elem].activa': false 
+              }
+            }, {
+              arrayFilters: [{ 
+                'elem.activa': true,
+                'elem.fechaFin': { $lt: now }
+              }]
+            });
+
+            // Verificar si quedan suscripciones activas
+            const updatedUser = await User.findById(user._id);
+            const hasActiveSubscriptions = updatedUser?.subscriptions?.some(
+              (sub: any) => sub.activa
+            );
+
+            // Si no tiene más suscripciones activas, cambiar rol a normal (solo si no es admin)
+            if (!hasActiveSubscriptions && updatedUser?.role !== 'admin') {
+              await User.findByIdAndUpdate(user._id, { role: 'normal' });
+            }
+
+            cleanedCount++;
+          }
+
+          console.log(`🧹 Limpieza automática: ${cleanedCount} usuarios con suscripciones expiradas`);
+
+          return res.status(200).json({
+            success: true,
+            message: `Limpieza completada. ${cleanedCount} usuarios procesados`,
+            cleanedCount
+          });
+        }
+
+        return res.status(400).json({ error: 'Acción no válida' });
+      } catch (error) {
+        console.error('Error en limpieza automática:', error);
         return res.status(500).json({ error: 'Error interno del servidor' });
       }
 

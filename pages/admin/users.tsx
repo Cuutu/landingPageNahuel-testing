@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
 import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, 
@@ -23,7 +23,9 @@ import {
   Calendar,
   Eye,
   X,
-  Check
+  Check,
+  TrendingUp,
+  AlertTriangle
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -31,6 +33,8 @@ import Link from 'next/link';
 import User from '@/models/User';
 import styles from '@/styles/AdminUsers.module.css';
 import { toast } from 'react-hot-toast';
+import { useSession } from 'next-auth/react';
+import { usePricing } from '@/hooks/usePricing';
 
 interface UserData {
   _id: string;
@@ -85,6 +89,9 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showUserDetails, setShowUserDetails] = useState(false);
 
+  // Hook para obtener precios dinámicos
+  const { pricing, loading: pricingLoading } = usePricing();
+
   // Datos para crear usuario
   const [newUser, setNewUser] = useState({
     name: '',
@@ -92,10 +99,9 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
     role: 'normal'
   });
 
-  // Datos para agregar suscripción
+  // Datos para agregar suscripción (sin precio, se obtiene dinámicamente)
   const [newSubscription, setNewSubscription] = useState({
-    tipo: 'TraderCall',
-    precio: 99
+    tipo: 'TraderCall'
   });
 
   // Componente para el avatar del usuario
@@ -220,6 +226,26 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
     if (!selectedUser) return;
 
     try {
+      // Obtener el precio dinámico según el tipo de suscripción
+      let precio = 99; // Precio por defecto
+      
+      if (pricing) {
+        switch (newSubscription.tipo) {
+          case 'TraderCall':
+            precio = pricing.alertas.traderCall.monthly;
+            break;
+          case 'SmartMoney':
+            precio = pricing.alertas.smartMoney.monthly;
+            break;
+          case 'CashFlow':
+            // Si no hay precio definido para CashFlow, usar el de TraderCall como fallback
+            precio = pricing.alertas.traderCall.monthly;
+            break;
+          default:
+            precio = pricing.alertas.traderCall.monthly;
+        }
+      }
+
       const response = await fetch('/api/admin/users/subscriptions', {
         method: 'POST',
         headers: {
@@ -227,14 +253,15 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
         },
         body: JSON.stringify({
           userId: selectedUser._id,
-          ...newSubscription
+          tipo: newSubscription.tipo,
+          precio: precio
         }),
       });
 
       if (response.ok) {
         toast.success('Suscripción agregada correctamente');
         setShowSubscriptionModal(false);
-        setNewSubscription({ tipo: 'TraderCall', precio: 99 });
+        setNewSubscription({ tipo: 'TraderCall' });
         fetchUsers(currentPage);
         fetchSubscriptionStats();
       } else {
@@ -308,12 +335,44 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
         a.download = `usuarios-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
         window.URL.revokeObjectURL(url);
+        toast.success('Usuarios exportados correctamente');
       } else {
         toast.error('Error al exportar usuarios');
       }
     } catch (error) {
-      console.error('Error al exportar:', error);
+      console.error('Error al exportar usuarios:', error);
       toast.error('Error al exportar usuarios');
+    }
+  };
+
+  // Limpiar suscripciones expiradas
+  const cleanupExpiredSubscriptions = async () => {
+    if (!confirm('¿Estás seguro de que quieres limpiar las suscripciones expiradas? Esta acción no se puede deshacer.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/users/subscriptions', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'cleanup-expired' }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message);
+        // Recargar datos
+        fetchUsers(currentPage);
+        fetchSubscriptionStats();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Error al limpiar suscripciones');
+      }
+    } catch (error) {
+      console.error('Error al limpiar suscripciones:', error);
+      toast.error('Error al limpiar suscripciones');
     }
   };
 
@@ -395,6 +454,13 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                 >
                   <Download size={20} />
                   Exportar CSV
+                </button>
+                <button 
+                  onClick={cleanupExpiredSubscriptions}
+                  className={`${styles.actionButton} ${styles.danger}`}
+                >
+                  <Trash2 size={20} />
+                  Limpiar Expiradas
                 </button>
                 <button 
                   onClick={() => setShowCreateModal(true)}
@@ -813,15 +879,24 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                   </select>
                 </div>
                 
+                {/* Mostrar precio dinámico */}
                 <div className={styles.formGroup}>
-                  <label>Precio Mensual ($)</label>
-                  <input
-                    type="number"
-                    value={newSubscription.precio}
-                    onChange={(e) => setNewSubscription({ ...newSubscription, precio: Number(e.target.value) })}
-                    placeholder="99"
-                    className={styles.formInput}
-                  />
+                  <label>Precio Mensual</label>
+                  <div className={styles.priceDisplay}>
+                    {pricingLoading ? (
+                      <span>Cargando precio...</span>
+                    ) : (
+                      <span className={styles.priceValue}>
+                        ${pricing ? (
+                          newSubscription.tipo === 'TraderCall' 
+                            ? pricing.alertas.traderCall.monthly 
+                            : newSubscription.tipo === 'SmartMoney'
+                            ? pricing.alertas.smartMoney.monthly
+                            : pricing.alertas.traderCall.monthly
+                        ) : 99}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
               
