@@ -1015,20 +1015,45 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   
   if (session?.user?.email) {
     try {
-      const response = await fetch(`${process.env.NEXTAUTH_URL}/api/user/subscriptions`, {
-        headers: {
-          'Cookie': context.req.headers.cookie || '',
-        },
-      });
+      // Importar dinámicamente para evitar errores de SSR
+      const dbConnect = (await import('@/lib/mongodb')).default;
+      const User = (await import('@/models/User')).default;
+
+      await dbConnect();
+      const user = await User.findOne({ email: session.user.email });
       
-      if (response.ok) {
-        const data = await response.json();
-        isSubscribed = data.subscriptions?.some((sub: any) => 
-          sub.service === 'SmartMoney' && sub.status === 'active'
-        ) || false;
+      if (user) {
+        // Verificar suscripción activa a SmartMoney en el array 'subscriptions'
+        const subscriptionActiva = user.subscriptions?.find(
+          (sub: any) => 
+            sub.tipo === 'SmartMoney' && 
+            sub.activa === true &&
+            (!sub.fechaFin || new Date(sub.fechaFin) > new Date())
+        );
+        
+        // También verificar en el array 'suscripciones' (legacy)
+        const suscripcionActiva = user.suscripciones?.find(
+          (sub: any) => 
+            sub.servicio === 'SmartMoney' && 
+            sub.activa === true && 
+            new Date(sub.fechaVencimiento) > new Date()
+        );
+
+        isSubscribed = !!(subscriptionActiva || suscripcionActiva);
+        
+        console.log('🔍 Verificación SmartMoney:', {
+          email: user.email,
+          subscriptions: user.subscriptions?.length || 0,
+          suscripciones: user.suscripciones?.length || 0,
+          subscriptionActiva: !!subscriptionActiva,
+          suscripcionActiva: !!suscripcionActiva,
+          isSubscribed
+        });
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('Error verificando suscripción SmartMoney:', error);
+      // En caso de error, mostramos vista no suscrita por defecto
+      isSubscribed = false;
     }
   }
 

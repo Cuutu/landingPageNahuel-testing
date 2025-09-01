@@ -38,29 +38,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const activeSubscriptions = [];
     const now = new Date();
 
-    // Verificar suscripciones por servicio
-    const services = ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'];
-    
-    for (const service of services) {
-      if (user.hasServiceAccess(service)) {
-        // Buscar el último pago aprobado para este servicio
-        const lastPayment = payments.find(p => 
-          p.service === service && 
-          p.status === 'approved' &&
-          p.expiryDate > now
-        );
+    // Verificar suscripciones activas en el array 'subscriptions'
+    if (user.subscriptions && user.subscriptions.length > 0) {
+      for (const subscription of user.subscriptions) {
+        if (subscription.activa) {
+          // Verificar si la suscripción no ha expirado
+          const isExpired = subscription.fechaFin && new Date(subscription.fechaFin) < now;
+          
+          if (!isExpired) {
+            activeSubscriptions.push({
+              service: subscription.tipo,
+              status: 'active' as const,
+              startDate: subscription.fechaInicio,
+              expiryDate: subscription.fechaFin || new Date(subscription.fechaInicio.getTime() + 30 * 24 * 60 * 60 * 1000),
+              amount: subscription.precio || 0,
+              currency: 'ARS',
+              paymentMethod: 'Admin',
+              transactionId: 'admin-created'
+            });
+          }
+        }
+      }
+    }
 
-        if (lastPayment) {
-          activeSubscriptions.push({
-            service,
-            status: 'active' as const,
-            startDate: lastPayment.transactionDate,
-            expiryDate: lastPayment.expiryDate,
-            amount: lastPayment.amount,
-            currency: lastPayment.currency,
-            paymentMethod: 'MercadoPago',
-            transactionId: lastPayment.mercadopagoPaymentId
-          });
+    // También verificar en el array 'suscripciones' (legacy)
+    if (user.suscripciones && user.suscripciones.length > 0) {
+      for (const suscripcion of user.suscripciones) {
+        if (suscripcion.activa) {
+          // Verificar si la suscripción no ha expirado
+          const isExpired = suscripcion.fechaVencimiento && new Date(suscripcion.fechaVencimiento) < now;
+          
+          if (!isExpired) {
+            // Verificar si ya no existe en activeSubscriptions
+            const alreadyExists = activeSubscriptions.some(sub => sub.service === suscripcion.servicio);
+            
+            if (!alreadyExists) {
+              activeSubscriptions.push({
+                service: suscripcion.servicio,
+                status: 'active' as const,
+                startDate: suscripcion.fechaInicio,
+                expiryDate: suscripcion.fechaVencimiento,
+                amount: 0, // No hay precio en el array legacy
+                currency: 'ARS',
+                paymentMethod: 'Legacy',
+                transactionId: 'legacy'
+              });
+            }
+          }
         }
       }
     }
