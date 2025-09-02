@@ -26,7 +26,7 @@ const AutoUpdateController: React.FC<AutoUpdateControllerProps> = ({
 }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // ✅ NUEVO: Hook para actualización automática de precios
+  // ✅ OPTIMIZADO: Hook para actualización automática de precios cada 10 minutos
   const {
     isActive: isPriceUpdateActive,
     lastUpdate: lastPriceUpdate,
@@ -34,7 +34,8 @@ const AutoUpdateController: React.FC<AutoUpdateControllerProps> = ({
     startAutoUpdate: startPriceUpdate,
     stopAutoUpdate: stopPriceUpdate,
     forceUpdate: forcePriceUpdate,
-    error: priceUpdateError
+    error: priceUpdateError,
+    isUpdating: isPriceUpdating
   } = useAutoPriceUpdate(
     onPriceUpdate || (async () => {
       console.log('🔄 Función de actualización de precios no configurada');
@@ -96,73 +97,72 @@ const AutoUpdateController: React.FC<AutoUpdateControllerProps> = ({
         </p>
       </div>
 
-      {/* ✅ NUEVO: Control de actualización de precios */}
-      <div className={styles.section}>
+      {/* Estado de Actualización de Precios */}
+      <div className={styles.controlSection}>
         <div className={styles.sectionHeader}>
-          <h4 className={styles.sectionTitle}>
-            📊 Actualización de Precios
-          </h4>
+          <h3>🔄 Actualización de Precios</h3>
           <div className={styles.statusIndicator}>
-            {isPriceUpdateActive ? (
-              <CheckCircle className={styles.statusIcon} />
-            ) : (
-              <AlertTriangle className={styles.statusIcon} />
+            <span className={`${styles.statusDot} ${isPriceUpdateActive ? styles.active : styles.inactive}`}></span>
+            {isPriceUpdateActive ? 'Activo' : 'Inactivo'}
+          </div>
+        </div>
+        
+        <div className={styles.controlContent}>
+          <div className={styles.statusInfo}>
+            <div className={styles.statusRow}>
+              <span className={styles.statusLabel}>Última actualización:</span>
+              <span className={styles.statusValue}>
+                {isPriceUpdating ? (
+                  <span className={styles.updating}>🔄 Actualizando...</span>
+                ) : (
+                  formatTime(lastPriceUpdate)
+                )}
+              </span>
+            </div>
+            
+            <div className={styles.statusRow}>
+              <span className={styles.statusLabel}>Próxima actualización:</span>
+              <span className={styles.statusValue}>
+                {isPriceUpdateActive ? formatTime(nextPriceUpdate) : 'N/A'}
+              </span>
+            </div>
+            
+            {priceUpdateError && (
+              <div className={styles.errorRow}>
+                <span className={styles.errorLabel}>Error:</span>
+                <span className={styles.errorValue}>{priceUpdateError}</span>
+              </div>
             )}
-            <span className={styles.statusText}>
-              {isPriceUpdateActive ? 'Activo' : 'Inactivo'}
-            </span>
+          </div>
+          
+          <div className={styles.controlButtons}>
+            {!isPriceUpdateActive ? (
+              <button 
+                onClick={startPriceUpdate}
+                className={styles.startButton}
+                disabled={isPriceUpdating}
+              >
+                {isPriceUpdating ? '🔄 Iniciando...' : '🚀 Iniciar'}
+              </button>
+            ) : (
+              <button 
+                onClick={stopPriceUpdate}
+                className={styles.stopButton}
+                disabled={isPriceUpdating}
+              >
+                ⏹️ Detener
+              </button>
+            )}
+            
+            <button 
+              onClick={forcePriceUpdate}
+              className={styles.forceButton}
+              disabled={isPriceUpdating || !isPriceUpdateActive}
+            >
+              🔨 Forzar
+            </button>
           </div>
         </div>
-
-        <div className={styles.controls}>
-          <button
-            onClick={startPriceUpdate}
-            disabled={isPriceUpdateActive}
-            className={`${styles.button} ${styles.startButton}`}
-          >
-            <Play className={styles.buttonIcon} />
-            Iniciar (cada 10 min)
-          </button>
-
-          <button
-            onClick={stopPriceUpdate}
-            disabled={!isPriceUpdateActive}
-            className={`${styles.button} ${styles.stopButton}`}
-          >
-            <Pause className={styles.buttonIcon} />
-            Detener
-          </button>
-
-          <button
-            onClick={forcePriceUpdate}
-            className={`${styles.button} ${styles.forceButton}`}
-          >
-            <RefreshCw className={styles.buttonIcon} />
-            Actualizar Ahora
-          </button>
-        </div>
-
-        <div className={styles.info}>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Última actualización:</span>
-            <span className={styles.infoValue}>
-              {formatTime(lastPriceUpdate)}
-            </span>
-          </div>
-          <div className={styles.infoItem}>
-            <span className={styles.infoLabel}>Próxima actualización:</span>
-            <span className={styles.infoValue}>
-              {isPriceUpdateActive ? formatTimeRemaining(nextPriceUpdate) : 'N/A'}
-            </span>
-          </div>
-        </div>
-
-        {priceUpdateError && (
-          <div className={styles.error}>
-            <AlertTriangle className={styles.errorIcon} />
-            {priceUpdateError}
-          </div>
-        )}
       </div>
 
       {/* ✅ NUEVO: Control de monitoreo de mercado */}

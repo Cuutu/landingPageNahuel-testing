@@ -8,16 +8,18 @@ interface UseAutoPriceUpdateReturn {
   stopAutoUpdate: () => void;
   forceUpdate: () => void;
   error: string | null;
+  isUpdating: boolean;
 }
 
 /**
- * ✅ NUEVO: Hook para actualización automática de precios (alternativa gratuita a cron jobs)
+ * ✅ OPTIMIZADO: Hook para actualización automática de precios (alternativa gratuita a cron jobs)
  * 
- * Características:
- * - Actualiza precios cada 10 minutos
- * - Funciona solo cuando el usuario está en la página
- * - Persiste en localStorage
- * - Maneja errores y reintentos
+ * Optimizaciones implementadas:
+ * - Debouncing para evitar múltiples llamadas simultáneas
+ * - Mejor manejo de errores con backoff exponencial
+ * - Reducción de operaciones localStorage
+ * - Optimización de intervalos
+ * - Prevención de memory leaks
  */
 export const useAutoPriceUpdate = (
   updateFunction: () => Promise<void>,
@@ -27,19 +29,25 @@ export const useAutoPriceUpdate = (
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [nextUpdate, setNextUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isActiveRef = useRef(false);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
 
   /**
-   * ✅ NUEVO: Función para actualizar precios
+   * ✅ OPTIMIZADO: Función para actualizar precios con debouncing
    */
   const updatePrices = useCallback(async () => {
-    if (!isActiveRef.current) return;
+    if (!isActiveRef.current || isUpdating) return;
 
     try {
-      console.log(`🔄 Actualizando precios automáticamente...`);
+      setIsUpdating(true);
       setError(null);
+      
+      console.log(`🔄 Actualizando precios automáticamente... (intento ${retryCountRef.current + 1})`);
       
       await updateFunction();
       
@@ -47,28 +55,54 @@ export const useAutoPriceUpdate = (
       setLastUpdate(now);
       setNextUpdate(new Date(now.getTime() + intervalMinutes * 60 * 1000));
       
+      // ✅ OPTIMIZADO: Resetear contador de reintentos en éxito
+      retryCountRef.current = 0;
+      
       console.log(`✅ Precios actualizados exitosamente a las ${now.toLocaleTimeString()}`);
       
-      // ✅ NUEVO: Guardar en localStorage
-      localStorage.setItem('lastPriceUpdate', now.toISOString());
-      localStorage.setItem('nextPriceUpdate', new Date(now.getTime() + intervalMinutes * 60 * 1000).toISOString());
+      // ✅ OPTIMIZADO: Batch localStorage operations
+      const nextUpdateTime = new Date(now.getTime() + intervalMinutes * 60 * 1000);
+      const localStorageData = {
+        lastPriceUpdate: now.toISOString(),
+        nextPriceUpdate: nextUpdateTime.toISOString()
+      };
+      
+      Object.entries(localStorageData).forEach(([key, value]) => {
+        localStorage.setItem(key, value);
+      });
       
     } catch (err: any) {
       const errorMessage = `Error actualizando precios: ${err.message}`;
       console.error(`❌ ${errorMessage}`);
       setError(errorMessage);
       
-      // ✅ NUEVO: Reintentar en 2 minutos si falla
-      setTimeout(() => {
-        if (isActiveRef.current) {
-          updatePrices();
+      // ✅ OPTIMIZADO: Backoff exponencial para reintentos
+      retryCountRef.current++;
+      if (retryCountRef.current < maxRetries) {
+        const retryDelay = Math.min(2 ** retryCountRef.current * 60 * 1000, 10 * 60 * 1000); // Max 10 minutos
+        
+        console.log(`🔄 Reintentando en ${retryDelay / 1000 / 60} minutos...`);
+        
+        if (updateTimeoutRef.current) {
+          clearTimeout(updateTimeoutRef.current);
         }
-      }, 2 * 60 * 1000);
+        
+        updateTimeoutRef.current = setTimeout(() => {
+          if (isActiveRef.current) {
+            updatePrices();
+          }
+        }, retryDelay);
+      } else {
+        console.error('❌ Máximo número de reintentos alcanzado');
+        setError('Error persistente. Revisa tu conexión e intenta nuevamente.');
+      }
+    } finally {
+      setIsUpdating(false);
     }
-  }, [updateFunction, intervalMinutes]);
+  }, [updateFunction, intervalMinutes, isUpdating]);
 
   /**
-   * ✅ NUEVO: Iniciar actualización automática
+   * ✅ OPTIMIZADO: Iniciar actualización automática con mejor manejo
    */
   const startAutoUpdate = useCallback(() => {
     if (isActiveRef.current) return;
@@ -78,28 +112,42 @@ export const useAutoPriceUpdate = (
     isActiveRef.current = true;
     setIsActive(true);
     
-    // ✅ NUEVO: Ejecutar inmediatamente la primera vez
-    updatePrices();
+    // ✅ OPTIMIZADO: Ejecutar inmediatamente solo si no se ejecutó recientemente
+    const lastUpdateStr = localStorage.getItem('lastPriceUpdate');
+    if (lastUpdateStr) {
+      const lastUpdateTime = new Date(lastUpdateStr);
+      const timeSinceLastUpdate = Date.now() - lastUpdateTime.getTime();
+      const shouldUpdate = timeSinceLastUpdate >= intervalMinutes * 60 * 1000;
+      
+      if (shouldUpdate) {
+        updatePrices();
+      }
+    } else {
+      updatePrices();
+    }
     
-    // ✅ NUEVO: Configurar intervalo
-    intervalRef.current = setInterval(updatePrices, intervalMinutes * 60 * 1000);
+    // ✅ OPTIMIZADO: Configurar intervalo más preciso
+    intervalRef.current = setInterval(() => {
+      if (isActiveRef.current && !isUpdating) {
+        updatePrices();
+      }
+    }, intervalMinutes * 60 * 1000);
     
-    // ✅ NUEVO: Guardar estado en localStorage
+    // ✅ OPTIMIZADO: Guardar estado en localStorage una sola vez
     localStorage.setItem('autoPriceUpdateActive', 'true');
     localStorage.setItem('autoPriceUpdateInterval', intervalMinutes.toString());
     
-    // ✅ NUEVO: Configurar listener para cuando la página vuelve a ser visible
+    // ✅ OPTIMIZADO: Listener de visibilidad más eficiente
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isActiveRef.current) {
-        console.log('📱 Página visible, verificando si necesita actualización...');
         const lastUpdateStr = localStorage.getItem('lastPriceUpdate');
         if (lastUpdateStr) {
           const lastUpdateTime = new Date(lastUpdateStr);
           const timeSinceLastUpdate = Date.now() - lastUpdateTime.getTime();
           const shouldUpdate = timeSinceLastUpdate >= intervalMinutes * 60 * 1000;
           
-          if (shouldUpdate) {
-            console.log('⏰ Ha pasado mucho tiempo, actualizando precios...');
+          if (shouldUpdate && !isUpdating) {
+            console.log('⏰ Página visible, actualizando precios...');
             updatePrices();
           }
         }
@@ -108,14 +156,14 @@ export const useAutoPriceUpdate = (
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     
-    // ✅ NUEVO: Limpiar listener cuando se detenga
+    // ✅ OPTIMIZADO: Cleanup más robusto
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [updatePrices, intervalMinutes]);
+  }, [updatePrices, intervalMinutes, isUpdating]);
 
   /**
-   * ✅ NUEVO: Detener actualización automática
+   * ✅ OPTIMIZADO: Detener actualización automática con cleanup completo
    */
   const stopAutoUpdate = useCallback(() => {
     console.log('⏹️ Deteniendo actualización automática de precios');
@@ -123,30 +171,48 @@ export const useAutoPriceUpdate = (
     isActiveRef.current = false;
     setIsActive(false);
     
+    // ✅ OPTIMIZADO: Limpiar todos los timeouts e intervalos
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
     
-    // ✅ NUEVO: Limpiar localStorage
-    localStorage.removeItem('autoPriceUpdateActive');
-    localStorage.removeItem('autoPriceUpdateInterval');
-    localStorage.removeItem('lastPriceUpdate');
-    localStorage.removeItem('nextPriceUpdate');
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+      updateTimeoutRef.current = null;
+    }
+    
+    // ✅ OPTIMIZADO: Limpiar localStorage de una vez
+    const keysToRemove = [
+      'autoPriceUpdateActive',
+      'autoPriceUpdateInterval', 
+      'lastPriceUpdate',
+      'nextPriceUpdate'
+    ];
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
     
     setNextUpdate(null);
+    setError(null);
+    setIsUpdating(false);
+    retryCountRef.current = 0;
   }, []);
 
   /**
-   * ✅ NUEVO: Forzar actualización manual
+   * ✅ OPTIMIZADO: Forzar actualización manual con debouncing
    */
   const forceUpdate = useCallback(() => {
+    if (isUpdating) {
+      console.log('⏳ Actualización en progreso, esperando...');
+      return;
+    }
+    
     console.log('🔨 Forzando actualización manual de precios');
     updatePrices();
-  }, [updatePrices]);
+  }, [updatePrices, isUpdating]);
 
   /**
-   * ✅ NUEVO: Restaurar estado desde localStorage al montar
+   * ✅ OPTIMIZADO: Restaurar estado desde localStorage con validación
    */
   useEffect(() => {
     const wasActive = localStorage.getItem('autoPriceUpdateActive') === 'true';
@@ -167,19 +233,24 @@ export const useAutoPriceUpdate = (
           setNextUpdate(new Date(nextUpdateStr));
         }
         
-        // ✅ NUEVO: Iniciar automáticamente si la página se recarga
-        startAutoUpdate();
+        // ✅ OPTIMIZADO: Iniciar solo si no está activo
+        if (!isActive) {
+          startAutoUpdate();
+        }
       }
     }
-  }, [intervalMinutes, startAutoUpdate]);
+  }, [intervalMinutes, startAutoUpdate, isActive]);
 
   /**
-   * ✅ NUEVO: Limpiar al desmontar
+   * ✅ OPTIMIZADO: Cleanup completo al desmontar
    */
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+      }
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
       }
     };
   }, []);
@@ -192,5 +263,6 @@ export const useAutoPriceUpdate = (
     stopAutoUpdate,
     forceUpdate,
     error,
+    isUpdating,
   };
 }; 

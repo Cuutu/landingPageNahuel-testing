@@ -3,7 +3,7 @@
  * Solo los administradores pueden cerrar posiciones
  */
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
@@ -32,11 +32,14 @@ export default async function handler(
 
   try {
     // Verificar autenticación
-    const session = await getServerSession(req, res, authOptions);
+    const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
-      return res.status(401).json({ error: 'No autorizado' });
+      console.log('❌ No hay sesión válida');
+      return res.status(401).json({ error: 'No autorizado - Sesión inválida' });
     }
+
+    console.log('🔐 Usuario autenticado:', session.user.email);
 
     // Conectar a la base de datos
     await dbConnect();
@@ -45,13 +48,18 @@ export default async function handler(
     const user = await User.findOne({ email: session.user.email });
     
     if (!user) {
+      console.log('❌ Usuario no encontrado en BD:', session.user.email);
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    console.log('👤 Usuario encontrado, rol:', user.role);
+
     // NUEVA RESTRICCIÓN: Solo administradores pueden cerrar posiciones
     if (user.role !== 'admin') {
+      console.log('❌ Usuario no es admin:', session.user.email, 'Rol:', user.role);
       return res.status(403).json({ 
-        error: 'Permisos insuficientes. Solo los administradores pueden cerrar posiciones.' 
+        error: 'Permisos insuficientes. Solo los administradores pueden cerrar posiciones.',
+        message: 'No tienes permisos para cerrar posiciones'
       });
     }
 
@@ -59,23 +67,36 @@ export default async function handler(
     const { alertId, currentPrice, reason = 'MANUAL' }: ClosePositionRequest = req.body;
 
     if (!alertId || !currentPrice) {
+      console.log('❌ Datos inválidos:', { alertId, currentPrice });
       return res.status(400).json({ error: 'alertId y currentPrice son requeridos' });
     }
 
     if (currentPrice <= 0) {
+      console.log('❌ Precio inválido:', currentPrice);
       return res.status(400).json({ error: 'El precio actual debe ser mayor a 0' });
     }
+
+    console.log('🔍 Buscando alerta:', alertId);
 
     // Buscar la alerta
     const alert = await Alert.findById(alertId);
     
     if (!alert) {
+      console.log('❌ Alerta no encontrada:', alertId);
       return res.status(404).json({ error: 'Alerta no encontrada' });
     }
 
     if (alert.status !== 'ACTIVE') {
+      console.log('❌ Alerta no está activa:', alertId, 'Status:', alert.status);
       return res.status(400).json({ error: 'La alerta ya no está activa' });
     }
+
+    console.log('✅ Alerta encontrada y válida:', {
+      symbol: alert.symbol,
+      action: alert.action,
+      entryPrice: alert.entryPrice,
+      currentPrice: alert.currentPrice
+    });
 
     // Calcular profit final
     let finalProfit = 0;
@@ -84,6 +105,8 @@ export default async function handler(
     } else { // SELL
       finalProfit = ((alert.entryPrice - currentPrice) / alert.entryPrice) * 100;
     }
+
+    console.log('💰 Profit calculado:', finalProfit.toFixed(2) + '%');
 
     // Actualizar la alerta para cerrarla
     const updatedAlert = await Alert.findByIdAndUpdate(
@@ -127,10 +150,20 @@ export default async function handler(
     });
 
   } catch (error) {
-    console.error('Error al cerrar posición:', error);
+    console.error('❌ Error al cerrar posición:', error);
+    
+    // Log más detallado del error
+    if (error instanceof Error) {
+      console.error('❌ Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
+    }
+    
     return res.status(500).json({ 
       error: 'Error interno del servidor',
-      message: 'No se pudo cerrar la posición'
+      message: 'No se pudo cerrar la posición. Por favor, intenta nuevamente.'
     });
   }
 } 

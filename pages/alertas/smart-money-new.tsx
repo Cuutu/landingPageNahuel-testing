@@ -463,20 +463,44 @@ const SubscriberView: React.FC = () => {
   React.useEffect(() => {
     const checkUserRole = async () => {
       try {
+        console.log('🔍 Verificando rol del usuario...');
+        
         const response = await fetch('/api/profile/get', {
           credentials: 'same-origin',
         });
+        
         if (response.ok) {
           const data = await response.json();
-          setUserRole(data.user?.role || '');
+          console.log('✅ Datos del perfil obtenidos:', {
+            email: data.user?.email,
+            role: data.user?.role,
+            success: data.success
+          });
+          
+          if (data.success && data.user?.role) {
+            setUserRole(data.user.role);
+            console.log('👤 Rol del usuario establecido:', data.user.role);
+          } else {
+            console.warn('⚠️ No se pudo obtener el rol del usuario:', data);
+            setUserRole('');
+          }
+        } else {
+          console.error('❌ Error al obtener perfil:', response.status, response.statusText);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Detalles del error:', errorData);
         }
       } catch (error) {
-        console.error('Error al verificar rol:', error);
+        console.error('❌ Error al verificar rol:', error);
+        setUserRole('');
       }
     };
 
     if (session?.user) {
+      console.log('🔐 Sesión activa, verificando rol para:', session.user.email);
       checkUserRole();
+    } else {
+      console.log('❌ No hay sesión activa');
+      setUserRole('');
     }
   }, [session]);
 
@@ -923,25 +947,35 @@ const SubscriberView: React.FC = () => {
     loadInformes();
   }, []);
 
-  // Sistema de actualización automática de precios cada 30 segundos
+  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
   React.useEffect(() => {
     // Solo actualizar si hay alertas activas
     const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
     
     if (!hasActiveAlerts) return;
 
-    // Actualizar precios inmediatamente si es la primera vez
+    // ✅ OPTIMIZADO: Solo actualizar si no se actualizó recientemente
     if (!lastPriceUpdate) {
       updatePrices(true);
+    } else {
+      const timeSinceLastUpdate = Date.now() - lastPriceUpdate.getTime();
+      const shouldUpdate = timeSinceLastUpdate >= 2 * 60 * 1000; // 2 minutos
+      
+      if (shouldUpdate) {
+        updatePrices(true);
+      }
     }
 
-    // Configurar intervalo de actualización cada 30 segundos
+    // ✅ OPTIMIZADO: Intervalo más eficiente (2 minutos en lugar de 30 segundos)
     const interval = setInterval(() => {
-      updatePrices(true); // silent = true para no mostrar loading
-    }, 30000); // 30 segundos
+      const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
+      if (hasActiveAlerts) {
+        updatePrices(true); // silent = true para no mostrar loading
+      }
+    }, 2 * 60 * 1000); // 2 minutos
 
     return () => clearInterval(interval);
-  }, [realAlerts, lastPriceUpdate]);
+  }, [realAlerts, lastPriceUpdate, updatePrices]);
 
   // Función para obtener precio individual de una acción (modal crear alerta)
   const fetchStockPrice = async (symbol: string) => {
@@ -1095,7 +1129,20 @@ const SubscriberView: React.FC = () => {
     }
 
     try {
+      // Validar que el usuario sea admin
+      if (userRole !== 'admin') {
+        alert('❌ Solo los administradores pueden cerrar posiciones');
+        return;
+      }
+
       const priceNumber = parseFloat(currentPrice.replace('$', ''));
+      
+      if (isNaN(priceNumber) || priceNumber <= 0) {
+        alert('❌ Precio inválido. Por favor, verifica el precio actual.');
+        return;
+      }
+
+      console.log('🔄 Cerrando posición:', { alertId, currentPrice: priceNumber });
       
       const response = await fetch('/api/alerts/close', {
         method: 'POST',
@@ -1110,22 +1157,48 @@ const SubscriberView: React.FC = () => {
         }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         console.log('✅ Posición cerrada:', result.alert);
         
         // Recargar alertas para mostrar cambios
         await loadAlerts();
         
-        alert('¡Posición cerrada exitosamente!');
+        alert('✅ ¡Posición cerrada exitosamente!');
       } else {
-        const error = await response.json();
-        console.error('❌ Error del servidor:', error);
-        alert(`Error: ${error.message || 'No se pudo cerrar la posición'}`);
+        console.error('❌ Error del servidor:', result);
+        
+        // Mostrar mensaje de error más específico
+        let errorMessage = 'No se pudo cerrar la posición';
+        
+        if (result.error) {
+          if (result.error.includes('Permisos insuficientes')) {
+            errorMessage = '❌ No tienes permisos para cerrar posiciones. Solo los administradores pueden hacerlo.';
+          } else if (result.error.includes('No autorizado')) {
+            errorMessage = '❌ Sesión expirada. Por favor, inicia sesión nuevamente.';
+          } else if (result.error.includes('Alerta no encontrada')) {
+            errorMessage = '❌ La alerta no fue encontrada. Puede que haya sido eliminada.';
+          } else if (result.error.includes('no está activa')) {
+            errorMessage = '❌ La alerta ya no está activa.';
+          } else {
+            errorMessage = `❌ ${result.error}`;
+          }
+        } else if (result.message) {
+          errorMessage = `❌ ${result.message}`;
+        }
+        
+        alert(errorMessage);
       }
     } catch (error) {
-      console.error('Error closing position:', error);
-      alert('Error al cerrar la posición');
+      console.error('❌ Error al cerrar posición:', error);
+      
+      // Mostrar mensaje de error más amigable
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('❌ Error de conexión. Verifica tu internet e intenta nuevamente.');
+      } else {
+        alert('❌ Error inesperado al cerrar la posición. Por favor, intenta nuevamente.');
+      }
     }
   };
 

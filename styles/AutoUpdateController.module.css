@@ -1,0 +1,229 @@
+/* Estilos para el componente optimizado de control de actualizaciones */
+.autoUpdateController {
+  background: var(--bg-secondary, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.controlSection {
+  margin-bottom: 2rem;
+}
+
+.controlSection:last-child {
+  margin-bottom: 0;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color, #334155);
+}
+
+.sectionHeader h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #f1f5f9);
+}
+
+.statusIndicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.statusDot.active {
+  background-color: #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.statusDot.inactive {
+  background-color: #6b7280;
+}
+
+.controlContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.statusInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.statusRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.statusLabel {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #94a3b8);
+  font-weight: 500;
+}
+
+.statusValue {
+  font-size: 0.875rem;
+  color: var(--text-primary, #f1f5f9);
+  font-weight: 600;
+}
+
+.updating {
+  color: #f59e0b;
+  animation: pulse 2s infinite;
+}
+
+.errorRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.errorLabel {
+  font-size: 0.875rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.errorValue {
+  font-size: 0.875rem;
+  color: #ef4444;
+  font-weight: 600;
+  max-width: 200px;
+  text-align: right;
+  word-break: break-word;
+}
+
+.controlButtons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.startButton,
+.stopButton,
+.forceButton {
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.startButton {
+  background: #10b981;
+  color: white;
+}
+
+.startButton:hover:not(:disabled) {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+.stopButton {
+  background: #ef4444;
+  color: white;
+}
+
+.stopButton:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-1px);
+}
+
+.forceButton {
+  background: #f59e0b;
+  color: white;
+}
+
+.forceButton:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.startButton:disabled,
+.stopButton:disabled,
+.forceButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Animación de pulso para estado de actualización */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .autoUpdateController {
+    padding: 1rem;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .controlButtons {
+    flex-direction: column;
+  }
+  
+  .startButton,
+  .stopButton,
+  .forceButton {
+    width: 100%;
+  }
+  
+  .statusRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .errorRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .errorValue {
+    text-align: left;
+    max-width: none;
+  }
+} 

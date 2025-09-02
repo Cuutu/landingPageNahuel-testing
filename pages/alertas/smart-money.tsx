@@ -730,22 +730,34 @@ const SubscriberView: React.FC = () => {
     loadInformes();
   }, []);
 
-  // Sistema de actualización automática de precios cada 30 segundos
+  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
   React.useEffect(() => {
     const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
     
     if (!hasActiveAlerts) return;
 
+    // ✅ OPTIMIZADO: Solo actualizar si no se actualizó recientemente
     if (!lastPriceUpdate) {
       updatePrices(true);
+    } else {
+      const timeSinceLastUpdate = Date.now() - lastPriceUpdate.getTime();
+      const shouldUpdate = timeSinceLastUpdate >= 2 * 60 * 1000; // 2 minutos
+      
+      if (shouldUpdate) {
+        updatePrices(true);
+      }
     }
 
+    // ✅ OPTIMIZADO: Intervalo más eficiente (2 minutos en lugar de 30 segundos)
     const interval = setInterval(() => {
-      updatePrices(true);
-    }, 30000);
+      const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
+      if (hasActiveAlerts) {
+        updatePrices(true); // silent = true para no mostrar loading
+      }
+    }, 2 * 60 * 1000); // 2 minutos
 
     return () => clearInterval(interval);
-  }, [realAlerts, lastPriceUpdate]);
+  }, [realAlerts, lastPriceUpdate, updatePrices]);
 
   return (
     <div className={styles.subscriberView}>
