@@ -28,11 +28,13 @@ export interface IAlert extends Document {
   _id: string;
   symbol: string;
   action: 'BUY' | 'SELL';
-  // ✅ CAMBIO: Precio de entrada ahora es un rango (mín-máx)
-  entryPriceRange: {
+  // ✅ CAMBIO: Precio de entrada ahora es un rango (mín-máx) - NO REQUERIDO para compatibilidad
+  entryPriceRange?: {
     min: number;
     max: number;
   };
+  // ✅ NUEVO: Campo legacy para compatibilidad con alertas existentes
+  entryPrice?: number;
   // ✅ NUEVO: Valor final fijado al cierre del mercado
   finalPrice?: number;
   finalPriceSetAt?: Date;
@@ -133,18 +135,24 @@ const AlertSchema: Schema = new Schema({
     required: true,
     enum: ['BUY', 'SELL']
   },
-  // ✅ CAMBIO: Precio de entrada ahora es un rango
+  // ✅ CAMBIO: Precio de entrada ahora es un rango (mín-máx) - NO REQUERIDO para compatibilidad
   entryPriceRange: {
     min: {
       type: Number,
-      required: true,
+      required: false, // Cambiado a false para compatibilidad
       min: 0
     },
     max: {
       type: Number,
-      required: true,
+      required: false, // Cambiado a false para compatibilidad
       min: 0
     }
+  },
+  // ✅ NUEVO: Campo legacy para compatibilidad con alertas existentes
+  entryPrice: {
+    type: Number,
+    required: false, // No requerido para compatibilidad
+    min: 0
   },
   // ✅ NUEVO: Valor final fijado al cierre
   finalPrice: {
@@ -251,12 +259,12 @@ AlertSchema.index({ finalPriceSetAt: 1 }); // ✅ NUEVO: Para búsquedas por fec
 AlertSchema.methods.calculateProfit = function(this: IAlert) {
   const currentPrice = this.currentPrice;
   // Usar el precio máximo del rango para cálculos conservadores
-  const entryPrice = this.entryPriceRange.max;
+  const entryPrice = this.entryPriceRange?.max || this.entryPrice; // Usar el nuevo campo o el antiguo
   
   if (this.action === 'BUY') {
-    this.profit = ((currentPrice - entryPrice) / entryPrice) * 100;
+    this.profit = ((currentPrice - entryPrice!) / entryPrice!) * 100; // Usar el nuevo campo o el antiguo
   } else { // SELL
-    this.profit = ((entryPrice - currentPrice) / entryPrice) * 100;
+    this.profit = ((entryPrice! - currentPrice) / entryPrice!) * 100; // Usar el nuevo campo o el antiguo
   }
   
   return this.profit;
@@ -275,6 +283,12 @@ AlertSchema.methods.setFinalPrice = function(this: IAlert, price: number, isFrom
       this.profit = ((price - entryPrice) / entryPrice) * 100;
     } else { // SELL
       this.profit = ((entryPrice - price) / entryPrice) * 100;
+    }
+  } else if (this.entryPrice) {
+    if (this.action === 'BUY') {
+      this.profit = ((price - this.entryPrice) / this.entryPrice) * 100;
+    } else { // SELL
+      this.profit = ((this.entryPrice - price) / this.entryPrice) * 100;
     }
   }
   
@@ -303,7 +317,7 @@ AlertSchema.methods.recordPriceChange = function(this: IAlert, adminId: mongoose
 
 // Middleware para calcular profit antes de guardar
 AlertSchema.pre('save', function(this: IAlert, next) {
-  if (this.isModified('currentPrice') || this.isModified('entryPriceRange')) {
+  if (this.isModified('currentPrice') || this.isModified('entryPriceRange') || this.isModified('entryPrice')) {
     (this as any).calculateProfit();
   }
   next();

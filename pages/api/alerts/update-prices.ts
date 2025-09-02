@@ -3,7 +3,7 @@
  * Consulta precios en tiempo real y actualiza MongoDB
  */
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth/next';
+import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
@@ -55,7 +55,7 @@ export default async function handler(
 
   try {
     // Verificar autenticación
-    const session = await getServerSession(req, res, authOptions);
+    const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {
       return res.status(401).json({ error: 'No autorizado' });
@@ -108,12 +108,14 @@ export default async function handler(
         
         updatedCount++;
         
-        // Formatear para respuesta - con validación de números
+        // Formatear para respuesta - con validación de números y compatibilidad legacy
+        const entryPrice = alert.entryPriceRange?.max || alert.entryPrice || 0;
+        
         updatedAlerts.push({
           id: alert._id.toString(),
           symbol: alert.symbol || '',
           action: alert.action || '',
-          entryPrice: `$${Number(alert.entryPrice || 0).toFixed(2)}`,
+          entryPrice: `$${Number(entryPrice).toFixed(2)}`,
           currentPrice: `$${Number(alert.currentPrice || 0).toFixed(2)}`,
           stopLoss: `$${Number(alert.stopLoss || 0).toFixed(2)}`,
           takeProfit: `$${Number(alert.takeProfit || 0).toFixed(2)}`,
@@ -121,7 +123,7 @@ export default async function handler(
           status: alert.status || 'ACTIVE',
           date: alert.date ? alert.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           analysis: alert.analysis || '',
-          priceChange: Number(currentPrice || 0) - Number(alert.entryPrice || 0),
+          priceChange: Number(currentPrice || 0) - Number(entryPrice),
           marketStatus: priceData.marketStatus,
           isSimulated: priceData.isSimulated
         });
