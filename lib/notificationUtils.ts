@@ -102,7 +102,7 @@ export async function createAlertNotification(alert: IAlert): Promise<void> {
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: alert.action,
-          alertPrice: `${alert.entryPriceRange?.min || 'N/A'} - ${alert.entryPriceRange?.max || 'N/A'}`,
+          alertPrice: alert.entryPriceRange?.max || alert.entryPrice || null,
           alertService: alert.tipo,
           automatic: true
         }
@@ -126,7 +126,7 @@ export async function createAlertNotification(alert: IAlert): Promise<void> {
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: alert.action,
-          alertPrice: `${alert.entryPriceRange?.min || 'N/A'} - ${alert.entryPriceRange?.max || 'N/A'}`,
+          alertPrice: alert.entryPriceRange?.max || alert.entryPrice || null,
           alertService: alert.tipo,
           automatic: true
         }

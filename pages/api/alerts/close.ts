@@ -31,7 +31,7 @@ export default async function handler(
   }
 
   try {
-    // Verificar autenticación
+    // Verificar autenticación - CORREGIDO para Next.js 14
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.email) {

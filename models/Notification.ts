@@ -26,7 +26,7 @@ export interface INotification extends mongoose.Document {
     alertType?: string; // Tipo de alerta que generó la notificación
     alertSymbol?: string; // Símbolo de la alerta
     alertAction?: string; // Acción de la alerta (BUY/SELL)
-    alertPrice?: number; // Precio de la alerta
+    alertPrice?: number | null; // Precio de la alerta (opcional)
   };
 }
 
@@ -124,7 +124,7 @@ const NotificationSchema = new mongoose.Schema({
     alertType: String,
     alertSymbol: String,
     alertAction: String,
-    alertPrice: Number
+    alertPrice: { type: Number, required: false, default: null }
   }
 }, {
   timestamps: true
