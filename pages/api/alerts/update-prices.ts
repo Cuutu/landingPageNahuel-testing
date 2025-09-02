@@ -55,7 +55,7 @@ export default async function handler(
 
   try {
     // Verificar autenticación
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(req, res, authOptions);
     
     if (!session?.user?.email) {
       return res.status(401).json({ error: 'No autorizado' });

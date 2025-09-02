@@ -32,7 +32,7 @@ export default async function handler(
 
   try {
     // Verificar autenticación - CORREGIDO para Next.js 14
-    const session = await getServerSession(authOptions);
+    const session = await getServerSession(req, res, authOptions);
     
     if (!session?.user?.email) {
       console.log('❌ No hay sesión válida');
