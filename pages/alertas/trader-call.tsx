@@ -478,7 +478,7 @@ const SubscriberView: React.FC = () => {
   const [showCreateAlert, setShowCreateAlert] = useState(false);
   const [newAlert, setNewAlert] = useState({
     symbol: '',
-    action: 'BUY',
+    action: '',
     stopLoss: '',
     takeProfit: '',
     analysis: ''
@@ -501,6 +501,18 @@ const SubscriberView: React.FC = () => {
   const [showCreateReportModal, setShowCreateReportModal] = useState(false);
   const [creatingReport, setCreatingReport] = useState(false);
   const [userRole, setUserRole] = React.useState<string>('');
+  
+  // Estados para edición de alertas
+  const [showEditAlertModal, setShowEditAlertModal] = useState(false);
+  const [editingAlert, setEditingAlert] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    currentPrice: '',
+    stopLoss: '',
+    takeProfit: '',
+    analysis: '',
+    reason: ''
+  });
+  const [editingAlertId, setEditingAlertId] = useState<string>('');
   const [refreshingActivity, setRefreshingActivity] = useState(false);
   
   // Estados para filtros
@@ -1068,8 +1080,8 @@ const SubscriberView: React.FC = () => {
   };
 
   const handleCreateAlert = async () => {
-    if (!newAlert.symbol || !stockPrice) {
-      alert('Por favor completa todos los campos obligatorios');
+    if (!newAlert.symbol || !stockPrice || !newAlert.action.trim()) {
+      alert('Por favor completa todos los campos obligatorios (Símbolo, Precio y Acción)');
       return;
     }
     
@@ -1103,7 +1115,7 @@ const SubscriberView: React.FC = () => {
         await loadAlerts();
         setNewAlert({
           symbol: '',
-          action: 'BUY',
+          action: '',
           stopLoss: '',
           takeProfit: '',
           analysis: ''
@@ -1124,6 +1136,94 @@ const SubscriberView: React.FC = () => {
       alert('Error al crear la alerta');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Función para abrir modal de edición
+  const handleEditAlert = (alert: any) => {
+    setEditingAlert(alert);
+    setEditingAlertId(alert.id);
+    setEditForm({
+      currentPrice: alert.currentPrice?.toString() || '',
+      stopLoss: alert.stopLoss?.toString() || '',
+      takeProfit: alert.takeProfit?.toString() || '',
+      analysis: alert.analysis || '',
+      reason: ''
+    });
+    setShowEditAlertModal(true);
+  };
+
+  // Función para guardar cambios de edición
+  const handleSaveEdit = async () => {
+    if (!editingAlertId || !editForm.currentPrice.trim()) {
+      alert('Por favor completa al menos el precio actual');
+      return;
+    }
+
+    try {
+      const updates: any = {};
+      
+      // Solo incluir campos que hayan cambiado
+      if (editForm.currentPrice !== editingAlert.currentPrice?.toString()) {
+        updates.currentPrice = parseFloat(editForm.currentPrice);
+      }
+      if (editForm.stopLoss !== editingAlert.stopLoss?.toString()) {
+        updates.stopLoss = parseFloat(editForm.stopLoss);
+      }
+      if (editForm.takeProfit !== editingAlert.takeProfit?.toString()) {
+        updates.takeProfit = parseFloat(editForm.takeProfit);
+      }
+      if (editForm.analysis !== editingAlert.analysis) {
+        updates.analysis = editForm.analysis;
+      }
+      if (editForm.reason.trim()) {
+        updates.reason = editForm.reason;
+      }
+
+      if (Object.keys(updates).length === 0) {
+        alert('No hay cambios para guardar');
+        return;
+      }
+
+      const response = await fetch('/api/alerts/edit', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          alertId: editingAlertId,
+          updates
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Alerta editada:', result.alert);
+        alert('✅ Alerta actualizada exitosamente');
+        
+        // Recargar alertas para mostrar cambios
+        await loadAlerts();
+        
+        // Cerrar modal y limpiar estado
+        setShowEditAlertModal(false);
+        setEditingAlert(null);
+        setEditingAlertId('');
+        setEditForm({
+          currentPrice: '',
+          stopLoss: '',
+          takeProfit: '',
+          analysis: '',
+          reason: ''
+        });
+      } else {
+        console.error('❌ Error del servidor:', result);
+        alert(`❌ Error: ${result.error || 'No se pudo actualizar la alerta'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al editar alerta:', error);
+      alert('❌ Error inesperado al editar la alerta');
     }
   };
 
@@ -1689,7 +1789,7 @@ const SubscriberView: React.FC = () => {
       if (symbol) symbol.textContent = segment.symbol;
       if (action) {
         action.textContent = segment.action;
-        action.className = `${styles.tooltipAction} ${segment.action === 'BUY' ? styles.buyAction : styles.sellAction}`;
+        action.className = `${styles.tooltipAction} ${segment.action.toUpperCase().includes('BUY') || segment.action.toUpperCase().includes('COMPRA') ? styles.buyAction : styles.sellAction}`;
       }
       if (entry) entry.textContent = segment.entryPrice;
       if (current) entry.textContent = segment.currentPrice;
@@ -1755,7 +1855,7 @@ const SubscriberView: React.FC = () => {
             <div key={alert.id} className={styles.alertCard}>
               <div className={styles.alertHeader}>
                 <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
-                <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                <span className={`${styles.alertAction} ${alert.action.toUpperCase().includes('BUY') || alert.action.toUpperCase().includes('COMPRA') ? styles.buyAction : styles.sellAction}`}>
                   {alert.action}
                 </span>
               </div>
@@ -1786,6 +1886,15 @@ const SubscriberView: React.FC = () => {
               </div>
               
               <div className={styles.alertActions}>
+                {userRole === 'admin' && (
+                  <button 
+                    className={styles.editButton}
+                    onClick={() => handleEditAlert(alert)}
+                    title="Editar alerta"
+                  >
+                    ✏️ Editar
+                  </button>
+                )}
                 <button 
                   className={styles.closeButton}
                   onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
@@ -2257,15 +2366,15 @@ const SubscriberView: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Acción</label>
-              <select
+              <label>Acción *</label>
+              <input
+                type="text"
+                placeholder="Ej: BUY, SELL, HOLD, COMPRAR, VENDER, etc."
                 value={newAlert.action}
                 onChange={(e) => setNewAlert(prev => ({ ...prev, action: e.target.value }))}
-                className={styles.select}
-              >
-                <option value="BUY">BUY (Compra)</option>
-                <option value="SELL">SELL (Venta)</option>
-              </select>
+                className={styles.input}
+                required
+              />
             </div>
 
             <div className={styles.inputGroup}>
@@ -2313,10 +2422,107 @@ const SubscriberView: React.FC = () => {
             </button>
             <button 
               onClick={handleCreateAlert}
-              disabled={!newAlert.symbol || !stockPrice || loading}
+              disabled={!newAlert.symbol || !stockPrice || !newAlert.action.trim() || loading}
               className={styles.createButton}
             >
               {loading ? 'Creando...' : 'Crear Alerta'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Modal de edición de alerta
+  const renderEditAlertModal = () => {
+    if (!showEditAlertModal || !editingAlert) return null;
+
+    return (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modal}>
+          <div className={styles.modalHeader}>
+            <h2>✏️ Editar Alerta: {editingAlert.symbol}</h2>
+            <button 
+              onClick={() => setShowEditAlertModal(false)}
+              className={styles.closeModalButton}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className={styles.modalBody}>
+            <div className={styles.inputGroup}>
+              <label>Precio Actual *</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio actual de la acción"
+                value={editForm.currentPrice}
+                onChange={(e) => setEditForm(prev => ({ ...prev, currentPrice: e.target.value }))}
+                className={styles.input}
+                required
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Stop Loss</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio de stop loss"
+                value={editForm.stopLoss}
+                onChange={(e) => setEditForm(prev => ({ ...prev, stopLoss: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Take Profit</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio de take profit"
+                value={editForm.takeProfit}
+                onChange={(e) => setEditForm(prev => ({ ...prev, takeProfit: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Análisis / Descripción</label>
+              <textarea
+                placeholder="Descripción del análisis técnico o fundamental..."
+                value={editForm.analysis}
+                onChange={(e) => setEditForm(prev => ({ ...prev, analysis: e.target.value }))}
+                className={styles.textarea}
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Motivo del Cambio (Opcional)</label>
+              <input
+                type="text"
+                placeholder="Ej: Actualización manual por delay de API, corrección de datos..."
+                value={editForm.reason}
+                onChange={(e) => setEditForm(prev => ({ ...prev, reason: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button 
+              onClick={() => setShowEditAlertModal(false)}
+              className={styles.cancelButton}
+            >
+              Cancelar
+            </button>
+            <button 
+              onClick={handleSaveEdit}
+              className={styles.saveButton}
+            >
+              💾 Guardar Cambios
             </button>
           </div>
         </div>
@@ -3183,6 +3389,103 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   );
 };
 
+// Modal de edición de alerta
+const renderEditAlertModal = () => {
+  if (!showEditAlertModal || !editingAlert) return null;
+
+  return (
+    <div className={styles.modalOverlay}>
+      <div className={styles.modal}>
+        <div className={styles.modalHeader}>
+          <h2>✏️ Editar Alerta: {editingAlert.symbol}</h2>
+          <button 
+            onClick={() => setShowEditAlertModal(false)}
+            className={styles.closeModalButton}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className={styles.modalBody}>
+          <div className={styles.inputGroup}>
+            <label>Precio Actual *</label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Precio actual de la acción"
+              value={editForm.currentPrice}
+              onChange={(e) => setEditForm(prev => ({ ...prev, currentPrice: e.target.value }))}
+              className={styles.input}
+              required
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Stop Loss</label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Precio de stop loss"
+              value={editForm.stopLoss}
+              onChange={(e) => setEditForm(prev => ({ ...prev, stopLoss: e.target.value }))}
+              className={styles.input}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Take Profit</label>
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Precio de take profit"
+              value={editForm.takeProfit}
+              onChange={(e) => setEditForm(prev => ({ ...prev, takeProfit: e.target.value }))}
+              className={styles.input}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Análisis / Descripción</label>
+            <textarea
+              placeholder="Descripción del análisis técnico o fundamental..."
+              value={editForm.analysis}
+              onChange={(e) => setEditForm(prev => ({ ...prev, analysis: e.target.value }))}
+              className={styles.textarea}
+              rows={3}
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label>Motivo del Cambio (Opcional)</label>
+            <input
+              type="text"
+              placeholder="Ej: Actualización manual por delay de API, corrección de datos..."
+              value={editForm.reason}
+              onChange={(e) => setEditForm(prev => ({ ...prev, reason: e.target.value }))}
+              className={styles.input}
+            />
+          </div>
+        </div>
+
+        <div className={styles.modalFooter}>
+          <button 
+            onClick={() => setShowEditAlertModal(false)}
+            className={styles.cancelButton}
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={handleSaveEdit}
+            className={styles.saveButton}
+          >
+            💾 Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const TraderCallPage: React.FC<TraderCallPageProps> = ({ 
   isSubscribed, 
   metrics, 
@@ -3211,6 +3514,9 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
             faqs={faqs}
           />
         )}
+        
+        {/* Renderizar modal de edición de alerta */}
+        {renderEditAlertModal()}
       </main>
 
       <Footer />
