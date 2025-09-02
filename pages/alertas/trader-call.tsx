@@ -532,6 +532,7 @@ const SubscriberView: React.FC = () => {
     const checkUserRole = async () => {
       try {
         console.log('🔍 Verificando rol del usuario...');
+        console.log('🔍 Sesión actual:', session);
         
         const response = await fetch('/api/profile/get', {
           credentials: 'same-origin',
@@ -542,12 +543,14 @@ const SubscriberView: React.FC = () => {
           console.log('✅ Datos del perfil obtenidos:', {
             email: data.user?.email,
             role: data.user?.role,
-            success: data.success
+            success: data.success,
+            fullResponse: data
           });
           
           if (data.success && data.user?.role) {
             setUserRole(data.user.role);
             console.log('👤 Rol del usuario establecido:', data.user.role);
+            console.log('👤 Estado userRole actualizado:', data.user.role);
           } else {
             console.warn('⚠️ No se pudo obtener el rol del usuario:', data);
             setUserRole('');
@@ -1126,13 +1129,18 @@ const SubscriberView: React.FC = () => {
 
   // Función para cerrar posición
   const handleClosePosition = async (alertId: string, currentPrice: string) => {
+    console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
+    
     if (!confirm('¿Estás seguro de que quieres cerrar esta posición?')) {
       return;
     }
 
     try {
       // Validar que el usuario sea admin
+      console.log('🔍 Verificando rol antes de cerrar posición:', { userRole, isAdmin: userRole === 'admin' });
+      
       if (userRole !== 'admin') {
+        console.warn('⚠️ Usuario no es admin, rol actual:', userRole);
         alert('❌ Solo los administradores pueden cerrar posiciones');
         return;
       }
@@ -1783,6 +1791,7 @@ const SubscriberView: React.FC = () => {
                   onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
                   disabled={userRole !== 'admin'}
                   title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cerrar esta posición'}
+                  onMouseEnter={() => console.log('🔍 Estado del botón:', { userRole, isDisabled: userRole !== 'admin' })}
                 >
                   Cerrar Posición
                 </button>
