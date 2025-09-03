@@ -27,7 +27,7 @@ export interface PriceChangeAudit {
 export interface IAlert extends Document {
   _id: string;
   symbol: string;
-  action: string;
+  action: 'BUY' | 'SELL';
   // ✅ CAMBIO: Precio de entrada ahora es un rango (mín-máx) - NO REQUERIDO para compatibilidad
   entryPriceRange?: {
     min: number;
@@ -133,7 +133,7 @@ const AlertSchema: Schema = new Schema({
   action: {
     type: String,
     required: true,
-    trim: true
+    enum: ['BUY', 'SELL']
   },
   // ✅ CAMBIO: Precio de entrada ahora es un rango (mín-máx) - NO REQUERIDO para compatibilidad
   entryPriceRange: {
