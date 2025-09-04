@@ -1806,18 +1806,16 @@
 }
 
 .destacadoCardMeta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.5rem;
-  position: relative;
-  padding-top: 0.5rem;
-}
-
-.destacadoTag {
   position: absolute;
   top: -12px;
   right: -8px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 3;
+}
+
+.destacadoTag {
   padding: 0.4rem 0.9rem;
   border-radius: 8px;
   font-size: 0.8rem;
@@ -1825,7 +1823,6 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  z-index: 3;
 }
 
 .tagAlertas {
@@ -1845,9 +1842,6 @@
   color: #fbbf24;
   font-size: 0.8rem;
   font-weight: 600;
-  margin-top: 0.5rem;
-  z-index: 2;
-  position: relative;
 }
 
 .destacadoDescription {
