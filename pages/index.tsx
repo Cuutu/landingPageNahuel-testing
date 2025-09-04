@@ -1136,7 +1136,116 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
+        {/* Nueva Sección Destacados - Consultorio Financiero y Pack Análisis Técnico */}
+        <section className={styles.destacadosNuevos}>
+          <div className="container">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className={styles.destacadosNuevosHeader}>
+                <h2>Destacados</h2>
+              </div>
 
+              <div className={styles.destacadosNuevosCarousel}>
+                {/* Flecha izquierda */}
+                <button className={styles.carouselArrow} onClick={() => {}}>
+                  <ChevronLeft size={24} />
+                </button>
+
+                <div className={styles.destacadosNuevosCards}>
+                  {/* Card Consultorio Financiero */}
+                  <motion.div
+                    className={styles.destacadoNuevoCard}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <div className={styles.destacadoNuevoCardHeader}>
+                      <h3>Consultorio Financiero</h3>
+                      <div className={styles.destacadoNuevoCardMeta}>
+                        <span className={styles.destacadoNuevoTag + ' ' + styles.tagAsesorias}>Asesorías</span>
+                        <span className={styles.destacadoNuevoRating}>
+                          <Star size={16} fill="currentColor" />
+                          4,5
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className={styles.destacadoNuevoDescription}>
+                      Consulta individual personalizada de 60 minutos para analizar tu situación financiera y diseñar una estrategia de inversión según tu perfil de riesgo
+                    </p>
+                    
+                    <div className={styles.destacadoNuevoSeparator}></div>
+                    
+                    <div className={styles.destacadoNuevoFooter}>
+                      <div className={styles.destacadoNuevoPrecio}>
+                        $30.000/sesión
+                      </div>
+                      <Link href="/asesorias/consultorio-financiero" className={styles.destacadoNuevoButton}>
+                        Ver más
+                        <ChevronRight size={16} />
+                      </Link>
+                    </div>
+                  </motion.div>
+
+                  {/* Card Pack Análisis Técnico */}
+                  <motion.div
+                    className={styles.destacadoNuevoCard}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    viewport={{ once: true }}
+                  >
+                    <div className={styles.destacadoNuevoCardHeader}>
+                      <h3>Pack Análisis Técnico</h3>
+                      <div className={styles.destacadoNuevoCardMeta}>
+                        <span className={styles.destacadoNuevoTag + ' ' + styles.tagMentoring}>
+                          <span>Mentoring</span>
+                          <span className={styles.rocketIcon}>🚀</span>
+                        </span>
+                        <span className={styles.destacadoNuevoRating}>
+                          <Star size={16} fill="currentColor" />
+                          4,9
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className={styles.destacadoNuevoDescription}>
+                      Pack de 5 cursos online donde aprenderás análisis técnico desde cero. Chartismo, indicadores y las mejores plataformas de trading. Todo con un 10% de descuento
+                    </p>
+                    
+                    <div className={styles.destacadoNuevoSeparator}></div>
+                    
+                    <div className={styles.destacadoNuevoFooter}>
+                      <div className={styles.destacadoNuevoPrecio}>
+                        $180.000
+                        <span className={styles.descuento}>10% OFF</span>
+                      </div>
+                      <a 
+                        href="https://plataformacursos.lozanonahuel.com/cursos/packs" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={styles.destacadoNuevoButton}
+                      >
+                        Ver más
+                        <ChevronRight size={16} />
+                      </a>
+                    </div>
+                  </motion.div>
+                </div>
+
+                {/* Flecha derecha */}
+                <button className={styles.carouselArrow} onClick={() => {}}>
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
         {/* CTA Final */}
         <section className={styles.ctaInvestmentSection}>

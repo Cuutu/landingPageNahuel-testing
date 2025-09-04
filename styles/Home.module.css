@@ -1925,4 +1925,224 @@
   .destacadoButton {
     justify-content: center;
   }
+}
+
+/* === NUEVA SECCIÓN DESTACADOS - CONSULTORIO Y PACK === */
+.destacadosNuevos {
+  padding: 6rem 0;
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+}
+
+.destacadosNuevos::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.destacadosNuevosHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.destacadosNuevosHeader h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.destacadosNuevosCarousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.destacadosNuevosCards {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.destacadoNuevoCard {
+  background: #1a1a1a;
+  border-radius: 8px;
+  padding: 1.8rem;
+  flex: 1;
+  max-width: 500px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: visible;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.destacadoNuevoCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.destacadoNuevoCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.destacadoNuevoCardHeader h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.destacadoNuevoCardMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.destacadoNuevoTag {
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.tagAsesorias {
+  background: #f59e0b;
+  color: #ffffff;
+}
+
+.tagMentoring {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.rocketIcon {
+  font-size: 0.7rem;
+}
+
+.destacadoNuevoRating {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: #fbbf24;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.destacadoNuevoDescription {
+  color: #ffffff;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+}
+
+.destacadoNuevoSeparator {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.destacadoNuevoFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.destacadoNuevoPrecio {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #22c55e;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.descuento {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+
+.destacadoNuevoButton {
+  background: #22c55e;
+  color: #ffffff;
+  border: none;
+  padding: 0.9rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: none;
+}
+
+.destacadoNuevoButton:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Responsive para la nueva sección */
+@media (max-width: 768px) {
+  .destacadosNuevosHeader h2 {
+    font-size: 2.5rem;
+  }
+  
+  .destacadosNuevosCarousel {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .destacadosNuevosCards {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .destacadoNuevoCard {
+    max-width: 100%;
+    padding: 2rem;
+  }
+  
+  .destacadoNuevoCardHeader h3 {
+    font-size: 1.5rem;
+  }
+  
+  .destacadoNuevoDescription {
+    font-size: 1rem;
+  }
+  
+  .destacadoNuevoFooter {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .destacadoNuevoButton {
+    justify-content: center;
+  }
 } 
