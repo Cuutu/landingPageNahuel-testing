@@ -50,11 +50,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     } catch (error) {
       console.log('⚠️ Usando datos simulados como fallback:', error);
-      performanceData = generateHistoricalPerformance(startDate, endDate, period as string);
+      performanceData = await generateHistoricalPerformance(startDate, endDate, period as string);
       console.log(`📊 Datos simulados generados:`, {
         currentPrice: performanceData.currentPrice,
         changePercent: performanceData.changePercent,
-        dataProvider: 'Simulado'
+        dataProvider: performanceData.dataProvider
       });
     }
 
@@ -86,60 +86,81 @@ async function getRealSP500Data(period: string) {
   try {
     // Usar Alpha Vantage API (gratuita y funciona bien en Vercel)
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY || 'demo'; // Usar demo si no hay API key
-    const response = await fetch(`https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=SPY&apikey=${apiKey}`);
     
-    if (!response.ok) {
-      throw new Error('Error al obtener datos de Alpha Vantage');
+    // Obtener datos históricos para calcular el rendimiento del período
+    const historicalResponse = await fetch(`https://www.alphavantage.co/query?function=TIME_SERIES_DAILY&symbol=SPY&apikey=${apiKey}&outputsize=compact`);
+    
+    if (!historicalResponse.ok) {
+      throw new Error('Error al obtener datos históricos de Alpha Vantage');
     }
     
-    const data = await response.json();
+    const historicalData = await historicalResponse.json();
     
     // Verificar si hay datos válidos
-    if (!data['Global Quote'] || !data['Global Quote']['05. price']) {
-      throw new Error('No se pudieron obtener datos válidos del S&P 500');
+    if (!historicalData['Time Series (Daily)']) {
+      throw new Error('No se pudieron obtener datos históricos válidos del S&P 500');
     }
     
-    const quote = data['Global Quote'];
-    const currentPrice = parseFloat(quote['05. price']); // Precio actual
-    const change = parseFloat(quote['09. change']); // Cambio diario
-    const changePercent = parseFloat(quote['10. change percent'].replace('%', '')); // Cambio porcentual diario
+    const timeSeries = historicalData['Time Series (Daily)'];
+    const dates = Object.keys(timeSeries).sort();
     
-    // Para el rendimiento anual, usar datos históricos más precisos
-    let periodChangePercent = changePercent;
-    let startPrice = currentPrice;
+    // Obtener precio actual (más reciente)
+    const currentDate = dates[dates.length - 1];
+    const currentPrice = parseFloat(timeSeries[currentDate]['4. close']);
     
-    // Calcular rendimiento según el período usando datos históricos reales
+    // Calcular fechas según el período
+    const endDate = new Date(currentDate);
+    let startDate = new Date(endDate);
+    
     switch (period) {
       case '7d':
-        periodChangePercent = changePercent * 0.1; // Aproximación para 7 días
-        startPrice = currentPrice / (1 + periodChangePercent / 100);
+        startDate.setDate(endDate.getDate() - 7);
         break;
       case '15d':
-        periodChangePercent = changePercent * 0.2; // Aproximación para 15 días
-        startPrice = currentPrice / (1 + periodChangePercent / 100);
+        startDate.setDate(endDate.getDate() - 15);
         break;
       case '30d':
-        periodChangePercent = changePercent * 0.4; // Aproximación para 30 días
-        startPrice = currentPrice / (1 + periodChangePercent / 100);
+        startDate.setDate(endDate.getDate() - 30);
         break;
       case '6m':
-        periodChangePercent = changePercent * 0.6; // Aproximación para 6 meses
-        startPrice = currentPrice / (1 + periodChangePercent / 100);
+        startDate.setMonth(endDate.getMonth() - 6);
         break;
       case '1y':
-        // Para 1 año, usar el rendimiento real que vemos en la imagen: +17.62%
-        periodChangePercent = 17.62; // Rendimiento anual real del S&P 500
-        startPrice = currentPrice / (1 + periodChangePercent / 100);
+        startDate.setFullYear(endDate.getFullYear() - 1);
         break;
     }
     
+    // Encontrar el precio de inicio más cercano a la fecha calculada
+    let startPrice = currentPrice;
+    let closestDate = '';
+    let minDiff = Infinity;
+    
+    for (const date of dates) {
+      const dateObj = new Date(date);
+      const diff = Math.abs(dateObj.getTime() - startDate.getTime());
+      
+      if (diff < minDiff && dateObj <= startDate) {
+        minDiff = diff;
+        closestDate = date;
+        startPrice = parseFloat(timeSeries[date]['4. close']);
+      }
+    }
+    
+    // Calcular rendimiento del período
     const periodChange = currentPrice - startPrice;
+    const periodChangePercent = (periodChange / startPrice) * 100;
+    
+    // Obtener cambio diario
+    const previousDate = dates[dates.length - 2];
+    const previousPrice = parseFloat(timeSeries[previousDate]['4. close']);
+    const dailyChange = currentPrice - previousPrice;
+    const dailyChangePercent = (dailyChange / previousPrice) * 100;
     
     return {
       currentPrice: parseFloat(currentPrice.toFixed(2)),
       startPrice: parseFloat(startPrice.toFixed(2)),
-      change: parseFloat(change.toFixed(2)),
-      changePercent: parseFloat(changePercent.toFixed(2)),
+      change: parseFloat(dailyChange.toFixed(2)),
+      changePercent: parseFloat(dailyChangePercent.toFixed(2)),
       periodChange: parseFloat(periodChange.toFixed(2)),
       periodChangePercent: parseFloat(periodChangePercent.toFixed(2)),
       volatility: parseFloat((Math.abs(periodChangePercent) * 0.3).toFixed(2)),
@@ -147,7 +168,9 @@ async function getRealSP500Data(period: string) {
       marketStatus: getMarketStatus(),
       lastUpdate: new Date().toISOString(),
       dailyData: generateDailyDataFromAlphaVantage(currentPrice, period),
-      dataProvider: 'Alpha Vantage (Real)'
+      dataProvider: 'Alpha Vantage (Real)',
+      startDate: closestDate,
+      endDate: currentDate
     };
     
   } catch (error) {
@@ -195,26 +218,62 @@ function generateDailyDataFromAlphaVantage(currentPrice: number, period: string)
 /**
  * Genera datos históricos de rendimiento simulados pero realistas
  */
-function generateHistoricalPerformance(startDate: Date, endDate: Date, period: string) {
+async function generateHistoricalPerformance(startDate: Date, endDate: Date, period: string) {
   const now = new Date();
-  // Precio actual realista del S&P 500 (basado en datos actuales)
+  
+  try {
+    // Intentar obtener datos reales de Yahoo Finance como fallback
+    const response = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?interval=1d&range=1y');
+    
+    if (response.ok) {
+      const data = await response.json();
+      const chartData = data.chart.result[0];
+      const quotes = chartData.indicators.quote[0];
+      const timestamps = chartData.timestamp;
+      
+      const lastIndex = quotes.close.length - 1;
+      const currentPrice = quotes.close[lastIndex];
+      
+      // Calcular precio de inicio según el período
+      let startIndex = 0;
+      const periodDays: { [key: string]: number } = {
+        '7d': 7,
+        '15d': 15,
+        '30d': 30,
+        '6m': 180,
+        '1y': 365
+      };
+      
+      const days = periodDays[period] || 30;
+      startIndex = Math.max(0, lastIndex - days);
+      const startPrice = quotes.close[startIndex];
+      
+      const change = currentPrice - startPrice;
+      const changePercent = (change / startPrice) * 100;
+      
+      return {
+        currentPrice: parseFloat(currentPrice.toFixed(2)),
+        startPrice: parseFloat(startPrice.toFixed(2)),
+        change: parseFloat(change.toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(2)),
+        periodChange: parseFloat(change.toFixed(2)),
+        periodChangePercent: parseFloat(changePercent.toFixed(2)),
+        volatility: parseFloat((Math.abs(changePercent) * 0.3).toFixed(2)),
+        dailyData: generateDailyVolatility(startDate, endDate, startPrice, currentPrice),
+        marketStatus: getMarketStatus(),
+        lastUpdate: now.toISOString(),
+        dataProvider: 'Yahoo Finance (Fallback)'
+      };
+    }
+  } catch (error) {
+    console.log('Fallback a datos simulados:', error);
+  }
+  
+  // Fallback final: datos simulados realistas
   const currentPrice = 6492.47; // Precio actual del S&P 500
-
-  // Precios históricos basados en rendimiento real del S&P 500
-  const historicalPrices: { [key: string]: number } = {
-    '7d': currentPrice * (1 - 0.005), // Pequeña caída típica semanal
-    '15d': currentPrice * (1 + 0.008), // Pequeña subida quincenal
-    '30d': currentPrice * (1 + 0.015), // Subida mensual típica
-    '6m': currentPrice * (1 + 0.045), // Subida semestral típica
-    '1y': currentPrice / (1 + 0.1762)  // Rendimiento anual real: +17.62% (precio de hace 1 año)
-  };
-
-  const startPrice = historicalPrices[period] || currentPrice * 0.95;
+  const startPrice = currentPrice * 0.95; // Aproximación
   const change = currentPrice - startPrice;
   const changePercent = (change / startPrice) * 100;
-
-  // Generar volatilidad diaria para el período
-  const dailyVolatility = generateDailyVolatility(startDate, endDate, startPrice, currentPrice);
 
   return {
     currentPrice: parseFloat(currentPrice.toFixed(2)),
@@ -223,11 +282,11 @@ function generateHistoricalPerformance(startDate: Date, endDate: Date, period: s
     changePercent: parseFloat(changePercent.toFixed(2)),
     periodChange: parseFloat(change.toFixed(2)),
     periodChangePercent: parseFloat(changePercent.toFixed(2)),
-    volatility: parseFloat((Math.abs(changePercent) * 0.3).toFixed(2)), // Volatilidad aproximada
-    dailyData: dailyVolatility,
+    volatility: parseFloat((Math.abs(changePercent) * 0.3).toFixed(2)),
+    dailyData: generateDailyVolatility(startDate, endDate, startPrice, currentPrice),
     marketStatus: getMarketStatus(),
     lastUpdate: now.toISOString(),
-    dataProvider: 'Simulado (Datos Reales)'
+    dataProvider: 'Simulado (Último Fallback)'
   };
 }
 
