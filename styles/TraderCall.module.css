@@ -1110,6 +1110,26 @@
   cursor: not-allowed;
 }
 
+.editButton {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.editButton:hover:not(:disabled) {
+  background: #d97706;
+}
+
+.editButton:disabled {
+  background: #6b7280;
+  cursor: not-allowed;
+}
+
 /* Sección Consultas/Comunidad */
 .comunidadContent {
   padding: 2rem;

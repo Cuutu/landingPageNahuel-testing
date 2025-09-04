@@ -485,6 +485,19 @@ const SubscriberView: React.FC = () => {
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
+
+  // Estados para edición de alertas
+  const [showEditAlert, setShowEditAlert] = useState(false);
+  const [editingAlert, setEditingAlert] = useState<any>(null);
+  const [editAlert, setEditAlert] = useState({
+    symbol: '',
+    action: 'BUY',
+    entryPrice: '',
+    stopLoss: '',
+    takeProfit: '',
+    analysis: ''
+  });
+  const [editLoading, setEditLoading] = useState(false);
   // Estados para imágenes del gráfico de TradingView
   const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
   const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
@@ -1212,6 +1225,125 @@ const SubscriberView: React.FC = () => {
     }
   };
 
+  // Función para manejar la edición de alertas
+  const handleEditAlert = (alert: any) => {
+    console.log('🔍 Editando alerta:', alert);
+
+    // Preparar los datos de la alerta para edición
+    setEditingAlert(alert);
+    setEditAlert({
+      symbol: alert.symbol || '',
+      action: alert.action || 'BUY',
+      entryPrice: alert.entryPrice ? alert.entryPrice.replace('$', '') : '',
+      stopLoss: alert.stopLoss ? alert.stopLoss.replace('$', '') : '',
+      takeProfit: alert.takeProfit ? alert.takeProfit.replace('$', '') : '',
+      analysis: alert.analysis || ''
+    });
+
+    // Mostrar el modal de edición
+    setShowEditAlert(true);
+  };
+
+  // Función para guardar los cambios de la alerta
+  const handleSaveEditAlert = async () => {
+    if (!editingAlert) return;
+
+    try {
+      setEditLoading(true);
+
+      // Validar datos
+      if (!editAlert.symbol.trim()) {
+        alert('❌ El símbolo es obligatorio');
+        return;
+      }
+
+      if (!editAlert.entryPrice || parseFloat(editAlert.entryPrice) <= 0) {
+        alert('❌ El precio de entrada debe ser mayor a 0');
+        return;
+      }
+
+      if (!editAlert.stopLoss || parseFloat(editAlert.stopLoss) <= 0) {
+        alert('❌ El stop loss debe ser mayor a 0');
+        return;
+      }
+
+      if (!editAlert.takeProfit || parseFloat(editAlert.takeProfit) <= 0) {
+        alert('❌ El take profit debe ser mayor a 0');
+        return;
+      }
+
+      console.log('🔄 Guardando cambios de alerta:', {
+        alertId: editingAlert.id,
+        changes: editAlert
+      });
+
+      const response = await fetch('/api/alerts/edit', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          alertId: editingAlert.id,
+          symbol: editAlert.symbol,
+          action: editAlert.action,
+          entryPrice: parseFloat(editAlert.entryPrice),
+          stopLoss: parseFloat(editAlert.stopLoss),
+          takeProfit: parseFloat(editAlert.takeProfit),
+          analysis: editAlert.analysis,
+          reason: 'Edición por administrador desde panel de control'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        console.log('✅ Alerta editada exitosamente:', result.alert);
+
+        // Recargar alertas para mostrar cambios
+        await loadAlerts();
+
+        // Cerrar modal
+        setShowEditAlert(false);
+        setEditingAlert(null);
+
+        alert('✅ ¡Alerta editada exitosamente!');
+      } else {
+        console.error('❌ Error del servidor:', result);
+
+        let errorMessage = 'No se pudo editar la alerta';
+
+        if (result.error) {
+          if (result.error.includes('Permisos insuficientes')) {
+            errorMessage = '❌ No tienes permisos para editar alertas. Solo los administradores pueden hacerlo.';
+          } else if (result.error.includes('No autorizado')) {
+            errorMessage = '❌ Sesión expirada. Por favor, inicia sesión nuevamente.';
+          } else if (result.error.includes('Alerta no encontrada')) {
+            errorMessage = '❌ La alerta no fue encontrada. Puede que haya sido eliminada.';
+          } else if (result.error.includes('no está activa')) {
+            errorMessage = '❌ La alerta ya no está activa.';
+          } else {
+            errorMessage = `❌ ${result.error}`;
+          }
+        } else if (result.message) {
+          errorMessage = `❌ ${result.message}`;
+        }
+
+        alert(errorMessage);
+      }
+    } catch (error) {
+      console.error('❌ Error al editar alerta:', error);
+
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('❌ Error de conexión. Verifica tu internet e intenta nuevamente.');
+      } else {
+        alert('❌ Error inesperado al editar la alerta. Por favor, intenta nuevamente.');
+      }
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
   // **NUEVO: Estado para manejo de rango temporal del portafolio**
   const [portfolioRange, setPortfolioRange] = useState('30d');
   const [portfolioData, setPortfolioData] = useState<any[]>([]);
@@ -1786,7 +1918,16 @@ const SubscriberView: React.FC = () => {
               </div>
               
               <div className={styles.alertActions}>
-                <button 
+                {userRole === 'admin' && (
+                  <button
+                    className={styles.editButton}
+                    onClick={() => handleEditAlert(alert)}
+                    title="Editar alerta"
+                  >
+                    ✏️ Editar
+                  </button>
+                )}
+                <button
                   className={styles.closeButton}
                   onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
                   disabled={userRole !== 'admin'}
@@ -2202,6 +2343,121 @@ const SubscriberView: React.FC = () => {
     );
   };
 
+  // Modal para editar alerta existente
+  const renderEditAlertModal = () => {
+    if (!showEditAlert) return null;
+
+    return (
+      <div className={styles.modalOverlay}>
+        <div className={styles.modalContent}>
+          <div className={styles.modalHeader}>
+            <h3>Editar Alerta - {editingAlert?.symbol}</h3>
+            <button
+              className={styles.closeModal}
+              onClick={() => {
+                setShowEditAlert(false);
+                setEditingAlert(null);
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className={styles.modalBody}>
+            <div className={styles.inputGroup}>
+              <label>Símbolo de la Acción</label>
+              <input
+                type="text"
+                placeholder="Ej: AAPL, TSLA, MSFT"
+                value={editAlert.symbol}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, symbol: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Precio de Entrada</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio de entrada"
+                value={editAlert.entryPrice}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, entryPrice: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Acción</label>
+              <select
+                value={editAlert.action}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, action: e.target.value }))}
+                className={styles.select}
+              >
+                <option value="BUY">BUY (Compra)</option>
+                <option value="SELL">SELL (Venta)</option>
+              </select>
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Stop Loss</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio de stop loss"
+                value={editAlert.stopLoss}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, stopLoss: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Take Profit</label>
+              <input
+                type="number"
+                step="0.01"
+                placeholder="Precio de take profit"
+                value={editAlert.takeProfit}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, takeProfit: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>Análisis / Descripción</label>
+              <textarea
+                placeholder="Descripción del análisis técnico o fundamental..."
+                value={editAlert.analysis}
+                onChange={(e) => setEditAlert(prev => ({ ...prev, analysis: e.target.value }))}
+                className={styles.textarea}
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <div className={styles.modalFooter}>
+            <button
+              onClick={() => {
+                setShowEditAlert(false);
+                setEditingAlert(null);
+              }}
+              className={styles.cancelButton}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={handleSaveEditAlert}
+              disabled={editLoading}
+              className={styles.createButton}
+            >
+              {editLoading ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderComunidad = () => <CommunityChat />;
 
   // Modal para crear nueva alerta
@@ -2412,6 +2668,7 @@ const SubscriberView: React.FC = () => {
 
       {/* Modales */}
       {renderCreateAlertModal()}
+      {renderEditAlertModal()}
       {showCreateReportModal && (
         <CreateReportModal 
           onClose={() => setShowCreateReportModal(false)}
