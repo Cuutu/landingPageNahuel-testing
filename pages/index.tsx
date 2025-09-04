@@ -974,154 +974,103 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Cursos Section - DESPUÉS DE LA SECCIÓN DE ESTADÍSTICAS */}
-        {(siteConfig?.cursos?.visible !== false) && (courseCards.length > 0 || entrenamientos.length > 0) && (
-          <section className={styles.cursos}>
-            <div className="container">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                viewport={{ once: true }}
-              >
-                <div className={styles.sectionHeader}>
-                  <h2>Cursos Destacados</h2>
-                  <p>Aprende trading con los mejores entrenamientos del mercado</p>
+        {/* Destacados Section - NUEVA SECCIÓN REEMPLAZANDO CURSOS DESTACADOS */}
+        <section className={styles.destacados}>
+          <div className="container">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className={styles.destacadosHeader}>
+                <h2>Destacados</h2>
+              </div>
+
+              <div className={styles.destacadosCarousel}>
+                {/* Flecha izquierda */}
+                <button className={styles.carouselArrow} onClick={() => {}}>
+                  <ChevronLeft size={24} />
+                </button>
+
+                <div className={styles.destacadosCards}>
+                  {/* Card Trader Call */}
+                  <motion.div
+                    className={styles.destacadoCard}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.1 }}
+                    viewport={{ once: true }}
+                  >
+                    <div className={styles.destacadoCardHeader}>
+                      <h3>Trader Call</h3>
+                      <div className={styles.destacadoCardMeta}>
+                        <span className={styles.destacadoTag + ' ' + styles.tagAlertas}>Alertas</span>
+                        <span className={styles.destacadoRating}>
+                          <Star size={16} fill="currentColor" />
+                          4,7
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className={styles.destacadoDescription}>
+                      Comenzá a recibir señales precisas de compra y venta fundamentadas en una estrategia de corto plazo y herramientas avanzadas de análisis técnico
+                    </p>
+                    
+                    <div className={styles.destacadoFooter}>
+                      <div className={styles.destacadoPrecio}>
+                        $15.000/mes
+                      </div>
+                      <button className={styles.destacadoButton}>
+                        Ver más
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
+
+                  {/* Card Swing Trading */}
+                  <motion.div
+                    className={styles.destacadoCard}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.2 }}
+                    viewport={{ once: true }}
+                  >
+                    <div className={styles.destacadoCardHeader}>
+                      <h3>Swing Trading</h3>
+                      <div className={styles.destacadoCardMeta}>
+                        <span className={styles.destacadoTag + ' ' + styles.tagEntrenamientos}>Entrenamientos</span>
+                        <span className={styles.destacadoRating}>
+                          <Star size={16} fill="currentColor" />
+                          4,8
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <p className={styles.destacadoDescription}>
+                      Entrenamiento intensivo de 3 meses donde aprenderás a implementar una estrategia efectiva de Swing Trading, con sesiones en vivo y acompañamiento personalizado
+                    </p>
+                    
+                    <div className={styles.destacadoFooter}>
+                      <div className={styles.destacadoPrecio}>
+                        $279.000
+                      </div>
+                      <button className={styles.destacadoButton}>
+                        Ver más
+                        <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </motion.div>
                 </div>
 
-                <div className={styles.cursosGrid}>
-                  {/* Mostrar tarjetas personalizadas si existen */}
-                  {courseCards.length > 0 ? (
-                    courseCards.filter(card => card.activo && card.destacado).map((card, index) => (
-                      <motion.div
-                        key={card._id}
-                        className={styles.cursoCard}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        viewport={{ once: true }}
-                        whileHover={{ y: -5 }}
-                      >
-                        <div className={styles.cursoHeader}>
-                          <div className={styles.cursoIcon}>
-                            <BookOpen size={24} />
-                          </div>
-                          <div className={styles.cursoMeta}>
-                            {card.categoria && (
-                              <span className={styles.cursoNivel}>{card.categoria}</span>
-                            )}
-                            <span className={styles.cursoRating}>
-                              <Star size={16} fill="currentColor" />
-                              Destacado
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <h3 className={styles.cursoTitulo}>{card.titulo}</h3>
-                        <p className={styles.cursoDescripcion}>{card.descripcion}</p>
-                        
-                        <div className={styles.cursoFooter}>
-                          <div className={styles.cursoPrecio}>
-                            <span className={styles.cursoPrecioText}>{card.precio}</span>
-                          </div>
-                          <a 
-                            href={card.urlDestino} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="btn btn-primary"
-                          >
-                            Ver Curso
-                            <ChevronRight size={16} />
-                          </a>
-                        </div>
-                      </motion.div>
-                    ))
-                  ) : (
-                    /* Mostrar entrenamientos por defecto si no hay tarjetas personalizadas */
-                    entrenamientos.filter(e => e.activo).map((curso, index) => (
-                      <motion.div
-                        key={curso._id}
-                        className={styles.cursoCard}
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: index * 0.1 }}
-                        viewport={{ once: true }}
-                        whileHover={{ y: -5 }}
-                      >
-                        <div className={styles.cursoHeader}>
-                          <div className={styles.cursoIcon}>
-                            <BookOpen size={24} />
-                          </div>
-                          <div className={styles.cursoMeta}>
-                            <span className={styles.cursoNivel}>{curso.contenido.nivelAcceso}</span>
-                            <span className={styles.cursoRating}>
-                              <Star size={16} fill="currentColor" />
-                              {curso.metricas.satisfaccion.toFixed(1)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        <h3 className={styles.cursoTitulo}>{curso.nombre}</h3>
-                        <p className={styles.cursoDescripcion}>{curso.descripcion}</p>
-                        
-                        <div className={styles.cursoStats}>
-                          <div className={styles.cursoStat}>
-                            <Clock size={16} />
-                            <span>{curso.duracion} horas</span>
-                          </div>
-                          <div className={styles.cursoStat}>
-                            <Users size={16} />
-                            <span>{curso.metricas.estudiantesActivos} estudiantes</span>
-                          </div>
-                          <div className={styles.cursoStat}>
-                            <Award size={16} />
-                            <span>{curso.contenido.modulos} módulos</span>
-                          </div>
-                        </div>
-                        
-                        <div className={styles.cursoFooter}>
-                          <div className={styles.cursoPrecio}>
-                            <span className={styles.cursoMoneda}>$</span>
-                            <span className={styles.cursoPrecioNum}>{curso.precio}</span>
-                          </div>
-                          <Link href={`/entrenamientos/${curso.tipo.toLowerCase()}`} className="btn btn-primary">
-                            Ver Curso
-                            <ChevronRight size={16} />
-                          </Link>
-                        </div>
-                      </motion.div>
-                    ))
-                  )}
-                </div>
-                
-                <motion.div
-                  className={styles.cursosAction}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  viewport={{ once: true }}
-                >
-                  {courseCards.length > 0 ? (
-                    <a 
-                      href="https://plataformacursos.lozanonahuel.com/" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="btn btn-outline btn-lg"
-                    >
-                      Plataforma de cursos
-                      <ChevronRight size={20} />
-                    </a>
-                  ) : (
-                    <Link href="https://plataformacursos.lozanonahuel.com/cursos" className="btn btn-outline btn-lg">
-                      Ver todos los cursos
-                      <ChevronRight size={20} />
-                    </Link>
-                  )}
-                </motion.div>
-              </motion.div>
-            </div>
-          </section>
-        )}
+                {/* Flecha derecha */}
+                <button className={styles.carouselArrow} onClick={() => {}}>
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
 
 

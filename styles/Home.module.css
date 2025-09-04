@@ -1704,4 +1704,224 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+/* === SECCIÓN DESTACADOS - FONDO OSCURO === */
+.destacados {
+  padding: 6rem 0;
+  background: #0a0a0a;
+  position: relative;
+  overflow: hidden;
+}
+
+.destacados::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.destacadosHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.destacadosHeader h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.destacadosCarousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.carouselArrow {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.carouselArrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.destacadosCards {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.destacadoCard {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 2rem;
+  flex: 1;
+  max-width: 500px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.destacadoCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.destacadoCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+
+.destacadoCardHeader h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.destacadoCardMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.destacadoTag {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tagAlertas {
+  background: #22c55e;
+  color: #ffffff;
+}
+
+.tagEntrenamientos {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.destacadoRating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #fbbf24;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.destacadoDescription {
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
+  opacity: 0.9;
+}
+
+.destacadoFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+}
+
+.destacadoPrecio {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.destacadoButton {
+  background: #22c55e;
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.destacadoButton:hover {
+  background: #16a34a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .destacadosHeader h2 {
+    font-size: 2.5rem;
+  }
+  
+  .destacadosCarousel {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .carouselArrow {
+    display: none;
+  }
+  
+  .destacadosCards {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .destacadoCard {
+    max-width: 100%;
+    padding: 2rem;
+  }
+  
+  .destacadoCardHeader h3 {
+    font-size: 1.5rem;
+  }
+  
+  .destacadoDescription {
+    font-size: 1rem;
+  }
+  
+  .destacadoFooter {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .destacadoButton {
+    justify-content: center;
+  }
 } 
