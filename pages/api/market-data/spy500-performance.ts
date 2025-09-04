@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
 /**
- * API endpoint para obtener rendimiento histórico del SP500 por períodos
+ * API endpoint para obtener rendimiento histórico del S&P 500 por períodos
  * GET /api/market-data/spy500-performance?period=7d|15d|30d|6m|1y
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { period = '30d' } = req.query;
 
-    console.log(`📊 Obteniendo rendimiento del SPY500 para período: ${period}`);
+    console.log(`📊 Obteniendo rendimiento del S&P 500 para período: ${period}`);
 
     // Calcular fechas según el período solicitado
     const endDate = new Date();
@@ -54,10 +54,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
   } catch (error) {
-    console.error('❌ Error al obtener rendimiento del SPY500:', error);
+    console.error('❌ Error al obtener rendimiento del S&P 500:', error);
 
     return res.status(500).json({
-      error: 'Error al obtener rendimiento del SPY500',
+      error: 'Error al obtener rendimiento del S&P 500',
       details: error instanceof Error ? error.message : 'Error desconocido'
     });
   }
@@ -68,9 +68,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
  */
 function generateHistoricalPerformance(startDate: Date, endDate: Date, period: string) {
   const now = new Date();
-  const currentPrice = 478.50 + (Math.random() - 0.5) * 20; // Precio actual
+  const currentPrice = 4850 + (Math.random() - 0.5) * 100; // Precio actual del S&P 500 (más realista)
 
-  // Precios históricos basados en rendimiento típico del SP500
+  // Precios históricos basados en rendimiento típico del S&P 500
   const historicalPrices: { [key: string]: number } = {
     '7d': currentPrice * (1 - 0.005), // Pequeña caída típica semanal
     '15d': currentPrice * (1 + 0.008), // Pequeña subida quincenal

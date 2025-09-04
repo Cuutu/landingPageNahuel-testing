@@ -98,7 +98,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 lineHeight: 1.4
               }}
             >
-              Compara tu inversión con el índice SP500
+              Compara tu inversión con el índice S&P 500
             </p>
           </div>
         </div>
@@ -241,7 +241,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                   color: '#FFFFFF'
                 }}
               >
-                SP500
+                S&P 500
               </p>
             </div>
           </div>
@@ -254,7 +254,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 color: 'rgba(255, 255, 255, 0.7)'
               }}
             >
-              Precio
+              Índice
             </p>
             <p
               style={{
@@ -264,7 +264,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 color: '#FFFFFF'
               }}
             >
-              ${sp500Data?.currentPrice?.toFixed(2) || '0.00'}
+              {sp500Data?.currentPrice?.toFixed(2) || '0.00'}
             </p>
             <div
               style={{
