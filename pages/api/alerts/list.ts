@@ -54,7 +54,7 @@ export default async function handler(
     // Construir filtro - REMOVIDO el filtro por createdBy para que todos vean todas las alertas
     const filter: any = {
       tipo: tipo
-    };
+    }; 
 
     if (status !== 'ALL') {
       filter.status = status;
