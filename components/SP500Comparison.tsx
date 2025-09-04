@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, BarChart3 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useSP500Performance, SP500Data, ServicePerformanceData } from '@/hooks/useSP500Performance';
 
 interface SP500ComparisonProps {
