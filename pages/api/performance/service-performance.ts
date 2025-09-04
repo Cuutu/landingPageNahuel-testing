@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { connectToDatabase } from '@/lib/mongodb';
+import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
 
 interface ServiceMetrics {
@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`📊 Calculando rendimiento del servicio para período: ${period}, tipo: ${tipo}`);
 
-    await connectToDatabase();
+    await dbConnect();
 
     // Calcular fecha de inicio según el período
     const endDate = new Date();
@@ -76,7 +76,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Cache-Control', 'public, max-age=1800'); // 30 minutos
 
     return res.status(200).json({
-      period: period,
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       ...metrics,
