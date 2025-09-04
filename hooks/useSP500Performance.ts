@@ -53,43 +53,49 @@ export function useSP500Performance(period: string = '30d') {
 
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
-      // Aquí calcularemos el rendimiento del servicio basado en las alertas
-      // Por ahora usamos datos simulados basados en las métricas existentes
+      // Obtener métricas reales del servicio desde la base de datos
+      const response = await fetch(`/api/performance/service-performance?period=${selectedPeriod}&tipo=TraderCall`);
 
-      // Obtener métricas del servicio (esto debería venir de tu API de métricas)
-      const mockServiceData: ServicePerformanceData = {
-        totalReturn: 0,
-        totalReturnPercent: 0,
-        activeAlerts: 0,
-        closedAlerts: 0,
-        winningAlerts: 0,
-        losingAlerts: 0,
-        winRate: 0,
-        averageGain: 0,
-        averageLoss: 0,
+      if (!response.ok) {
+        throw new Error('Error al obtener métricas del servicio');
+      }
+
+      const serviceMetrics = await response.json();
+
+      const serviceData: ServicePerformanceData = {
+        totalReturn: serviceMetrics.totalReturn,
+        totalReturnPercent: serviceMetrics.totalReturnPercent,
+        activeAlerts: serviceMetrics.activeAlerts,
+        closedAlerts: serviceMetrics.closedAlerts,
+        winningAlerts: serviceMetrics.winningAlerts,
+        losingAlerts: serviceMetrics.losingAlerts,
+        winRate: serviceMetrics.winRate,
+        averageGain: serviceMetrics.averageGain,
+        averageLoss: serviceMetrics.averageLoss,
         period: selectedPeriod
       };
 
-      // Calcular rendimientos basados en el período
-      const baseReturn = 12.5; // Rendimiento base mensual
-      const months = getMonthsFromPeriod(selectedPeriod);
-
-      mockServiceData.totalReturnPercent = baseReturn * months + (Math.random() - 0.5) * 5;
-      mockServiceData.totalReturn = 10000 * (mockServiceData.totalReturnPercent / 100);
-
-      // Métricas adicionales simuladas
-      mockServiceData.activeAlerts = Math.floor(Math.random() * 15) + 5;
-      mockServiceData.closedAlerts = Math.floor(Math.random() * 50) + 20;
-      mockServiceData.winningAlerts = Math.floor(mockServiceData.closedAlerts * 0.65);
-      mockServiceData.losingAlerts = mockServiceData.closedAlerts - mockServiceData.winningAlerts;
-      mockServiceData.winRate = (mockServiceData.winningAlerts / mockServiceData.closedAlerts) * 100;
-      mockServiceData.averageGain = 8.5 + Math.random() * 4;
-      mockServiceData.averageLoss = -5.2 + Math.random() * 2;
-
-      setServiceData(mockServiceData);
+      setServiceData(serviceData);
+      setError(null);
 
     } catch (err) {
       console.error('Error calculating service performance:', err);
+      setError(err instanceof Error ? err.message : 'Error al calcular rendimiento del servicio');
+
+      // Fallback a datos simulados si hay error
+      const fallbackData: ServicePerformanceData = {
+        totalReturn: 1250,
+        totalReturnPercent: 12.5,
+        activeAlerts: 8,
+        closedAlerts: 25,
+        winningAlerts: 16,
+        losingAlerts: 9,
+        winRate: 64.0,
+        averageGain: 8.5,
+        averageLoss: 5.2,
+        period: selectedPeriod
+      };
+      setServiceData(fallbackData);
     }
   };
 

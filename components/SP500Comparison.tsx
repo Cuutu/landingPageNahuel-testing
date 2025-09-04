@@ -79,47 +79,127 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
   };
 
   return (
-    <div className={`sp500-comparison ${className}`}>
-      <div className="comparison-header">
+    <motion.div
+      className={`sp500-comparison ${className}`}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+    >
+      <motion.div
+        className="comparison-header"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
         <div className="header-content">
-          <div className="title-section">
-            <div className="title-icon">
+          <motion.div
+            className="title-section"
+            initial={{ opacity: 0, x: -30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <motion.div
+              className="title-icon"
+              animate={{
+                rotate: [0, 10, -10, 0],
+                scale: [1, 1.1, 1.1, 1]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 3
+              }}
+            >
               📈
-            </div>
+            </motion.div>
             <div className="title-text">
               <h3>Rendimiento Comparado</h3>
               <p>Compara tu inversión con el índice SP500</p>
             </div>
-          </div>
-          <div className="header-actions">
-            <button className="refresh-button" onClick={handleRefresh} title="Actualizar datos">
+          </motion.div>
+          <motion.div
+            className="header-actions"
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <motion.button
+              className="refresh-button"
+              onClick={handleRefresh}
+              title="Actualizar datos"
+              whileHover={{ scale: 1.1, rotate: 180 }}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            >
               <RefreshCw size={16} />
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
 
-        <div className="period-selector">
-          {periods.map(period => (
-            <button
+        <motion.div
+          className="period-selector"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          {periods.map((period, index) => (
+            <motion.button
               key={period.value}
               className={`period-button ${selectedPeriod === period.value ? 'active' : ''}`}
               onClick={() => handlePeriodChange(period.value)}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                duration: 0.4,
+                delay: 0.8 + index * 0.1,
+                type: "spring",
+                stiffness: 300
+              }}
+              whileHover={{
+                scale: 1.05,
+                transition: { type: "spring", stiffness: 400 }
+              }}
+              whileTap={{ scale: 0.95 }}
             >
               {period.short}
-            </button>
+            </motion.button>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="comparison-content">
+      <motion.div
+        className="comparison-content"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8, delay: 1 }}
+      >
         {/* SP500 Performance */}
-        <div className="performance-card sp500-card">
+        <motion.div
+          className="performance-card sp500-card"
+          initial={{ opacity: 0, x: -50, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 1.2, type: "spring", stiffness: 300 }}
+          whileHover={{
+            scale: 1.02,
+            transition: { type: "spring", stiffness: 400 }
+          }}
+        >
           <div className="card-gradient-bg"></div>
           <div className="card-content-wrapper">
             <div className="card-header">
-              <div className="card-icon">
+              <motion.div
+                className="card-icon"
+                animate={{
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 5
+                }}
+              >
                 <BarChart3 size={24} />
-              </div>
+              </motion.div>
               <div className="card-info">
                 <h4>SP500</h4>
                 <span className="card-subtitle">Índice de referencia</span>
@@ -127,15 +207,25 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
             </div>
             <div className="card-content">
               <div className="price-section">
-                <div className="current-price">
+                <motion.div
+                  className="current-price"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: 1.5 }}
+                >
                   ${(sp500Data?.currentPrice ?? 0).toFixed(2)}
-                </div>
+                </motion.div>
                 <div className="market-status">
                   <div className="status-dot"></div>
                   <span>Mercado abierto</span>
                 </div>
               </div>
-              <div className={`performance-change ${getPerformanceColor(sp500Data?.changePercent ?? 0)}`}>
+              <motion.div
+                className={`performance-change ${getPerformanceColor(sp500Data?.changePercent ?? 0)}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.7 }}
+              >
                 {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
                 <span className="change-value">
                   {(sp500Data?.changePercent ?? 0) >= 0 ? '+' : ''}{(sp500Data?.changePercent ?? 0).toFixed(2)}%
@@ -143,27 +233,62 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 <span className="change-amount">
                   ({(sp500Data?.change ?? 0) >= 0 ? '+' : ''}${(sp500Data?.change ?? 0).toFixed(2)})
                 </span>
-              </div>
+              </motion.div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* VS Indicator */}
-        <div className="vs-indicator">
-          <div className="vs-circle">
+        <motion.div
+          className="vs-indicator"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6, delay: 1.4, type: "spring", stiffness: 300 }}
+        >
+          <motion.div
+            className="vs-circle"
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 2, -2, 0]
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              repeatDelay: 2
+            }}
+          >
             <span>VS</span>
-          </div>
+          </motion.div>
           <div className="vs-line"></div>
-        </div>
+        </motion.div>
 
         {/* Service Performance */}
-        <div className="performance-card service-card">
+        <motion.div
+          className="performance-card service-card"
+          initial={{ opacity: 0, x: 50, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 1.2, type: "spring", stiffness: 300 }}
+          whileHover={{
+            scale: 1.02,
+            transition: { type: "spring", stiffness: 400 }
+          }}
+        >
           <div className="card-gradient-bg"></div>
           <div className="card-content-wrapper">
             <div className="card-header">
-              <div className="card-icon">
+              <motion.div
+                className="card-icon"
+                animate={{
+                  rotate: [0, -5, 5, 0],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  repeatDelay: 5
+                }}
+              >
                 <TrendingUp size={24} />
-              </div>
+              </motion.div>
               <div className="card-info">
                 <h4>Mi Servicio</h4>
                 <span className="card-subtitle">Tu inversión</span>
@@ -171,15 +296,25 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
             </div>
             <div className="card-content">
               <div className="price-section">
-                <div className="current-price">
+                <motion.div
+                  className="current-price"
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: 0.5, delay: 1.5 }}
+                >
                   ${(serviceData?.totalReturn ?? 0).toFixed(2)}
-                </div>
+                </motion.div>
                 <div className="market-status">
                   <div className="status-dot active"></div>
                   <span>Actualizado</span>
                 </div>
               </div>
-              <div className={`performance-change ${getPerformanceColor(serviceData?.totalReturnPercent ?? 0)}`}>
+              <motion.div
+                className={`performance-change ${getPerformanceColor(serviceData?.totalReturnPercent ?? 0)}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 1.7 }}
+              >
                 {getPerformanceIcon(serviceData?.totalReturnPercent ?? 0)}
                 <span className="change-value">
                   {(serviceData?.totalReturnPercent ?? 0) >= 0 ? '+' : ''}{(serviceData?.totalReturnPercent ?? 0).toFixed(2)}%
@@ -187,17 +322,33 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 <span className="change-amount">
                   (Retorno total)
                 </span>
-              </div>
+              </motion.div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Comparison Summary */}
-        <div className="comparison-summary">
-          <div className="summary-header">
-            <h4>📊 Análisis Comparativo</h4>
+        <motion.div
+          className="comparison-summary"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 1.8 }}
+        >
+          <motion.div
+            className="summary-header"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6, delay: 2 }}
+          >
+            <motion.h4
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 2.2 }}
+            >
+              📊 Análisis Comparativo
+            </motion.h4>
             <p>Período: {periods.find(p => p.value === selectedPeriod)?.label}</p>
-          </div>
+          </motion.div>
 
           <div className="summary-grid">
             <div className="summary-card">
@@ -261,9 +412,9 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 
