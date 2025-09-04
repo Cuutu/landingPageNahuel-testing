@@ -13,6 +13,7 @@ import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import AlertExamplesCarousel from '@/components/AlertExamplesCarousel';
 import HistoricalAlertsTable from '@/components/HistoricalAlertsTable';
 import FAQAccordion from '@/components/FAQAccordion';
+import SP500Comparison from '@/components/SP500Comparison';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -1268,6 +1269,9 @@ const SubscriberView: React.FC = () => {
                   </div>
                 );
               })()}
+
+              {/* Comparación con SP500 */}
+              <SP500Comparison />
 
               {/* Actividad Reciente */}
               <div className={styles.activitySection}>
