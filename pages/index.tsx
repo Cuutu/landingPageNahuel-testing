@@ -1021,10 +1021,10 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                       <div className={styles.destacadoPrecio}>
                         $15.000/mes
                       </div>
-                      <button className={styles.destacadoButton}>
+                      <Link href="/alertas/trader-call" className={styles.destacadoButton}>
                         Ver más
                         <ChevronRight size={16} />
-                      </button>
+                      </Link>
                     </div>
                   </motion.div>
 
@@ -1055,10 +1055,10 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                       <div className={styles.destacadoPrecio}>
                         $279.000
                       </div>
-                      <button className={styles.destacadoButton}>
+                      <Link href="/entrenamientos/swing-trading" className={styles.destacadoButton}>
                         Ver más
                         <ChevronRight size={16} />
-                      </button>
+                      </Link>
                     </div>
                   </motion.div>
                 </div>
