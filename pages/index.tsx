@@ -224,6 +224,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
 
   // Hook para manejar la frecuencia del popup
   const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
@@ -322,6 +323,12 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
       foto: '/testimonios/roberto.jpg'
     }
   ];
+
+  // Función para obtener colores de avatar según el índice
+  const getAvatarColor = (index: number) => {
+    const colors = ['#6366f1', '#ef4444', '#22c55e']; // Azul, Rojo, Verde
+    return colors[index % colors.length];
+  };
 
   const servicios = [
     {
@@ -1240,6 +1247,75 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
 
                 {/* Flecha derecha */}
                 <button className={styles.carouselArrow} onClick={() => {}}>
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Nueva Sección Testimonios Carrusel */}
+        <section className={styles.testimoniosCarrusel}>
+          <div className="container">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className={styles.testimoniosCarruselContainer}>
+                {/* Flecha izquierda */}
+                <button 
+                  className={styles.carruselFlecha} 
+                  onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimonios.length - 1 : prev - 1)}
+                >
+                  <ChevronLeft size={24} />
+                </button>
+
+                {/* Testimonios */}
+                <div className={styles.testimoniosCarruselCards}>
+                  {testimonios.map((testimonio, index) => (
+                    <motion.div
+                      key={testimonio.nombre}
+                      className={`${styles.testimonioCarruselCard} ${index === currentTestimonialIndex ? styles.active : ''}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      <div className={styles.testimonioCarruselAvatar}>
+                        <div 
+                          className={styles.avatarCircle}
+                          style={{ backgroundColor: getAvatarColor(index) }}
+                        >
+                          {testimonio.nombre.charAt(0)}
+                        </div>
+                      </div>
+                      
+                      <h4 className={styles.testimonioCarruselNombre}>{testimonio.nombre}</h4>
+                      
+                      <div className={styles.testimonioCarruselRating}>
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={16} 
+                            fill={i < testimonio.calificacion ? "#fbbf24" : "none"}
+                            stroke={i < testimonio.calificacion ? "#fbbf24" : "#ffffff"}
+                            className={styles.ratingStar}
+                          />
+                        ))}
+                      </div>
+                      
+                      <p className={styles.testimonioCarruselTexto}>"{testimonio.texto}"</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Flecha derecha */}
+                <button 
+                  className={styles.carruselFlecha} 
+                  onClick={() => setCurrentTestimonialIndex(prev => prev === testimonios.length - 1 ? 0 : prev + 1)}
+                >
                   <ChevronRight size={24} />
                 </button>
               </div>

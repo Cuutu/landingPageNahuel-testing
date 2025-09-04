@@ -2145,4 +2145,158 @@
   .destacadoNuevoButton {
     justify-content: center;
   }
+}
+
+/* === NUEVA SECCIÓN TESTIMONIOS CARRUSEL === */
+.testimoniosCarrusel {
+  padding: 6rem 0;
+  background: #8b5cf6;
+  position: relative;
+  overflow: hidden;
+}
+
+.testimoniosCarruselContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.carruselFlecha {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  padding: 1rem;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.carruselFlecha:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.testimoniosCarruselCards {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.testimonioCarruselCard {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 2rem;
+  flex: 1;
+  max-width: 350px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.testimonioCarruselCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.testimonioCarruselCard.active {
+  transform: scale(1.05);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.testimonioCarruselAvatar {
+  margin-bottom: 1.5rem;
+}
+
+.avatarCircle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 auto;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.testimonioCarruselNombre {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+}
+
+.testimonioCarruselRating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-bottom: 1.5rem;
+}
+
+.ratingStar {
+  transition: all 0.2s ease;
+}
+
+.testimonioCarruselTexto {
+  color: #ffffff;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+  opacity: 0.9;
+  font-style: italic;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+
+/* Responsive para testimonios carrusel */
+@media (max-width: 768px) {
+  .testimoniosCarruselContainer {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .testimoniosCarruselCards {
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+  }
+  
+  .testimonioCarruselCard {
+    max-width: 100%;
+    padding: 2rem;
+  }
+  
+  .carruselFlecha {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+  }
+  
+  .carruselFlecha:first-of-type {
+    left: 1rem;
+  }
+  
+  .carruselFlecha:last-of-type {
+    right: 1rem;
+  }
 } 
