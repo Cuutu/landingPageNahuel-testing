@@ -5,6 +5,8 @@ export interface SP500Data {
   startPrice: number;
   change: number;
   changePercent: number;
+  periodChange?: number;
+  periodChangePercent?: number;
   volatility: number;
   period: string;
   marketStatus: string;

@@ -279,10 +279,10 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 style={{
                   fontSize: '0.875rem',
                   fontWeight: 600,
-                  color: (sp500Data?.changePercent ?? 0) >= 0 ? '#10B981' : '#EF4444'
+                  color: (sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0) >= 0 ? '#10B981' : '#EF4444'
                 }}
               >
-                {(sp500Data?.changePercent ?? 0) >= 0 ? '+' : ''}{(sp500Data?.changePercent ?? 0).toFixed(2)}%
+                {(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0) >= 0 ? '+' : ''}{(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0).toFixed(2)}%
               </span>
             </div>
           </div>
@@ -498,11 +498,11 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
               style={{
                 fontSize: '1.125rem',
                 fontWeight: 600,
-                color: ((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.changePercent ?? 0)) >= 0 ? '#10B981' : '#EF4444'
+                color: ((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)) >= 0 ? '#10B981' : '#EF4444'
               }}
             >
-              {((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.changePercent ?? 0)) >= 0 ? '+' : ''}
-              {((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.changePercent ?? 0)).toFixed(2)}%
+              {((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)) >= 0 ? '+' : ''}
+              {((serviceData?.totalReturnPercent ?? 0) - (sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)).toFixed(2)}%
             </div>
           </div>
 
