@@ -6,7 +6,7 @@
 async function testSP500API() {
   console.log('🧪 Probando API del S&P 500...\n');
   
-  const baseUrl = 'http://localhost:3000'; // Cambiar por tu URL de Vercel en producción
+  const baseUrl = 'https://lozanonahuel.vercel.app'; // Cambiar por tu URL de Vercel en producción
   const periods = ['7d', '15d', '30d', '6m', '1y'];
   
   for (const period of periods) {

@@ -206,7 +206,7 @@ function generateHistoricalPerformance(startDate: Date, endDate: Date, period: s
     '15d': currentPrice * (1 + 0.008), // Pequeña subida quincenal
     '30d': currentPrice * (1 + 0.015), // Subida mensual típica
     '6m': currentPrice * (1 + 0.045), // Subida semestral típica
-    '1y': currentPrice * (1 - 0.1762)  // Rendimiento anual real: +17.62% (precio de hace 1 año)
+    '1y': currentPrice / (1 + 0.1762)  // Rendimiento anual real: +17.62% (precio de hace 1 año)
   };
 
   const startPrice = historicalPrices[period] || currentPrice * 0.95;
