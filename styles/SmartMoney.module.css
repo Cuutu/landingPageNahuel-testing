@@ -1495,3 +1495,236 @@
   background: #9ca3af;
   cursor: not-allowed;
 }
+
+/* Estilos para la sección de gráficos en el dashboard */
+.chartSection {
+  margin-top: 2rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.chartHeader h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chartActions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.viewDetailedButton {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.viewDetailedButton:hover {
+  background: var(--primary-hover);
+}
+
+.dashboardChartContainer {
+  background: var(--bg-primary);
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.dashboardChartLayout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 2rem;
+  align-items: center;
+}
+
+.chartLegend {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+}
+
+.chartLegend h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.legendItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
+.legendColor {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.legendSymbol {
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.legendProfit {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.emptyChartState {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.emptyChartIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.emptyChartState h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.125rem;
+  color: var(--text-primary);
+}
+
+.emptyChartState p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Tooltip 3D Mejorado */
+.chartTooltip3D {
+  position: absolute;
+  display: none;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  min-width: 250px;
+  max-width: 300px;
+  animation: tooltipFadeIn 0.3s ease;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tooltipContent3D {
+  color: var(--text-primary);
+}
+
+.tooltipContent3D h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  padding-bottom: 0.5rem;
+}
+
+.tooltipDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.tooltipRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.tooltipRow span:first-child {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tooltipRow span:last-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.tooltipAction {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.buyAction {
+  background: var(--success-color);
+  color: white;
+}
+
+.sellAction {
+  background: var(--error-color);
+  color: white;
+}
+
+.tooltipPnl {
+  font-weight: 700;
+}
+
+.profit {
+  color: var(--success-color);
+}
+
+.loss {
+  color: var(--error-color);
+}
+
+.tooltipStatus {
+  font-weight: 600;
+}
+
+.activeStatus {
+  color: var(--success-color);
+}
+
+.closedStatus {
+  color: var(--error-color);
+}

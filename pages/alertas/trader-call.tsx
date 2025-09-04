@@ -1394,101 +1394,276 @@ const SubscriberView: React.FC = () => {
   };
 
   // Funciones de renderizado
-  const renderDashboard = () => (
-    <div className={styles.dashboardContent}>
-      <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
-      
-      {/* Métricas principales */}
-      <div className={styles.modernMetricsGrid}>
-        <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconContainer}>
-              <Activity size={20} />
-            </div>
-            <div className={styles.statusDot}></div>
-          </div>
-          <div className={styles.metricContent}>
-            <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
-            <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
-            <p className={styles.metricSubtext}>Posiciones abiertas</p>
-          </div>
-        </div>
-        
-        <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconContainer}>
-              <TrendingUp size={20} />
-            </div>
-            <div className={styles.statusDot}></div>
-          </div>
-          <div className={styles.metricContent}>
-            <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
-            <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
-            <p className={styles.metricSubtext}>Cerradas con ganancia</p>
-          </div>
-        </div>
-        
-        <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconContainer}>
-              <TrendingDown size={20} />
-            </div>
-            <div className={styles.statusDot}></div>
-          </div>
-          <div className={styles.metricContent}>
-            <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
-            <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
-            <p className={styles.metricSubtext}>Cerradas con pérdida</p>
-          </div>
-        </div>
-        
-        <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
-          <div className={styles.cardHeader}>
-            <div className={styles.iconContainer}>
-              <BarChart3 size={20} />
-            </div>
-            <div className={styles.statusDot}></div>
-          </div>
-          <div className={styles.metricContent}>
-            <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
-            <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
-            <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
-          </div>
-        </div>
-      </div>
+  // Función auxiliar para crear datos del gráfico de torta
+  const createPieChartData = (alerts: any[]) => {
+    // Paleta de colores dinámicos para cada alerta
+    const colorPalette = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+      '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
+    ];
 
-      {/* Actividad Reciente */}
-      <div className={styles.activitySection}>
-        <div className={styles.activityHeader}>
-          <h3>Actividad Reciente</h3>
-          <div className={styles.activityActions}>
-            <button 
-              className={styles.viewAllButton}
-              onClick={() => setActiveTab('seguimiento')}
-            >
-              Ver toda la actividad
-            </button>
-            <button 
-              className={styles.refreshButton}
-              onClick={() => refreshActivity()}
-              disabled={refreshingActivity}
-            >
-              <Activity size={16} />
-              {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
-            </button>
-          </div>
-        </div>
-        <div className={styles.activityList}>
-          {recentActivity.slice(0, 5).map((activity, index) => (
-            <div key={activity.id || index} className={styles.activityItem}>
-              <span className={styles.activityTime}>{activity.timestamp}</span>
-              <span className={styles.activityMessage}>{activity.message}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+    // Preparar datos para el gráfico de torta 3D - Solo alertas activas
+    const chartData = alerts.map((alert, index) => {
+      const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
+      return {
+        id: alert.id,
+        symbol: alert.symbol,
+        profit: profitValue,
+        status: alert.status,
+        entryPrice: alert.entryPrice,
+        currentPrice: alert.currentPrice,
+        stopLoss: alert.stopLoss,
+        takeProfit: alert.takeProfit,
+        action: alert.action,
+        date: alert.date,
+        analysis: alert.analysis,
+        // Color único para cada alerta
+        color: colorPalette[index % colorPalette.length],
+        // Color más oscuro para efecto 3D
+        darkColor: colorPalette[index % colorPalette.length] + '80'
+      };
+    });
+
+    // Calcular el tamaño de cada segmento basado en el profit
+    const totalProfit = chartData.reduce((sum, alert) => sum + Math.abs(alert.profit), 0);
+    const chartSegments = chartData.map((alert, index) => {
+      const size = totalProfit > 0 ? (Math.abs(alert.profit) / totalProfit) * 100 : 100 / chartData.length;
+      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + (Math.abs(a.profit) / totalProfit) * 360, 0);
+      const endAngle = startAngle + (Math.abs(alert.profit) / totalProfit) * 360;
+
+      return {
+        ...alert,
+        size,
+        startAngle,
+        endAngle,
+        centerAngle: (startAngle + endAngle) / 2
+      };
+    });
+
+    return chartSegments;
+  };
+
+  // Función auxiliar para renderizar el gráfico de torta
+  const renderPieChart = (chartSegments: any[]) => (
+    <div className={styles.pieChart3D}>
+      <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
+        {/* Sombra del gráfico para efecto 3D */}
+        <defs>
+          <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="3" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.3"/>
+          </filter>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+            <feMerge>
+              <feMergeNode in="coloredBlur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* Fondo del gráfico con efecto 3D */}
+        <circle cx="150" cy="150" r="120" className={styles.chartBackground3D} />
+
+        {/* Segmentos del gráfico 3D */}
+        {chartSegments.map((segment, index) => (
+          <g key={segment.id} className={styles.chartSegment3D}>
+            {/* Sombra del segmento */}
+            <path
+              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              fill={segment.darkColor}
+              filter="url(#shadow3D)"
+              className={styles.segmentShadow}
+            />
+            {/* Segmento principal */}
+            <path
+              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              fill={segment.color}
+              className={styles.segmentPath3D}
+              onMouseEnter={(e) => showTooltip(e, segment)}
+              onMouseLeave={hideTooltip}
+              filter="url(#glow)"
+            />
+            {/* Borde del segmento */}
+            <path
+              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2"
+              opacity="0.3"
+              className={styles.segmentBorder}
+            />
+            {/* Etiqueta del símbolo */}
+            {segment.size > 5 && (
+              <text
+                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 80}
+                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 80}
+                className={styles.segmentLabel}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="12"
+                fontWeight="bold"
+                fill="#ffffff"
+                filter="url(#shadow3D)"
+              >
+                {segment.symbol}
+              </text>
+            )}
+          </g>
+        ))}
+
+        {/* Círculo central con efecto 3D */}
+        <circle cx="150" cy="150" r="40" className={styles.chartCenter3D} />
+      </svg>
     </div>
   );
+
+  const renderDashboard = () => {
+    // Obtener datos para el gráfico de torta (solo alertas activas)
+    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
+    const chartSegments = createPieChartData(alertasActivas);
+
+    return (
+      <div className={styles.dashboardContent}>
+        <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
+
+        {/* Métricas principales */}
+        <div className={styles.modernMetricsGrid}>
+          <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
+            <div className={styles.cardHeader}>
+              <div className={styles.iconContainer}>
+                <Activity size={20} />
+              </div>
+              <div className={styles.statusDot}></div>
+            </div>
+            <div className={styles.metricContent}>
+              <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
+              <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
+              <p className={styles.metricSubtext}>Posiciones abiertas</p>
+            </div>
+          </div>
+
+          <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
+            <div className={styles.cardHeader}>
+              <div className={styles.iconContainer}>
+                <TrendingUp size={20} />
+              </div>
+              <div className={styles.statusDot}></div>
+            </div>
+            <div className={styles.metricContent}>
+              <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
+              <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
+              <p className={styles.metricSubtext}>Cerradas con ganancia</p>
+            </div>
+          </div>
+
+          <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
+            <div className={styles.cardHeader}>
+              <div className={styles.iconContainer}>
+                <TrendingDown size={20} />
+              </div>
+              <div className={styles.statusDot}></div>
+            </div>
+            <div className={styles.metricContent}>
+              <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
+              <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
+              <p className={styles.metricSubtext}>Cerradas con pérdida</p>
+            </div>
+          </div>
+
+          <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
+            <div className={styles.cardHeader}>
+              <div className={styles.iconContainer}>
+                <BarChart3 size={20} />
+              </div>
+              <div className={styles.statusDot}></div>
+            </div>
+            <div className={styles.metricContent}>
+              <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
+              <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
+              <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Gráfico de Distribución de Alertas */}
+        <div className={styles.chartSection}>
+          <div className={styles.chartHeader}>
+            <h3>📊 Distribución de Alertas Activas</h3>
+            <div className={styles.chartActions}>
+              <button
+                className={styles.viewDetailedButton}
+                onClick={() => setActiveTab('seguimiento')}
+              >
+                Ver Análisis Detallado
+              </button>
+            </div>
+          </div>
+          <div className={styles.dashboardChartContainer}>
+            {alertasActivas.length > 0 ? (
+              <div className={styles.dashboardChartLayout}>
+                {renderPieChart(chartSegments)}
+                <div className={styles.chartLegend}>
+                  <h4>Alertas por Símbolo</h4>
+                  <div className={styles.legendItems}>
+                    {chartSegments.map((segment, index) => (
+                      <div key={segment.id} className={styles.legendItem}>
+                        <div
+                          className={styles.legendColor}
+                          style={{ backgroundColor: segment.color }}
+                        ></div>
+                        <span className={styles.legendSymbol}>{segment.symbol}</span>
+                        <span className={styles.legendProfit}>
+                          {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className={styles.emptyChartState}>
+                <div className={styles.emptyChartIcon}>📊</div>
+                <h4>No hay alertas activas</h4>
+                <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actividad Reciente */}
+        <div className={styles.activitySection}>
+          <div className={styles.activityHeader}>
+            <h3>Actividad Reciente</h3>
+            <div className={styles.activityActions}>
+              <button
+                className={styles.viewAllButton}
+                onClick={() => setActiveTab('seguimiento')}
+              >
+                Ver toda la actividad
+              </button>
+              <button
+                className={styles.refreshButton}
+                onClick={() => refreshActivity()}
+                disabled={refreshingActivity}
+              >
+                <Activity size={16} />
+                {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
+              </button>
+            </div>
+          </div>
+          <div className={styles.activityList}>
+            {recentActivity.slice(0, 5).map((activity, index) => (
+              <div key={activity.id || index} className={styles.activityItem}>
+                <span className={styles.activityTime}>{activity.timestamp}</span>
+                <span className={styles.activityMessage}>{activity.message}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderSeguimientoAlertas = () => {
     // Solo mostrar alertas activas en el seguimiento 3D
