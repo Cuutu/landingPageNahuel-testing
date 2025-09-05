@@ -1452,7 +1452,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                   </div>
                   <h4 className={styles.testimonioNuevaNombre}>María García</h4>
                   <div className={styles.ratingStarsTestimonios}>
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <Star 
                         key={i} 
                         size={16} 
@@ -1471,7 +1471,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                   </div>
                   <h4 className={styles.testimonioNuevaNombre}>Roberto Silva</h4>
                   <div className={styles.ratingStarsTestimonios}>
-                    {[...Array(5)].map((_, i) => (
+                    {[...Array(4)].map((_, i) => (
                       <Star 
                         key={i} 
                         size={16} 
