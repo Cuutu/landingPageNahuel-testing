@@ -1427,26 +1427,62 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               </button>
               
               <div className={styles.testimoniosNuevaCards}>
-                {testimoniosNuevos.slice(currentTestimonialIndex, currentTestimonialIndex + 3).map((testimonio, index) => (
-                  <div key={index} className={styles.testimonioNuevaCard}>
-                    <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: testimonio.avatarColor }}>
-                      {testimonio.nombre.charAt(0)}
-                    </div>
-                    <h4 className={styles.testimonioNuevaNombre}>{testimonio.nombre}</h4>
-                    <div className={styles.ratingStarsTestimonios}>
-                      {[...Array(5)].map((_, i) => (
-                        <Star 
-                          key={i} 
-                          size={16} 
-                          className={styles.ratingStarTestimonios}
-                          fill={i < testimonio.calificacion ? '#fbbf24' : 'none'}
-                        />
-                      ))}
-                      <span className={styles.ratingNumberTestimonios}>{testimonio.calificacion}</span>
-                    </div>
-                    <p className={styles.testimonioNuevaTexto}>"{testimonio.texto}"</p>
+                <div className={styles.testimonioNuevaCard}>
+                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#3b82f6' }}>
+                    C
                   </div>
-                ))}
+                  <h4 className={styles.testimonioNuevaNombre}>Carlos Mendoza</h4>
+                  <div className={styles.ratingStarsTestimonios}>
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={16} 
+                        className={styles.ratingStarTestimonios}
+                        fill="#fbbf24"
+                      />
+                    ))}
+                    <span className={styles.ratingNumberTestimonios}>5</span>
+                  </div>
+                  <p className={styles.testimonioNuevaTexto}>"Las alertas de Nahuel me han ayudado a incrementar mi cartera un 45% en los últimos 6 meses."</p>
+                </div>
+                
+                <div className={styles.testimonioNuevaCard}>
+                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#ef4444' }}>
+                    M
+                  </div>
+                  <h4 className={styles.testimonioNuevaNombre}>María García</h4>
+                  <div className={styles.ratingStarsTestimonios}>
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={16} 
+                        className={styles.ratingStarTestimonios}
+                        fill="#fbbf24"
+                      />
+                    ))}
+                    <span className={styles.ratingNumberTestimonios}>5</span>
+                  </div>
+                  <p className={styles.testimonioNuevaTexto}>"El entrenamiento de trading cambió completamente mi forma de invertir. Excelente contenido."</p>
+                </div>
+                
+                <div className={styles.testimonioNuevaCard}>
+                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#10b981' }}>
+                    R
+                  </div>
+                  <h4 className={styles.testimonioNuevaNombre}>Roberto Silva</h4>
+                  <div className={styles.ratingStarsTestimonios}>
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        size={16} 
+                        className={styles.ratingStarTestimonios}
+                        fill="#fbbf24"
+                      />
+                    ))}
+                    <span className={styles.ratingNumberTestimonios}>5</span>
+                  </div>
+                  <p className={styles.testimonioNuevaTexto}>"Smart Money es increíble. Las señales son precisas y muy fáciles de seguir."</p>
+                </div>
               </div>
               
               <button 
