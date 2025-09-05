@@ -1441,7 +1441,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                         fill="#fbbf24"
                       />
                     ))}
-                    <span className={styles.ratingNumberTestimonios}>5</span>
+                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
                   </div>
                   <p className={styles.testimonioNuevaTexto}>"Las alertas de Nahuel me han ayudado a incrementar mi cartera un 45% en los últimos 6 meses."</p>
                 </div>
@@ -1460,7 +1460,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                         fill="#fbbf24"
                       />
                     ))}
-                    <span className={styles.ratingNumberTestimonios}>5</span>
+                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
                   </div>
                   <p className={styles.testimonioNuevaTexto}>"El entrenamiento de trading cambió completamente mi forma de invertir. Excelente contenido."</p>
                 </div>
@@ -1479,7 +1479,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                         fill="#fbbf24"
                       />
                     ))}
-                    <span className={styles.ratingNumberTestimonios}>5</span>
+                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
                   </div>
                   <p className={styles.testimonioNuevaTexto}>"Smart Money es increíble. Las señales son precisas y muy fáciles de seguir."</p>
                 </div>
