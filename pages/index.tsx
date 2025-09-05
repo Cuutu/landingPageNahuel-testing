@@ -461,14 +461,25 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
 
       <main className={styles.main}>
         {/* Hero Section */}
-        <section className={styles.hero}>
-          <div className="container">
-            <motion.div
-              className={styles.heroContent}
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
+              <section className={styles.hero}>
+        {/* Video Background */}
+        <video
+          className={styles.heroVideoBackground}
+          autoPlay
+          muted
+          loop
+          playsInline
+        >
+          <source src="/logos/Home.mp4" type="video/mp4" />
+        </video>
+        
+        <div className="container">
+          <motion.div
+            className={styles.heroContent}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
               <div className={styles.heroText}>
                 <h1 className={styles.heroTitle}>
                   Comenzá a invertir<br />
