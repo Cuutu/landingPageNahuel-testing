@@ -470,48 +470,23 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               transition={{ duration: 0.8 }}
             >
               <div className={styles.heroText}>
-                <h1 className={styles.heroTitle}>
-                  Comenzá a invertir<br />
-                  como&nbsp;un&nbsp;profesional
-                </h1>
+                <div className={styles.heroLogo}>
+                  <img 
+                    src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
+                    alt="Mentoring" 
+                    className={styles.logoImage}
+                  />
+                </div>
                 <p className={styles.heroDescription}>
-                  Unite a la comunidad y descubrí las estrategias más efectivas para ganar dinero en los mercados financieros
+                  Aprende a invertir en bolsa con nuestros cursos especializados. Comienza hoy mismo tu camino hacia la libertad financiera.
                 </p>
                 
                 <div className={styles.heroActions}>
-                  {session ? (
-                    <>
-                      <p className={styles.welcomeMessage}>
-                        ¡Hola {session.user?.name}! Explora nuestros servicios
-                      </p>
-                      <div className={styles.heroButtons}>
-                        <button 
-                          onClick={() => handleMercadoPagoCheckout('subscription', 'TraderCall', 15000, 'ARS')}
-                          className={styles.heroButton}
-                          disabled={isProcessingPayment}
-                        >
-                          {isProcessingPayment ? (
-                            <>
-                              <Loader size={20} className={styles.spinner} />
-                              Procesando...
-                            </>
-                          ) : (
-                            <>
-                              Suscribirse a Alertas - $15,000 ARS
-                              <ChevronRight size={20} />
-                            </>
-                          )}
-                        </button>
-                        <Link href="/entrenamientos" className={styles.heroButtonSecondary}>
-                          Ver Entrenamientos
-                        </Link>
-                      </div>
-                    </>
-                  ) : (
-                    <button onClick={() => signIn('google')} className={styles.heroButton}>
-                      Empezá ahora &gt;
-                    </button>
-                  )}
+                  <Link href="/entrenamientos" className={styles.heroButton}>
+                    Ir a Mentoring
+                    <span className={styles.rocketIcon}>🚀</span>
+                    <ChevronRight size={20} />
+                  </Link>
                 </div>
               </div>
 
