@@ -324,6 +324,28 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     }
   ];
 
+  // Testimonios específicos para el nuevo carrusel (idénticos a la imagen)
+  const testimoniosNuevos = [
+    {
+      nombre: 'Carlos Mendoza',
+      texto: 'Las alertas de Nahuel me han ayudado a incrementar mi cartera un 25% en los últimos 6 meses.',
+      calificacion: 4,
+      avatarColor: '#6366f1' // Azul
+    },
+    {
+      nombre: 'Ana Laura Quiroga',
+      texto: 'Los cursos de análisis técnico son realmente muy buenos y didácticos. 100% recomendables!',
+      calificacion: 5,
+      avatarColor: '#ef4444' // Rojo
+    },
+    {
+      nombre: 'Tamara Rodríguez',
+      texto: 'Las recomendaciones que brindan en las asesorías 1 a 1 son muy buenas. Estoy muy conforme',
+      calificacion: 4,
+      avatarColor: '#22c55e' // Verde
+    }
+  ];
+
   // Función para obtener colores de avatar según el índice
   const getAvatarColor = (index: number) => {
     const colors = ['#6366f1', '#ef4444', '#22c55e']; // Azul, Rojo, Verde
@@ -1081,8 +1103,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
 
 
 
-        {/* Testimonios Section */}
-        <section className={styles.testimonios}>
+        {/* Testimonios Section - Nuevo Carrusel */}
+        <section className={styles.testimoniosNuevo}>
           <div className="container">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1090,54 +1112,61 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <div className={styles.sectionHeader}>
-                <h2>Lo que dicen nuestros estudiantes</h2>
-                <p>Resultados reales de personas reales</p>
-              </div>
+              <div className={styles.testimoniosNuevoContainer}>
+                {/* Flecha izquierda */}
+                <button 
+                  className={styles.carruselFlechaNuevo} 
+                  onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimoniosNuevos.length - 1 : prev - 1)}
+                >
+                  <ChevronLeft size={24} />
+                </button>
 
-              <div className={styles.testimoniosGrid}>
-                {testimonios.map((testimonio, index) => (
-                  <motion.div
-                    key={testimonio.nombre}
-                    className={styles.testimonioCard}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.6, delay: index * 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className={styles.testimonioHeader}>
-                      <img 
-                        src={testimonio.foto} 
-                        alt={testimonio.nombre}
-                        className={styles.testimonioFoto}
-                        onError={(e) => {
-                          const canvas = document.createElement('canvas');
-                          canvas.width = 60;
-                          canvas.height = 60;
-                          const ctx = canvas.getContext('2d');
-                          if (ctx) {
-                            ctx.fillStyle = '#2563eb';
-                            ctx.fillRect(0, 0, 60, 60);
-                            ctx.fillStyle = '#ffffff';
-                            ctx.font = '24px Arial';
-                            ctx.textAlign = 'center';
-                            ctx.fillText(testimonio.nombre.charAt(0), 30, 38);
-                            (e.target as HTMLImageElement).src = canvas.toDataURL();
-                          }
-                        }}
-                      />
-                      <div>
-                        <h4>{testimonio.nombre}</h4>
-                        <div className={styles.estrellas}>
-                          {[...Array(testimonio.calificacion)].map((_, i) => (
-                            <Star key={i} size={16} fill="currentColor" />
-                          ))}
+                {/* Testimonios */}
+                <div className={styles.testimoniosNuevoCards}>
+                  {testimoniosNuevos.map((testimonio, index) => (
+                    <motion.div
+                      key={testimonio.nombre}
+                      className={`${styles.testimonioNuevoCard} ${index === currentTestimonialIndex ? styles.active : ''}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      <div className={styles.testimonioNuevoAvatar}>
+                        <div 
+                          className={styles.avatarCircleNuevo}
+                          style={{ backgroundColor: testimonio.avatarColor }}
+                        >
+                          {testimonio.nombre.charAt(0)}
                         </div>
                       </div>
-                    </div>
-                    <p className={styles.testimonioTexto}>"{testimonio.texto}"</p>
-                  </motion.div>
-                ))}
+                      
+                      <h4 className={styles.testimonioNuevoNombre}>{testimonio.nombre}</h4>
+                      
+                      <div className={styles.testimonioNuevoRating}>
+                        {[...Array(5)].map((_, i) => (
+                          <Star 
+                            key={i} 
+                            size={16} 
+                            fill={i < testimonio.calificacion ? "#fbbf24" : "none"}
+                            stroke={i < testimonio.calificacion ? "#fbbf24" : "#ffffff"}
+                            className={styles.ratingStarNuevo}
+                          />
+                        ))}
+                      </div>
+                      
+                      <p className={styles.testimonioNuevoTexto}>"{testimonio.texto}"</p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Flecha derecha */}
+                <button 
+                  className={styles.carruselFlechaNuevo} 
+                  onClick={() => setCurrentTestimonialIndex(prev => prev === testimoniosNuevos.length - 1 ? 0 : prev + 1)}
+                >
+                  <ChevronRight size={24} />
+                </button>
               </div>
             </motion.div>
           </div>
