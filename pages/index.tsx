@@ -470,23 +470,18 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               transition={{ duration: 0.8 }}
             >
               <div className={styles.heroText}>
-                <div className={styles.heroLogo}>
-                  <img 
-                    src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
-                    alt="Mentoring" 
-                    className={styles.logoImage}
-                  />
-                </div>
+                <h1 className={styles.heroTitle}>
+                  Comenzá a invertir<br />
+                  como un profesional
+                </h1>
                 <p className={styles.heroDescription}>
-                  Aprende a invertir en bolsa con nuestros cursos especializados. Comienza hoy mismo tu camino hacia la libertad financiera.
+                  Unite a la comunidad y descubrí las estrategias más efectivas para ganar dinero en los mercados financieros
                 </p>
                 
                 <div className={styles.heroActions}>
-                  <Link href="/entrenamientos" className={styles.heroButton}>
-                    Ir a Mentoring
-                    <span className={styles.rocketIcon}>🚀</span>
-                    <ChevronRight size={20} />
-                  </Link>
+                  <button onClick={() => signIn('google')} className={styles.heroButton}>
+                    Empezá Ahora &gt;
+                  </button>
                 </div>
               </div>
 
@@ -516,12 +511,15 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               viewport={{ once: true }}
             >
               <div className={styles.learningText}>
-                <h2 className={styles.learningTitle}>
-                  Aprende a invertir<br />
-                  desde cero
-                </h2>
+                <div className={styles.learningLogo}>
+                  <img 
+                    src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
+                    alt="Mentoring" 
+                    className={styles.learningLogoImage}
+                  />
+                </div>
                 <p className={styles.learningDescription}>
-                  Aprende a invertir en bolsa con nuestros cursos especializados. Comienza tu camino hacia la independencia financiera.
+                  Aprende a invertir en bolsa con nuestros cursos especializados. Comienza hoy mismo tu camino hacia la libertad financiera.
                 </p>
                 
                 <div className={styles.learningActions}>
@@ -531,7 +529,9 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                     rel="noopener noreferrer"
                     className={styles.learningButton}
                   >
-                    Ir a Mentoring🚀
+                    Ir a Mentoring
+                    <span className={styles.learningRocketIcon}>🚀</span>
+                    <ChevronRight size={20} />
                   </a>
                 </div>
               </div>
