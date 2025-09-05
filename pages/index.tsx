@@ -1409,6 +1409,56 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
+        {/* Nueva Sección Testimonios */}
+        <section className={styles.testimoniosNuevaSeccion}>
+          <div className="container">
+            <motion.div
+              className={styles.testimoniosNuevaContainer}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <button 
+                className={styles.carruselFlechaTestimonios}
+                onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimoniosNuevos.length - 1 : prev - 1)}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              
+              <div className={styles.testimoniosNuevaCards}>
+                {testimoniosNuevos.slice(currentTestimonialIndex, currentTestimonialIndex + 3).map((testimonio, index) => (
+                  <div key={index} className={styles.testimonioNuevaCard}>
+                    <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: testimonio.avatarColor }}>
+                      {testimonio.nombre.charAt(0)}
+                    </div>
+                    <h4 className={styles.testimonioNuevaNombre}>{testimonio.nombre}</h4>
+                    <div className={styles.ratingStarsTestimonios}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          size={16} 
+                          className={styles.ratingStarTestimonios}
+                          fill={i < testimonio.calificacion ? '#fbbf24' : 'none'}
+                        />
+                      ))}
+                      <span className={styles.ratingNumberTestimonios}>{testimonio.calificacion}</span>
+                    </div>
+                    <p className={styles.testimonioNuevaTexto}>"{testimonio.texto}"</p>
+                  </div>
+                ))}
+              </div>
+              
+              <button 
+                className={styles.carruselFlechaTestimonios}
+                onClick={() => setCurrentTestimonialIndex(prev => prev === testimoniosNuevos.length - 3 ? 0 : prev + 1)}
+              >
+                <ChevronRight size={24} />
+              </button>
+            </motion.div>
+          </div>
+        </section>
+
         {/* CTA Final */}
         <section className={styles.ctaInvestmentSection}>
           <div className="container">
