@@ -190,21 +190,11 @@ const NonSubscriberView: React.FC<{
 
   return (
     <div className={styles.nonSubscriberView}>
-      {/* Hero Section con Video de Fondo */}
+      {/* Hero Section con Imagen de Fondo */}
       <section className={styles.heroSection}>
-        {/* Video Background */}
-        <div className={styles.videoBackground}>
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={styles.backgroundVideo}
-          >
-            <source src="/logos/DiseñoWeb-LozanoNahuel-Alertas-TraderCall.mp4" type="video/mp4" />
-            Tu navegador no soporta el elemento de video.
-          </video>
-          <div className={styles.videoOverlay}></div>
+        {/* Image Background */}
+        <div className={styles.imageBackground}>
+          <div className={styles.imageOverlay}></div>
         </div>
         
         <div className={styles.container}>
