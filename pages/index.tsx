@@ -1338,6 +1338,162 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
+        {/* Nueva Sección CTA - Inversiones */}
+        <section className={styles.ctaInversiones}>
+          <div className="container">
+            <motion.div
+              className={styles.ctaInversionesContent}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <h2 className={styles.ctaInversionesTitle}>
+                ¿Listo para llevar tus inversiones al siguiente nivel?
+              </h2>
+              <p className={styles.ctaInversionesSubtitle}>
+                Únete a nuestra comunidad y comienza construir tu libertad financiera
+              </p>
+              
+              <div className={styles.ctaInversionesButtons}>
+                <button onClick={() => signIn('google')} className={styles.ctaButtonTurquesa}>
+                  Comenzar ahora
+                </button>
+                <a 
+                  href="https://plataformacursos.lozanonahuel.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.ctaButtonMorado}
+                >
+                  Ir a Mentoring
+                  <span className={styles.rocketIcon}>🚀</span>
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Nueva Sección Testimonios Carrusel */}
+        <section className={styles.testimoniosCarruselNuevo}>
+          <div className="container">
+            <motion.div
+              className={styles.testimoniosCarruselContainer}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <button 
+                className={styles.carruselFlecha}
+                onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimoniosNuevos.length - 1 : prev - 1)}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              
+              <div className={styles.testimoniosCarruselCards}>
+                {testimoniosNuevos.slice(currentTestimonialIndex, currentTestimonialIndex + 3).map((testimonio, index) => (
+                  <div key={index} className={styles.testimonioCarruselCard}>
+                    <div className={styles.avatarCircle} style={{ backgroundColor: testimonio.avatarColor }}>
+                      {testimonio.nombre.charAt(0)}
+                    </div>
+                    <h4 className={styles.testimonioNombre}>{testimonio.nombre}</h4>
+                    <div className={styles.ratingStars}>
+                      {[...Array(5)].map((_, i) => (
+                        <Star 
+                          key={i} 
+                          size={16} 
+                          className={styles.ratingStar}
+                          fill={i < testimonio.calificacion ? '#fbbf24' : 'none'}
+                        />
+                      ))}
+                      <span className={styles.ratingNumber}>{testimonio.calificacion}</span>
+                    </div>
+                    <p className={styles.testimonioTexto}>"{testimonio.texto}"</p>
+                  </div>
+                ))}
+              </div>
+              
+              <button 
+                className={styles.carruselFlecha}
+                onClick={() => setCurrentTestimonialIndex(prev => prev === testimoniosNuevos.length - 3 ? 0 : prev + 1)}
+              >
+                <ChevronRight size={24} />
+              </button>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Nueva Sección Destacados Recursos */}
+        <section className={styles.destacadosRecursos}>
+          <div className="container">
+            <motion.div
+              className={styles.destacadosRecursosContent}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <h2 className={styles.destacadosRecursosTitle}>Destacados</h2>
+              
+              <div className={styles.destacadosRecursosContainer}>
+                <button className={styles.carruselFlecha}>
+                  <ChevronLeft size={24} />
+                </button>
+                
+                <div className={styles.destacadosRecursosCards}>
+                  <div className={styles.destacadoRecursoCard}>
+                    <div className={styles.destacadoRecursoHeader}>
+                      <h3 className={styles.destacadoRecursoTitle}>Médias Móviles Automáticas</h3>
+                      <div className={styles.destacadoRecursoMeta}>
+                        <span className={styles.destacadoRecursoTag}>Recursos</span>
+                        <div className={styles.destacadoRecursoRating}>
+                          <Star size={16} className={styles.ratingStar} fill="#fbbf24" />
+                          <span>4,5</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className={styles.destacadoRecursoDescription}>
+                      Indicador que ajusta automáticamente los parámetros de medias móviles según la temporalidad del gráfico, optimizando el análisis técnico en cada marco temporal
+                    </p>
+                    <div className={styles.destacadoRecursoFooter}>
+                      <span className={styles.destacadoRecursoPrice}>$15.000</span>
+                      <button className={styles.destacadoRecursoButton}>
+                        Ver más &gt;
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.destacadoRecursoCard}>
+                    <div className={styles.destacadoRecursoHeader}>
+                      <h3 className={styles.destacadoRecursoTitle}>Lista de Seguimiento Wall Street</h3>
+                      <div className={styles.destacadoRecursoMeta}>
+                        <span className={styles.destacadoRecursoTag}>Recursos</span>
+                        <div className={styles.destacadoRecursoRating}>
+                          <Star size={16} className={styles.ratingStar} fill="#fbbf24" />
+                          <span>4,9</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className={styles.destacadoRecursoDescription}>
+                      Lista de seguimiento organizada con los principales activos de Wall Street para monitorear oportunidades y optimizar decisiones de inversión
+                    </p>
+                    <div className={styles.destacadoRecursoFooter}>
+                      <span className={styles.destacadoRecursoPrice}>Gratis</span>
+                      <button className={styles.destacadoRecursoButton}>
+                        Ver más &gt;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <button className={styles.carruselFlecha}>
+                  <ChevronRight size={24} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* CTA Final */}
         <section className={styles.ctaInvestmentSection}>
           <div className="container">
