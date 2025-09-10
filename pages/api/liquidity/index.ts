@@ -38,7 +38,12 @@ export default async function handler(
     }
 
     if (req.method === "GET") {
-      let liquidity = await Liquidity.findOne({ createdBy: user._id });
+      const pool = (req.query.pool as string) as ("TraderCall" | "SmartMoney");
+      if (!pool || !["TraderCall", "SmartMoney"].includes(pool)) {
+        return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
+      }
+
+      let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
       if (!liquidity) {
         liquidity = await Liquidity.create({
           totalLiquidity: 0,
@@ -47,7 +52,8 @@ export default async function handler(
           distributions: [],
           totalProfitLoss: 0,
           totalProfitLossPercentage: 0,
-          createdBy: user._id
+          createdBy: user._id,
+          pool
         });
       }
 
@@ -62,18 +68,22 @@ export default async function handler(
           totalProfitLoss: liquidity.totalProfitLoss,
           totalProfitLossPercentage: liquidity.totalProfitLossPercentage,
           createdAt: liquidity.createdAt,
-          updatedAt: liquidity.updatedAt
+          updatedAt: liquidity.updatedAt,
+          pool
         }
       });
     }
 
     if (req.method === "POST") {
-      const { totalLiquidity } = req.body;
+      const { totalLiquidity, pool } = req.body || {};
+      if (!pool || !["TraderCall", "SmartMoney"].includes(pool)) {
+        return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
+      }
       if (!totalLiquidity || totalLiquidity <= 0) {
         return res.status(400).json({ success: false, error: "La liquidez total debe ser mayor a 0" });
       }
 
-      let liquidity = await Liquidity.findOne({ createdBy: user._id });
+      let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
       if (liquidity) {
         liquidity.totalLiquidity = totalLiquidity;
         liquidity.availableLiquidity = totalLiquidity - liquidity.distributedLiquidity;
@@ -86,7 +96,8 @@ export default async function handler(
           distributions: [],
           totalProfitLoss: 0,
           totalProfitLossPercentage: 0,
-          createdBy: user._id
+          createdBy: user._id,
+          pool
         });
       }
 
@@ -101,7 +112,8 @@ export default async function handler(
           totalProfitLoss: liquidity.totalProfitLoss,
           totalProfitLossPercentage: liquidity.totalProfitLossPercentage,
           createdAt: liquidity.createdAt,
-          updatedAt: liquidity.updatedAt
+          updatedAt: liquidity.updatedAt,
+          pool
         },
         message: "Liquidez actualizada exitosamente"
       });

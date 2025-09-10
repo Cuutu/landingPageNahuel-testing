@@ -62,9 +62,11 @@ export default async function handler(
       return res.status(400).json({ success: false, error: "Solo se puede distribuir liquidez en alertas activas" });
     }
 
-    const liquidity = await Liquidity.findOne({ createdBy: user._id });
+    const pool = alert.tipo === "SmartMoney" ? "SmartMoney" : "TraderCall";
+
+    let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
     if (!liquidity) {
-      return res.status(400).json({ success: false, error: "No hay liquidez configurada. Configure la liquidez total primero." });
+      return res.status(400).json({ success: false, error: `No hay liquidez configurada para el pool ${pool}. Configure la liquidez total primero.` });
     }
 
     const existingDistribution = liquidity.distributions.find((dist: any) => dist.alertId === alertId);
@@ -94,7 +96,7 @@ export default async function handler(
         isActive: distribution.isActive,
         createdAt: distribution.createdAt
       },
-      message: `Liquidez distribuida exitosamente: ${percentage}% para ${alert.symbol}`
+      message: `Liquidez distribuida exitosamente en ${pool}: ${percentage}% para ${alert.symbol}`
     });
 
   } catch (error) {

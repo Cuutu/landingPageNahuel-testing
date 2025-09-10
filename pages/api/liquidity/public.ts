@@ -46,8 +46,13 @@ export default async function handler(
       return res.status(404).json({ success: false, error: 'Usuario no encontrado' });
     }
 
-    // Encontrar liquidez del admin (opcionalmente, podrías parametrizar si fueran multi-admin)
-    const liquidity = await Liquidity.findOne({});
+    const pool = (req.query.pool as string) as ('TraderCall' | 'SmartMoney');
+    if (!pool || !['TraderCall', 'SmartMoney'].includes(pool)) {
+      return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
+    }
+
+    // Encontrar liquidez del admin por pool
+    const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
     if (!liquidity) {
       return res.status(200).json({ success: true, data: { totalLiquidity: 0, distributions: [] } });
     }

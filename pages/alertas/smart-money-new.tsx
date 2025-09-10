@@ -466,7 +466,7 @@ const SubscriberView: React.FC = () => {
   React.useEffect(() => {
     (async () => {
       try {
-        const res = await fetch('/api/liquidity/public', { credentials: 'same-origin' });
+        const res = await fetch('/api/liquidity/public?pool=SmartMoney', { credentials: 'same-origin' });
         if (res.ok) {
           const json = await res.json();
           const map: Record<string, any> = {};

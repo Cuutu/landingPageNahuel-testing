@@ -65,10 +65,12 @@ export default async function handler(
       return res.status(404).json({ success: false, error: 'Alerta no encontrada' });
     }
 
-    // Buscar liquidez y distribución
-    const liquidity = await Liquidity.findOne({ createdBy: user._id });
+    const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+
+    // Buscar liquidez y distribución en el pool correcto
+    const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
     if (!liquidity) {
-      return res.status(404).json({ success: false, error: 'No hay liquidez configurada' });
+      return res.status(404).json({ success: false, error: `No hay liquidez configurada para ${pool}` });
     }
 
     const distribution = liquidity.distributions.find((d: any) => d.alertId === alertId);
@@ -91,7 +93,7 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      message: 'Venta registrada y liquidez actualizada',
+      message: `Venta registrada en ${pool} y liquidez actualizada`,
       result: {
         alertId,
         symbol: alert.symbol,

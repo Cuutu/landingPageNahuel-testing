@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import Liquidity from '@/models/Liquidity';
 import User from '@/models/User';
+import Alert from '@/models/Alert';
 
 interface RemoveDistributionRequest {
   alertId: string;
@@ -46,9 +47,15 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'alertId es requerido' });
     }
 
-    const liquidity = await Liquidity.findOne({ createdBy: user._id });
+    const alert = await Alert.findById(alertId);
+    if (!alert) {
+      return res.status(404).json({ success: false, error: 'Alerta no encontrada' });
+    }
+    const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+
+    const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
     if (!liquidity) {
-      return res.status(404).json({ success: false, error: 'No hay liquidez configurada' });
+      return res.status(404).json({ success: false, error: `No hay liquidez configurada para ${pool}` });
     }
 
     const dist = liquidity.distributions.find((d: any) => d.alertId === alertId);
@@ -61,7 +68,7 @@ export default async function handler(
     liquidity.removeDistribution(alertId);
     await liquidity.save();
 
-    return res.status(200).json({ success: true, message: 'Distribución removida' });
+    return res.status(200).json({ success: true, message: `Distribución removida en ${pool}` });
   } catch (error) {
     console.error('Error al remover distribución:', error);
     return res.status(500).json({ success: false, error: 'Error interno del servidor' });

@@ -1522,7 +1522,7 @@ const SubscriberView: React.FC = () => {
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     (async () => {
       try {
-        const res = await fetch('/api/liquidity/public');
+        const res = await fetch('/api/liquidity/public?pool=TraderCall');
         if (res.ok) {
           const json = await res.json();
           const map: Record<string, any> = {};

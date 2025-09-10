@@ -58,6 +58,7 @@ const AdminLiquidityPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [liquidity, setLiquidity] = useState<LiquidityData | null>(null);
   const [newTotal, setNewTotal] = useState<string>('');
+  const [selectedPool, setSelectedPool] = useState<'TraderCall' | 'SmartMoney'>('TraderCall');
 
   // Listas de alertas activas por tipo
   const [smartAlerts, setSmartAlerts] = useState<SimpleAlert[]>([]);
@@ -81,7 +82,7 @@ const AdminLiquidityPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const resp = await fetchJSON<{ success: boolean; liquidity: LiquidityData }>('/api/liquidity');
+      const resp = await fetchJSON<{ success: boolean; liquidity: LiquidityData }>(`/api/liquidity?pool=${selectedPool}`);
       setLiquidity(resp.liquidity);
       setNewTotal(String(resp.liquidity.totalLiquidity || ''));
     } catch (e: any) {
@@ -105,7 +106,7 @@ const AdminLiquidityPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { loadData(); loadActiveAlerts(); }, []);
+  useEffect(() => { loadData(); loadActiveAlerts(); }, [selectedPool]);
 
   // Preseleccionar desde query cuando listas estén cargadas
   useEffect(() => {
@@ -113,10 +114,12 @@ const AdminLiquidityPage: React.FC = () => {
     if (queryTipo === 'SmartMoney') {
       setSmartAssignId(queryAlertId);
       setSmartSellId(queryAlertId);
+      setSelectedPool('SmartMoney');
     }
     if (queryTipo === 'TraderCall') {
       setTraderAssignId(queryAlertId);
       setTraderSellId(queryAlertId);
+      setSelectedPool('TraderCall');
     }
   }, [queryAlertId, queryTipo, smartAlerts.length, traderAlerts.length]);
 
@@ -130,7 +133,7 @@ const AdminLiquidityPage: React.FC = () => {
       }
       const resp = await fetchJSON<{ success: boolean; liquidity: LiquidityData; message: string }>(
         '/api/liquidity',
-        { method: 'POST', body: JSON.stringify({ totalLiquidity }) }
+        { method: 'POST', body: JSON.stringify({ totalLiquidity, pool: selectedPool }) }
       );
       setLiquidity(resp.liquidity);
       toast?.success('Liquidez actualizada');
@@ -238,11 +241,22 @@ const AdminLiquidityPage: React.FC = () => {
       <div className={styles.page}>
         <div className={styles.title}>Liquidez</div>
 
+        {/* Selector de Pool */}
+        <div className={styles.card} style={{ marginBottom: 16 }}>
+          <div className={styles.row}>
+            <div className={styles.label}>Pool seleccionado</div>
+            <div className={styles.row} style={{ gap: 8 }}>
+              <button onClick={() => setSelectedPool('TraderCall')} className={`${styles.btn} ${selectedPool === 'TraderCall' ? styles.btnPrimary : ''}`}>TraderCall</button>
+              <button onClick={() => setSelectedPool('SmartMoney')} className={`${styles.btn} ${selectedPool === 'SmartMoney' ? styles.btnPrimary : ''}`}>SmartMoney</button>
+            </div>
+          </div>
+        </div>
+
         {/* Resumen */}
         {liquidity && (
           <div className={styles.grid}>
             {card(<>
-              <div className={styles.label}>Liquidez Total</div>
+              <div className={styles.label}>Liquidez Total ({selectedPool})</div>
               <div className={styles.value}>${liquidity.totalLiquidity.toFixed(2)}</div>
             </>)}
             {card(<>
@@ -262,7 +276,7 @@ const AdminLiquidityPage: React.FC = () => {
 
         {/* Actualizar total */}
         {card(<>
-          <div className="font-medium mb-2">Actualizar Liquidez Total</div>
+          <div className="font-medium mb-2">Actualizar Liquidez Total ({selectedPool})</div>
           <div className={styles.row}>
             <input value={newTotal} onChange={e => setNewTotal(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="Total USD" />
             <button onClick={handleUpdateTotal} disabled={saving} className={`${styles.btn} ${styles.btnPrimary}`}>Guardar</button>

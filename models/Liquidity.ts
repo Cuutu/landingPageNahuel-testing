@@ -28,6 +28,7 @@ export interface ILiquidity extends Document {
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
+  pool: "TraderCall" | "SmartMoney";
 
   addDistribution(alertId: string, symbol: string, percentage: number, entryPrice: number): ILiquidityDistribution;
   updateDistribution(alertId: string, currentPrice: number): void;
@@ -59,7 +60,8 @@ const LiquiditySchema = new Schema({
   distributions: [LiquidityDistributionSchema],
   totalProfitLoss: { type: Number, default: 0 },
   totalProfitLossPercentage: { type: Number, default: 0 },
-  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true }
+  createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  pool: { type: String, enum: ["TraderCall", "SmartMoney"], required: true }
 }, { timestamps: true });
 
 LiquiditySchema.methods.addDistribution = function(this: any, alertId: string, symbol: string, percentage: number, entryPrice: number): ILiquidityDistribution {
@@ -180,5 +182,6 @@ LiquiditySchema.pre("save", function(this: any, next) {
 LiquiditySchema.index({ createdBy: 1 });
 LiquiditySchema.index({ "distributions.alertId": 1 });
 LiquiditySchema.index({ "distributions.symbol": 1 });
+LiquiditySchema.index({ createdBy: 1, pool: 1 }, { unique: true });
 
 export default mongoose.models.Liquidity || mongoose.model("Liquidity", LiquiditySchema); 
