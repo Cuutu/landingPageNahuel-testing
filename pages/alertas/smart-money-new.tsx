@@ -1753,20 +1753,33 @@ const SubscriberView: React.FC = () => {
       if (sharesEl) sharesEl.textContent = `${Number(liq?.shares ?? 0)}`;
       if (realizedEl) realizedEl.textContent = formatMoneyShort(Number(liq?.realizedProfitLoss ?? 0));
 
-      // Posicionamiento mejorado
+      // Posicionamiento: anclar cerca del segmento (no del cursor)
       const tooltipWidth = 260;
       const tooltipHeight = 180;
       const padding = 12;
+      const svg = (event.currentTarget as any).ownerSVGElement as SVGSVGElement;
+      const rect = svg?.getBoundingClientRect();
+      const scaleX = rect ? rect.width / 300 : 1;
+      const scaleY = rect ? rect.height / 300 : 1;
+      const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
+      const r = 110;
+      const svgAnchorX = 150 + Math.cos(angleRad) * r;
+      const svgAnchorY = 150 + Math.sin(angleRad) * r;
+      let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
+      let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
+      const isRight = Math.cos(angleRad) >= 0;
+      x += isRight ? 16 : -(tooltipWidth + 16);
+      y -= tooltipHeight / 2;
       const vpW = window.innerWidth;
       const vpH = window.innerHeight;
-      let x = (event as any).clientX + 16;
-      let y = (event as any).clientY + 16;
-      if (x + tooltipWidth + padding > vpW) x = vpW - tooltipWidth - padding;
-      if (y + tooltipHeight + padding > vpH) y = vpH - tooltipHeight - padding;
+      if (x + tooltipWidth + padding > vpW + window.scrollX) x = vpW + window.scrollX - tooltipWidth - padding;
+      if (x < window.scrollX + padding) x = window.scrollX + padding;
+      if (y + tooltipHeight + padding > vpH + window.scrollY) y = vpH + window.scrollY - tooltipHeight - padding;
+      if (y < window.scrollY + padding) y = window.scrollY + padding;
 
       tooltip.style.display = 'block';
-      tooltip.style.left = `${x + window.scrollX}px`;
-      tooltip.style.top = `${y + window.scrollY}px`;
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
     }
   };
 
