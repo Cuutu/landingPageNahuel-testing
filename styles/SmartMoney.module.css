@@ -1627,30 +1627,22 @@
 
 /* Tooltip 3D Mejorado */
 .chartTooltip3D {
-  position: absolute;
+  position: fixed;
+  z-index: 9999;
   display: none;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: var(--border-radius);
-  padding: 1rem;
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(10px);
-  z-index: 1000;
-  min-width: 250px;
-  max-width: 300px;
-  animation: tooltipFadeIn 0.3s ease;
+  pointer-events: none;
+  background: #0b0f17;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+  color: #e5e7eb;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  width: 260px;
 }
-
-@keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
+.tooltipContent3D h4,
+.tooltipSymbol { margin: 0 0 6px 0; font-weight: 700; }
+.tooltipDetails { font-size: 13px; }
+.tooltipRow { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
 
 .tooltipContent3D {
   color: var(--text-primary);
@@ -2097,4 +2089,35 @@
   padding: 4px 10px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.chartLegend3D {
+  position: relative;
+}
+.legendItem3D {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.legendInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.legendSymbol {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.legendProfit {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.legendStatus {
+  white-space: nowrap;
 }

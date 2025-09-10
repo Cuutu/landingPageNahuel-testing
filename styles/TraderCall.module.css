@@ -6844,3 +6844,50 @@
   font-weight: 600;
   margin-right: 8px;
 }
+
+/* Fix legend overflow (dashboard) */
+.chartLegend {
+  position: relative;
+}
+.legendItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.legendSymbol {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.legendProfit {
+  white-space: nowrap;
+}
+
+/* 3D legend structure and overflow control */
+.chartLegend3D { position: relative; }
+.legendItem3D { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.legendInfo { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.legendStatus { white-space: nowrap; }
+
+/* Floating tooltip for 3D charts */
+.chartTooltip3D {
+  position: fixed;
+  z-index: 9999;
+  display: none;
+  pointer-events: none;
+  background: #0b0f17;
+  border: 1px solid #1f2937;
+  border-radius: 10px;
+  padding: 12px;
+  color: #e5e7eb;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  width: 260px;
+}
+.tooltipContent3D h4,
+.tooltipSymbol { margin: 0 0 6px 0; font-weight: 700; }
+.tooltipDetails { font-size: 13px; }
+.tooltipRow { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }

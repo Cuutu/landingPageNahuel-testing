@@ -1618,32 +1618,62 @@ const SubscriberView: React.FC = () => {
           </div>
           <div className={styles.dashboardChartContainer}>
             {alertasActivas.length > 0 ? (
-              <div className={styles.dashboardChartLayout}>
-                {renderPieChart(chartSegments)}
-                <div className={styles.chartLegend}>
-                  <h4>Alertas por Símbolo</h4>
-                  <div className={styles.legendItems}>
-                    {chartSegments.map((segment, index) => (
-                      <div key={segment.id} className={styles.legendItem}>
-                        <div
-                          className={styles.legendColor}
-                          style={{ backgroundColor: segment.color }}
-                        ></div>
-                        <span className={styles.legendSymbol}>{segment.symbol}</span>
-                        <span className={styles.legendProfit}>
-                          {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(1)}%
-                        </span>
-                        {/* Liquidez asignada si existe */}
-                        {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
-                          <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
-                            ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+              <>
+                <div className={styles.dashboardChartLayout}>
+                  {renderPieChart(chartSegments)}
+                  <div className={styles.chartLegend}>
+                    <h4>Alertas por Símbolo</h4>
+                    <div className={styles.legendItems}>
+                      {chartSegments.map((segment, index) => (
+                        <div key={segment.id} className={styles.legendItem}>
+                          <div
+                            className={styles.legendColor}
+                            style={{ backgroundColor: segment.color }}
+                          ></div>
+                          <span className={styles.legendSymbol}>{segment.symbol}</span>
+                          <span className={styles.legendProfit}>
+                            {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(1)}%
                           </span>
-                        )}
-                      </div>
-                    ))}
+                          {/* Liquidez asignada si existe */}
+                          {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
+                            <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
+                              ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
-              </div>
+                {/* Tooltip flotante para el dashboard */}
+                <div id="chartTooltip" className={styles.chartTooltip3D}>
+                  <div className={styles.tooltipContent3D}>
+                    <h4 className={styles.tooltipSymbol}></h4>
+                    <div className={styles.tooltipDetails}>
+                      <div className={styles.tooltipRow}>
+                        <span>📈 Acción:</span>
+                        <span className={styles.tooltipAction}></span>
+                      </div>
+                      <div className={styles.tooltipRow}>
+                        <span>💰 Entrada:</span>
+                        <span className={styles.tooltipEntry}></span>
+                      </div>
+                      <div className={styles.tooltipRow}>
+                        <span>📊 Actual:</span>
+                        <span className={styles.tooltipCurrent}></span>
+                      </div>
+                      <div className={styles.tooltipRow}>
+                        <span>📈 P&L:</span>
+                        <span className={styles.tooltipPnl}></span>
+                      </div>
+                      <div className={styles.tooltipRow}>
+                        <span>🎯 Estado:</span>
+                        <span className={styles.tooltipStatus}></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </>
             ) : (
               <div className={styles.emptyChartState}>
                 <div className={styles.emptyChartIcon}>📊</div>
