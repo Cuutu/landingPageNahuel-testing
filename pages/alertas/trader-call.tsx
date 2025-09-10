@@ -1439,7 +1439,7 @@ const SubscriberView: React.FC = () => {
 
   // Función auxiliar para renderizar el gráfico de torta
   const renderPieChart = (chartSegments: any[]) => (
-    <div className={styles.pieChart3D}>
+    <div className={styles.pieChart3D} id="alertsChartContainer">
       <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
         {/* Sombra del gráfico para efecto 3D */}
         <defs>
@@ -2107,10 +2107,10 @@ const SubscriberView: React.FC = () => {
       const tooltipWidth = 260; // coincide con CSS
       const tooltipHeight = 180; // aprox
       const padding = 12;
-      const svg = (event.currentTarget as any).ownerSVGElement as SVGSVGElement;
-      const rect = svg?.getBoundingClientRect();
-      const scaleX = rect ? rect.width / 300 : 1;
-      const scaleY = rect ? rect.height / 300 : 1;
+      const container = document.getElementById('alertsChartContainer');
+      const rect = container?.getBoundingClientRect();
+      const scaleX = rect ? (rect.width / 300) : 1;
+      const scaleY = rect ? (rect.height / 300) : 1;
       const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
       const r = 110; // radio para anclar el tooltip
       const svgAnchorX = 150 + Math.cos(angleRad) * r;

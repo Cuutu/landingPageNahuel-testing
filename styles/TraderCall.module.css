@@ -6875,8 +6875,8 @@
 
 /* Floating tooltip for 3D charts */
 .chartTooltip3D {
-  position: fixed;
-  z-index: 9999;
+  position: absolute;
+  z-index: 50;
   display: none;
   pointer-events: none;
   background: #0b0f17;
