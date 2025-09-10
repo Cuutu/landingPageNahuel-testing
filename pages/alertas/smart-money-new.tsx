@@ -1791,6 +1791,15 @@ const SubscriberView: React.FC = () => {
                 >
                   Cerrar Posición
                 </button>
+                {userRole === 'admin' && (
+                  <Link
+                    href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=SmartMoney`}
+                    className={styles.editButton}
+                    title="Cierre parcial (Liquidez)"
+                  >
+                    Cierre parcial
+                  </Link>
+                )}
               </div>
             </div>
           ))
