@@ -1670,6 +1670,18 @@ const SubscriberView: React.FC = () => {
                 <span>🎯 Estado:</span>
                 <span className={styles.tooltipStatus}></span>
               </div>
+              <div className={styles.tooltipRow}>
+                <span>💵 Liquidez:</span>
+                <span className={styles.tooltipLiquidity}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>🧩 Shares:</span>
+                <span className={styles.tooltipShares}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>✅ Realizado:</span>
+                <span className={styles.tooltipRealized}></span>
+              </div>
             </div>
           </div>
         </div>
@@ -1714,21 +1726,46 @@ const SubscriberView: React.FC = () => {
         action.textContent = segment.action;
         action.className = `${styles.tooltipAction} ${segment.action === 'BUY' ? styles.buyAction : styles.sellAction}`;
       }
+      const formatMoneyShort = (n: number) => {
+        const abs = Math.abs(n);
+        if (abs >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
+        if (abs >= 1_000) return `$${(n/1_000).toFixed(1)}k`;
+        return `$${n.toFixed(2)}`;
+      };
+
       if (entry) entry.textContent = segment.entryPrice;
-      if (current) entry.textContent = segment.currentPrice;
+      if (current) current.textContent = segment.currentPrice;
       if (pnl) {
         pnl.textContent = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
       }
       if (status) {
-        const extra = liq ? ` • Liquidez: $${Number(liq.allocatedAmount || 0).toFixed(2)} • Shares: ${liq.shares} • Realizado: $${Number(liq.realizedProfitLoss || 0).toFixed(2)}` : '';
-        status.textContent = `${segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA'}${extra ? ' ' + extra : ''}`;
+        status.textContent = segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA';
         status.className = `${styles.tooltipStatus} ${segment.status === 'ACTIVE' ? styles.activeStatus : styles.closedStatus}`;
       }
 
+      // Campos adicionales
+      const liqEl = tooltip.querySelector(`.${styles.tooltipLiquidity}`) as HTMLElement;
+      const sharesEl = tooltip.querySelector(`.${styles.tooltipShares}`) as HTMLElement;
+      const realizedEl = tooltip.querySelector(`.${styles.tooltipRealized}`) as HTMLElement;
+      if (liqEl) liqEl.textContent = formatMoneyShort(Number(liq?.allocatedAmount ?? 0));
+      if (sharesEl) sharesEl.textContent = `${Number(liq?.shares ?? 0)}`;
+      if (realizedEl) realizedEl.textContent = formatMoneyShort(Number(liq?.realizedProfitLoss ?? 0));
+
+      // Posicionamiento mejorado
+      const tooltipWidth = 260;
+      const tooltipHeight = 180;
+      const padding = 12;
+      const vpW = window.innerWidth;
+      const vpH = window.innerHeight;
+      let x = (event as any).clientX + 16;
+      let y = (event as any).clientY + 16;
+      if (x + tooltipWidth + padding > vpW) x = vpW - tooltipWidth - padding;
+      if (y + tooltipHeight + padding > vpH) y = vpH - tooltipHeight - padding;
+
       tooltip.style.display = 'block';
-      tooltip.style.left = event.pageX + 10 + 'px';
-      tooltip.style.top = event.pageY - 10 + 'px';
+      tooltip.style.left = `${x + window.scrollX}px`;
+      tooltip.style.top = `${y + window.scrollY}px`;
     }
   };
 
