@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import AdminRouteGuard from '@/components/AdminRouteGuard';
 import { useRouter } from 'next/router';
 import styles from '@/styles/AdminLiquidity.module.css';
+import Navbar from '@/components/Navbar';
 
 // Lazy import de toast para evitar SSR issues
 let toast: any;
@@ -233,6 +234,7 @@ const AdminLiquidityPage: React.FC = () => {
 
   return (
     <AdminRouteGuard>
+      <Navbar />
       <div className={styles.page}>
         <div className={styles.title}>Liquidez</div>
 

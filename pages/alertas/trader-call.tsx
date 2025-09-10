@@ -477,6 +477,7 @@ const SubscriberView: React.FC = () => {
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
+  const [liquidityTotal, setLiquidityTotal] = useState<number>(0);
 
   // Estados para edición de alertas
   const [showEditAlert, setShowEditAlert] = useState(false);
@@ -1529,6 +1530,7 @@ const SubscriberView: React.FC = () => {
             map[d.symbol] = d;
           });
           setLiquidityMap(map);
+          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
         }
       } catch (e) {
         // ignorar errores de visualización

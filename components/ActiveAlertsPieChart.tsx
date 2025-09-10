@@ -52,6 +52,7 @@ interface ActiveAlertsPieChartProps {
   className?: string;
   // ✅ NUEVO: Liquidez (opcional)
   liquidityMap?: LiquidityByAlert;
+  totalLiquidity?: number;
 }
 
 interface ChartSegment {
@@ -72,7 +73,8 @@ interface ChartSegment {
 const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({ 
   alerts, 
   className = '',
-  liquidityMap
+  liquidityMap,
+  totalLiquidity
 }) => {
   const [chartData, setChartData] = useState<ChartSegment[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertData | null>(null);
@@ -225,7 +227,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
     );
   }
 
-  // Estadísticas simples (sin cambio)
+  // Estadísticas simples + Liquidez total
   const totalProfit = chartData.reduce((sum, item) => sum + (item.profit || 0), 0);
   const portfolioStats = {
     totalAlerts: chartData.length,
@@ -263,6 +265,15 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
               </span>
             </div>
           </div>
+          {typeof totalLiquidity === 'number' && (
+            <div className={styles.statRow}>
+              <div className={styles.statItem}>
+                <DollarSign size={16} />
+                <span className={styles.statLabel}>Liquidez Total:</span>
+                <span className={styles.statValue}>{formatCurrency(totalLiquidity)}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -418,6 +418,7 @@ const SubscriberView: React.FC = () => {
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
+  const [liquidityTotal, setLiquidityTotal] = useState<number>(0);
   // Estados para imágenes del gráfico de TradingView
   const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
   const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
@@ -459,6 +460,23 @@ const SubscriberView: React.FC = () => {
 
   const { data: session } = useSession();
   const router = useRouter();
+
+  // Verificar rol del usuario
+  // Cargar liquidez pública para mostrar en gráfico/leyenda
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/liquidity/public', { credentials: 'same-origin' });
+        if (res.ok) {
+          const json = await res.json();
+          const map: Record<string, any> = {};
+          (json.data?.distributions || []).forEach((d: any) => { map[d.symbol] = d; });
+          setLiquidityMap(map);
+          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
+        }
+      } catch (_) {}
+    })();
+  }, []);
 
   // Verificar rol del usuario
   React.useEffect(() => {
@@ -1578,6 +1596,11 @@ const SubscriberView: React.FC = () => {
                           <span className={styles.legendProfit}>
                             {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%
                           </span>
+                          {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
+                            <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
+                              ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+                            </span>
+                          )}
                           {/* Liquidez asignada si existe */}
                           {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
                             <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
