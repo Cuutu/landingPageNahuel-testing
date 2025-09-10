@@ -2007,6 +2007,8 @@ const SubscriberView: React.FC = () => {
   };
 
   const showTooltip = (event: React.MouseEvent, segment: any) => {
+    // Enriquecer con liquidez si está disponible
+    const liq = (liquidityMap as any)?.[segment.symbol];
     const tooltip = document.getElementById('chartTooltip') as HTMLElement;
     if (tooltip) {
       const symbol = tooltip.querySelector(`.${styles.tooltipSymbol}`) as HTMLElement;
@@ -2022,13 +2024,14 @@ const SubscriberView: React.FC = () => {
         action.className = `${styles.tooltipAction} ${segment.action === 'BUY' ? styles.buyAction : styles.sellAction}`;
       }
       if (entry) entry.textContent = segment.entryPrice;
-      if (current) entry.textContent = segment.currentPrice;
+      if (current) current.textContent = segment.currentPrice;
       if (pnl) {
         pnl.textContent = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
       }
       if (status) {
-        status.textContent = segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA';
+        const extra = liq ? ` • Liquidez: $${Number(liq.allocatedAmount || 0).toFixed(2)} • Shares: ${liq.shares}` : '';
+        status.textContent = `${segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA'}${extra ? ' ' + extra : ''}`;
         status.className = `${styles.tooltipStatus} ${segment.status === 'ACTIVE' ? styles.activeStatus : styles.closedStatus}`;
       }
 

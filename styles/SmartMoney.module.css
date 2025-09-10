@@ -2042,3 +2042,34 @@
     flex-wrap: wrap;
   }
 }
+
+.pieChart3D {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2rem 0;
+  background: #0b0f17;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.chartSvg3D {
+  width: 100%;
+  max-width: 400px;
+  height: auto;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
+  transform: rotateX(15deg) rotateY(-5deg);
+  transition: transform 0.3s ease;
+}
+
+.chartSvg3D:hover {
+  transform: rotateX(10deg) rotateY(-2deg) scale(1.05);
+}
+
+.chartBackground3D {
+  fill: #0f172a;
+  stroke: #1f2937;
+  stroke-width: 2;
+}

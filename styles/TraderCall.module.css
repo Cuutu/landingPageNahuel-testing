@@ -5460,6 +5460,10 @@
   align-items: center;
   margin: 2rem 0;
   perspective: 1000px;
+  background: #0b0f17;
+  border: 1px solid #1f2937;
+  border-radius: 12px;
+  padding: 16px;
 }
 
 .chartSvg3D {
