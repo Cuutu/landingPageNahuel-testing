@@ -33,9 +33,25 @@ interface AlertData {
   takeProfit: number;
 }
 
+// ✅ NUEVO: Datos de liquidez por alerta
+interface LiquidityByAlert {
+  [symbol: string]: {
+    alertId: string;
+    allocatedAmount: number;
+    shares: number;
+    entryPrice: number;
+    currentPrice: number;
+    profitLoss: number;
+    profitLossPercentage: number;
+    realizedProfitLoss: number;
+  };
+}
+
 interface ActiveAlertsPieChartProps {
   alerts: AlertData[];
   className?: string;
+  // ✅ NUEVO: Liquidez (opcional)
+  liquidityMap?: LiquidityByAlert;
 }
 
 interface ChartSegment {
@@ -43,15 +59,20 @@ interface ChartSegment {
   value: number;
   symbol: string;
   profit: number;
-  action: string;
-  tipo: string;
+  action: 'BUY' | 'SELL';
+  tipo: 'TraderCall' | 'SmartMoney' | 'CashFlow';
   color: string;
   darkColor: string;
+  // ✅ NUEVO: Liquidez
+  allocatedAmount?: number;
+  shares?: number;
+  realizedProfitLoss?: number;
 }
 
 const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({ 
   alerts, 
-  className = '' 
+  className = '',
+  liquidityMap
 }) => {
   const [chartData, setChartData] = useState<ChartSegment[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertData | null>(null);
@@ -66,92 +87,63 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
 
   useEffect(() => {
     if (alerts && alerts.length > 0) {
-      // ✅ NUEVO: Filtrar solo alertas activas
       const activeAlerts = alerts.filter(alert => alert.status === 'ACTIVE');
-      
       if (activeAlerts.length === 0) {
         setChartData([]);
         return;
       }
-
-      // ✅ NUEVO: Preparar datos para el gráfico de torta
       const chartSegments = activeAlerts.map((alert, index) => {
         const profitValue = Math.abs(alert.profit || 0);
+        const liquidity = liquidityMap?.[alert.symbol];
         return {
           name: alert.symbol,
-          value: profitValue > 0 ? profitValue : 1, // Mínimo valor para visualización
+          value: profitValue > 0 ? profitValue : 1,
           symbol: alert.symbol,
           profit: alert.profit || 0,
           action: alert.action,
           tipo: alert.tipo,
           color: colorPalette[index % colorPalette.length],
-          darkColor: colorPalette[index % colorPalette.length] + '80'
+          darkColor: colorPalette[index % colorPalette.length] + '80',
+          allocatedAmount: liquidity?.allocatedAmount,
+          shares: liquidity?.shares,
+          realizedProfitLoss: liquidity?.realizedProfitLoss,
         };
       });
-
       setChartData(chartSegments);
     } else {
       setChartData([]);
     }
-  }, [alerts]);
+  }, [alerts, liquidityMap]);
 
-  // ✅ NUEVO: Calcular estadísticas del portfolio
-  const portfolioStats = React.useMemo(() => {
-    if (chartData.length === 0) return null;
-
-    const totalProfit = chartData.reduce((sum, segment) => sum + segment.profit, 0);
-    const positiveAlerts = chartData.filter(segment => segment.profit > 0).length;
-    const negativeAlerts = chartData.filter(segment => segment.profit < 0).length;
-    const avgProfit = totalProfit / chartData.length;
-    const winRate = (positiveAlerts / chartData.length) * 100;
-
-    return {
-      totalProfit,
-      positiveAlerts,
-      negativeAlerts,
-      avgProfit,
-      winRate,
-      totalAlerts: chartData.length
-    };
-  }, [chartData]);
-
-  // ✅ NUEVO: Formatear moneda
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
+  // ✅ Formateadores
+  const formatCurrency = (n?: number) => {
+    if (n === undefined || n === null) return '-';
+    return `$${Number(n).toFixed(2)}`;
   };
-
-  // ✅ NUEVO: Formatear porcentaje
+  const formatShares = (n?: number) => (n !== undefined ? `${n}` : '-');
   const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+    if (value === undefined || value === null) return '0%';
+    const sign = value >= 0 ? '+' : '';
+    return `${sign}${Number(value).toFixed(1)}%`;
   };
+  const getProfitColor = (value: number) => (value >= 0 ? '#10B981' : '#EF4444');
 
-  // ✅ NUEVO: Obtener color del profit
-  const getProfitColor = (profit: number) => {
-    if (profit > 0) return '#10b981';
-    if (profit < 0) return '#ef4444';
-    return '#6b7280';
-  };
-
-  // ✅ NUEVO: Custom tooltip para el gráfico
-  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: any[] }) => {
+  // ✅ NUEVO: Tooltip con liquidez
+  const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload as ChartSegment;
       return (
         <div className={styles.tooltip}>
-          <h4 className={styles.tooltipTitle}>{data.symbol}</h4>
+          <div className={styles.tooltipTitle}>{data.symbol}</div>
           <div className={styles.tooltipContent}>
-            <p><strong>Acción:</strong> {data.action}</p>
-            <p><strong>Tipo:</strong> {data.tipo}</p>
-            <p><strong>Profit:</strong> 
-              <span style={{ color: getProfitColor(data.profit) }}>
-                {formatPercentage(data.profit)}
-              </span>
-            </p>
+            <p>Profit: <span style={{ color: getProfitColor(data.profit) }}>{formatPercentage(data.profit)}</span></p>
+            {data.allocatedAmount !== undefined && (
+              <>
+                <p>Liquidez asignada: {formatCurrency(data.allocatedAmount)}</p>
+                <p>Shares: {formatShares(data.shares)}</p>
+                <p>P&L realizado: {formatCurrency(data.realizedProfitLoss)}</p>
+              </>
+            )}
           </div>
         </div>
       );
@@ -159,31 +151,23 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
     return null;
   };
 
-  // ✅ NUEVO: Custom legend
-  const CustomLegend = ({ payload }: { payload?: any[] }) => {
-    if (!payload) return null;
-    
+  const CustomLegend = ({ payload }: any) => {
     return (
       <div className={styles.legend}>
-        {payload.map((entry: any, index: number) => {
-          const data = entry.payload as ChartSegment;
+        {payload?.map((entry: any, index: number) => {
+          const data = entry?.payload as ChartSegment;
           return (
-            <div 
-              key={entry.value}
-              className={styles.legendItem}
-              onMouseEnter={() => setHoveredSegment(data.symbol)}
-              onMouseLeave={() => setHoveredSegment(null)}
-              style={{
-                opacity: hoveredSegment && hoveredSegment !== data.symbol ? 0.3 : 1
-              }}
-            >
-              <div 
-                className={styles.legendColor} 
-                style={{ backgroundColor: data.color }}
-              />
-              <span className={styles.legendText}>
-                {data.symbol} ({formatPercentage(data.profit)})
+            <div key={index} className={styles.legendItem}>
+              <span className={styles.legendColor} style={{ backgroundColor: data.color }} />
+              <span className={styles.legendText}>{data.symbol}</span>
+              <span className={styles.legendProfit} style={{ color: getProfitColor(data.profit) }}>
+                {formatPercentage(data.profit)}
               </span>
+              {data.allocatedAmount !== undefined && (
+                <span className={styles.legendExtra}>
+                  {formatCurrency(data.allocatedAmount)}
+                </span>
+              )}
             </div>
           );
         })}
@@ -204,7 +188,6 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
             Solo alertas con estado ACTIVO
           </p>
         </div>
-        
         <div className={styles.emptyState}>
           <Info size={48} />
           <h4 className={styles.emptyTitle}>Recharts no está instalado</h4>
@@ -228,7 +211,6 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
             Solo alertas con estado ACTIVO
           </p>
         </div>
-        
         <div className={styles.emptyState}>
           <Info size={48} />
           <h4 className={styles.emptyTitle}>No hay alertas activas</h4>
@@ -243,6 +225,13 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
     );
   }
 
+  // Estadísticas simples (sin cambio)
+  const totalProfit = chartData.reduce((sum, item) => sum + (item.profit || 0), 0);
+  const portfolioStats = {
+    totalAlerts: chartData.length,
+    totalProfit,
+  };
+
   return (
     <div className={`${styles.container} ${className}`}>
       <div className={styles.header}>
@@ -255,7 +244,6 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         </p>
       </div>
 
-      {/* ✅ NUEVO: Estadísticas del portfolio */}
       {portfolioStats && (
         <div className={styles.portfolioStats}>
           <div className={styles.statRow}>
@@ -275,34 +263,9 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
               </span>
             </div>
           </div>
-          
-          <div className={styles.statRow}>
-            <div className={styles.statItem}>
-              <div className={styles.statIcon} style={{ color: '#10b981' }}>📈</div>
-              <span className={styles.statLabel}>Ganadoras:</span>
-              <span className={styles.statValue} style={{ color: '#10b981' }}>
-                {portfolioStats.positiveAlerts}
-              </span>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statIcon} style={{ color: '#ef4444' }}>📉</div>
-              <span className={styles.statLabel}>Perdedoras:</span>
-              <span className={styles.statValue} style={{ color: '#ef4444' }}>
-                {portfolioStats.negativeAlerts}
-              </span>
-            </div>
-            <div className={styles.statItem}>
-              <div className={styles.statIcon} style={{ color: '#8b5cf6' }}>🎯</div>
-              <span className={styles.statLabel}>Win Rate:</span>
-              <span className={styles.statValue} style={{ color: '#8b5cf6' }}>
-                {portfolioStats.winRate.toFixed(1)}%
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* ✅ NUEVO: Gráfico de torta responsivo */}
       <div className={styles.chartContainer}>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -335,7 +298,6 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* ✅ NUEVO: Información adicional */}
       <div className={styles.additionalInfo}>
         <div className={styles.infoItem}>
           <AlertTriangle size={14} />
@@ -346,7 +308,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         <div className={styles.infoItem}>
           <Info size={14} />
           <span>
-            El tamaño de cada segmento representa el profit relativo de la alerta.
+            El tamaño de cada segmento representa el profit relativo de la alerta. Si hay liquidez asignada, el tooltip muestra el monto y P&L.
           </span>
         </div>
       </div>

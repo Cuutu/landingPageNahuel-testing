@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 
 interface ClosePositionRequest {
   alertId: string;
@@ -123,6 +124,26 @@ export default async function handler(
     );
 
     console.log('✅ Posición cerrada por usuario:', user.name || user.email, alertId);
+
+    // Integrar con Liquidez: vender acciones asignadas y devolver efectivo
+    try {
+      const liquidity = await Liquidity.findOne({ createdBy: user._id });
+      if (liquidity) {
+        const dist = liquidity.distributions.find((d: any) => d.alertId === alertId);
+        if (dist && dist.shares > 0) {
+          liquidity.sellShares(alertId, dist.shares, currentPrice);
+          liquidity.removeDistribution(alertId);
+          await liquidity.save();
+          console.log('💧 Liquidez actualizada por cierre de alerta:', {
+            alertId,
+            symbol: updatedAlert?.symbol,
+            returnedCash: dist.shares * currentPrice
+          });
+        }
+      }
+    } catch (liqErr) {
+      console.error('❌ Error actualizando liquidez al cerrar alerta:', liqErr);
+    }
 
     // Formatear la respuesta para el frontend - con validación de números
     const alertResponse = {

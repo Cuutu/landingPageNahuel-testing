@@ -476,6 +476,7 @@ const SubscriberView: React.FC = () => {
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
+  const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
 
   // Estados para edición de alertas
   const [showEditAlert, setShowEditAlert] = useState(false);
@@ -1514,6 +1515,26 @@ const SubscriberView: React.FC = () => {
     const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
     const chartSegments = createPieChartData(alertasActivas);
 
+    // Cargar liquidez para la leyenda/tooltip
+    // Nota: se carga una vez por dashboard render, podríamos mover a useEffect superior y cachear
+    // para evitar llamadas repetidas si el usuario navega tabs
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    (async () => {
+      try {
+        const res = await fetch('/api/liquidity/public');
+        if (res.ok) {
+          const json = await res.json();
+          const map: Record<string, any> = {};
+          (json.data?.distributions || []).forEach((d: any) => {
+            map[d.symbol] = d;
+          });
+          setLiquidityMap(map);
+        }
+      } catch (e) {
+        // ignorar errores de visualización
+      }
+    })();
+
     return (
       <div className={styles.dashboardContent}>
         <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
@@ -1607,6 +1628,12 @@ const SubscriberView: React.FC = () => {
                         <span className={styles.legendProfit}>
                           {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(1)}%
                         </span>
+                        {/* Liquidez asignada si existe */}
+                        {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
+                          <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
+                            ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
