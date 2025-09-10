@@ -6833,3 +6833,14 @@
     order: 1;
   }
 }
+
+.totalLiquidityBadge {
+  background: rgba(37, 99, 235, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 9999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+}

@@ -1603,6 +1603,9 @@ const SubscriberView: React.FC = () => {
         {/* Gráfico de Distribución de Alertas */}
         <div className={styles.chartSection}>
           <div className={styles.chartHeader}>
+            {typeof liquidityTotal === 'number' && (
+              <span className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</span>
+            )}
             <h3>📊 Distribución de Alertas Activas</h3>
             <div className={styles.chartActions}>
               <button

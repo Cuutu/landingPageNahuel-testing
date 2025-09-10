@@ -1584,6 +1584,9 @@ const SubscriberView: React.FC = () => {
                 {/* Leyenda mejorada con colores dinámicos */}
                 <div className={styles.chartLegend3D}>
                   <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
+                  {typeof liquidityTotal === 'number' && (
+                    <div className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</div>
+                  )}
                   <div className={styles.legendList}>
                     {chartSegments.map((segment, index) => (
                       <div key={segment.id} className={styles.legendItem3D}>
@@ -1601,10 +1604,9 @@ const SubscriberView: React.FC = () => {
                               ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
                             </span>
                           )}
-                          {/* Liquidez asignada si existe */}
-                          {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
+                          {liquidityMap[segment.symbol]?.realizedProfitLoss !== undefined && (
                             <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
-                              ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+                              Realizado: ${liquidityMap[segment.symbol].realizedProfitLoss?.toFixed(2)}
                             </span>
                           )}
                           <span className={styles.legendStatus}>
@@ -1697,6 +1699,7 @@ const SubscriberView: React.FC = () => {
   };
 
   const showTooltip = (event: React.MouseEvent, segment: any) => {
+    const liq = (liquidityMap as any)?.[segment.symbol];
     const tooltip = document.getElementById('chartTooltip') as HTMLElement;
     if (tooltip) {
       const symbol = tooltip.querySelector(`.${styles.tooltipSymbol}`) as HTMLElement;
@@ -1718,7 +1721,8 @@ const SubscriberView: React.FC = () => {
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
       }
       if (status) {
-        status.textContent = segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA';
+        const extra = liq ? ` • Liquidez: $${Number(liq.allocatedAmount || 0).toFixed(2)} • Shares: ${liq.shares} • Realizado: $${Number(liq.realizedProfitLoss || 0).toFixed(2)}` : '';
+        status.textContent = `${segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA'}${extra ? ' ' + extra : ''}`;
         status.className = `${styles.tooltipStatus} ${segment.status === 'ACTIVE' ? styles.activeStatus : styles.closedStatus}`;
       }
 
