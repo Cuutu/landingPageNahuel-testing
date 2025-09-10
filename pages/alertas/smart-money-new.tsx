@@ -1601,7 +1601,7 @@ const SubscriberView: React.FC = () => {
                           </span>
                           {liquidityMap[segment.symbol]?.allocatedAmount !== undefined && (
                             <span className={styles.legendProfit} style={{ opacity: 0.8 }}>
-                              ${liquidityMap[segment.symbol].allocatedAmount?.toFixed(2)}
+                              {(() => { const v = Number(liquidityMap[segment.symbol].allocatedAmount || 0); return v >= 1_000_000 ? `$${(v/1_000_000).toFixed(1)}M` : v >= 1_000 ? `$${(v/1_000).toFixed(1)}k` : `$${v.toFixed(2)}`; })()}
                             </span>
                           )}
                           {liquidityMap[segment.symbol]?.realizedProfitLoss !== undefined && (
@@ -1733,8 +1733,9 @@ const SubscriberView: React.FC = () => {
         return `$${n.toFixed(2)}`;
       };
 
-      if (entry) entry.textContent = segment.entryPrice;
-      if (current) current.textContent = segment.currentPrice;
+      const formatPrice = (v: any) => typeof v === 'number' ? `$${Number(v).toFixed(2)}` : (v ?? '-');
+      if (entry) entry.textContent = formatPrice(segment.entryPrice ?? liq?.entryPrice);
+      if (current) current.textContent = formatPrice(segment.currentPrice ?? liq?.currentPrice);
       if (pnl) {
         pnl.textContent = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;

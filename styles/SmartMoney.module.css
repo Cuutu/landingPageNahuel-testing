@@ -2121,3 +2121,14 @@
 .legendStatus {
   white-space: nowrap;
 }
+
+/* Valores del tooltip */
+.tooltipEntry,
+.tooltipCurrent,
+.tooltipLiquidity,
+.tooltipShares,
+.tooltipRealized {
+  color: #e5e7eb;
+  font-weight: 600;
+  text-align: right;
+}

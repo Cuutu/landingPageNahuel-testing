@@ -6891,3 +6891,14 @@
 .tooltipSymbol { margin: 0 0 6px 0; font-weight: 700; }
 .tooltipDetails { font-size: 13px; }
 .tooltipRow { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+
+/* Valores del tooltip */
+.tooltipEntry,
+.tooltipCurrent,
+.tooltipLiquidity,
+.tooltipShares,
+.tooltipRealized {
+  color: #e5e7eb;
+  font-weight: 600;
+  text-align: right;
+}
