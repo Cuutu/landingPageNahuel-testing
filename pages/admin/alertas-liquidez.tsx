@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import AdminRouteGuard from '@/components/AdminRouteGuard';
 import { useRouter } from 'next/router';
+import styles from '@/styles/AdminLiquidity.module.css';
 
 // Lazy import de toast para evitar SSR issues
 let toast: any;
@@ -219,40 +220,40 @@ const AdminLiquidityPage: React.FC = () => {
   }, [liquidity]);
 
   const card = (children: React.ReactNode) => (
-    <div className="rounded-lg border border-gray-700 bg-gray-900 p-4 shadow-sm">{children}</div>
+    <div className={styles.card}>{children}</div>
   );
 
   if (loading) {
     return (
       <AdminRouteGuard>
-        <div className="p-6 text-gray-200">Cargando...</div>
+        <div className={styles.page}>Cargando...</div>
       </AdminRouteGuard>
     );
   }
 
   return (
     <AdminRouteGuard>
-      <div className="p-6 space-y-6 text-gray-200">
-        <h1 className="text-2xl font-semibold">Liquidez</h1>
+      <div className={styles.page}>
+        <div className={styles.title}>Liquidez</div>
 
         {/* Resumen */}
         {liquidity && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className={styles.grid}>
             {card(<>
-              <div className="text-sm text-gray-400">Liquidez Total</div>
-              <div className="text-xl font-semibold">${liquidity.totalLiquidity.toFixed(2)}</div>
+              <div className={styles.label}>Liquidez Total</div>
+              <div className={styles.value}>${liquidity.totalLiquidity.toFixed(2)}</div>
             </>)}
             {card(<>
-              <div className="text-sm text-gray-400">Disponible</div>
-              <div className="text-xl font-semibold">${liquidity.availableLiquidity.toFixed(2)}</div>
+              <div className={styles.label}>Disponible</div>
+              <div className={styles.value}>${liquidity.availableLiquidity.toFixed(2)}</div>
             </>)}
             {card(<>
-              <div className="text-sm text-gray-400">Distribuida</div>
-              <div className="text-xl font-semibold">${liquidity.distributedLiquidity.toFixed(2)}</div>
+              <div className={styles.label}>Distribuida</div>
+              <div className={styles.value}>${liquidity.distributedLiquidity.toFixed(2)}</div>
             </>)}
             {card(<>
-              <div className="text-sm text-gray-400">P&L Total</div>
-              <div className="text-xl font-semibold">${liquidity.totalProfitLoss.toFixed(2)} ({liquidity.totalProfitLossPercentage.toFixed(2)}%)</div>
+              <div className={styles.label}>P&L Total</div>
+              <div className={styles.value}>${liquidity.totalProfitLoss.toFixed(2)} ({liquidity.totalProfitLossPercentage.toFixed(2)}%)</div>
             </>)}
           </div>
         )}
@@ -260,72 +261,72 @@ const AdminLiquidityPage: React.FC = () => {
         {/* Actualizar total */}
         {card(<>
           <div className="font-medium mb-2">Actualizar Liquidez Total</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <input value={newTotal} onChange={e => setNewTotal(e.target.value)} type="number" step="0.01" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-48" placeholder="Total USD" />
-            <button onClick={handleUpdateTotal} disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Guardar</button>
+          <div className={styles.row}>
+            <input value={newTotal} onChange={e => setNewTotal(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="Total USD" />
+            <button onClick={handleUpdateTotal} disabled={saving} className={`${styles.btn} ${styles.btnPrimary}`}>Guardar</button>
           </div>
         </>)}
 
         {/* Asignar SmartMoney */}
         {card(<>
           <div className="font-medium mb-3">Asignar a Alerta Activa - SmartMoney</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <select value={smartAssignId} onChange={e => setSmartAssignId(e.target.value)} className="border border-gray-700 bg-gray-800 rounded px-3 py-2 min-w-[220px]">
+          <div className={styles.row}>
+            <select value={smartAssignId} onChange={e => setSmartAssignId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
               {smartAlerts.map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={smartAssignPct} onChange={e => setSmartAssignPct(e.target.value)} type="number" step="0.01" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-32" placeholder="%" />
-            <button onClick={handleAssignSmart} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Asignar</button>
+            <input value={smartAssignPct} onChange={e => setSmartAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
+            <button onClick={handleAssignSmart} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
           </div>
-          <div className="text-sm text-gray-400 mt-2">% asignado total: {totalAssignedPct.toFixed(2)}%</div>
+          <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>% asignado total: {totalAssignedPct.toFixed(2)}%</div>
         </>)}
 
         {/* Asignar TraderCall */}
         {card(<>
           <div className="font-medium mb-3">Asignar a Alerta Activa - TraderCall</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <select value={traderAssignId} onChange={e => setTraderAssignId(e.target.value)} className="border border-gray-700 bg-gray-800 rounded px-3 py-2 min-w-[220px]">
+          <div className={styles.row}>
+            <select value={traderAssignId} onChange={e => setTraderAssignId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
               {traderAlerts.map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={traderAssignPct} onChange={e => setTraderAssignPct(e.target.value)} type="number" step="0.01" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-32" placeholder="%" />
-            <button onClick={handleAssignTrader} disabled={saving} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">Asignar</button>
+            <input value={traderAssignPct} onChange={e => setTraderAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
+            <button onClick={handleAssignTrader} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
           </div>
         </>)}
 
         {/* Vender SmartMoney */}
         {card(<>
           <div className="font-medium mb-3">Vender - SmartMoney</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className="border border-gray-700 bg-gray-800 rounded px-3 py-2 min-w-[220px]">
+          <div className={styles.row}>
+            <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
               {smartAlerts.map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={smartSellShares} onChange={e => setSmartSellShares(e.target.value)} type="number" step="1" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-28" placeholder="shares" />
-            <input value={smartSellPrice} onChange={e => setSmartSellPrice(e.target.value)} type="number" step="0.01" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-28" placeholder="price" />
-            <button onClick={handleSellSmart} disabled={saving} className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">Vender</button>
+            <input value={smartSellShares} onChange={e => setSmartSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
+            <input value={smartSellPrice} onChange={e => setSmartSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
+            <button onClick={handleSellSmart} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
         </>)}
 
         {/* Vender TraderCall */}
         {card(<>
           <div className="font-medium mb-3">Vender - TraderCall</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <select value={traderSellId} onChange={e => setTraderSellId(e.target.value)} className="border border-gray-700 bg-gray-800 rounded px-3 py-2 min-w-[220px]">
+          <div className={styles.row}>
+            <select value={traderSellId} onChange={e => setTraderSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
               {traderAlerts.map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={traderSellShares} onChange={e => setTraderSellShares(e.target.value)} type="number" step="1" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-28" placeholder="shares" />
-            <input value={traderSellPrice} onChange={e => setTraderSellPrice(e.target.value)} type="number" step="0.01" className="border border-gray-700 bg-gray-800 rounded px-3 py-2 w-28" placeholder="price" />
-            <button onClick={handleSellTrader} disabled={saving} className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">Vender</button>
+            <input value={traderSellShares} onChange={e => setTraderSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
+            <input value={traderSellPrice} onChange={e => setTraderSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
+            <button onClick={handleSellTrader} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
         </>)}
 
@@ -333,34 +334,34 @@ const AdminLiquidityPage: React.FC = () => {
         {card(<>
           <div className="font-medium mb-3">Distribuciones</div>
           <div className="overflow-auto">
-            <table className="min-w-full text-sm">
+            <table className={styles.table}>
               <thead>
-                <tr className="text-left border-b border-gray-700 text-gray-400">
-                  <th className="py-2 pr-4">Símbolo</th>
-                  <th className="py-2 pr-4">%</th>
-                  <th className="py-2 pr-4">Asignado</th>
-                  <th className="py-2 pr-4">Shares</th>
-                  <th className="py-2 pr-4">Entry</th>
-                  <th className="py-2 pr-4">Precio</th>
-                  <th className="py-2 pr-4">P&L</th>
-                  <th className="py-2 pr-4">Realizado</th>
-                  <th className="py-2 pr-4">Acciones</th>
+                <tr>
+                  <th className={styles.th}>Símbolo</th>
+                  <th className={styles.th}>%</th>
+                  <th className={styles.th}>Asignado</th>
+                  <th className={styles.th}>Shares</th>
+                  <th className={styles.th}>Entry</th>
+                  <th className={styles.th}>Precio</th>
+                  <th className={styles.th}>P&L</th>
+                  <th className={styles.th}>Realizado</th>
+                  <th className={styles.th}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {liquidity?.distributions.map((d) => (
-                  <tr key={d.alertId} className="border-b border-gray-800">
-                    <td className="py-2 pr-4 font-medium">{d.symbol}</td>
-                    <td className="py-2 pr-4">{d.percentage.toFixed(2)}%</td>
-                    <td className="py-2 pr-4">${d.allocatedAmount.toFixed(2)}</td>
-                    <td className="py-2 pr-4">{d.shares}</td>
-                    <td className="py-2 pr-4">${d.entryPrice.toFixed(2)}</td>
-                    <td className="py-2 pr-4">${d.currentPrice.toFixed(2)}</td>
-                    <td className="py-2 pr-4">${d.profitLoss.toFixed(2)} ({d.profitLossPercentage.toFixed(2)}%)</td>
-                    <td className="py-2 pr-4">${(d.realizedProfitLoss || 0).toFixed(2)}</td>
-                    <td className="py-2 pr-4 space-x-2">
-                      <button onClick={() => handleSell(d.alertId, String(d.shares), String(d.currentPrice))} className="text-yellow-400 hover:underline">Vender total</button>
-                      <button onClick={async () => { try { await fetchJSON('/api/liquidity/remove-distribution', { method: 'POST', body: JSON.stringify({ alertId: d.alertId }) }); toast?.success('Distribución removida'); await loadData(); } catch (e: any) { toast?.error(e.message); } }} className="text-red-400 hover:underline">Remover</button>
+                  <tr key={d.alertId}>
+                    <td className={styles.td}>{d.symbol}</td>
+                    <td className={styles.td}>{d.percentage.toFixed(2)}%</td>
+                    <td className={styles.td}>${d.allocatedAmount.toFixed(2)}</td>
+                    <td className={styles.td}>{d.shares}</td>
+                    <td className={styles.td}>${d.entryPrice.toFixed(2)}</td>
+                    <td className={styles.td}>${d.currentPrice.toFixed(2)}</td>
+                    <td className={styles.td}>${d.profitLoss.toFixed(2)} ({d.profitLossPercentage.toFixed(2)}%)</td>
+                    <td className={styles.td}>${(d.realizedProfitLoss || 0).toFixed(2)}</td>
+                    <td className={`${styles.td} ${styles.actions}`}>
+                      <button onClick={() => handleSell(d.alertId, String(d.shares), String(d.currentPrice))} className={`${styles.btn} ${styles.btnWarn}`}>Vender total</button>
+                      <button onClick={async () => { try { await fetchJSON('/api/liquidity/remove-distribution', { method: 'POST', body: JSON.stringify({ alertId: d.alertId }) }); toast?.success('Distribución removida'); await loadData(); } catch (e: any) { toast?.error(e.message); } }} className={`${styles.btn} ${styles.btnDanger}`}>Remover</button>
                     </td>
                   </tr>
                 ))}
