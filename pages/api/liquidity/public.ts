@@ -30,7 +30,7 @@ export default async function handler(
   res: NextApiResponse<PublicLiquidityResponse>
 ) {
   if (req.method !== 'GET') {
-    return res.status(405).json({ success: false, error: 'Método no permitido' });
+    return res.status(405).json({ success: false, error: 'Método no permitido.' });
   }
 
   try {
