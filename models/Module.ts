@@ -12,7 +12,7 @@ export interface IModule extends Document {
   nombre: string;
   descripcion: string;
   roadmapId: string; // Referencia al roadmap padre
-  tipoEntrenamiento: 'SwingTrading' | 'DowJones' | 'General';
+  tipoEntrenamiento: 'SwingTrading' | 'DayTrading' | 'DowJones' | 'General';
   duracion: string;
   lecciones: number;
   temas: ModuleTopic[];
@@ -53,7 +53,7 @@ const ModuleSchema = new Schema<IModule>({
   tipoEntrenamiento: {
     type: String,
     required: true,
-    enum: ['SwingTrading', 'DowJones', 'General']
+    enum: ['SwingTrading', 'DayTrading', 'DowJones', 'General']
   },
   duracion: {
     type: String,
@@ -64,7 +64,7 @@ const ModuleSchema = new Schema<IModule>({
     type: Number,
     required: true,
     min: [1, 'Debe haber al menos 1 lección'],
-    max: [100, 'No puede haber más de 100 lecciones por módulo']
+    max: [1000, 'No puede haber más de 1000 lecciones por módulo']
   },
   temas: [{
     titulo: {

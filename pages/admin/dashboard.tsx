@@ -453,6 +453,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
     });
     setFormErrors({});
     setSubmitError('');
+    setRoadmapModules([]); // Limpiar módulos independientes
     resetModuleForm();
   };
 
@@ -903,7 +904,10 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                   <option value="General">General</option>
                 </select>
                 <button
-                  onClick={() => setShowCreateModal(true)}
+                  onClick={() => {
+                    resetForm();
+                    setShowCreateModal(true);
+                  }}
                   className={styles.createButton}
                 >
                   <Plus size={16} />
@@ -949,7 +953,10 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                       <li>3. Editarlo para agregar módulos</li>
                     </ol>
                     <button 
-                      onClick={() => setShowCreateModal(true)}
+                      onClick={() => {
+                        resetForm();
+                        setShowCreateModal(true);
+                      }}
                       className={styles.createFirstRoadmapButton}
                     >
                       <Plus size={16} />
