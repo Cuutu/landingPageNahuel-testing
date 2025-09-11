@@ -123,6 +123,23 @@ const AdminLiquidityPage: React.FC = () => {
     }
   }, [queryAlertId, queryTipo, smartAlerts.length, traderAlerts.length]);
 
+  // Limpiar estados no relevantes al cambiar de pool
+  useEffect(() => {
+    if (selectedPool === 'SmartMoney') {
+      setTraderAssignId('');
+      setTraderAssignPct('');
+      setTraderSellId('');
+      setTraderSellShares('');
+      setTraderSellPrice('');
+    } else if (selectedPool === 'TraderCall') {
+      setSmartAssignId('');
+      setSmartAssignPct('');
+      setSmartSellId('');
+      setSmartSellShares('');
+      setSmartSellPrice('');
+    }
+  }, [selectedPool]);
+
   const handleUpdateTotal = async () => {
     try {
       setSaving(true);
@@ -284,7 +301,7 @@ const AdminLiquidityPage: React.FC = () => {
         </>)}
 
         {/* Asignar SmartMoney */}
-        {card(<>
+        {selectedPool === 'SmartMoney' && card(<>
           <div className="font-medium mb-3">Asignar a Alerta Activa - SmartMoney</div>
           <div className={styles.row}>
             <select value={smartAssignId} onChange={e => setSmartAssignId(e.target.value)} className={styles.select}>
@@ -300,7 +317,7 @@ const AdminLiquidityPage: React.FC = () => {
         </>)}
 
         {/* Asignar TraderCall */}
-        {card(<>
+        {selectedPool === 'TraderCall' && card(<>
           <div className="font-medium mb-3">Asignar a Alerta Activa - TraderCall</div>
           <div className={styles.row}>
             <select value={traderAssignId} onChange={e => setTraderAssignId(e.target.value)} className={styles.select}>
@@ -315,7 +332,7 @@ const AdminLiquidityPage: React.FC = () => {
         </>)}
 
         {/* Vender SmartMoney */}
-        {card(<>
+        {selectedPool === 'SmartMoney' && card(<>
           <div className="font-medium mb-3">Vender - SmartMoney</div>
           <div className={styles.row}>
             <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className={styles.select}>
@@ -331,7 +348,7 @@ const AdminLiquidityPage: React.FC = () => {
         </>)}
 
         {/* Vender TraderCall */}
-        {card(<>
+        {selectedPool === 'TraderCall' && card(<>
           <div className="font-medium mb-3">Vender - TraderCall</div>
           <div className={styles.row}>
             <select value={traderSellId} onChange={e => setTraderSellId(e.target.value)} className={styles.select}>
