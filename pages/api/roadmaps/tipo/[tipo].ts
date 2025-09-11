@@ -17,11 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { tipo } = req.query;
 
     // Validar tipo de entrenamiento
-    const tiposValidos = ['SwingTrading', 'DowJones', 'General'];
+    const tiposValidos = ['SwingTrading', 'DayTrading'];
     if (!tipo || !tiposValidos.includes(tipo as string)) {
       return res.status(400).json({
         success: false,
-        error: 'Tipo de entrenamiento inválido. Debe ser: SwingTrading, DowJones o General'
+        error: 'Tipo de entrenamiento inválido. Debe ser: SwingTrading, DayTrading'
       });
     }
 

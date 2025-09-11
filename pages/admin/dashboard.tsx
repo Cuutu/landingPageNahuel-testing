@@ -900,8 +900,6 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                   <option value="all">Todos los tipos</option>
                   <option value="SwingTrading">Swing Trading</option>
                   <option value="DayTrading">Day Trading</option>
-                  <option value="DowJones">Dow Jones</option>
-                  <option value="General">General</option>
                 </select>
                 <button
                   onClick={() => {
@@ -1086,8 +1084,6 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                     >
                       <option value="SwingTrading">Swing Trading</option>
                       <option value="DayTrading">Day Trading</option>
-                      <option value="DowJones">Dow Jones</option>
-                      <option value="General">General</option>
                     </select>
                   </div>
                 </div>
