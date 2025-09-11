@@ -436,6 +436,10 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     }
   ];
 
+  // Calcular el número de grupos (cada grupo tiene 3 elementos)
+  const itemsPerGroup = 3;
+  const totalGroups = Math.ceil(destacadosItems.length / itemsPerGroup);
+
   const servicios = [
     {
       titulo: 'Alertas de Trading',
@@ -1090,16 +1094,18 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                 {/* Flecha izquierda */}
                 <button 
                   className={styles.carouselArrowUnificado} 
-                  onClick={() => setCurrentDestacadoIndex(prev => prev === 0 ? destacadosItems.length - 1 : prev - 1)}
+                  onClick={() => setCurrentDestacadoIndex(prev => prev === 0 ? totalGroups - 1 : prev - 1)}
                 >
                   <ChevronLeft size={24} />
                 </button>
 
                 <div className={styles.destacadosUnificadosCards}>
-                  {destacadosItems.map((item, index) => (
+                  {destacadosItems
+                    .slice(currentDestacadoIndex * itemsPerGroup, (currentDestacadoIndex + 1) * itemsPerGroup)
+                    .map((item, index) => (
                     <motion.div
                       key={item.id}
-                      className={`${styles.destacadoUnificadoCard} ${index === currentDestacadoIndex ? styles.active : ''}`}
+                      className={styles.destacadoUnificadoCard}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -1154,7 +1160,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                 {/* Flecha derecha */}
                 <button 
                   className={styles.carouselArrowUnificado} 
-                  onClick={() => setCurrentDestacadoIndex(prev => prev === destacadosItems.length - 1 ? 0 : prev + 1)}
+                  onClick={() => setCurrentDestacadoIndex(prev => prev === totalGroups - 1 ? 0 : prev + 1)}
                 >
                   <ChevronRight size={24} />
                 </button>
@@ -1162,14 +1168,14 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
 
               {/* Indicadores */}
               <div className={styles.destacadosUnificadosIndicators}>
-                {destacadosItems.map((_, index) => (
+                {Array.from({ length: totalGroups }, (_, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentDestacadoIndex(index)}
                     className={`${styles.destacadoUnificadoIndicator} ${
                       index === currentDestacadoIndex ? styles.active : ''
                     }`}
-                    aria-label={`Ver destacado ${index + 1}`}
+                    aria-label={`Ver grupo ${index + 1}`}
                   />
                 ))}
               </div>
