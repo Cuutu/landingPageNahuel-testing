@@ -225,6 +225,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   const [submitMessage, setSubmitMessage] = useState('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
+  const [currentDestacadoIndex, setCurrentDestacadoIndex] = useState(0);
 
   // Hook para manejar la frecuencia del popup
   const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
@@ -351,6 +352,89 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     const colors = ['#6366f1', '#ef4444', '#22c55e']; // Azul, Rojo, Verde
     return colors[index % colors.length];
   };
+
+  // Datos de elementos destacados unificados
+  const destacadosItems = [
+    {
+      id: 'trader-call',
+      titulo: 'Trader Call',
+      descripcion: 'Comenzá a recibir señales precisas de compra y venta fundamentadas en una estrategia de corto plazo y herramientas avanzadas de análisis técnico',
+      tag: 'Alertas',
+      tagClass: 'tagAlertas',
+      rating: '4,7',
+      precio: '$15.000/mes',
+      href: '/alertas/trader-call',
+      external: false,
+      separator: false,
+      rocketIcon: false
+    },
+    {
+      id: 'swing-trading',
+      titulo: 'Swing Trading',
+      descripcion: 'Entrenamiento intensivo de 3 meses donde aprenderás a implementar una estrategia efectiva de Swing Trading, con sesiones en vivo y acompañamiento personalizado',
+      tag: 'Entrenamientos',
+      tagClass: 'tagEntrenamientos',
+      rating: '4,8',
+      precio: '$279.000',
+      href: '/entrenamientos/swing-trading',
+      external: false,
+      separator: false,
+      rocketIcon: false
+    },
+    {
+      id: 'consultorio-financiero',
+      titulo: 'Consultorio Financiero',
+      descripcion: 'Consulta individual personalizada de 60 minutos para analizar tu situación financiera y diseñar una estrategia de inversión según tu perfil de riesgo',
+      tag: 'Asesorías',
+      tagClass: 'tagAsesorias',
+      rating: '4,5',
+      precio: '$30.000/sesión',
+      href: '/asesorias/consultorio-financiero',
+      external: false,
+      separator: true,
+      rocketIcon: false
+    },
+    {
+      id: 'pack-analisis-tecnico',
+      titulo: 'Pack Análisis Técnico',
+      descripcion: 'Pack de 5 cursos online donde aprenderás análisis técnico desde cero. Chartismo, indicadores y las mejores plataformas de trading. Todo con un 10% de descuento',
+      tag: 'Mentoring',
+      tagClass: 'tagMentoring',
+      rating: '4,9',
+      precio: '$180.000',
+      descuento: '10% OFF',
+      href: 'https://plataformacursos.lozanonahuel.com/cursos/packs',
+      external: true,
+      separator: true,
+      rocketIcon: true
+    },
+    {
+      id: 'medias-moviles',
+      titulo: 'Medias Móviles Automáticas',
+      descripcion: 'Indicador que ajusta automáticamente los parámetros de medias móviles según la temporalidad del gráfico, optimizando el análisis técnico en cada marco temporal',
+      tag: 'Recursos',
+      tagClass: 'tagRecursos',
+      rating: '4,5',
+      precio: '$15.000',
+      href: '#',
+      external: false,
+      separator: false,
+      rocketIcon: false
+    },
+    {
+      id: 'lista-wall-street',
+      titulo: 'Lista de Seguimiento Wall Street',
+      descripcion: 'Lista de seguimiento organizada con los principales activos de Wall Street para monitorear oportunidades y optimizar decisiones de inversión',
+      tag: 'Recursos',
+      tagClass: 'tagRecursos',
+      rating: '4,9',
+      precio: 'Gratis',
+      href: '#',
+      external: false,
+      separator: false,
+      rocketIcon: false
+    }
+  ];
 
   const servicios = [
     {
@@ -989,8 +1073,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Destacados Section - NUEVA SECCIÓN REEMPLAZANDO CURSOS DESTACADOS */}
-        <section className={styles.destacados}>
+        {/* Destacados Section - SLIDER UNIFICADO */}
+        <section className={styles.destacadosUnificados}>
           <div className="container">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -998,90 +1082,96 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <div className={styles.destacadosHeader}>
+              <div className={styles.destacadosUnificadosHeader}>
                 <h2>Destacados</h2>
               </div>
 
-              <div className={styles.destacadosCarousel}>
+              <div className={styles.destacadosUnificadosCarousel}>
                 {/* Flecha izquierda */}
-                <button className={styles.carouselArrow} onClick={() => {}}>
+                <button 
+                  className={styles.carouselArrowUnificado} 
+                  onClick={() => setCurrentDestacadoIndex(prev => prev === 0 ? destacadosItems.length - 1 : prev - 1)}
+                >
                   <ChevronLeft size={24} />
                 </button>
 
-                <div className={styles.destacadosCards}>
-                  {/* Card Trader Call */}
-                  <motion.div
-                    className={styles.destacadoCard}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className={styles.destacadoCardHeader}>
-                      <h3>Trader Call</h3>
-                      <div className={styles.destacadoCardMeta}>
-                        <span className={styles.destacadoTag + ' ' + styles.tagAlertas}>Alertas</span>
-                        <span className={styles.destacadoRating}>
-                          <Star size={16} fill="currentColor" />
-                          4,7
-                        </span>
+                <div className={styles.destacadosUnificadosCards}>
+                  {destacadosItems.map((item, index) => (
+                    <motion.div
+                      key={item.id}
+                      className={`${styles.destacadoUnificadoCard} ${index === currentDestacadoIndex ? styles.active : ''}`}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      viewport={{ once: true }}
+                    >
+                      <div className={styles.destacadoUnificadoCardHeader}>
+                        <h3>{item.titulo}</h3>
+                        <div className={styles.destacadoUnificadoCardMeta}>
+                          <span className={`${styles.destacadoUnificadoTag} ${styles[item.tagClass]}`}>
+                            {item.tag}
+                            {item.rocketIcon && <span className={styles.rocketIcon}>🚀</span>}
+                          </span>
+                          <span className={styles.destacadoUnificadoRating}>
+                            <Star size={16} fill="currentColor" />
+                            {item.rating}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <p className={styles.destacadoDescription}>
-                      Comenzá a recibir señales precisas de compra y venta fundamentadas en una estrategia de corto plazo y herramientas avanzadas de análisis técnico
-                    </p>
-                    
-                    <div className={styles.destacadoFooter}>
-                      <div className={styles.destacadoPrecio}>
-                        $15.000/mes
+                      
+                      <p className={styles.destacadoUnificadoDescription}>
+                        {item.descripcion}
+                      </p>
+                      
+                      {item.separator && <div className={styles.destacadoUnificadoSeparator}></div>}
+                      
+                      <div className={styles.destacadoUnificadoFooter}>
+                        <div className={styles.destacadoUnificadoPrecio}>
+                          {item.precio}
+                          {item.descuento && <span className={styles.descuento}>{item.descuento}</span>}
+                        </div>
+                        {item.external ? (
+                          <a 
+                            href={item.href} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className={styles.destacadoUnificadoButton}
+                          >
+                            Ver más
+                            <ChevronRight size={16} />
+                          </a>
+                        ) : (
+                          <Link href={item.href} className={styles.destacadoUnificadoButton}>
+                            Ver más
+                            <ChevronRight size={16} />
+                          </Link>
+                        )}
                       </div>
-                      <Link href="/alertas/trader-call" className={styles.destacadoButton}>
-                        Ver más
-                        <ChevronRight size={16} />
-                      </Link>
-                    </div>
-                  </motion.div>
-
-                  {/* Card Swing Trading */}
-                  <motion.div
-                    className={styles.destacadoCard}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className={styles.destacadoCardHeader}>
-                      <h3>Swing Trading</h3>
-                      <div className={styles.destacadoCardMeta}>
-                        <span className={styles.destacadoTag + ' ' + styles.tagEntrenamientos}>Entrenamientos</span>
-                        <span className={styles.destacadoRating}>
-                          <Star size={16} fill="currentColor" />
-                          4,8
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className={styles.destacadoDescription}>
-                      Entrenamiento intensivo de 3 meses donde aprenderás a implementar una estrategia efectiva de Swing Trading, con sesiones en vivo y acompañamiento personalizado
-                    </p>
-                    
-                    <div className={styles.destacadoFooter}>
-                      <div className={styles.destacadoPrecio}>
-                        $279.000
-                      </div>
-                      <Link href="/entrenamientos/swing-trading" className={styles.destacadoButton}>
-                        Ver más
-                        <ChevronRight size={16} />
-                      </Link>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  ))}
                 </div>
 
                 {/* Flecha derecha */}
-                <button className={styles.carouselArrow} onClick={() => {}}>
+                <button 
+                  className={styles.carouselArrowUnificado} 
+                  onClick={() => setCurrentDestacadoIndex(prev => prev === destacadosItems.length - 1 ? 0 : prev + 1)}
+                >
                   <ChevronRight size={24} />
                 </button>
+              </div>
+
+              {/* Indicadores */}
+              <div className={styles.destacadosUnificadosIndicators}>
+                {destacadosItems.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentDestacadoIndex(index)}
+                    className={`${styles.destacadoUnificadoIndicator} ${
+                      index === currentDestacadoIndex ? styles.active : ''
+                    }`}
+                    aria-label={`Ver destacado ${index + 1}`}
+                  />
+                ))}
               </div>
             </motion.div>
           </div>
@@ -1158,116 +1248,6 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Nueva Sección Destacados - Consultorio Financiero y Pack Análisis Técnico */}
-        <section className={styles.destacadosNuevos}>
-          <div className="container">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className={styles.destacadosNuevosHeader}>
-                <h2>Destacados</h2>
-              </div>
-
-              <div className={styles.destacadosNuevosCarousel}>
-                {/* Flecha izquierda */}
-                <button className={styles.carouselArrow} onClick={() => {}}>
-                  <ChevronLeft size={24} />
-                </button>
-
-                <div className={styles.destacadosNuevosCards}>
-                  {/* Card Consultorio Financiero */}
-                  <motion.div
-                    className={styles.destacadoNuevoCard}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className={styles.destacadoNuevoCardHeader}>
-                      <h3>Consultorio Financiero</h3>
-                      <div className={styles.destacadoNuevoCardMeta}>
-                        <span className={styles.destacadoNuevoTag + ' ' + styles.tagAsesorias}>Asesorías</span>
-                        <span className={styles.destacadoNuevoRating}>
-                          <Star size={16} fill="currentColor" />
-                          4,5
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className={styles.destacadoNuevoDescription}>
-                      Consulta individual personalizada de 60 minutos para analizar tu situación financiera y diseñar una estrategia de inversión según tu perfil de riesgo
-                    </p>
-                    
-                    <div className={styles.destacadoNuevoSeparator}></div>
-                    
-                    <div className={styles.destacadoNuevoFooter}>
-                      <div className={styles.destacadoNuevoPrecio}>
-                        $30.000/sesión
-                      </div>
-                      <Link href="/asesorias/consultorio-financiero" className={styles.destacadoNuevoButton}>
-                        Ver más
-                        <ChevronRight size={16} />
-                      </Link>
-                    </div>
-                  </motion.div>
-
-                  {/* Card Pack Análisis Técnico */}
-                  <motion.div
-                    className={styles.destacadoNuevoCard}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    viewport={{ once: true }}
-                  >
-                    <div className={styles.destacadoNuevoCardHeader}>
-                      <h3>Pack Análisis Técnico</h3>
-                      <div className={styles.destacadoNuevoCardMeta}>
-                        <span className={styles.destacadoNuevoTag + ' ' + styles.tagMentoring}>
-                          <span>Mentoring</span>
-                          <span className={styles.rocketIcon}>🚀</span>
-                        </span>
-                        <span className={styles.destacadoNuevoRating}>
-                          <Star size={16} fill="currentColor" />
-                          4,9
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className={styles.destacadoNuevoDescription}>
-                      Pack de 5 cursos online donde aprenderás análisis técnico desde cero. Chartismo, indicadores y las mejores plataformas de trading. Todo con un 10% de descuento
-                    </p>
-                    
-                    <div className={styles.destacadoNuevoSeparator}></div>
-                    
-                    <div className={styles.destacadoNuevoFooter}>
-                      <div className={styles.destacadoNuevoPrecio}>
-                        $180.000
-                        <span className={styles.descuento}>10% OFF</span>
-                      </div>
-                      <a 
-                        href="https://plataformacursos.lozanonahuel.com/cursos/packs" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className={styles.destacadoNuevoButton}
-                      >
-                        Ver más
-                        <ChevronRight size={16} />
-                      </a>
-                    </div>
-                  </motion.div>
-                </div>
-
-                {/* Flecha derecha */}
-                <button className={styles.carouselArrow} onClick={() => {}}>
-                  <ChevronRight size={24} />
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </section>
 
         {/* Nueva Sección Testimonios Carrusel */}
         <section className={styles.testimoniosCarrusel}>
@@ -1338,76 +1318,6 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Nueva Sección Destacados Recursos */}
-        <section className={styles.destacadosRecursos}>
-          <div className="container">
-            <motion.div
-              className={styles.destacadosRecursosContent}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <h2 className={styles.destacadosRecursosTitle}>Destacados</h2>
-              
-              <div className={styles.destacadosRecursosContainer}>
-                <button className={styles.carruselFlecha}>
-                  <ChevronLeft size={24} />
-                </button>
-                
-                <div className={styles.destacadosRecursosCards}>
-                  <div className={styles.destacadoRecursoCard}>
-                    <div className={styles.destacadoRecursoHeader}>
-                      <h3 className={styles.destacadoRecursoTitle}>Médias Móviles Automáticas</h3>
-                      <div className={styles.destacadoRecursoMeta}>
-                        <span className={styles.destacadoRecursoTag}>Recursos</span>
-                        <div className={styles.destacadoRecursoRating}>
-                          <Star size={16} className={styles.ratingStar} fill="#fbbf24" />
-                          <span>4,5</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className={styles.destacadoRecursoDescription}>
-                      Indicador que ajusta automáticamente los parámetros de medias móviles según la temporalidad del gráfico, optimizando el análisis técnico en cada marco temporal
-                    </p>
-                    <div className={styles.destacadoRecursoFooter}>
-                      <span className={styles.destacadoRecursoPrice}>$15.000</span>
-                      <button className={styles.destacadoRecursoButton}>
-                        Ver más &gt;
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.destacadoRecursoCard}>
-                    <div className={styles.destacadoRecursoHeader}>
-                      <h3 className={styles.destacadoRecursoTitle}>Lista de Seguimiento Wall Street</h3>
-                      <div className={styles.destacadoRecursoMeta}>
-                        <span className={styles.destacadoRecursoTag}>Recursos</span>
-                        <div className={styles.destacadoRecursoRating}>
-                          <Star size={16} className={styles.ratingStar} fill="#fbbf24" />
-                          <span>4,9</span>
-                        </div>
-                      </div>
-                    </div>
-                    <p className={styles.destacadoRecursoDescription}>
-                      Lista de seguimiento organizada con los principales activos de Wall Street para monitorear oportunidades y optimizar decisiones de inversión
-                    </p>
-                    <div className={styles.destacadoRecursoFooter}>
-                      <span className={styles.destacadoRecursoPrice}>Gratis</span>
-                      <button className={styles.destacadoRecursoButton}>
-                        Ver más &gt;
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                
-                <button className={styles.carruselFlecha}>
-                  <ChevronRight size={24} />
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        </section>
 
         {/* Nueva Sección Testimonios */}
         <section className={styles.testimoniosNuevaSeccion}>
