@@ -436,8 +436,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     }
   ];
 
-  // Calcular el número de grupos (cada grupo tiene 3 elementos)
-  const itemsPerGroup = 3;
+  // Calcular el número de grupos (cada grupo tiene 2 elementos)
+  const itemsPerGroup = 2;
   const totalGroups = Math.ceil(destacadosItems.length / itemsPerGroup);
 
   const servicios = [
