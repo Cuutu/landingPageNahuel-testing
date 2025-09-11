@@ -80,7 +80,7 @@ interface Roadmap {
   _id: string;
   nombre: string;
   descripcion: string;
-  tipoEntrenamiento: 'SwingTrading' | 'DowJones' | 'General';
+  tipoEntrenamiento: 'SwingTrading' | 'DayTrading' | 'DowJones' | 'General';
   modulos: RoadmapModule[];
   activo: boolean;
   orden: number;
@@ -241,7 +241,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
-    tipoEntrenamiento: 'SwingTrading' as 'SwingTrading' | 'DowJones' | 'General',
+    tipoEntrenamiento: 'SwingTrading' as 'SwingTrading' | 'DayTrading' | 'DowJones' | 'General',
     modulos: [] as RoadmapModule[],
     activo: true,
     orden: 1
@@ -898,6 +898,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                 >
                   <option value="all">Todos los tipos</option>
                   <option value="SwingTrading">Swing Trading</option>
+                  <option value="DayTrading">Day Trading</option>
                   <option value="DowJones">Dow Jones</option>
                   <option value="General">General</option>
                 </select>
@@ -1077,6 +1078,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                       className={formErrors.tipoEntrenamiento ? styles.fieldError : ''}
                     >
                       <option value="SwingTrading">Swing Trading</option>
+                      <option value="DayTrading">Day Trading</option>
                       <option value="DowJones">Dow Jones</option>
                       <option value="General">General</option>
                     </select>
