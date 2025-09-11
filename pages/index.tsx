@@ -226,6 +226,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const [currentDestacadoIndex, setCurrentDestacadoIndex] = useState(0);
+  const [currentTestimonialGroupIndex, setCurrentTestimonialGroupIndex] = useState(0);
 
   // Hook para manejar la frecuencia del popup
   const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
@@ -352,6 +353,56 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     const colors = ['#6366f1', '#ef4444', '#22c55e']; // Azul, Rojo, Verde
     return colors[index % colors.length];
   };
+
+  // Testimonios unificados para el slider
+  const testimoniosUnificados = [
+    {
+      id: 'carlos-mendoza-1',
+      nombre: 'Carlos Mendoza',
+      texto: 'Las alertas de Nahuel me han ayudado a incrementar mi cartera un 45% en los últimos 6 meses.',
+      calificacion: 5,
+      avatarColor: '#3b82f6'
+    },
+    {
+      id: 'maria-garcia',
+      nombre: 'María García',
+      texto: 'El entrenamiento de trading cambió completamente mi forma de invertir. Excelente contenido.',
+      calificacion: 5,
+      avatarColor: '#ef4444'
+    },
+    {
+      id: 'roberto-silva',
+      nombre: 'Roberto Silva',
+      texto: 'Smart Money es increíble. Las señales son precisas y muy fáciles de seguir.',
+      calificacion: 5,
+      avatarColor: '#10b981'
+    },
+    {
+      id: 'carlos-mendoza-2',
+      nombre: 'Carlos Mendoza',
+      texto: 'Las alertas de Nahuel me han ayudado a incrementar mi cartera un 25% en los últimos 6 meses.',
+      calificacion: 4,
+      avatarColor: '#6366f1'
+    },
+    {
+      id: 'ana-laura-quiroga',
+      nombre: 'Ana Laura Quiroga',
+      texto: 'Los cursos de análisis técnico son realmente muy buenos y didácticos. 100% recomendables!',
+      calificacion: 5,
+      avatarColor: '#ef4444'
+    },
+    {
+      id: 'tamara-rodriguez',
+      nombre: 'Tamara Rodríguez',
+      texto: 'Las recomendaciones que brindan en las asesorías 1 a 1 son muy buenas. Estoy muy conforme',
+      calificacion: 4,
+      avatarColor: '#22c55e'
+    }
+  ];
+
+  // Calcular el número de grupos para testimonios (cada grupo tiene 3 elementos)
+  const testimoniosPerGroup = 3;
+  const totalTestimonialGroups = Math.ceil(testimoniosUnificados.length / testimoniosPerGroup);
 
   // Datos de elementos destacados unificados
   const destacadosItems = [
@@ -1185,8 +1236,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
 
 
 
-        {/* Testimonios Section - Nuevo Carrusel */}
-        <section className={styles.testimoniosNuevo}>
+        {/* Testimonios Section - SLIDER UNIFICADO */}
+        <section className={styles.testimoniosUnificados}>
           <div className="container">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1194,222 +1245,87 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <div className={styles.testimoniosNuevoContainer}>
+              <div className={styles.testimoniosUnificadosHeader}>
+                <h2>Lo que dicen nuestros clientes</h2>
+              </div>
+
+              <div className={styles.testimoniosUnificadosCarousel}>
                 {/* Flecha izquierda */}
                 <button 
-                  className={styles.carruselFlechaNuevo} 
-                  onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimoniosNuevos.length - 1 : prev - 1)}
+                  className={styles.carouselArrowTestimonios} 
+                  onClick={() => setCurrentTestimonialGroupIndex(prev => prev === 0 ? totalTestimonialGroups - 1 : prev - 1)}
                 >
                   <ChevronLeft size={24} />
                 </button>
 
                 {/* Testimonios */}
-                <div className={styles.testimoniosNuevoCards}>
-                  {testimoniosNuevos.map((testimonio, index) => (
+                <div className={styles.testimoniosUnificadosCards}>
+                  {testimoniosUnificados
+                    .slice(currentTestimonialGroupIndex * testimoniosPerGroup, (currentTestimonialGroupIndex + 1) * testimoniosPerGroup)
+                    .map((testimonio, index) => (
                     <motion.div
-                      key={testimonio.nombre}
-                      className={`${styles.testimonioNuevoCard} ${index === currentTestimonialIndex ? styles.active : ''}`}
+                      key={testimonio.id}
+                      className={styles.testimonioUnificadoCard}
                       initial={{ opacity: 0, scale: 0.9 }}
                       whileInView={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
                       viewport={{ once: true }}
                     >
-                      <div className={styles.testimonioNuevoAvatar}>
+                      <div className={styles.testimonioUnificadoAvatar}>
                         <div 
-                          className={styles.avatarCircleNuevo}
+                          className={styles.avatarCircleUnificado}
                           style={{ backgroundColor: testimonio.avatarColor }}
                         >
                           {testimonio.nombre.charAt(0)}
                         </div>
                       </div>
                       
-                      <h4 className={styles.testimonioNuevoNombre}>{testimonio.nombre}</h4>
+                      <h4 className={styles.testimonioUnificadoNombre}>{testimonio.nombre}</h4>
                       
-                      <div className={styles.testimonioNuevoRating}>
+                      <div className={styles.testimonioUnificadoRating}>
                         {[...Array(5)].map((_, i) => (
                           <Star 
                             key={i} 
                             size={16} 
                             fill={i < testimonio.calificacion ? "#fbbf24" : "none"}
                             stroke={i < testimonio.calificacion ? "#fbbf24" : "#ffffff"}
-                            className={styles.ratingStarNuevo}
+                            className={styles.ratingStarUnificado}
                           />
                         ))}
                       </div>
                       
-                      <p className={styles.testimonioNuevoTexto}>"{testimonio.texto}"</p>
+                      <p className={styles.testimonioUnificadoTexto}>"{testimonio.texto}"</p>
                     </motion.div>
                   ))}
                 </div>
 
                 {/* Flecha derecha */}
                 <button 
-                  className={styles.carruselFlechaNuevo} 
-                  onClick={() => setCurrentTestimonialIndex(prev => prev === testimoniosNuevos.length - 1 ? 0 : prev + 1)}
+                  className={styles.carouselArrowTestimonios} 
+                  onClick={() => setCurrentTestimonialGroupIndex(prev => prev === totalTestimonialGroups - 1 ? 0 : prev + 1)}
                 >
                   <ChevronRight size={24} />
                 </button>
               </div>
-            </motion.div>
-          </div>
-        </section>
 
-
-        {/* Nueva Sección Testimonios Carrusel */}
-        <section className={styles.testimoniosCarrusel}>
-          <div className="container">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <div className={styles.testimoniosCarruselContainer}>
-                {/* Flecha izquierda */}
-                <button 
-                  className={styles.carruselFlecha} 
-                  onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimonios.length - 1 : prev - 1)}
-                >
-                  <ChevronLeft size={24} />
-                </button>
-
-                {/* Testimonios */}
-                <div className={styles.testimoniosCarruselCards}>
-                  {testimonios.map((testimonio, index) => (
-                    <motion.div
-                      key={testimonio.nombre}
-                      className={`${styles.testimonioCarruselCard} ${index === currentTestimonialIndex ? styles.active : ''}`}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      whileInView={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.6, delay: index * 0.1 }}
-                      viewport={{ once: true }}
-                    >
-                      <div className={styles.testimonioCarruselAvatar}>
-                        <div 
-                          className={styles.avatarCircle}
-                          style={{ backgroundColor: getAvatarColor(index) }}
-                        >
-                          {testimonio.nombre.charAt(0)}
-                        </div>
-                      </div>
-                      
-                      <h4 className={styles.testimonioCarruselNombre}>{testimonio.nombre}</h4>
-                      
-                      <div className={styles.testimonioCarruselRating}>
-                        {[...Array(5)].map((_, i) => (
-                          <Star 
-                            key={i} 
-                            size={16} 
-                            fill={i < testimonio.calificacion ? "#fbbf24" : "none"}
-                            stroke={i < testimonio.calificacion ? "#fbbf24" : "#ffffff"}
-                            className={styles.ratingStar}
-                          />
-                        ))}
-                      </div>
-                      
-                      <p className={styles.testimonioCarruselTexto}>"{testimonio.texto}"</p>
-                    </motion.div>
-                  ))}
-                </div>
-
-                {/* Flecha derecha */}
-                <button 
-                  className={styles.carruselFlecha} 
-                  onClick={() => setCurrentTestimonialIndex(prev => prev === testimonios.length - 1 ? 0 : prev + 1)}
-                >
-                  <ChevronRight size={24} />
-                </button>
+              {/* Indicadores */}
+              <div className={styles.testimoniosUnificadosIndicators}>
+                {Array.from({ length: totalTestimonialGroups }, (_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentTestimonialGroupIndex(index)}
+                    className={`${styles.testimonioUnificadoIndicator} ${
+                      index === currentTestimonialGroupIndex ? styles.active : ''
+                    }`}
+                    aria-label={`Ver grupo de testimonios ${index + 1}`}
+                  />
+                ))}
               </div>
             </motion.div>
           </div>
         </section>
 
 
-        {/* Nueva Sección Testimonios */}
-        <section className={styles.testimoniosNuevaSeccion}>
-          <div className="container">
-            <motion.div
-              className={styles.testimoniosNuevaContainer}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              viewport={{ once: true }}
-            >
-              <button 
-                className={styles.carruselFlechaTestimonios}
-                onClick={() => setCurrentTestimonialIndex(prev => prev === 0 ? testimoniosNuevos.length - 1 : prev - 1)}
-              >
-                <ChevronLeft size={24} />
-              </button>
-              
-              <div className={styles.testimoniosNuevaCards}>
-                <div className={styles.testimonioNuevaCard}>
-                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#3b82f6' }}>
-                    C
-                  </div>
-                  <h4 className={styles.testimonioNuevaNombre}>Carlos Mendoza</h4>
-                  <div className={styles.ratingStarsTestimonios}>
-                    {[...Array(5)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        size={16} 
-                        className={styles.ratingStarTestimonios}
-                        fill="#fbbf24"
-                      />
-                    ))}
-                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
-                  </div>
-                  <p className={styles.testimonioNuevaTexto}>"Las alertas de Nahuel me han ayudado a incrementar mi cartera un 45% en los últimos 6 meses."</p>
-                </div>
-                
-                <div className={styles.testimonioNuevaCard}>
-                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#ef4444' }}>
-                    M
-                  </div>
-                  <h4 className={styles.testimonioNuevaNombre}>María García</h4>
-                  <div className={styles.ratingStarsTestimonios}>
-                    {[...Array(4)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        size={16} 
-                        className={styles.ratingStarTestimonios}
-                        fill="#fbbf24"
-                      />
-                    ))}
-                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
-                  </div>
-                  <p className={styles.testimonioNuevaTexto}>"El entrenamiento de trading cambió completamente mi forma de invertir. Excelente contenido."</p>
-                </div>
-                
-                <div className={styles.testimonioNuevaCard}>
-                  <div className={styles.avatarCircleTestimonios} style={{ backgroundColor: '#10b981' }}>
-                    R
-                  </div>
-                  <h4 className={styles.testimonioNuevaNombre}>Roberto Silva</h4>
-                  <div className={styles.ratingStarsTestimonios}>
-                    {[...Array(4)].map((_, i) => (
-                      <Star 
-                        key={i} 
-                        size={16} 
-                        className={styles.ratingStarTestimonios}
-                        fill="#fbbf24"
-                      />
-                    ))}
-                    {/* <span className={styles.ratingNumberTestimonios}>5</span> */}
-                  </div>
-                  <p className={styles.testimonioNuevaTexto}>"Smart Money es increíble. Las señales son precisas y muy fáciles de seguir."</p>
-                </div>
-              </div>
-              
-              <button 
-                className={styles.carruselFlechaTestimonios}
-                onClick={() => setCurrentTestimonialIndex(prev => prev === testimoniosNuevos.length - 3 ? 0 : prev + 1)}
-              >
-                <ChevronRight size={24} />
-              </button>
-            </motion.div>
-          </div>
-        </section>
 
         {/* CTA Final */}
         <section className={styles.ctaInvestmentSection}>

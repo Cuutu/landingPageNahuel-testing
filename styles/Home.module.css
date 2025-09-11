@@ -2954,4 +2954,230 @@
   .destacadoUnificadoButton {
     justify-content: center;
   }
+}
+
+/* === SECCIÓN TESTIMONIOS UNIFICADOS === */
+.testimoniosUnificados {
+  padding: 6rem 0;
+  background: #1a1a1a;
+  position: relative;
+  overflow: hidden;
+}
+
+.testimoniosUnificados::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.testimoniosUnificadosHeader {
+  text-align: center;
+  margin-bottom: 4rem;
+  position: relative;
+  z-index: 1;
+}
+
+.testimoniosUnificadosHeader h2 {
+  font-size: 3.5rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.testimoniosUnificadosCarousel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.carouselArrowTestimonios {
+  background: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.carouselArrowTestimonios:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.testimoniosUnificadosCards {
+  display: flex;
+  gap: 2rem;
+  flex: 1;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  min-height: 400px;
+}
+
+.testimonioUnificadoCard {
+  background: #2a2a2a;
+  border-radius: 16px;
+  padding: 2rem;
+  flex: 1;
+  max-width: 350px;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.testimonioUnificadoAvatar {
+  display: flex;
+  justify-content: center;
+}
+
+.avatarCircleUnificado {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.testimonioUnificadoNombre {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+}
+
+.testimonioUnificadoRating {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.ratingStarUnificado {
+  color: #fbbf24;
+}
+
+.testimonioUnificadoTexto {
+  color: #d1d5db;
+  line-height: 1.6;
+  margin: 0;
+  font-style: italic;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.testimoniosUnificadosIndicators {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.testimonioUnificadoIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.testimonioUnificadoIndicator.active {
+  background: #3b82f6;
+  transform: scale(1.2);
+}
+
+.testimonioUnificadoIndicator:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Responsive para testimonios unificados */
+@media (max-width: 1200px) {
+  .testimoniosUnificadosCards {
+    gap: 1.5rem;
+  }
+  
+  .testimonioUnificadoCard {
+    max-width: 320px;
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 992px) {
+  .testimoniosUnificadosCards {
+    gap: 1rem;
+  }
+  
+  .testimonioUnificadoCard {
+    max-width: 300px;
+    min-width: 250px;
+    padding: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .testimoniosUnificadosHeader h2 {
+    font-size: 2.5rem;
+  }
+  
+  .testimoniosUnificadosCarousel {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .carouselArrowTestimonios {
+    display: none;
+  }
+  
+  .testimoniosUnificadosCards {
+    flex-direction: column;
+    gap: 1.5rem;
+    min-height: auto;
+  }
+  
+  .testimonioUnificadoCard {
+    max-width: 100%;
+    min-width: auto;
+    padding: 1.5rem;
+  }
+  
+  .testimonioUnificadoNombre {
+    font-size: 1.125rem;
+  }
+  
+  .testimonioUnificadoTexto {
+    font-size: 0.875rem;
+  }
 } 
