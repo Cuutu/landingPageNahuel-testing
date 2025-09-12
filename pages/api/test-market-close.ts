@@ -34,33 +34,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`✅ Usuario admin ${session.user.email} usando función de conversión`);
 
-    // Obtener alertas con rango
+    // Obtener alertas con rango que necesitan conversión
     const alertsWithRange = await Alert.find({
       status: 'ACTIVE',
-      entryPriceRange: { $exists: true, $ne: null }
+      $or: [
+        { entryPriceRange: { $exists: true, $ne: null } },
+        { tipoAlerta: 'rango' },
+        { precioMinimo: { $exists: true, $ne: null } }
+      ]
     });
 
-    console.log(`🔍 Encontradas ${alertsWithRange.length} alertas con rango`);
+    console.log(`🔍 Encontradas ${alertsWithRange.length} alertas con rango para convertir`);
+
+    const conversionDetails = [];
 
     for (const alert of alertsWithRange) {
       console.log(`📊 Procesando ${alert.symbol}:`, {
         entryPriceRange: alert.entryPriceRange,
         entryPrice: alert.entryPrice,
-        currentPrice: alert.currentPrice
+        currentPrice: alert.currentPrice,
+        precioMinimo: alert.precioMinimo,
+        precioMaximo: alert.precioMaximo,
+        tipoAlerta: alert.tipoAlerta
       });
 
-      // ✅ CRÍTICO: Usar el precio actual como precio de cierre
-      const closePrice = alert.currentPrice || 100.00;
+      // ✅ CRÍTICO: Usar el precio actual como precio de entrada fijo
+      const closePrice = alert.currentPrice;
       
-      console.log(`💰 ${alert.symbol}: Precio actual ${alert.currentPrice} -> Precio de cierre ${closePrice}`);
+      if (!closePrice || closePrice <= 0) {
+        console.warn(`⚠️ ${alert.symbol}: Precio actual inválido (${closePrice}), saltando...`);
+        continue;
+      }
+      
+      console.log(`💰 ${alert.symbol}: Precio actual ${closePrice} -> Precio de entrada fijo`);
 
-      // Actualizar entryPrice al precio de cierre
-      alert.entryPrice = closePrice;
+      // Determinar el rango anterior para el log
+      let oldRange = 'N/A';
+      if (alert.entryPriceRange) {
+        oldRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
+      } else if (alert.precioMinimo && alert.precioMaximo) {
+        oldRange = `$${alert.precioMinimo}-$${alert.precioMaximo}`;
+      }
 
-      // Eliminar campos de rango
+      // Actualizar entryPrice al precio actual Y eliminar campos de rango en una sola operación
       await Alert.updateOne(
         { _id: alert._id },
         { 
+          $set: { 
+            entryPrice: closePrice,
+            tipoAlerta: 'precio' // Cambiar a tipo precio fijo
+          },
           $unset: { 
             entryPriceRange: 1,
             precioMinimo: 1,
@@ -69,18 +92,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       );
 
-      console.log(`✅ ${alert.symbol}: Rango convertido a precio fijo ${closePrice}`);
+      conversionDetails.push({
+        symbol: alert.symbol,
+        oldRange: oldRange,
+        newPrice: closePrice
+      });
+
+      console.log(`✅ ${alert.symbol}: Rango ${oldRange} convertido a precio fijo $${closePrice}`);
     }
 
     res.status(200).json({
       success: true,
-      message: `✅ Conversión completada: ${alertsWithRange.length} alertas con rango convertidas a precios fijos`,
-      processedCount: alertsWithRange.length,
-      details: alertsWithRange.map(alert => ({
-        symbol: alert.symbol,
-        oldRange: `${alert.entryPriceRange?.min}-${alert.entryPriceRange?.max}`,
-        newPrice: alert.currentPrice
-      }))
+      message: `✅ Conversión completada: ${conversionDetails.length} alertas con rango convertidas a precios fijos`,
+      processedCount: conversionDetails.length,
+      details: conversionDetails
     });
 
   } catch (error) {
