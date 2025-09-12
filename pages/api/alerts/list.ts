@@ -76,25 +76,46 @@ export default async function handler(
     const total = await Alert.countDocuments(filter);
 
     // Formatear alertas para el frontend - con validación de números
-    const formattedAlerts = alerts.map((alert: any) => ({
-      id: alert._id.toString(),
-      symbol: alert.symbol || '',
-      action: alert.action || '',
-      entryPrice: `$${Number(alert.entryPrice || 0).toFixed(2)}`,
-      currentPrice: `$${Number(alert.currentPrice || 0).toFixed(2)}`,
-      stopLoss: `$${Number(alert.stopLoss || 0).toFixed(2)}`,
-      takeProfit: `$${Number(alert.takeProfit || 0).toFixed(2)}`,
-      profit: `${Number(alert.profit || 0) >= 0 ? '+' : ''}${Number(alert.profit || 0).toFixed(1)}%`,
-      status: alert.status || 'ACTIVE',
-      date: alert.date ? alert.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      analysis: alert.analysis || '',
-      createdAt: alert.createdAt,
-      // Campos adicionales para mostrar si está cerrada
-      exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
-      exitDate: alert.exitDate?.toISOString().split('T')[0] || null,
-      exitReason: alert.exitReason || null,
-      type: Number(alert.profit || 0) >= 0 ? 'WIN' : 'LOSS' // Para alertas cerradas
-    }));
+    const formattedAlerts = alerts.map((alert: any) => {
+      // ✅ NUEVO: Formatear precio de entrada considerando rangos
+      let entryPriceDisplay = '';
+      if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
+        // Si hay rango de precio, mostrar formato "PRECIO 1 / PRECIO 2"
+        entryPriceDisplay = `$${Number(alert.entryPriceRange.min).toFixed(2)} / $${Number(alert.entryPriceRange.max).toFixed(2)}`;
+      } else if (alert.finalPrice) {
+        // Si ya se fijó precio final al cierre del mercado, usar ese
+        entryPriceDisplay = `$${Number(alert.finalPrice).toFixed(2)}`;
+      } else if (alert.entryPrice) {
+        // Fallback al precio único original
+        entryPriceDisplay = `$${Number(alert.entryPrice).toFixed(2)}`;
+      } else {
+        entryPriceDisplay = '$0.00'; // Valor por defecto
+      }
+
+      return {
+        id: alert._id.toString(),
+        symbol: alert.symbol || '',
+        action: alert.action || '',
+        entryPrice: entryPriceDisplay, // ✅ MODIFICADO: Ahora muestra rangos correctamente
+        currentPrice: `$${Number(alert.currentPrice || 0).toFixed(2)}`,
+        stopLoss: `$${Number(alert.stopLoss || 0).toFixed(2)}`,
+        takeProfit: `$${Number(alert.takeProfit || 0).toFixed(2)}`,
+        profit: `${Number(alert.profit || 0) >= 0 ? '+' : ''}${Number(alert.profit || 0).toFixed(1)}%`,
+        status: alert.status || 'ACTIVE',
+        date: alert.date ? alert.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+        analysis: alert.analysis || '',
+        createdAt: alert.createdAt,
+        // ✅ NUEVO: Información adicional para debugging
+        tipoAlerta: alert.tipoAlerta || 'precio', // 'precio' o 'rango'
+        hasRange: !!(alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max),
+        hasFinalPrice: !!alert.finalPrice,
+        // Campos adicionales para mostrar si está cerrada
+        exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
+        exitDate: alert.exitDate?.toISOString().split('T')[0] || null,
+        exitReason: alert.exitReason || null,
+        type: Number(alert.profit || 0) >= 0 ? 'WIN' : 'LOSS' // Para alertas cerradas
+      };
+    });
 
     return res.status(200).json({
       success: true,

@@ -74,13 +74,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // ✅ NUEVO: Fijar precio final al cierre
           const isFromLastAvailable = !isBusinessDay; // Si no es hábil, usar último disponible
           alert.setFinalPrice(closePrice, isFromLastAvailable);
-          
+
+          // ✅ MODIFICADO: Si es una alerta de rango, actualizar entryPrice al precio actual
+          // para que se muestre correctamente en la interfaz como precio fijo
+          if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
+            // Para rangos, usar el precio de cierre como nuevo precio de entrada
+            alert.entryPrice = closePrice;
+            console.log(`🔄 ${alert.symbol}: Rango actualizado a precio fijo ${closePrice}`);
+          } else if (!alert.entryPrice) {
+            // Si no hay precio de entrada, usar el precio de cierre
+            alert.entryPrice = closePrice;
+            console.log(`🔄 ${alert.symbol}: Precio de entrada fijado en ${closePrice}`);
+          }
+
           // ✅ NUEVO: Marcar email de cierre como enviado
           alert.emailsSent.marketClose = true;
-          
+
           await alert.save();
           processedCount++;
-          
+
           console.log(`✅ ${alert.symbol}: Precio final fijado en ${closePrice}`);
           
           // ✅ NUEVO: Enviar email de cierre al usuario
