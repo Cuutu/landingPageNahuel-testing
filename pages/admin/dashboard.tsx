@@ -222,6 +222,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   });
   const [loading, setLoading] = useState(true);
   const [fixingLogins, setFixingLogins] = useState(false);
+  const [closingMarket, setClosingMarket] = useState(false);
 
   // Estados para gestión de roadmaps
   const [showRoadmapsModal, setShowRoadmapsModal] = useState(false);
@@ -703,6 +704,44 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
     }
   }, [fetchDashboardStats]);
 
+  // Función para cerrar el mercado y procesar alertas de rango
+  const handleCloseMarket = useCallback(async () => {
+    try {
+      setClosingMarket(true);
+      console.log('🔄 Iniciando cierre de mercado...');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos para esta operación
+      
+      const response = await fetch('/api/alerts/close-market', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Cierre de mercado completado:', data);
+        alert(`✅ Cierre de mercado completado!\n\n📊 Alertas procesadas: ${data.processedAlerts}\n📧 Emails enviados: ${data.emailsSent}`);
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error en cierre de mercado:', errorData);
+        alert(`❌ Error: ${errorData.error || 'No se pudo cerrar el mercado'}`);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('💥 Error al cerrar mercado:', error);
+        alert('💥 Error al cerrar el mercado');
+      }
+    } finally {
+      setClosingMarket(false);
+    }
+  }, []);
+
   // Manejar click en links de roadmaps
   const handleRoadmapLinkClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
@@ -870,6 +909,24 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                     <>
                       <Settings size={20} />
                       Corregir Fechas Login
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={handleCloseMarket}
+                  disabled={closingMarket}
+                  className={`${styles.toolButton} ${closingMarket ? styles.loading : ''}`}
+                >
+                  {closingMarket ? (
+                    <>
+                      <RefreshCw size={20} className={styles.spinning} />
+                      Cerrando Mercado...
+                    </>
+                  ) : (
+                    <>
+                      <Clock size={20} />
+                      Cerrar Mercado
                     </>
                   )}
                 </button>

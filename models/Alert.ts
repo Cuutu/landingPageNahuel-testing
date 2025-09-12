@@ -50,6 +50,12 @@ export interface IAlert extends Document {
   createdAt: Date;
   updatedAt: Date;
   tipo: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  // ✅ NUEVO: Tipo de alerta (precio específico o rango)
+  tipoAlerta: 'precio' | 'rango';
+  // ✅ NUEVO: Campos para alertas de rango
+  precioMinimo?: number;
+  precioMaximo?: number;
+  horarioCierre: string; // Por defecto "17:30"
   exitPrice?: number;
   exitDate?: Date;
   exitReason?: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MANUAL';
@@ -207,6 +213,26 @@ const AlertSchema: Schema = new Schema({
     required: true,
     enum: ['TraderCall', 'SmartMoney', 'CashFlow'],
     default: 'TraderCall'
+  },
+  // ✅ NUEVO: Tipo de alerta
+  tipoAlerta: {
+    type: String,
+    required: true,
+    enum: ['precio', 'rango'],
+    default: 'precio'
+  },
+  // ✅ NUEVO: Campos para alertas de rango
+  precioMinimo: {
+    type: Number,
+    min: 0
+  },
+  precioMaximo: {
+    type: Number,
+    min: 0
+  },
+  horarioCierre: {
+    type: String,
+    default: '17:30'
   },
   exitPrice: {
     type: Number,

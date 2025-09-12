@@ -13,12 +13,17 @@ import { createAlertNotification } from '@/lib/notificationUtils';
 interface AlertRequest {
   symbol: string;
   action: 'BUY' | 'SELL';
-  entryPrice: number;
+  entryPrice?: number; // Opcional para alertas de rango
   stopLoss: number;
   takeProfit: number;
   analysis: string;
   date: string;
   tipo?: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  // ✅ NUEVO: Campos para alertas de rango
+  tipoAlerta?: 'precio' | 'rango';
+  precioMinimo?: number;
+  precioMaximo?: number;
+  horarioCierre?: string;
   chartImage?: {
     public_id: string;
     url: string;
@@ -84,26 +89,57 @@ export default async function handler(
     }
 
     // Validar datos de entrada
-    const { symbol, action, entryPrice, stopLoss, takeProfit, analysis, date, tipo = 'TraderCall', chartImage, images }: AlertRequest = req.body;
+    const { 
+      symbol, 
+      action, 
+      entryPrice, 
+      stopLoss, 
+      takeProfit, 
+      analysis, 
+      date, 
+      tipo = 'TraderCall', 
+      chartImage, 
+      images,
+      tipoAlerta = 'precio',
+      precioMinimo,
+      precioMaximo,
+      horarioCierre = '17:30'
+    }: AlertRequest = req.body;
 
-    if (!symbol || !action || !entryPrice || !stopLoss || !takeProfit) {
-      return res.status(400).json({ error: 'Todos los campos son requeridos' });
+    if (!symbol || !action || !stopLoss || !takeProfit) {
+      return res.status(400).json({ error: 'Todos los campos básicos son requeridos' });
     }
 
     if (!['BUY', 'SELL'].includes(action)) {
       return res.status(400).json({ error: 'Acción debe ser BUY o SELL' });
     }
 
-    if (entryPrice <= 0 || stopLoss <= 0 || takeProfit <= 0) {
-      return res.status(400).json({ error: 'Los precios deben ser mayores a 0' });
+    if (!['precio', 'rango'].includes(tipoAlerta)) {
+      return res.status(400).json({ error: 'Tipo de alerta debe ser precio o rango' });
+    }
+
+    // Validaciones específicas según el tipo de alerta
+    if (tipoAlerta === 'precio') {
+      if (!entryPrice || entryPrice <= 0) {
+        return res.status(400).json({ error: 'Precio de entrada es requerido para alertas de precio específico' });
+      }
+    } else if (tipoAlerta === 'rango') {
+      if (!precioMinimo || !precioMaximo || precioMinimo <= 0 || precioMaximo <= 0) {
+        return res.status(400).json({ error: 'Precio mínimo y máximo son requeridos para alertas de rango' });
+      }
+      if (precioMinimo >= precioMaximo) {
+        return res.status(400).json({ error: 'El precio mínimo debe ser menor al precio máximo' });
+      }
+    }
+
+    if (stopLoss <= 0 || takeProfit <= 0) {
+      return res.status(400).json({ error: 'Stop Loss y Take Profit deben ser mayores a 0' });
     }
 
     // Crear la nueva alerta en MongoDB
-    const newAlert = await Alert.create({
+    const alertData: any = {
       symbol: symbol.toUpperCase(),
       action,
-      entryPrice,
-      currentPrice: entryPrice, // Precio inicial igual al de entrada
       stopLoss,
       takeProfit,
       status: 'ACTIVE',
@@ -112,9 +148,23 @@ export default async function handler(
       analysis: analysis || '',
       createdBy: user._id,
       tipo, // Recibido desde el frontend
+      tipoAlerta,
+      horarioCierre,
       chartImage: chartImage || null, // Imagen principal del gráfico
       images: images || [] // Imágenes adicionales
-    });
+    };
+
+    // Agregar campos específicos según el tipo de alerta
+    if (tipoAlerta === 'precio') {
+      alertData.entryPrice = entryPrice;
+      alertData.currentPrice = entryPrice; // Precio inicial igual al de entrada
+    } else if (tipoAlerta === 'rango') {
+      alertData.precioMinimo = precioMinimo;
+      alertData.precioMaximo = precioMaximo;
+      alertData.currentPrice = precioMaximo; // Usar el precio máximo como referencia inicial
+    }
+
+    const newAlert = await Alert.create(alertData);
 
     console.log('Nueva alerta creada por usuario:', user.name || user.email, newAlert._id);
 
@@ -132,14 +182,19 @@ export default async function handler(
       id: newAlert._id.toString(),
       symbol: newAlert.symbol,
       action: newAlert.action,
-      entryPrice: `$${Number(newAlert.entryPrice || 0).toFixed(2)}`,
+      entryPrice: newAlert.entryPrice ? `$${Number(newAlert.entryPrice).toFixed(2)}` : null,
       currentPrice: `$${Number(newAlert.currentPrice || 0).toFixed(2)}`,
       stopLoss: `$${Number(newAlert.stopLoss || 0).toFixed(2)}`,
       takeProfit: `$${Number(newAlert.takeProfit || 0).toFixed(2)}`,
       profit: `${Number(newAlert.profit || 0) >= 0 ? '+' : ''}${Number(newAlert.profit || 0).toFixed(1)}%`,
       status: newAlert.status,
       date: newAlert.date ? newAlert.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      analysis: newAlert.analysis || ''
+      analysis: newAlert.analysis || '',
+      // ✅ NUEVO: Campos para alertas de rango
+      tipoAlerta: newAlert.tipoAlerta,
+      precioMinimo: newAlert.precioMinimo ? `$${Number(newAlert.precioMinimo).toFixed(2)}` : null,
+      precioMaximo: newAlert.precioMaximo ? `$${Number(newAlert.precioMaximo).toFixed(2)}` : null,
+      horarioCierre: newAlert.horarioCierre
     };
 
     // TODO: Enviar notificación a todos los suscriptores (opcional)

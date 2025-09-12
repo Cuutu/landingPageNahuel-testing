@@ -472,7 +472,11 @@ const SubscriberView: React.FC = () => {
     action: 'BUY',
     stopLoss: '',
     takeProfit: '',
-    analysis: ''
+    analysis: '',
+    tipoAlerta: 'precio' as 'precio' | 'rango',
+    precioMinimo: '',
+    precioMaximo: '',
+    horarioCierre: '17:30'
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
@@ -1112,7 +1116,11 @@ const SubscriberView: React.FC = () => {
           action: 'BUY',
           stopLoss: '',
           takeProfit: '',
-          analysis: ''
+          analysis: '',
+          tipoAlerta: 'precio',
+          precioMinimo: '',
+          precioMaximo: '',
+          horarioCierre: '17:30'
         });
         setStockPrice(null);
         setChartImage(null);
@@ -2827,6 +2835,56 @@ const SubscriberView: React.FC = () => {
                 <option value="SELL">SELL (Venta)</option>
               </select>
             </div>
+
+            <div className={styles.inputGroup}>
+              <label>Tipo de Alerta</label>
+              <select
+                value={newAlert.tipoAlerta}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, tipoAlerta: e.target.value as 'precio' | 'rango' }))}
+                className={styles.select}
+              >
+                <option value="precio">Precio Específico</option>
+                <option value="rango">Rango de Precio</option>
+              </select>
+            </div>
+
+            {newAlert.tipoAlerta === 'rango' && (
+              <>
+                <div className={styles.inputGroup}>
+                  <label>Precio Mínimo del Rango</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Precio mínimo"
+                    value={newAlert.precioMinimo}
+                    onChange={(e) => setNewAlert(prev => ({ ...prev, precioMinimo: e.target.value }))}
+                    className={styles.input}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label>Precio Máximo del Rango</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Precio máximo"
+                    value={newAlert.precioMaximo}
+                    onChange={(e) => setNewAlert(prev => ({ ...prev, precioMaximo: e.target.value }))}
+                    className={styles.input}
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label>Horario de Cierre del Mercado</label>
+                  <input
+                    type="time"
+                    value={newAlert.horarioCierre}
+                    onChange={(e) => setNewAlert(prev => ({ ...prev, horarioCierre: e.target.value }))}
+                    className={styles.input}
+                  />
+                </div>
+              </>
+            )}
 
             <div className={styles.inputGroup}>
               <label>Stop Loss</label>
