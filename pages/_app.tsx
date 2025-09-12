@@ -5,15 +5,14 @@ import { SessionProvider } from 'next-auth/react';
 import ToasterProvider from '@/components/ToasterProvider';
 import LoginTracker from '@/components/LoginTracker';
 import SecurityWarning from '@/components/SecurityWarning';
-// import { useSecurityProtection } from '@/hooks/useSecurityProtection'; // DESACTIVADO
+import { useSecurityProtection } from '@/hooks/useSecurityProtection';
 import '@/styles/globals.css';
 
 // Componente para proteger contra click derecho y otras acciones no deseadas
-// DESACTIVADO TEMPORALMENTE PARA SOLUCIONAR PROBLEMAS CON SUBMENÚS
-// const SecurityProtection: React.FC = () => {
-//   useSecurityProtection();
-//   return null;
-// };
+const SecurityProtection: React.FC = () => {
+  useSecurityProtection();
+  return null;
+};
 
 export default function App({
   Component,
@@ -37,7 +36,7 @@ export default function App({
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
       </Head>
       <ToasterProvider>
-        {/* <SecurityProtection /> - DESACTIVADO */}
+        <SecurityProtection />
         <SecurityWarning />
         <LoginTracker />
         <Component {...pageProps} />
