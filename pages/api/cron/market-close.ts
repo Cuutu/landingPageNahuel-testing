@@ -109,8 +109,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Procesar cada alerta que debe cerrarse
     for (const alert of alertsToClose) {
       try {
-        // ✅ MODIFICADO: Usar el precio actual de la alerta como precio de cierre
-        const closePrice = alert.currentPrice || await getMarketClosePrice(alert.symbol);
+        // ✅ CRÍTICO: Siempre intentar obtener precio real del mercado primero
+        let closePrice = await getMarketClosePrice(alert.symbol);
+        
+        // Si no se puede obtener precio real, usar el precio actual de la alerta
+        if (!closePrice || closePrice <= 0) {
+          closePrice = alert.currentPrice;
+          console.log(`⚠️ ${alert.symbol}: Usando precio actual de la alerta como fallback: ${closePrice}`);
+        }
         
         if (closePrice) {
           console.log(`💰 ${alert.symbol}: Precio actual ${alert.currentPrice} -> Precio de cierre ${closePrice}`);
@@ -300,69 +306,48 @@ async function checkHoliday(date: Date): Promise<boolean> {
  */
 async function getMarketClosePrice(symbol: string): Promise<number | null> {
   try {
-    // ✅ NUEVO: Usar Google Finance para obtener precio de cierre
-    const googleFinanceUrl = `https://www.google.com/finance/quote/${symbol}`;
+    // ✅ NUEVO: Usar la API interna de Google Finance del proyecto
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/market-data/google-finance?symbol=${symbol}`);
     
-    // ✅ NUEVO: Intentar obtener precio de cierre oficial desde Google Finance
-    const response = await fetch(googleFinanceUrl, {
+    if (response.ok) {
+      const data = await response.json();
+      if (data.price && data.price > 0) {
+        console.log(`✅ Precio obtenido desde API interna para ${symbol}: $${data.price}`);
+        return data.price;
+      }
+    }
+    
+    // ✅ FALLBACK: Usar Google Finance directo
+    const googleFinanceUrl = `https://www.google.com/finance/quote/${symbol}`;
+    const response2 = await fetch(googleFinanceUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
       }
     });
 
-    if (response.ok) {
-      const html = await response.text();
+    if (response2.ok) {
+      const html = await response2.text();
       
-      // ✅ NUEVO: Extraer precio de cierre del HTML de Google Finance
-      const closePriceMatch = html.match(/"closePrice":\s*"([^"]+)"/);
-      if (closePriceMatch) {
-        const closePrice = parseFloat(closePriceMatch[1].replace(/,/g, ''));
-        if (!isNaN(closePrice)) {
-          console.log(`✅ Precio de cierre obtenido desde Google Finance para ${symbol}: $${closePrice}`);
-          return closePrice;
-        }
-      }
-      
-      // ✅ NUEVO: Fallback - buscar precio actual si no hay cierre
+      // Buscar precio actual
       const priceMatch = html.match(/"price":\s*"([^"]+)"/);
       if (priceMatch) {
         const price = parseFloat(priceMatch[1].replace(/,/g, ''));
-        if (!isNaN(price)) {
-          console.log(`🔄 No hay precio de cierre para ${symbol}, usando precio actual: $${price}`);
-          return price;
-        }
-      }
-      
-      // ✅ NUEVO: Fallback adicional - buscar en diferentes formatos
-      const alternativePriceMatch = html.match(/(\d+\.?\d*)\s*USD/);
-      if (alternativePriceMatch) {
-        const price = parseFloat(alternativePriceMatch[1]);
-        if (!isNaN(price)) {
-          console.log(`🔄 Precio obtenido desde formato alternativo para ${symbol}: $${price}`);
+        if (!isNaN(price) && price > 0) {
+          console.log(`✅ Precio obtenido desde Google Finance para ${symbol}: $${price}`);
           return price;
         }
       }
     }
     
-    // ✅ NUEVO: Si Google Finance falla completamente, usar precio simulado
-    console.log(`⚠️ Google Finance no disponible para ${symbol}, usando precio simulado`);
-    return generateSimulatedClosePrice(symbol);
+    console.log(`⚠️ No se pudo obtener precio real para ${symbol}`);
+    return null;
 
   } catch (error: any) {
-    console.error(`❌ Error obteniendo precio de cierre desde Google Finance para ${symbol}:`, error.message);
-    return generateSimulatedClosePrice(symbol);
+    console.error(`❌ Error obteniendo precio para ${symbol}:`, error.message);
+    return null;
   }
 }
 
-/**
- * ✅ NUEVO: Generar precio de cierre simulado para testing/fallback
- */
-function generateSimulatedClosePrice(symbol: string): number {
-  // Generar precio realista basado en el símbolo
-  const basePrice = symbol.charCodeAt(0) * 10 + symbol.charCodeAt(1);
-  const variation = (Math.random() - 0.5) * 0.05; // ±2.5% variación menor para cierre
-  return Math.round((basePrice * (1 + variation)) * 100) / 100;
-}
 
 /**
  * ✅ NUEVO: Enviar email de cierre de mercado al usuario
@@ -374,26 +359,71 @@ async function sendMarketCloseEmail(alert: any, closePrice: number): Promise<voi
     
     const emailSubject = `🔔 Cierre de Mercado - ${alert.symbol} - ${alert.tipo}`;
     
+    // Determinar si la alerta fue activada
+    const hasRange = alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max;
+    const wasActivated = hasRange ? 
+      (closePrice >= alert.entryPriceRange.min && closePrice <= alert.entryPriceRange.max) : 
+      true;
+    
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #10b981;">🔔 Cierre de Mercado - ${alert.symbol}</h2>
-        
-        <p>Hola ${userName},</p>
-        
-        <p>El mercado ha cerrado y se ha fijado el precio final para tu alerta:</p>
-        
-        <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3 style="margin-top: 0;">📊 Detalles de la Alerta</h3>
-          <p><strong>Símbolo:</strong> ${alert.symbol}</p>
-          <p><strong>Acción:</strong> ${alert.action}</p>
-          <p><strong>Rango de Entrada:</strong> $${alert.entryPriceRange.min} - $${alert.entryPriceRange.max}</p>
-          <p><strong>Precio de Cierre:</strong> $${closePrice}</p>
-          <p><strong>Profit/Pérdida:</strong> ${alert.profit >= 0 ? '+' : ''}${alert.profit.toFixed(2)}%</p>
+        <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 20px; border-radius: 8px 8px 0 0; color: white;">
+          <h2 style="margin: 0; display: flex; align-items: center;">
+            <span style="margin-right: 10px;">📈</span>
+            Cierre de Mercado
+          </h2>
+          <p style="margin: 5px 0 0 0; opacity: 0.9;">Alerta ${alert.symbol}</p>
         </div>
         
-        <p>El precio final ha sido fijado y tu alerta se mantiene activa para seguimiento.</p>
-        
-        <p>Saludos,<br>Equipo de ${alert.tipo}</p>
+        <div style="background: white; padding: 20px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
+          <p style="font-size: 18px; font-weight: bold; color: #374151;">Hola ${userName}!</p>
+          
+          <p style="color: #6b7280;">El mercado ha cerrado y aquí tienes el resultado de tu alerta:</p>
+          
+          <div style="background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #e5e7eb;">
+            <h3 style="margin-top: 0; color: #374151; display: flex; align-items: center;">
+              <span style="margin-right: 8px;">📊</span>
+              Detalles de la Alerta
+            </h3>
+            <p style="margin: 8px 0;"><strong>Símbolo:</strong> ${alert.symbol}</p>
+            <p style="margin: 8px 0;"><strong>Acción:</strong> ${alert.action}</p>
+            ${hasRange ? `<p style="margin: 8px 0;"><strong>Rango:</strong> $${alert.entryPriceRange.min} - $${alert.entryPriceRange.max}</p>` : ''}
+            <p style="margin: 8px 0;"><strong>Precio Final:</strong> <span style="color: #dc2626; font-weight: bold;">$${closePrice.toFixed(2)}</span></p>
+            <p style="margin: 8px 0;"><strong>Estado:</strong> 
+              <span style="color: ${wasActivated ? '#10b981' : '#dc2626'}; font-weight: bold;">
+                ${wasActivated ? '✅ ACTIVADA' : '❌ NO ACTIVADA'}
+              </span>
+            </p>
+          </div>
+          
+          ${!wasActivated ? `
+            <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="margin: 0 0 10px 0; color: #dc2626; display: flex; align-items: center;">
+                <span style="margin-right: 8px;">📉</span>
+                Alerta No Activada
+              </h4>
+              <p style="margin: 0; color: #7f1d1d;">
+                El precio final ($${closePrice.toFixed(2)}) está fuera de tu rango objetivo. 
+                Sigue monitoreando el mercado.
+              </p>
+            </div>
+          ` : `
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="margin: 0 0 10px 0; color: #10b981; display: flex; align-items: center;">
+                <span style="margin-right: 8px;">📈</span>
+                Alerta Activada
+              </h4>
+              <p style="margin: 0; color: #14532d;">
+                ¡Excelente! El precio final ($${closePrice.toFixed(2)}) está dentro de tu rango objetivo.
+              </p>
+            </div>
+          `}
+          
+          <p style="color: #6b7280; font-size: 14px;">
+            Saludos,<br>
+            <strong>Equipo de ${alert.tipo}</strong>
+          </p>
+        </div>
       </div>
     `;
     
