@@ -23,6 +23,12 @@ export const useSecurityProtection = () => {
     }
 
     const preventContextMenu = (e: MouseEvent) => {
+      // Permitir menú contextual en elementos de navegación
+      const target = e.target as HTMLElement;
+      if (isNavigationElement(target)) {
+        return;
+      }
+
       e.preventDefault();
       return false;
     };
@@ -30,15 +36,15 @@ export const useSecurityProtection = () => {
     const preventKeyCombinations = (e: KeyboardEvent) => {
       // Verificar si el usuario está escribiendo en un campo de formulario
       const target = e.target as HTMLElement;
-      
+
       // Permitir escritura normal en inputs, textareas, contenteditable
-      if (target.tagName === 'INPUT' || 
-          target.tagName === 'TEXTAREA' || 
+      if (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
           target.contentEditable === 'true' ||
           target.isContentEditable) {
         return;
       }
-      
+
       // Prevenir combinaciones de teclas que podrían usarse para descargar o inspeccionar
       if (
         (e.ctrlKey && e.key === 's') || // Ctrl+S (guardar)
@@ -55,7 +61,50 @@ export const useSecurityProtection = () => {
       }
     };
 
+    const isNavigationElement = (element: HTMLElement): boolean => {
+      // Verificar si el elemento o sus padres son parte de la navegación
+      const navSelectors = [
+        'nav', '.navbar', '.nav', '.dropdown', '.menu',
+        '[class*="nav"]', '[class*="menu"]', '[class*="dropdown"]',
+        'button', 'a', '[role="button"]', '[role="menu"]', '[role="menuitem"]'
+      ];
+
+      let currentElement: HTMLElement | null = element;
+
+      // Verificar el elemento actual y hasta 5 niveles hacia arriba
+      for (let i = 0; i < 5 && currentElement; i++) {
+        const tagName = currentElement.tagName.toLowerCase();
+        const className = currentElement.className || '';
+        const role = currentElement.getAttribute('role') || '';
+
+        // Verificar si es un elemento de navegación
+        if (tagName === 'nav' ||
+            tagName === 'button' ||
+            tagName === 'a' ||
+            role === 'button' ||
+            role === 'menu' ||
+            role === 'menuitem' ||
+            className.includes('nav') ||
+            className.includes('menu') ||
+            className.includes('dropdown') ||
+            className.includes('chevron') ||
+            className.includes('user')) {
+          return true;
+        }
+
+        currentElement = currentElement.parentElement;
+      }
+
+      return false;
+    };
+
     const preventDrag = (e: DragEvent) => {
+      // Permitir drag en elementos de navegación
+      const target = e.target as HTMLElement;
+      if (isNavigationElement(target)) {
+        return;
+      }
+
       e.preventDefault();
       return false;
     };
@@ -63,15 +112,20 @@ export const useSecurityProtection = () => {
     const preventSelect = (e: Event) => {
       // Verificar si el usuario está interactuando con un campo de formulario
       const target = e.target as HTMLElement;
-      
+
       // Permitir selección en inputs, textareas, contenteditable
-      if (target.tagName === 'INPUT' || 
-          target.tagName === 'TEXTAREA' || 
+      if (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
           target.contentEditable === 'true' ||
           target.isContentEditable) {
         return;
       }
-      
+
+      // Permitir interacciones con elementos de navegación
+      if (isNavigationElement(target)) {
+        return;
+      }
+
       e.preventDefault();
       return false;
     };
