@@ -1231,6 +1231,40 @@ const SubscriberView: React.FC = () => {
     }
   };
 
+  // ✅ NUEVO: Función para probar el cierre de mercado
+  const handleTestMarketClose = async () => {
+    if (!confirm('¿Quieres probar el cierre de mercado? Esto procesará todas las alertas que deban cerrarse según su horario personalizado.')) {
+      return;
+    }
+
+    try {
+      console.log('🧪 Iniciando prueba de cierre de mercado...');
+      
+      const response = await fetch('/api/cron/market-close?test=true', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Prueba de cierre exitosa:', result);
+        alert(`✅ Prueba de cierre completada!\n\nProcesadas: ${result.processedCount} alertas\nTiempo: ${result.executionTime}ms\n\n${result.message}`);
+        
+        // Recargar las alertas para mostrar los cambios
+        await loadAlerts();
+      } else {
+        console.error('❌ Error en prueba de cierre:', result);
+        alert(`❌ Error en prueba de cierre: ${result.error || result.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al probar cierre de mercado:', error);
+      alert('❌ Error al probar cierre de mercado. Verifica la consola para más detalles.');
+    }
+  };
+
   // Función para manejar la edición de alertas
   const handleEditAlert = (alert: any) => {
     console.log('🔍 Editando alerta:', alert);
@@ -2164,13 +2198,22 @@ const SubscriberView: React.FC = () => {
           <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
-              <button 
-                className={styles.createAlertButton}
-                onClick={() => setShowCreateAlert(true)}
-                title="Crear nueva alerta"
-              >
-                + Crear Alerta
-              </button>
+              <>
+                <button 
+                  className={styles.createAlertButton}
+                  onClick={() => setShowCreateAlert(true)}
+                  title="Crear nueva alerta"
+                >
+                  + Crear Alerta
+                </button>
+                <button 
+                  className={styles.testCloseButton}
+                  onClick={handleTestMarketClose}
+                  title="Probar cierre de mercado (solo desarrollo)"
+                >
+                  🧪 Probar Cierre
+                </button>
+              </>
             )}
             <button 
               className={styles.updatePricesButton}

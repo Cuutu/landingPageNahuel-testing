@@ -1278,6 +1278,34 @@
   gap: 1rem;
 }
 
+/* ✅ NUEVO: Estilos para botón de prueba de cierre */
+.testCloseButton {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+.testCloseButton:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.4);
+}
+
+.testCloseButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
 .closeButton {
   background: #ef4444;
   color: white;

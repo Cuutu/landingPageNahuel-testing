@@ -15,11 +15,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const authHeader = req.headers.authorization;
     const token = authHeader?.replace('Bearer ', '');
     
-    if (token !== process.env.CRON_SECRET_TOKEN) {
+    // ✅ NUEVO: Permitir acceso manual para testing (solo en desarrollo)
+    const isManualTest = req.query.test === 'true' && process.env.NODE_ENV === 'development';
+    
+    if (!isManualTest && token !== process.env.CRON_SECRET_TOKEN) {
       console.error('❌ Acceso no autorizado a cron job de cierre de mercado');
       return res.status(401).json({ 
         error: 'No autorizado',
-        message: 'Este endpoint solo puede ser ejecutado por Vercel Cron'
+        message: 'Este endpoint solo puede ser ejecutado por Vercel Cron o en modo test'
       });
     }
 
@@ -47,25 +50,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       finalPrice: { $exists: false }
     }).populate('createdBy', 'email name');
 
-    if (activeAlerts.length === 0) {
-      console.log('ℹ️ No hay alertas activas para fijar precio final');
+    // ✅ NUEVO: Filtrar alertas que ya deben cerrarse según su horario personalizado
+    const now = new Date();
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Convertir a minutos desde medianoche
+    
+    const alertsToClose = activeAlerts.filter(alert => {
+      // Si no tiene horarioCierre, usar horario por defecto (17:30 = 1050 minutos)
+      const closeTime = alert.horarioCierre || '17:30';
+      const [hours, minutes] = closeTime.split(':').map(Number);
+      const alertCloseTime = hours * 60 + minutes;
+      
+      // Verificar si ya es hora de cerrar esta alerta
+      const shouldClose = currentTime >= alertCloseTime;
+      
+      if (shouldClose) {
+        console.log(`⏰ ${alert.symbol}: Es hora de cerrar (${closeTime}) - Actual: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+      } else {
+        console.log(`⏳ ${alert.symbol}: Aún no es hora de cerrar (${closeTime}) - Actual: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
+      }
+      
+      return shouldClose;
+    });
+
+    if (alertsToClose.length === 0) {
+      console.log('ℹ️ No hay alertas que deban cerrarse en este momento');
       return res.status(200).json({ 
         success: true, 
-        message: 'No hay alertas activas',
+        message: 'No hay alertas que deban cerrarse ahora',
+        totalAlerts: activeAlerts.length,
+        alertsToClose: 0,
         processedCount: 0,
         executionTime: Date.now() - startTime
       });
     }
 
-    console.log(`📊 Procesando ${activeAlerts.length} alertas para cierre de mercado...`);
+    console.log(`📊 Procesando ${alertsToClose.length} alertas para cierre de mercado (de ${activeAlerts.length} total)...`);
 
     let processedCount = 0;
     let errorCount = 0;
     let emailsSent = 0;
     const errors: string[] = [];
 
-    // Procesar cada alerta
-    for (const alert of activeAlerts) {
+    // Procesar cada alerta que debe cerrarse
+    for (const alert of alertsToClose) {
       try {
         // ✅ NUEVO: Obtener precio de cierre o último disponible
         const closePrice = await getMarketClosePrice(alert.symbol);
