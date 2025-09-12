@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
+import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 
@@ -17,15 +18,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(401).json({ error: 'No autorizado' });
     }
 
-    // Verificar que sea admin
-    const userResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/users/role?email=${session.user.email}`);
-    const userData = await userResponse.json();
+    await dbConnect();
+
+    // Verificar que sea admin directamente desde la base de datos
+    const user = await User.findOne({ email: session.user.email }).select('role');
     
-    if (userData.role !== 'admin') {
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    if (user.role !== 'admin') {
+      console.log(`❌ Usuario ${session.user.email} intentó usar función admin. Rol actual: ${user.role}`);
       return res.status(403).json({ error: 'Solo administradores pueden usar esta función' });
     }
 
-    await dbConnect();
+    console.log(`✅ Usuario admin ${session.user.email} usando función de conversión`);
 
     // Obtener alertas con rango
     const alertsWithRange = await Alert.find({
