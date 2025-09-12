@@ -77,19 +77,24 @@ export default async function handler(
 
     // Formatear alertas para el frontend - con validación de números
     const formattedAlerts = alerts.map((alert: any) => {
-      // ✅ NUEVO: Formatear precio de entrada considerando rangos
+      // ✅ CORREGIDO: Formatear precio de entrada - priorizar entryPrice sobre rango
       let entryPriceDisplay = '';
-      if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
-        // Si hay rango de precio, mostrar formato "PRECIO 1 / PRECIO 2"
-        entryPriceDisplay = `$${Number(alert.entryPriceRange.min).toFixed(2)} / $${Number(alert.entryPriceRange.max).toFixed(2)}`;
-      } else if (alert.finalPrice) {
-        // Si ya se fijó precio final al cierre del mercado, usar ese
-        entryPriceDisplay = `$${Number(alert.finalPrice).toFixed(2)}`;
-      } else if (alert.entryPrice) {
-        // Fallback al precio único original
+      
+      // ✅ CRÍTICO: Si hay entryPrice (precio fijo), usarlo (después del cierre de mercado)
+      if (alert.entryPrice && alert.entryPrice > 0) {
         entryPriceDisplay = `$${Number(alert.entryPrice).toFixed(2)}`;
-      } else {
-        entryPriceDisplay = '$0.00'; // Valor por defecto
+      } 
+      // ✅ Si hay rango Y no hay entryPrice fijo, mostrar rango
+      else if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
+        entryPriceDisplay = `$${Number(alert.entryPriceRange.min).toFixed(2)} / $${Number(alert.entryPriceRange.max).toFixed(2)}`;
+      } 
+      // ✅ Fallback a finalPrice si existe
+      else if (alert.finalPrice) {
+        entryPriceDisplay = `$${Number(alert.finalPrice).toFixed(2)}`;
+      } 
+      // ✅ Valor por defecto
+      else {
+        entryPriceDisplay = '$0.00';
       }
 
       return {

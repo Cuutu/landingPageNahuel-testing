@@ -1267,7 +1267,7 @@ const SubscriberView: React.FC = () => {
 
   // ✅ NUEVO: Función para convertir rangos a precios fijos
   const handleTestRangeConversion = async () => {
-    if (!confirm('¿Quieres convertir todos los rangos de precio a precios fijos? Esto simulará el cierre de mercado.')) {
+    if (!confirm('¿Quieres convertir todos los rangos de precio a precios fijos? Esto simulará el cierre de mercado usando los precios actuales.')) {
       return;
     }
 
@@ -1285,7 +1285,16 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok) {
         console.log('✅ Conversión exitosa:', result);
-        alert(`✅ Conversión completada!\n\nProcesadas: ${result.processedCount} alertas\n\n${result.message}`);
+        
+        // Mostrar detalles de la conversión
+        let detailsMessage = '';
+        if (result.details && result.details.length > 0) {
+          detailsMessage = '\n\nDetalles:\n' + result.details.map((detail: any) => 
+            `• ${detail.symbol}: ${detail.oldRange} → $${detail.newPrice}`
+          ).join('\n');
+        }
+        
+        alert(`✅ Conversión completada!\n\nProcesadas: ${result.processedCount} alertas${detailsMessage}\n\n${result.message}`);
         
         // Recargar las alertas para mostrar los cambios
         await loadAlerts();
@@ -2250,7 +2259,7 @@ const SubscriberView: React.FC = () => {
                 <button 
                   className={styles.testRangeButton}
                   onClick={handleTestRangeConversion}
-                  title="Convertir rangos a precios fijos (solo desarrollo)"
+                  title="Convertir rangos a precios fijos (solo administradores)"
                 >
                   🔄 Convertir Rangos
                 </button>
