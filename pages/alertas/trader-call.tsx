@@ -1095,13 +1095,18 @@ const SubscriberView: React.FC = () => {
           tipo: 'TraderCall',
           symbol: newAlert.symbol.toUpperCase(),
           action: newAlert.action,
-          entryPrice: stockPrice,
+          entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : undefined, // Solo para alertas de precio específico
           stopLoss: parseFloat(newAlert.stopLoss),
           takeProfit: parseFloat(newAlert.takeProfit),
           analysis: newAlert.analysis || '',
           date: new Date().toISOString(),
           chartImage: chartImage,
-          images: additionalImages
+          images: additionalImages,
+          // ✅ NUEVO: Campos para alertas de rango
+          tipoAlerta: newAlert.tipoAlerta,
+          precioMinimo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMinimo) : undefined,
+          precioMaximo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMaximo) : undefined,
+          horarioCierre: newAlert.horarioCierre
         }),
       });
 
@@ -2198,7 +2203,12 @@ const SubscriberView: React.FC = () => {
               <div className={styles.alertDetails}>
                 <div className={styles.alertDetail}>
                   <span>Precio Entrada:</span>
-                  <strong>{alert.entryPrice}</strong>
+                  <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
+                    {alert.entryPrice}
+                    {alert.entryPrice?.includes(' / ') && (
+                      <span className={styles.rangeIndicator}>RANGO</span>
+                    )}
+                  </strong>
                 </div>
                 <div className={styles.alertDetail}>
                   <span>Precio Actual:</span>
@@ -2841,10 +2851,10 @@ const SubscriberView: React.FC = () => {
               <select
                 value={newAlert.tipoAlerta}
                 onChange={(e) => setNewAlert(prev => ({ ...prev, tipoAlerta: e.target.value as 'precio' | 'rango' }))}
-                className={styles.select}
+                className={`${styles.select} ${newAlert.tipoAlerta === 'rango' ? styles.rangeSelect : ''}`}
               >
-                <option value="precio">Precio Específico</option>
-                <option value="rango">Rango de Precio</option>
+                <option value="precio">💰 Precio Específico</option>
+                <option value="rango">📊 Rango de Precio</option>
               </select>
             </div>
 

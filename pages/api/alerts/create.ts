@@ -159,8 +159,13 @@ export default async function handler(
       alertData.entryPrice = entryPrice;
       alertData.currentPrice = entryPrice; // Precio inicial igual al de entrada
     } else if (tipoAlerta === 'rango') {
-      alertData.precioMinimo = precioMinimo;
-      alertData.precioMaximo = precioMaximo;
+      // ✅ CORREGIDO: Crear entryPriceRange para compatibilidad con el sistema
+      alertData.entryPriceRange = {
+        min: precioMinimo,
+        max: precioMaximo
+      };
+      alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
+      alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       alertData.currentPrice = precioMaximo; // Usar el precio máximo como referencia inicial
     }
 
