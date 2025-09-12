@@ -29,8 +29,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         currentPrice: alert.currentPrice
       });
 
-      // Simular precio de cierre (usar precio actual)
+      // ✅ CRÍTICO: Usar el precio actual como precio de cierre
       const closePrice = alert.currentPrice || 100.00;
+      
+      console.log(`💰 ${alert.symbol}: Precio actual ${alert.currentPrice} -> Precio de cierre ${closePrice}`);
 
       // Actualizar entryPrice al precio de cierre
       alert.entryPrice = closePrice;

@@ -54,6 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const now = new Date();
     const currentTime = now.getHours() * 60 + now.getMinutes(); // Convertir a minutos desde medianoche
     
+    console.log(`🕐 Hora actual: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} (${currentTime} minutos)`);
+    
     const alertsToClose = activeAlerts.filter(alert => {
       // Si no tiene horarioCierre, usar horario por defecto (17:30 = 1050 minutos)
       const closeTime = alert.horarioCierre || '17:30';
@@ -62,6 +64,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // Verificar si ya es hora de cerrar esta alerta
       const shouldClose = currentTime >= alertCloseTime;
+      
+      console.log(`📊 ${alert.symbol}: Horario cierre ${closeTime} (${alertCloseTime} min) vs Actual ${currentTime} min = ${shouldClose ? 'SÍ' : 'NO'}`);
       
       if (shouldClose) {
         console.log(`⏰ ${alert.symbol}: Es hora de cerrar (${closeTime}) - Actual: ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`);
@@ -72,16 +76,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return shouldClose;
     });
 
+    // ✅ NUEVO: Si no hay alertas por horario, verificar si hay alertas con rango que necesiten conversión
     if (alertsToClose.length === 0) {
-      console.log('ℹ️ No hay alertas que deban cerrarse en este momento');
-      return res.status(200).json({ 
-        success: true, 
-        message: 'No hay alertas que deban cerrarse ahora',
-        totalAlerts: activeAlerts.length,
-        alertsToClose: 0,
-        processedCount: 0,
-        executionTime: Date.now() - startTime
-      });
+      const alertsWithRange = activeAlerts.filter(alert => 
+        alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max
+      );
+      
+      if (alertsWithRange.length > 0) {
+        console.log(`🔄 Encontradas ${alertsWithRange.length} alertas con rango que necesitan conversión`);
+        // Procesar alertas con rango independientemente del horario
+        alertsToClose.push(...alertsWithRange);
+      } else {
+        console.log('ℹ️ No hay alertas que deban cerrarse en este momento');
+        return res.status(200).json({ 
+          success: true, 
+          message: 'No hay alertas que deban cerrarse ahora',
+          totalAlerts: activeAlerts.length,
+          alertsToClose: 0,
+          processedCount: 0,
+          executionTime: Date.now() - startTime
+        });
+      }
     }
 
     console.log(`📊 Procesando ${alertsToClose.length} alertas para cierre de mercado (de ${activeAlerts.length} total)...`);
@@ -94,10 +109,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Procesar cada alerta que debe cerrarse
     for (const alert of alertsToClose) {
       try {
-        // ✅ NUEVO: Obtener precio de cierre o último disponible
-        const closePrice = await getMarketClosePrice(alert.symbol);
+        // ✅ MODIFICADO: Usar el precio actual de la alerta como precio de cierre
+        const closePrice = alert.currentPrice || await getMarketClosePrice(alert.symbol);
         
         if (closePrice) {
+          console.log(`💰 ${alert.symbol}: Precio actual ${alert.currentPrice} -> Precio de cierre ${closePrice}`);
+          
           // ✅ NUEVO: Fijar precio final al cierre
           const isFromLastAvailable = !isBusinessDay; // Si no es hábil, usar último disponible
           alert.setFinalPrice(closePrice, isFromLastAvailable);
@@ -107,13 +124,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           const hasRange = alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max;
           
           if (hasRange) {
-            // Para rangos, usar el precio de cierre como nuevo precio de entrada
+            // ✅ CRÍTICO: Para rangos, usar el precio actual como nuevo precio de entrada
+            const oldRange = `${alert.entryPriceRange.min}-${alert.entryPriceRange.max}`;
             alert.entryPrice = closePrice;
             // ✅ NUEVO: Limpiar el rango para que no se muestre más como rango
             alert.entryPriceRange = undefined;
             alert.precioMinimo = undefined;
             alert.precioMaximo = undefined;
-            console.log(`🔄 ${alert.symbol}: Rango actualizado a precio fijo ${closePrice} (rango eliminado)`);
+            console.log(`🔄 ${alert.symbol}: Rango ${oldRange} convertido a precio fijo ${closePrice}`);
           } else if (!alert.entryPrice) {
             // Si no hay precio de entrada, usar el precio de cierre
             alert.entryPrice = closePrice;
