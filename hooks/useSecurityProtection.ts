@@ -22,6 +22,43 @@ export const useSecurityProtection = () => {
       return;
     }
 
+    const isNavigationElement = (element: HTMLElement): boolean => {
+      // Verificar si el elemento o sus padres son parte de la navegación
+      const navSelectors = [
+        'nav', '.navbar', '.nav', '.dropdown', '.menu',
+        '[class*="nav"]', '[class*="menu"]', '[class*="dropdown"]',
+        'button', 'a', '[role="button"]', '[role="menu"]', '[role="menuitem"]'
+      ];
+
+      let currentElement: HTMLElement | null = element;
+
+      // Verificar el elemento actual y hasta 5 niveles hacia arriba
+      for (let i = 0; i < 5 && currentElement; i++) {
+        const tagName = currentElement.tagName.toLowerCase();
+        const className = currentElement.className || '';
+        const role = currentElement.getAttribute('role') || '';
+
+        // Verificar si es un elemento de navegación
+        if (tagName === 'nav' ||
+            tagName === 'button' ||
+            tagName === 'a' ||
+            role === 'button' ||
+            role === 'menu' ||
+            role === 'menuitem' ||
+            className.includes('nav') ||
+            className.includes('menu') ||
+            className.includes('dropdown') ||
+            className.includes('chevron') ||
+            className.includes('user')) {
+          return true;
+        }
+
+        currentElement = currentElement.parentElement;
+      }
+
+      return false;
+    };
+
     const preventContextMenu = (e: MouseEvent) => {
       // Permitir menú contextual en elementos de navegación
       const target = e.target as HTMLElement;
@@ -59,43 +96,6 @@ export const useSecurityProtection = () => {
         e.preventDefault();
         return false;
       }
-    };
-
-    const isNavigationElement = (element: HTMLElement): boolean => {
-      // Verificar si el elemento o sus padres son parte de la navegación
-      const navSelectors = [
-        'nav', '.navbar', '.nav', '.dropdown', '.menu',
-        '[class*="nav"]', '[class*="menu"]', '[class*="dropdown"]',
-        'button', 'a', '[role="button"]', '[role="menu"]', '[role="menuitem"]'
-      ];
-
-      let currentElement: HTMLElement | null = element;
-
-      // Verificar el elemento actual y hasta 5 niveles hacia arriba
-      for (let i = 0; i < 5 && currentElement; i++) {
-        const tagName = currentElement.tagName.toLowerCase();
-        const className = currentElement.className || '';
-        const role = currentElement.getAttribute('role') || '';
-
-        // Verificar si es un elemento de navegación
-        if (tagName === 'nav' ||
-            tagName === 'button' ||
-            tagName === 'a' ||
-            role === 'button' ||
-            role === 'menu' ||
-            role === 'menuitem' ||
-            className.includes('nav') ||
-            className.includes('menu') ||
-            className.includes('dropdown') ||
-            className.includes('chevron') ||
-            className.includes('user')) {
-          return true;
-        }
-
-        currentElement = currentElement.parentElement;
-      }
-
-      return false;
     };
 
     const preventDrag = (e: DragEvent) => {
