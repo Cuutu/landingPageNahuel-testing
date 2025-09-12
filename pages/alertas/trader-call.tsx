@@ -1265,6 +1265,40 @@ const SubscriberView: React.FC = () => {
     }
   };
 
+  // ✅ NUEVO: Función para convertir rangos a precios fijos
+  const handleTestRangeConversion = async () => {
+    if (!confirm('¿Quieres convertir todos los rangos de precio a precios fijos? Esto simulará el cierre de mercado.')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Iniciando conversión de rangos...');
+      
+      const response = await fetch('/api/test-market-close', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Conversión exitosa:', result);
+        alert(`✅ Conversión completada!\n\nProcesadas: ${result.processedCount} alertas\n\n${result.message}`);
+        
+        // Recargar las alertas para mostrar los cambios
+        await loadAlerts();
+      } else {
+        console.error('❌ Error en conversión:', result);
+        alert(`❌ Error en conversión: ${result.error || result.message}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al convertir rangos:', error);
+      alert('❌ Error al convertir rangos. Verifica la consola para más detalles.');
+    }
+  };
+
   // Función para manejar la edición de alertas
   const handleEditAlert = (alert: any) => {
     console.log('🔍 Editando alerta:', alert);
@@ -2212,6 +2246,13 @@ const SubscriberView: React.FC = () => {
                   title="Probar cierre de mercado (solo desarrollo)"
                 >
                   🧪 Probar Cierre
+                </button>
+                <button 
+                  className={styles.testRangeButton}
+                  onClick={handleTestRangeConversion}
+                  title="Convertir rangos a precios fijos (solo desarrollo)"
+                >
+                  🔄 Convertir Rangos
                 </button>
               </>
             )}

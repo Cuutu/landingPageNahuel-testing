@@ -104,14 +104,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           // ✅ MODIFICADO: Si es una alerta de rango, actualizar entryPrice al precio actual
           // para que se muestre correctamente en la interfaz como precio fijo
-          if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
+          const hasRange = alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max;
+          
+          if (hasRange) {
             // Para rangos, usar el precio de cierre como nuevo precio de entrada
             alert.entryPrice = closePrice;
-            console.log(`🔄 ${alert.symbol}: Rango actualizado a precio fijo ${closePrice}`);
+            // ✅ NUEVO: Limpiar el rango para que no se muestre más como rango
+            alert.entryPriceRange = undefined;
+            alert.precioMinimo = undefined;
+            alert.precioMaximo = undefined;
+            console.log(`🔄 ${alert.symbol}: Rango actualizado a precio fijo ${closePrice} (rango eliminado)`);
           } else if (!alert.entryPrice) {
             // Si no hay precio de entrada, usar el precio de cierre
             alert.entryPrice = closePrice;
             console.log(`🔄 ${alert.symbol}: Precio de entrada fijado en ${closePrice}`);
+          }
+
+          // ✅ NUEVO: Usar $unset para eliminar completamente los campos de rango de la base de datos
+          if (hasRange) {
+            await Alert.updateOne(
+              { _id: alert._id },
+              { 
+                $unset: { 
+                  entryPriceRange: 1,
+                  precioMinimo: 1,
+                  precioMaximo: 1
+                }
+              }
+            );
+            console.log(`🗑️ ${alert.symbol}: Campos de rango eliminados de la base de datos`);
           }
 
           // ✅ NUEVO: Marcar email de cierre como enviado
