@@ -7,8 +7,8 @@ const https = require('https');
 const http = require('http');
 
 // Configuración
-const DOMAIN = 'tu-dominio.vercel.app'; // Cambiar por tu dominio real
-const CRON_SECRET_TOKEN = process.env.CRON_SECRET_TOKEN || 'test-token';
+const DOMAIN = 'lozanonahuel.vercel.app';
+const CRON_SECRET_TOKEN = null; // Probar sin token
 
 async function testCronEndpoint() {
   console.log('🧪 Probando endpoint de auto-convert-ranges...');
@@ -28,7 +28,7 @@ async function testCronEndpoint() {
     headers: {
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(postData),
-      'Authorization': `Bearer ${CRON_SECRET_TOKEN}`
+      'Authorization': CRON_SECRET_TOKEN ? `Bearer ${CRON_SECRET_TOKEN}` : undefined
     }
   };
 
