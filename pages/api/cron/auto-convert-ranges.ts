@@ -5,10 +5,6 @@ import Alert from '@/models/Alert';
 interface AutoConvertCronResponse {
   success: boolean;
   message: string;
-  marketStatus: {
-    isOpen: boolean;
-    message: string;
-  };
   conversion?: {
     processed: number;
     details: Array<{
@@ -21,9 +17,9 @@ interface AutoConvertCronResponse {
 }
 
 /**
- * CRON JOB: Conversión automática de rangos al cierre del mercado
- * Se ejecuta automáticamente cada día a las 4:30 PM EST/EDT
- * Solo convierte rangos si el mercado está cerrado
+ * CRON JOB: Conversión automática de rangos
+ * Se ejecuta automáticamente cada día a las 9:00 AM EST/EDT
+ * Convierte TODOS los rangos a precios fijos sin importar el estado del mercado
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
   // Solo permitir ejecución desde Vercel Cron o con token de seguridad
@@ -34,7 +30,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(401).json({
       success: false,
       message: 'No autorizado',
-      marketStatus: { isOpen: false, message: 'No autorizado' },
       timestamp: new Date().toISOString()
     });
   }
@@ -44,23 +39,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     
     await dbConnect();
 
-    // Verificar estado del mercado
-    const marketStatus = await getMarketStatus();
-    console.log(`📊 CRON: Estado del mercado: ${marketStatus.isOpen ? 'ABIERTO' : 'CERRADO'} - ${marketStatus.message}`);
-
-    // Si el mercado está abierto, no convertir
-    if (marketStatus.isOpen) {
-      console.log('⏰ CRON: Mercado abierto, no se ejecuta conversión');
-      return res.status(200).json({
-        success: true,
-        message: 'Mercado abierto, no se ejecutó conversión',
-        marketStatus,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Si el mercado está cerrado, proceder con la conversión
-    console.log('🔄 CRON: Mercado cerrado, iniciando conversión automática de rangos...');
+    // ✅ FORZAR CONVERSIÓN: Siempre convertir rangos sin importar el estado del mercado
+    console.log('🔄 CRON: Iniciando conversión automática de rangos (forzada)...');
 
     // Obtener alertas con rango que necesitan conversión
     const alertsWithRange = await Alert.find({
@@ -134,7 +114,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(200).json({
       success: true,
       message: `Conversión automática completada: ${conversionDetails.length} alertas procesadas`,
-      marketStatus,
       conversion: {
         processed: conversionDetails.length,
         details: conversionDetails
@@ -147,53 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     return res.status(500).json({ 
       success: false,
       message: 'Error interno del servidor',
-      marketStatus: { isOpen: false, message: 'Error interno' },
       timestamp: new Date().toISOString()
     });
   }
 }
 
-async function getMarketStatus(): Promise<{ isOpen: boolean; message: string }> {
-  // Obtener hora actual en Nueva York (zona horaria del mercado)
-  const now = new Date();
-  const nyTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  
-  const currentHour = nyTime.getHours();
-  const currentMinute = nyTime.getMinutes();
-  const currentDay = nyTime.getDay(); // 0 = Domingo, 6 = Sábado
-  
-  // Verificar si es fin de semana
-  if (currentDay === 0 || currentDay === 6) {
-    return {
-      isOpen: false,
-      message: 'Mercado cerrado (fin de semana)'
-    };
-  }
-  
-  // Horarios del mercado (9:30 AM - 4:00 PM EST/EDT)
-  const marketOpenHour = 9;
-  const marketOpenMinute = 30;
-  const marketCloseHour = 16;
-  const marketCloseMinute = 0;
-  
-  // Convertir a minutos para facilitar comparación
-  const currentTimeInMinutes = currentHour * 60 + currentMinute;
-  const marketOpenInMinutes = marketOpenHour * 60 + marketOpenMinute;
-  const marketCloseInMinutes = marketCloseHour * 60 + marketCloseMinute;
-  
-  const isOpen = currentTimeInMinutes >= marketOpenInMinutes && currentTimeInMinutes < marketCloseInMinutes;
-  
-  if (isOpen) {
-    return {
-      isOpen: true,
-      message: 'Mercado abierto'
-    };
-  } else {
-    return {
-      isOpen: false,
-      message: currentTimeInMinutes < marketOpenInMinutes 
-        ? 'Mercado cerrado (antes del horario de apertura)'
-        : 'Mercado cerrado (después del horario de cierre)'
-    };
-  }
-}
