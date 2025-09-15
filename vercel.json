@@ -7,7 +7,7 @@
   "crons": [
     {
       "path": "/api/cron/auto-convert-ranges",
-      "schedule": "14 13 * * 1-5"
+      "schedule": "17 13 * * 1-5"
     }
   ]
 }
