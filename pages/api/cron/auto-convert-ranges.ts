@@ -22,8 +22,8 @@ interface AutoConvertCronResponse {
  * Convierte TODOS los rangos a precios fijos sin importar el estado del mercado
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
-  // Solo permitir POST para cron jobs
-  if (req.method !== 'POST') {
+  // Permitir POST y GET (GET para Vercel cron, POST para servicios externos)
+  if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({
       success: false,
       message: 'Método no permitido',
