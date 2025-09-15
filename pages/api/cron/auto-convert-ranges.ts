@@ -22,11 +22,21 @@ interface AutoConvertCronResponse {
  * Convierte TODOS los rangos a precios fijos sin importar el estado del mercado
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
-  // Solo permitir ejecución desde Vercel Cron o con token de seguridad
-  const authHeader = req.headers.authorization;
-  const cronSecret = process.env.CRON_SECRET_TOKEN;
+  // Solo permitir POST para cron jobs
+  if (req.method !== 'POST') {
+    return res.status(405).json({
+      success: false,
+      message: 'Método no permitido',
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  // Verificar token de seguridad para cron jobs (opcional)
+  const cronToken = req.headers.authorization?.replace('Bearer ', '');
+  const expectedToken = process.env.CRON_SECRET_TOKEN;
   
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (expectedToken && cronToken !== expectedToken) {
+    console.log('❌ [CRON] Token de autorización inválido');
     return res.status(401).json({
       success: false,
       message: 'No autorizado',
