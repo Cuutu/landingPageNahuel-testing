@@ -1308,6 +1308,58 @@ const SubscriberView: React.FC = () => {
     }
   };
 
+  // ✅ NUEVO: Función para conversión automática basada en estado del mercado
+  const handleAutoConvertRanges = async () => {
+    if (!confirm('¿Quieres verificar el estado del mercado y convertir rangos automáticamente si está cerrado?')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Verificando estado del mercado y ejecutando conversión automática...');
+      
+      const response = await fetch('/api/auto-convert-ranges', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Verificación completada:', result);
+        
+        let message = `📊 Estado del mercado: ${result.marketStatus.isOpen ? 'ABIERTO' : 'CERRADO'}\n${result.marketStatus.message}`;
+        
+        if (result.conversion && result.conversion.processed > 0) {
+          // Mostrar detalles de la conversión
+          let detailsMessage = '\n\n🔄 Conversión automática ejecutada:\n';
+          detailsMessage += result.conversion.details.map((detail: any) => 
+            `• ${detail.symbol}: ${detail.oldRange} → $${detail.newPrice}`
+          ).join('\n');
+          
+          message += detailsMessage;
+          message += `\n\n✅ Procesadas: ${result.conversion.processed} alertas`;
+          
+          // Recargar las alertas para mostrar los cambios
+          await loadAlerts();
+        } else if (!result.marketStatus.isOpen) {
+          message += '\n\nℹ️ No se encontraron alertas con rangos para convertir.';
+        } else {
+          message += '\n\nℹ️ El mercado está abierto, no se ejecutó conversión.';
+        }
+        
+        alert(message);
+      } else {
+        console.error('❌ Error en verificación automática:', result);
+        alert(`❌ Error: ${result.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al verificar mercado:', error);
+      alert('❌ Error al verificar estado del mercado. Verifica la consola para más detalles.');
+    }
+  };
+
   // Función para manejar la edición de alertas
   const handleEditAlert = (alert: any) => {
     console.log('🔍 Editando alerta:', alert);
@@ -2262,6 +2314,13 @@ const SubscriberView: React.FC = () => {
                   title="Convertir rangos a precios fijos (solo administradores)"
                 >
                   🔄 Convertir Rangos
+                </button>
+                <button 
+                  className={styles.testRangeButton}
+                  onClick={handleAutoConvertRanges}
+                  title="Verificar estado del mercado y convertir rangos automáticamente si está cerrado"
+                >
+                  🤖 Auto Convertir
                 </button>
               </>
             )}

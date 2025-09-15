@@ -1,6 +1,13 @@
 {
   "functions": {
     "pages/api/cron/update-stock-prices.ts": { "maxDuration": 300 },
-    "pages/api/cron/market-close.ts": { "maxDuration": 300 }
-  }
+    "pages/api/cron/market-close.ts": { "maxDuration": 300 },
+    "pages/api/cron/auto-convert-ranges.ts": { "maxDuration": 300 }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/auto-convert-ranges",
+      "schedule": "30 16 * * 1-5"
+    }
+  ]
 }
