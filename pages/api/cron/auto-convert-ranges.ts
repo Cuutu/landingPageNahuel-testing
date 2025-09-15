@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
+import { sendEmail, createNotificationEmailTemplate } from '@/lib/emailService';
+import User from '@/models/User';
 
 interface AutoConvertCronResponse {
   success: boolean;
@@ -120,6 +122,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
 
       console.log(`✅ CRON: ${alert.symbol}: Rango ${oldRange} convertido a precio fijo $${closePrice}`);
+
+      // 📧 NUEVO: Enviar email de notificación al usuario
+      try {
+        await sendRangeConversionEmail(alert, closePrice, oldRange);
+        console.log(`📧 CRON: Email enviado para ${alert.symbol} - Precio final: $${closePrice}`);
+      } catch (emailError) {
+        console.error(`❌ CRON: Error enviando email para ${alert.symbol}:`, emailError);
+        // No fallar el proceso si el email falla
+      }
     }
 
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
@@ -141,6 +152,114 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       message: 'Error interno del servidor',
       timestamp: new Date().toISOString()
     });
+  }
+}
+
+/**
+ * 📧 NUEVO: Envía email de notificación cuando se convierte una alerta de rango
+ */
+async function sendRangeConversionEmail(alert: any, finalPrice: number, oldRange: string) {
+  try {
+    // Obtener información del usuario que creó la alerta
+    const user = await User.findById(alert.createdBy);
+    
+    if (!user || !user.email) {
+      console.log(`⚠️ CRON: Usuario no encontrado para alerta ${alert._id}, saltando email`);
+      return;
+    }
+
+    // Calcular el porcentaje de ganancia/pérdida
+    const profitPercentage = ((finalPrice - (alert.entryPriceRange?.min || alert.precioMinimo || 0)) / (alert.entryPriceRange?.min || alert.precioMinimo || 0)) * 100;
+    const profitColor = profitPercentage >= 0 ? '#22c55e' : '#ef4444';
+    const profitIcon = profitPercentage >= 0 ? '📈' : '📉';
+
+    const html = createNotificationEmailTemplate({
+      title: `🔄 Alerta Convertida: ${alert.symbol}`,
+      content: `
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h3 style="margin: 0 0 10px; font-size: 20px; color: #1e293b; font-weight: 700;">
+            ¡Hola ${user.name || user.email.split('@')[0]}! 👋
+          </h3>
+          <p style="margin: 0; font-size: 16px; color: #64748b; line-height: 1.5;">
+            Tu alerta de rango ha sido convertida automáticamente a precio fijo.
+          </p>
+        </div>
+        
+        <!-- Badge de conversión -->
+        <div style="text-align: center; margin-bottom: 25px;">
+          <div style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; padding: 8px 20px; border-radius: 25px; font-weight: 600; font-size: 14px;">
+            🔄 Conversión Automática Completada
+          </div>
+        </div>
+        
+        <!-- Detalles de la conversión -->
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+          <h3 style="margin: 0 0 20px; font-size: 18px; color: #1e293b; font-weight: 600; text-align: center;">
+            📊 Detalles de la Conversión
+          </h3>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 15px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Símbolo</div>
+              <div style="font-size: 20px; color: #1e293b; font-weight: 700;">${alert.symbol}</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Acción</div>
+              <div style="font-size: 20px; color: ${alert.action === 'BUY' ? '#22c55e' : '#ef4444'}; font-weight: 700;">${alert.action}</div>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+            <div style="text-align: center; padding: 15px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Rango Anterior</div>
+              <div style="font-size: 16px; color: #1e293b; font-weight: 600;">${oldRange}</div>
+            </div>
+            <div style="text-align: center; padding: 15px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Precio Final</div>
+              <div style="font-size: 20px; color: #1e293b; font-weight: 700;">$${finalPrice.toFixed(2)}</div>
+            </div>
+          </div>
+          
+          <div style="text-align: center; padding: 15px; background: white; border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Rendimiento</div>
+            <div style="font-size: 18px; color: ${profitColor}; font-weight: 700;">
+              ${profitIcon} ${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(2)}%
+            </div>
+          </div>
+        </div>
+        
+        <!-- Información adicional -->
+        <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px; margin: 20px 0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">ℹ️</span>
+            <div>
+              <h5 style="margin: 0 0 5px; font-size: 14px; color: #92400e; font-weight: 600;">
+                ¿Qué significa esto?
+              </h5>
+              <p style="margin: 0; font-size: 13px; color: #b45309; line-height: 1.4;">
+                Tu alerta de rango ha sido convertida automáticamente al precio actual del mercado. Ahora puedes hacer seguimiento del rendimiento con un precio fijo de entrada.
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+      notificationType: 'success',
+      urgency: 'normal',
+      buttonText: 'Ver Mis Alertas',
+      buttonUrl: '/alertas'
+    });
+
+    await sendEmail({
+      to: user.email,
+      subject: `🔄 Alerta Convertida: ${alert.symbol} - Precio Final: $${finalPrice.toFixed(2)}`,
+      html
+    });
+
+    console.log(`✅ CRON: Email de conversión enviado a ${user.email} para ${alert.symbol}`);
+
+  } catch (error) {
+    console.error('❌ CRON: Error enviando email de conversión:', error);
+    throw error;
   }
 }
 
