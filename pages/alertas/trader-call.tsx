@@ -1360,6 +1360,56 @@ const SubscriberView: React.FC = () => {
     }
   };
 
+  // ✅ NUEVO: Función para probar el cron job manualmente
+  const handleTestCronJob = async () => {
+    if (!confirm('¿Quieres probar el cron job de conversión automática? Esto simulará la ejecución automática.')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Probando cron job de conversión automática...');
+      
+      const response = await fetch('/api/test-cron-conversion', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Prueba de cron job exitosa:', result);
+        
+        let message = `🧪 PRUEBA DE CRON JOB COMPLETADA\n\n`;
+        
+        if (result.conversion && result.conversion.processed > 0) {
+          // Mostrar detalles de la conversión
+          let detailsMessage = '🔄 Conversión ejecutada:\n';
+          detailsMessage += result.conversion.details.map((detail: any) => 
+            `• ${detail.symbol}: ${detail.oldRange} → $${detail.newPrice}`
+          ).join('\n');
+          
+          message += detailsMessage;
+          message += `\n\n✅ Procesadas: ${result.conversion.processed} alertas`;
+          
+          // Recargar las alertas para mostrar los cambios
+          await loadAlerts();
+        } else {
+          message += 'ℹ️ No se encontraron alertas con rangos para convertir.';
+        }
+        
+        alert(message);
+      } else {
+        console.error('❌ Error en prueba de cron job:', result);
+        alert(`❌ Error: ${result.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al probar cron job:', error);
+      alert('❌ Error al probar cron job. Verifica la consola para más detalles.');
+    }
+  };
+
   // Función para manejar la edición de alertas
   const handleEditAlert = (alert: any) => {
     console.log('🔍 Editando alerta:', alert);
@@ -2321,6 +2371,13 @@ const SubscriberView: React.FC = () => {
                   title="Verificar estado del mercado y convertir rangos automáticamente si está cerrado"
                 >
                   🤖 Auto Convertir
+                </button>
+                <button 
+                  className={styles.testRangeButton}
+                  onClick={handleTestCronJob}
+                  title="Probar el cron job de conversión automática (simula la ejecución automática)"
+                >
+                  🧪 Probar Cron
                 </button>
               </>
             )}
