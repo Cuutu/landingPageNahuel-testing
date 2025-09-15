@@ -18,13 +18,13 @@ interface AutoConvertCronResponse {
 
 /**
  * CRON JOB: Conversión automática de rangos
- * Se ejecuta automáticamente cada día a las 9:00 AM EST/EDT
+ * Se ejecuta automáticamente cada día a las 6:30 PM EST/EDT (lunes a viernes)
  * Convierte TODOS los rangos a precios fijos sin importar el estado del mercado
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
   // Solo permitir ejecución desde Vercel Cron o con token de seguridad
   const authHeader = req.headers.authorization;
-  const cronSecret = process.env.CRON_SECRET;
+  const cronSecret = process.env.CRON_SECRET_TOKEN;
   
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return res.status(401).json({
