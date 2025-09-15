@@ -31,8 +31,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
   }
 
-  // TEMPORAL: Autenticación completamente deshabilitada para testing
-  console.log('🔓 [CRON] Autenticación deshabilitada - ejecutando sin validación de token');
+  // Verificar token de seguridad para cron jobs (opcional)
+  const cronToken = req.headers.authorization?.replace('Bearer ', '');
+  const expectedToken = process.env.CRON_SECRET_TOKEN;
+  
+  if (expectedToken && cronToken !== expectedToken) {
+    console.log('❌ [CRON] Token de autorización inválido');
+    return res.status(401).json({
+      success: false,
+      message: 'No autorizado',
+      timestamp: new Date().toISOString()
+    });
+  }
 
   try {
     console.log('🤖 CRON: Iniciando conversión automática de rangos...');
