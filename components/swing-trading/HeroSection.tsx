@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { PlayCircle, Loader } from 'lucide-react';
 import YouTubePlayer from '../YouTubePlayer';
+import BackgroundVideo from './BackgroundVideo';
 import styles from '../../styles/SwingTrading.module.css';
 
 interface TrainingData {
@@ -58,6 +59,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   return (
     <section className={styles.heroSection}>
+      <BackgroundVideo videoSrc="/logos/Diseño Web-LozanoNahuel-Entrenamientos-SwingTrading.mp4" />
       <div className={styles.container}>
         <motion.div 
           className={styles.heroContent}

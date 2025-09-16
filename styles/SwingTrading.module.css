@@ -31,20 +31,38 @@
   display: flex;
   align-items: center;
   padding: 2rem 0;
-  background: linear-gradient(135deg, #8B0000 0%, #A52A2A 50%, #8B0000 100%);
+  background: #8B0000;
   position: relative;
   z-index: 2;
+  overflow: hidden;
 }
 
-.heroSection::before {
-  content: '';
+/* Video de fondo */
+.backgroundVideoContainer {
   position: absolute;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(139, 0, 0, 0.3);
+  width: 100%;
+  height: 100%;
   z-index: 1;
+  overflow: hidden;
+}
+
+.backgroundVideo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.3;
+}
+
+.videoOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(139, 0, 0, 0.7);
+  z-index: 2;
 }
 
 .heroContent {
@@ -89,38 +107,40 @@
 }
 
 .countdownBox {
-  background: rgba(139, 0, 0, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 8px;
   padding: 1.5rem 1rem;
   text-align: center;
   min-width: 80px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(139, 0, 0, 0.3);
 }
 
 .countdownNumber {
   display: block;
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 700;
-  color: #FFD700;
+  color: #000;
   margin-bottom: 0.5rem;
+  line-height: 1;
 }
 
 .countdownLabel {
   display: block;
   font-size: 0.9rem;
-  color: white;
+  color: #000;
+  font-weight: 500;
   opacity: 0.8;
 }
 
 /* Enroll Button */
 .enrollButton {
-  background: transparent;
-  border: 2px solid #8B0000;
-  color: white;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #8B0000;
   padding: 1rem 2rem;
-  border-radius: 12px;
+  border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -128,12 +148,15 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
 }
 
 .enrollButton:hover {
-  background: rgba(139, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 1);
   border-color: #FFD700;
   transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 .enrollButton:disabled {
@@ -178,10 +201,11 @@
 }
 
 .videoPlayer {
-  background: #1a1a1a;
+  background: #2a2a2a;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .videoPlaceholder {
@@ -283,19 +307,31 @@
 
   .countdownContainer {
     justify-content: center;
+    flex-wrap: wrap;
   }
 
   .countdownBox {
     min-width: 60px;
     padding: 1rem 0.5rem;
+    flex: 1;
+    max-width: 80px;
   }
 
   .countdownNumber {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
+  }
+
+  .countdownLabel {
+    font-size: 0.8rem;
   }
 
   .videoContainer {
     max-width: 100%;
+  }
+
+  .enrollButton {
+    width: 100%;
+    justify-content: center;
   }
 
   .videoPlaceholder {
