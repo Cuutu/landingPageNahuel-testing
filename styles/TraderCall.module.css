@@ -3290,17 +3290,27 @@
 .reportBody h4 { font-size: 1.125rem; }
 
 .reportBody p {
-  margin: 1rem 0;
+  margin: 1.5rem 0;
+  line-height: 1.7;
+}
+
+.reportBody p:first-child {
+  margin-top: 0;
+}
+
+.reportBody p:last-child {
+  margin-bottom: 0;
 }
 
 .reportBody ul,
 .reportBody ol {
-  margin: 1rem 0;
+  margin: 1.5rem 0;
   padding-left: 1.5rem;
 }
 
 .reportBody li {
-  margin: 0.5rem 0;
+  margin: 0.75rem 0;
+  line-height: 1.6;
 }
 
 .reportBody blockquote {
@@ -3309,6 +3319,23 @@
   margin: 1.5rem 0;
   font-style: italic;
   color: #9ca3af;
+  line-height: 1.6;
+}
+
+.reportBody br {
+  line-height: 2;
+}
+
+.reportBody div {
+  margin: 1rem 0;
+}
+
+.reportBody div:first-child {
+  margin-top: 0;
+}
+
+.reportBody div:last-child {
+  margin-bottom: 0;
 }
 
 .reportBody code {
