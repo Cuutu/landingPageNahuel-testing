@@ -209,6 +209,9 @@ const AlertasPage: React.FC = () => {
             >
               Nuestros Servicios de Alertas
             </motion.h2>
+            <p className={styles.sectionSubtitle}>
+              Estas son las alertas que pueden comprar
+            </p>
             
             <div className={styles.servicesGrid}>
               {alertServices.map((service, index) => (

@@ -1314,22 +1314,24 @@ const SubscriberView: React.FC = () => {
             <div className={styles.seguimientoContent}>
               <h2 className={styles.sectionTitle}>Seguimiento de Alertas</h2>
               <div className={styles.seguimientoGrid}>
-                {realAlerts.length > 0 ? (
-                  realAlerts.map((alert, index) => (
-                    <div key={alert._id || index} className={styles.alertCard}>
-                      <div className={styles.alertHeader}>
-                        <h3>{alert.symbol}</h3>
-                        <span className={`${styles.alertStatus} ${alert.status === 'ACTIVE' ? styles.statusActive : styles.statusClosed}`}>
-                          {alert.status === 'ACTIVE' ? 'Activa' : 'Cerrada'}
-                        </span>
+                {realAlerts.filter(alert => alert.status === 'ACTIVE').length > 0 ? (
+                  realAlerts
+                    .filter(alert => alert.status === 'ACTIVE')
+                    .map((alert, index) => (
+                      <div key={alert._id || index} className={styles.alertCard}>
+                        <div className={styles.alertHeader}>
+                          <h3>{alert.symbol}</h3>
+                          <span className={`${styles.alertStatus} ${alert.status === 'ACTIVE' ? styles.statusActive : styles.statusClosed}`}>
+                            {alert.status === 'ACTIVE' ? 'Activa' : 'Cerrada'}
+                          </span>
+                        </div>
+                        <div className={styles.alertDetails}>
+                          <p><strong>Entrada:</strong> ${alert.entryPrice}</p>
+                          <p><strong>Precio Actual:</strong> ${alert.currentPrice}</p>
+                          {alert.profit && <p><strong>Ganancia:</strong> {alert.profit}</p>}
+                        </div>
                       </div>
-                      <div className={styles.alertDetails}>
-                        <p><strong>Entrada:</strong> ${alert.entryPrice}</p>
-                        <p><strong>Precio Actual:</strong> ${alert.currentPrice}</p>
-                        {alert.profit && <p><strong>Ganancia:</strong> {alert.profit}</p>}
-                      </div>
-                    </div>
-                  ))
+                    ))
                 ) : (
                   <div className={styles.emptyState}>
                     <p>No hay alertas para mostrar</p>

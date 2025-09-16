@@ -2449,15 +2449,6 @@ const SubscriberView: React.FC = () => {
                     ✏️ Editar
                   </button>
                 )}
-                <button
-                  className={styles.closeButton}
-                  onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
-                  disabled={userRole !== 'admin'}
-                  title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cerrar esta posición'}
-                  onMouseEnter={() => console.log('🔍 Estado del botón:', { userRole, isDisabled: userRole !== 'admin' })}
-                >
-                  Cerrar Posición
-                </button>
                 {userRole === 'admin' && (
                   <Link
                     href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}
