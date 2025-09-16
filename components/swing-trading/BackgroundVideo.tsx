@@ -14,6 +14,7 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({ videoSrc }) => {
         muted
         loop
         playsInline
+        preload="auto"
       >
         <source src={videoSrc} type="video/mp4" />
         Tu navegador no soporta videos HTML5.
