@@ -5929,7 +5929,7 @@
 
 /* Tooltip 3D Mejorado */
 .chartTooltip3D {
-  position: absolute;
+  position: fixed;
   display: none;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);

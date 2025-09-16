@@ -2257,7 +2257,7 @@ const SubscriberView: React.FC = () => {
 
   const showTooltip = (event: React.MouseEvent, segment: any) => {
     const liq = (liquidityMap as any)?.[segment.symbol];
-    const tooltip = document.getElementById('chartTooltip') as HTMLElement;
+    const tooltip = (document.getElementById('chartTooltip') as HTMLElement) || (document.getElementById('chartTooltipDashboard') as HTMLElement);
     if (tooltip) {
       const symbol = tooltip.querySelector(`.${styles.tooltipSymbol}`) as HTMLElement;
       const action = tooltip.querySelector(`.${styles.tooltipAction}`) as HTMLElement;
@@ -2295,25 +2295,23 @@ const SubscriberView: React.FC = () => {
       if (sharesEl) sharesEl.textContent = `${Number(liq?.shares ?? 0)}`;
       if (realizedEl) realizedEl.textContent = formatMoneyShort(Number(liq?.realizedProfitLoss ?? 0));
 
-      // Posicionamiento: anclar cerca del segmento (no del cursor)
+      // Posicionamiento anclado al segmento
       const tooltipWidth = 260; // coincide con CSS
       const tooltipHeight = 180; // aprox
       const padding = 12;
-      const container = document.getElementById('alertsChartContainer');
+      const container = document.getElementById('alertsChartContainer') as HTMLElement | null;
       const rect = container?.getBoundingClientRect();
       const scaleX = rect ? (rect.width / 300) : 1;
       const scaleY = rect ? (rect.height / 300) : 1;
       const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
-      const r = 110; // radio para anclar el tooltip
+      const r = 110;
       const svgAnchorX = 150 + Math.cos(angleRad) * r;
       const svgAnchorY = 150 + Math.sin(angleRad) * r;
       let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
       let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
-      // Desplazar a un lado del segmento según el cuadrante
       const isRight = Math.cos(angleRad) >= 0;
       x += isRight ? 16 : -(tooltipWidth + 16);
       y -= tooltipHeight / 2;
-      // Evitar overflow del viewport
       const vpW = window.innerWidth;
       const vpH = window.innerHeight;
       if (x + tooltipWidth + padding > vpW + window.scrollX) x = vpW + window.scrollX - tooltipWidth - padding;
@@ -2328,10 +2326,10 @@ const SubscriberView: React.FC = () => {
   };
 
   const hideTooltip = () => {
-    const tooltip = document.getElementById('chartTooltip') as HTMLElement;
-    if (tooltip) {
-      tooltip.style.display = 'none';
-    }
+    const tooltip1 = document.getElementById('chartTooltip') as HTMLElement;
+    const tooltip2 = document.getElementById('chartTooltipDashboard') as HTMLElement;
+    if (tooltip1) tooltip1.style.display = 'none';
+    if (tooltip2) tooltip2.style.display = 'none';
   };
 
   const renderAlertasVigentes = () => {
