@@ -1930,14 +1930,26 @@ const SubscriberView: React.FC = () => {
                       </span>
                     </div>
                     
-                    <p className={styles.informeDescription}>
+                    <div className={styles.informeDescription}>
                       {informe.content ? 
-                        (informe.content.length > 200 ? 
-                          informe.content.substring(0, 200) + '...' : 
-                          informe.content) : 
+                        (() => {
+                          // Limpiar HTML y obtener solo el texto
+                          const cleanText = informe.content
+                            .replace(/<[^>]*>/g, '') // Remover todas las etiquetas HTML
+                            .replace(/&nbsp;/g, ' ') // Reemplazar espacios no separables
+                            .replace(/&amp;/g, '&') // Reemplazar entidades HTML
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .trim();
+                          
+                          return cleanText.length > 200 ? 
+                            cleanText.substring(0, 200) + '...' : 
+                            cleanText;
+                        })() : 
                         'Sin descripción disponible'
                       }
-                    </p>
+                    </div>
 
                     {/* Estadísticas del informe */}
                     <div className={styles.informeStats}>
@@ -2667,10 +2679,11 @@ const ReportViewModal = ({ report, onClose }: {
             )}
 
             {/* Contenido del informe */}
-            <div className={styles.reportContent}>
-              <div className={styles.contentText}>
-                {report.content}
-              </div>
+            <div className={styles.reportText}>
+              <div 
+                className={styles.reportBody}
+                dangerouslySetInnerHTML={{ __html: report.content }}
+              />
             </div>
 
             {/* Imágenes adicionales */}

@@ -2536,14 +2536,26 @@ const SubscriberView: React.FC = () => {
                     
 
                     
-                    <p className={styles.informeDescription}>
+                    <div className={styles.informeDescription}>
                       {informe.content ? 
-                        (informe.content.length > 200 ? 
-                          informe.content.substring(0, 200) + '...' : 
-                          informe.content) : 
+                        (() => {
+                          // Limpiar HTML y obtener solo el texto
+                          const cleanText = informe.content
+                            .replace(/<[^>]*>/g, '') // Remover todas las etiquetas HTML
+                            .replace(/&nbsp;/g, ' ') // Reemplazar espacios no separables
+                            .replace(/&amp;/g, '&') // Reemplazar entidades HTML
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&quot;/g, '"')
+                            .trim();
+                          
+                          return cleanText.length > 200 ? 
+                            cleanText.substring(0, 200) + '...' : 
+                            cleanText;
+                        })() : 
                         'Sin descripción disponible'
                       }
-                    </p>
+                    </div>
 
                     {/* Estadísticas del informe */}
                     <div className={styles.informeStats}>
