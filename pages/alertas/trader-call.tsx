@@ -1837,8 +1837,8 @@ const SubscriberView: React.FC = () => {
                     </div>
                   </div>
                 </div>
-                {/* Tooltip flotante para el dashboard */}
-                <div id="chartTooltip" className={styles.chartTooltip3D}>
+                {/* Tooltip flotante para el dashboard (no usado, duplicado evitado) */}
+                <div id="chartTooltipDashboard" className={styles.chartTooltip3D}>
                   <div className={styles.tooltipContent3D}>
                     <h4 className={styles.tooltipSymbol}></h4>
                     <div className={styles.tooltipDetails}>
@@ -2449,6 +2449,14 @@ const SubscriberView: React.FC = () => {
                     ✏️ Editar
                   </button>
                 )}
+                <button
+                  className={styles.closeButton}
+                  onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
+                  disabled={userRole !== 'admin'}
+                  title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
+                >
+                  Cierre total
+                </button>
                 {userRole === 'admin' && (
                   <Link
                     href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}

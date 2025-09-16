@@ -1861,6 +1861,17 @@ const SubscriberView: React.FC = () => {
               </div>
               
               <div className={styles.alertActions}>
+                <button 
+                  className={styles.closeButton}
+                  onClick={() => {
+                    if (!confirm('¿Cierre total de esta alerta? Esto venderá todo y la alerta pasará a cerrada.')) return;
+                    handleClosePosition(alert.id, alert.currentPrice);
+                  }}
+                  disabled={userRole !== 'admin'}
+                  title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
+                >
+                  Cierre total
+                </button>
                 {userRole === 'admin' && (
                   <Link
                     href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=SmartMoney`}

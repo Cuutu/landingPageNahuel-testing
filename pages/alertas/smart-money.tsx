@@ -616,9 +616,33 @@ const SubscriberView: React.FC = () => {
         status.className = `${styles.tooltipStatus} ${segment.status === 'ACTIVE' ? styles.activeStatus : styles.closedStatus}`;
       }
 
+      // Posicionamiento: anclar cerca del segmento
+      const tooltipWidth = 260;
+      const tooltipHeight = 180;
+      const padding = 12;
+      const container = document.querySelector(`.${styles.pieChart3D}`) as HTMLElement | null;
+      const rect = container?.getBoundingClientRect();
+      const scaleX = rect ? (rect.width / 300) : 1;
+      const scaleY = rect ? (rect.height / 300) : 1;
+      const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
+      const r = 110;
+      const svgAnchorX = 150 + Math.cos(angleRad) * r;
+      const svgAnchorY = 150 + Math.sin(angleRad) * r;
+      let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
+      let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
+      const isRight = Math.cos(angleRad) >= 0;
+      x += isRight ? 16 : -(tooltipWidth + 16);
+      y -= tooltipHeight / 2;
+      const vpW = window.innerWidth;
+      const vpH = window.innerHeight;
+      if (x + tooltipWidth + padding > vpW + window.scrollX) x = vpW + window.scrollX - tooltipWidth - padding;
+      if (x < window.scrollX + padding) x = window.scrollX + padding;
+      if (y + tooltipHeight + padding > vpH + window.scrollY) y = vpH + window.scrollY - tooltipHeight - padding;
+      if (y < window.scrollY + padding) y = window.scrollY + padding;
+
       tooltip.style.display = 'block';
-      tooltip.style.left = event.pageX + 10 + 'px';
-      tooltip.style.top = event.pageY - 10 + 'px';
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
     }
   };
 
@@ -1369,6 +1393,35 @@ const SubscriberView: React.FC = () => {
                               title="Editar alerta"
                             >
                               ✏️ Editar
+                            </button>
+                            <button
+                              className={styles.closeButton}
+                              onClick={async () => {
+                                if (!confirm('¿Cierre total de esta alerta? Esto venderá todo y la alerta pasará a cerrada.')) return;
+                                try {
+                                  const priceNumber = Number(String(alert.currentPrice).replace('$',''));
+                                  const response = await fetch('/api/alerts/close', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    credentials: 'same-origin',
+                                    body: JSON.stringify({ alertId: alert._id || alert.id, currentPrice: isNaN(priceNumber) ? Number(alert.currentPrice) : priceNumber, reason: 'MANUAL' })
+                                  });
+                                  const result = await response.json();
+                                  if (response.ok && result.success) {
+                                    await loadAlerts();
+                                    alert('✅ Cierre total ejecutado');
+                                  } else {
+                                    alert(result?.error || '❌ No se pudo cerrar la posición');
+                                  }
+                                } catch (e) {
+                                  console.error(e);
+                                  alert('❌ Error al cerrar la posición');
+                                }
+                              }}
+                              disabled={userRole !== 'admin'}
+                              title={userRole !== 'admin' ? 'Solo administradores' : 'Cierre total: vender todo y cerrar'}
+                            >
+                              Cierre total
                             </button>
                           </div>
                         )}

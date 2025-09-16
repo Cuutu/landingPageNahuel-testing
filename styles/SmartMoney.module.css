@@ -1355,6 +1355,26 @@
   cursor: not-allowed;
 }
 
+.closeButton {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.closeButton:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.closeButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
 /* Estilos para modal de edición */
 .modalOverlay {
   position: fixed;
@@ -1544,13 +1564,14 @@
   border-radius: 8px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
+  overflow: hidden;
 }
 
 .dashboardChartLayout {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: minmax(420px, 2fr) minmax(300px, 1fr);
   gap: 2rem;
-  align-items: center;
+  align-items: start;
 }
 
 .chartLegend {
@@ -1558,6 +1579,8 @@
   border-radius: 8px;
   padding: 1rem;
   border: 1px solid var(--border-color);
+  max-height: 520px;
+  overflow: auto;
 }
 
 .chartLegend h4 {
@@ -2049,10 +2072,10 @@
 
 .chartSvg3D {
   width: 100%;
-  max-width: 400px;
+  max-width: 520px;
   height: auto;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
-  transform: rotateX(15deg) rotateY(-5deg);
+  transform: rotateX(12deg) rotateY(-4deg);
   transition: transform 0.3s ease;
 }
 
@@ -2131,4 +2154,22 @@
   color: #e5e7eb;
   font-weight: 600;
   text-align: right;
+}
+
+@media (max-width: 1024px) {
+  .dashboardChartLayout {
+    grid-template-columns: 1fr;
+  }
+  .chartLegend {
+    order: 2;
+  }
+  .pieChart3D {
+    order: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .chartSvg3D {
+    max-width: 360px;
+  }
 }
