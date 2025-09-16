@@ -71,11 +71,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('⚠️ [API CREATE] No se recibieron artículos o no es un array');
     }
 
+    // Procesar el contenido para convertir saltos de línea en HTML
+    const processContent = (text: string): string => {
+      if (!text) return '';
+      
+      // Convertir saltos de línea dobles en párrafos
+      return text
+        .split('\n\n')
+        .map(paragraph => paragraph.trim())
+        .filter(paragraph => paragraph.length > 0)
+        .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    };
+
+    const processedContent = processContent(content);
+
     // Crear nuevo informe
     const newReport = new Report({
       title: title.trim(),
       type,
-      content,
+      content: processedContent,
       summary: summary.trim(),
       videoMuxId,
       pdfUrl,

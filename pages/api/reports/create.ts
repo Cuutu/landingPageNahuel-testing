@@ -120,10 +120,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('📸 Imágenes adicionales procesadas:', processedImages.length);
     }
 
+    // Procesar el contenido para convertir saltos de línea en HTML
+    const processContent = (text: string): string => {
+      if (!text) return '';
+      
+      // Convertir saltos de línea dobles en párrafos
+      return text
+        .split('\n\n')
+        .map(paragraph => paragraph.trim())
+        .filter(paragraph => paragraph.length > 0)
+        .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+        .join('');
+    };
+
+    const processedContent = processContent(content);
+
     // Crear el informe
     const newReport = new Report({
       title,
-      content,
+      content: processedContent,
       summary: summary || '',
       author: user._id,
       type: type || 'text',
