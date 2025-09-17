@@ -269,6 +269,19 @@ const AdminLiquidityPage: React.FC = () => {
     return liquidity.distributions.reduce((sum, d) => sum + (d.percentage || 0), 0);
   }, [liquidity]);
 
+  const activeDistributionsOptions = React.useMemo(() => {
+    if (!liquidity) return { smart: [], trader: [] } as { smart: Array<{ id: string; symbol: string }>; trader: Array<{ id: string; symbol: string }> };
+    const dists = (liquidity.distributions || []).filter((d: any) => d.isActive && d.shares > 0);
+    return {
+      smart: dists
+        .filter((d: any) => selectedPool === 'SmartMoney')
+        .map((d: any) => ({ id: d.alertId, symbol: d.symbol })),
+      trader: dists
+        .filter((d: any) => selectedPool === 'TraderCall')
+        .map((d: any) => ({ id: d.alertId, symbol: d.symbol }))
+    };
+  }, [liquidity, selectedPool]);
+
   const card = (children: React.ReactNode) => (
     <div className={styles.card}>{children}</div>
   );
@@ -386,7 +399,7 @@ const AdminLiquidityPage: React.FC = () => {
           <div className={styles.row}>
             <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
-              {smartAlerts.map(a => (
+              {(activeDistributionsOptions.smart.length ? activeDistributionsOptions.smart : smartAlerts).map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
@@ -412,7 +425,7 @@ const AdminLiquidityPage: React.FC = () => {
           <div className={styles.row}>
             <select value={traderSellId} onChange={e => setTraderSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
-              {traderAlerts.map(a => (
+              {(activeDistributionsOptions.trader.length ? activeDistributionsOptions.trader : traderAlerts).map(a => (
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
