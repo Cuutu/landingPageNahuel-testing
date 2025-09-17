@@ -841,3 +841,16 @@ export async function diagnoseNotificationSystem(): Promise<{
     };
   }
 } 
+
+export async function notifyAlertSubscribers(
+  alert: IAlert,
+  options: { message?: string; imageUrl?: string; price?: number; title?: string }
+): Promise<void> {
+  // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
+  // Si llega title, lo aplicamos después de crear notificationDoc
+  await createAlertNotification(alert, {
+    message: options.message,
+    imageUrl: options.imageUrl,
+    price: options.price
+  });
+} 

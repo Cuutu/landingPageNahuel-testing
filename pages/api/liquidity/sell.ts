@@ -10,6 +10,8 @@ interface SellLiquidityRequest {
   alertId: string;
   shares: number;
   price: number;
+  emailMessage?: string;
+  emailImageUrl?: string;
 }
 
 interface SellLiquidityResponse {
@@ -90,6 +92,24 @@ export default async function handler(
     }
 
     await liquidity.save();
+
+    // 🔔 Notificar a suscriptores (parcial o total)
+    try {
+      const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+      const isTotal = remainingShares === 0;
+      const message = req.body?.emailMessage || (isTotal
+        ? `Cierre total en ${alert.symbol}: vendido 100% a $${price}.`
+        : `Venta parcial en ${alert.symbol}: vendidos ${shares} shares a $${price}.`);
+      const imageUrl = req.body?.emailImageUrl || undefined;
+      await notifyAlertSubscribers(alert as any, {
+        message,
+        imageUrl,
+        price
+      });
+      console.log('✅ Notificación de venta enviada');
+    } catch (notifyErr) {
+      console.error('❌ Error enviando notificación de venta:', notifyErr);
+    }
 
     return res.status(200).json({
       success: true,

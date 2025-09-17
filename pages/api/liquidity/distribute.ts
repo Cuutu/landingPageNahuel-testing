@@ -9,6 +9,8 @@ import User from "@/models/User";
 interface DistributeLiquidityRequest {
   alertId: string;
   percentage: number;
+  emailMessage?: string;
+  emailImageUrl?: string;
 }
 
 interface DistributeLiquidityResponse {
@@ -81,6 +83,19 @@ export default async function handler(
 
     const distribution = liquidity.addDistribution(alertId, alert.symbol, percentage, entryPrice);
     await liquidity.save();
+
+    // 🔔 Notificar compra/asignación a suscriptores
+    try {
+      const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+      const allocatedAmount = distribution.allocatedAmount;
+      const shares = distribution.shares;
+      const message = req.body?.emailMessage || `Compra asignada en ${alert.symbol}: ${shares} shares a $${entryPrice} (monto: $${allocatedAmount.toFixed(2)}).`;
+      const imageUrl = req.body?.emailImageUrl || undefined;
+      await notifyAlertSubscribers(alert as any, { message, imageUrl, price: entryPrice });
+      console.log('✅ Notificación de asignación enviada');
+    } catch (notifyErr) {
+      console.error('❌ Error enviando notificación de asignación:', notifyErr);
+    }
 
     return res.status(200).json({
       success: true,

@@ -3,6 +3,7 @@ import AdminRouteGuard from '@/components/AdminRouteGuard';
 import { useRouter } from 'next/router';
 import styles from '@/styles/AdminLiquidity.module.css';
 import Navbar from '@/components/Navbar';
+import ImageUploader, { type CloudinaryImage } from '@/components/ImageUploader';
 
 // Lazy import de toast para evitar SSR issues
 let toast: any;
@@ -67,8 +68,12 @@ const AdminLiquidityPage: React.FC = () => {
   // Asignación
   const [smartAssignId, setSmartAssignId] = useState('');
   const [smartAssignPct, setSmartAssignPct] = useState('');
+  const [smartAssignMessage, setSmartAssignMessage] = useState('');
+  const [smartAssignImageUrl, setSmartAssignImageUrl] = useState('');
   const [traderAssignId, setTraderAssignId] = useState('');
   const [traderAssignPct, setTraderAssignPct] = useState('');
+  const [traderAssignMessage, setTraderAssignMessage] = useState('');
+  const [traderAssignImageUrl, setTraderAssignImageUrl] = useState('');
 
   // Venta
   const [smartSellId, setSmartSellId] = useState('');
@@ -132,6 +137,8 @@ const AdminLiquidityPage: React.FC = () => {
     if (selectedPool === 'SmartMoney') {
       setTraderAssignId('');
       setTraderAssignPct('');
+      setTraderAssignMessage('');
+      setTraderAssignImageUrl('');
       setTraderSellId('');
       setTraderSellShares('');
       setTraderSellPrice('');
@@ -140,6 +147,8 @@ const AdminLiquidityPage: React.FC = () => {
     } else if (selectedPool === 'TraderCall') {
       setSmartAssignId('');
       setSmartAssignPct('');
+      setSmartAssignMessage('');
+      setSmartAssignImageUrl('');
       setSmartSellId('');
       setSmartSellShares('');
       setSmartSellPrice('');
@@ -180,11 +189,11 @@ const AdminLiquidityPage: React.FC = () => {
     if (required > liquidity.availableLiquidity) throw new Error('No hay liquidez suficiente disponible');
   };
 
-  const handleAssign = async (alertId: string, pct: string) => {
+  const handleAssign = async (alertId: string, pct: string, message?: string, imageUrl?: string) => {
     validateAssign(pct);
     await fetchJSON<{ success: boolean }>(
       '/api/liquidity/distribute',
-      { method: 'POST', body: JSON.stringify({ alertId, percentage: Number(pct) }) }
+      { method: 'POST', body: JSON.stringify({ alertId, percentage: Number(pct), emailMessage: message || undefined, emailImageUrl: imageUrl || undefined }) }
     );
     toast?.success('Liquidez asignada');
     await Promise.all([loadData(), loadActiveAlerts()]);
@@ -194,8 +203,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!smartAssignId) throw new Error('Seleccione una alerta SmartMoney');
-      await handleAssign(smartAssignId, smartAssignPct);
-      setSmartAssignId(''); setSmartAssignPct('');
+      await handleAssign(smartAssignId, smartAssignPct, smartAssignMessage, smartAssignImageUrl);
+      setSmartAssignId(''); setSmartAssignPct(''); setSmartAssignMessage(''); setSmartAssignImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -203,8 +212,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!traderAssignId) throw new Error('Seleccione una alerta TraderCall');
-      await handleAssign(traderAssignId, traderAssignPct);
-      setTraderAssignId(''); setTraderAssignPct('');
+      await handleAssign(traderAssignId, traderAssignPct, traderAssignMessage, traderAssignImageUrl);
+      setTraderAssignId(''); setTraderAssignPct(''); setTraderAssignMessage(''); setTraderAssignImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -333,6 +342,16 @@ const AdminLiquidityPage: React.FC = () => {
             <input value={smartAssignPct} onChange={e => setSmartAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
             <button onClick={handleAssignSmart} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
           </div>
+          <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
+            <input value={smartAssignMessage} onChange={e => setSmartAssignMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
+            <input value={smartAssignImageUrl} onChange={e => setSmartAssignImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
+            <ImageUploader
+              onImageUploaded={(img: CloudinaryImage) => setSmartAssignImageUrl(img.secure_url || img.url)}
+              buttonText="Subir Imagen"
+              maxFiles={1}
+              multiple={false}
+            />
+          </div>
           <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>% asignado total: {totalAssignedPct.toFixed(2)}%</div>
         </>)}
 
@@ -348,6 +367,16 @@ const AdminLiquidityPage: React.FC = () => {
             </select>
             <input value={traderAssignPct} onChange={e => setTraderAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
             <button onClick={handleAssignTrader} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
+          </div>
+          <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
+            <input value={traderAssignMessage} onChange={e => setTraderAssignMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
+            <input value={traderAssignImageUrl} onChange={e => setTraderAssignImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
+            <ImageUploader
+              onImageUploaded={(img: CloudinaryImage) => setTraderAssignImageUrl(img.secure_url || img.url)}
+              buttonText="Subir Imagen"
+              maxFiles={1}
+              multiple={false}
+            />
           </div>
         </>)}
 
@@ -365,9 +394,15 @@ const AdminLiquidityPage: React.FC = () => {
             <input value={smartSellPrice} onChange={e => setSmartSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
             <button onClick={() => handleSellSmart()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
-          <div className={styles.row} style={{ marginTop: 8 }}>
+          <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
             <input value={smartSellMessage} onChange={e => setSmartSellMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
             <input value={smartSellImageUrl} onChange={e => setSmartSellImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
+            <ImageUploader
+              onImageUploaded={(img: CloudinaryImage) => setSmartSellImageUrl(img.secure_url || img.url)}
+              buttonText="Subir Imagen"
+              maxFiles={1}
+              multiple={false}
+            />
           </div>
         </>)}
 
@@ -385,9 +420,15 @@ const AdminLiquidityPage: React.FC = () => {
             <input value={traderSellPrice} onChange={e => setTraderSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
             <button onClick={() => handleSellTrader()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
-          <div className={styles.row} style={{ marginTop: 8 }}>
+          <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
             <input value={traderSellMessage} onChange={e => setTraderSellMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
             <input value={traderSellImageUrl} onChange={e => setTraderSellImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
+            <ImageUploader
+              onImageUploaded={(img: CloudinaryImage) => setTraderSellImageUrl(img.secure_url || img.url)}
+              buttonText="Subir Imagen"
+              maxFiles={1}
+              multiple={false}
+            />
           </div>
         </>)}
 
