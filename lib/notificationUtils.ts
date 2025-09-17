@@ -9,7 +9,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 /**
  * Crea notificación automática cuando se crea una alerta
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL' }): Promise<void> {
   try {
     await dbConnect();
     
@@ -108,7 +108,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         templateId: template._id,
         metadata: {
           alertSymbol: alert.symbol,
-          alertAction: alert.action,
+          alertAction: overrides?.action || alert.action,
           alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
           automatic: true,
@@ -135,7 +135,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         relatedAlertId: alert._id,
         metadata: {
           alertSymbol: alert.symbol,
-          alertAction: alert.action,
+          alertAction: overrides?.action || alert.action,
           alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
           automatic: true,
@@ -851,13 +851,14 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL' }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
   await createAlertNotification(alert, {
     message: options.message,
     imageUrl: options.imageUrl,
-    price: options.price
+    price: options.price,
+    action: options.action
   });
 } 

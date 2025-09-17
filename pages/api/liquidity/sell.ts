@@ -118,7 +118,8 @@ export default async function handler(
       await notifyAlertSubscribers(alert as any, {
         message,
         imageUrl,
-        price
+        price,
+        action: 'SELL'
       });
       console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl });
     } catch (notifyErr) {
