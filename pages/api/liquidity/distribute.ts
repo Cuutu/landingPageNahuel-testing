@@ -72,13 +72,52 @@ export default async function handler(
     }
 
     const existingDistribution = liquidity.distributions.find((dist: any) => dist.alertId === alertId);
-    if (existingDistribution) {
-      return res.status(400).json({ success: false, error: "Esta alerta ya tiene liquidez asignada" });
-    }
+    const currentTotalPercentage = (liquidity.distributions || []).reduce((sum: number, d: any) => sum + (d.percentage || 0), 0);
 
     const entryPrice = alert.entryPriceRange?.max || alert.entryPrice;
     if (!entryPrice) {
       return res.status(400).json({ success: false, error: "La alerta no tiene precio de entrada válido" });
+    }
+
+    if (existingDistribution) {
+      const requiredAmount = (liquidity.totalLiquidity * percentage) / 100;
+      if (requiredAmount > liquidity.availableLiquidity) {
+        return res.status(400).json({ success: false, error: "No hay suficiente liquidez disponible para aumentar esta asignación" });
+      }
+      if (currentTotalPercentage + percentage > 100) {
+        return res.status(400).json({ success: false, error: "El porcentaje total no puede exceder 100%" });
+      }
+      const additionalShares = Math.floor(requiredAmount / entryPrice);
+      const actualAllocatedAmount = additionalShares * entryPrice;
+
+      existingDistribution.percentage += percentage;
+      existingDistribution.shares += additionalShares;
+      existingDistribution.allocatedAmount += actualAllocatedAmount;
+      existingDistribution.currentPrice = entryPrice;
+      existingDistribution.isActive = true;
+      existingDistribution.updatedAt = new Date();
+
+      liquidity.availableLiquidity -= actualAllocatedAmount;
+      liquidity.distributedLiquidity += actualAllocatedAmount;
+      liquidity.recalculateDistributions();
+      await liquidity.save();
+
+      return res.status(200).json({
+        success: true,
+        distribution: {
+          alertId: existingDistribution.alertId,
+          symbol: existingDistribution.symbol,
+          percentage: existingDistribution.percentage,
+          allocatedAmount: existingDistribution.allocatedAmount,
+          entryPrice: existingDistribution.entryPrice,
+          shares: existingDistribution.shares,
+          profitLoss: existingDistribution.profitLoss,
+          profitLossPercentage: existingDistribution.profitLossPercentage,
+          isActive: existingDistribution.isActive,
+          createdAt: existingDistribution.createdAt
+        },
+        message: `Liquidez incrementada en ${pool}: +${percentage}% para ${alert.symbol}`
+      });
     }
 
     const distribution = liquidity.addDistribution(alertId, alert.symbol, percentage, entryPrice);
