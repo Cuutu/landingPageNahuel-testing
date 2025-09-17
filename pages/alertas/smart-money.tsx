@@ -91,6 +91,15 @@ interface HistoricalAlert {
   profitPercentage: string;
 }
 
+interface CommunityMessage {
+  id: number;
+  user: string;
+  message: string;
+  timestamp: string;
+  likes: number;
+  isLiked: boolean;
+}
+
 interface SmartMoneyPageProps {
   isSubscribed: boolean;
   metrics: {
@@ -438,7 +447,7 @@ const NonSubscriberView: React.FC<{
 const SubscriberView: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [alerts, setAlerts] = useState<any[]>([]);
-  const [communityMessages, setCommunityMessages] = useState<any[]>([]);
+  const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateAlert, setShowCreateAlert] = useState(false);
   const [newAlert, setNewAlert] = useState({
@@ -446,16 +455,18 @@ const SubscriberView: React.FC = () => {
     action: 'BUY',
     stopLoss: '',
     takeProfit: '',
-    analysis: ''
+    analysis: '',
+    tipoAlerta: 'precio' as 'precio' | 'rango',
+    precioMinimo: '',
+    precioMaximo: '',
+    horarioCierre: '17:30',
+    emailMessage: '',
+    emailImageUrl: ''
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
-  const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
-  const [uploadingChart, setUploadingChart] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
-  const [realAlerts, setRealAlerts] = useState<any[]>([]);
-  const [loadingAlerts, setLoadingAlerts] = useState(false);
+  const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
+  const [liquidityTotal, setLiquidityTotal] = useState<number>(0);
 
   // Estados para edición de alertas
   const [showEditAlert, setShowEditAlert] = useState(false);
@@ -469,6 +480,13 @@ const SubscriberView: React.FC = () => {
     analysis: ''
   });
   const [editLoading, setEditLoading] = useState(false);
+  // Estados para imágenes del gráfico de TradingView
+  const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
+  const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
+  const [uploadingChart, setUploadingChart] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [realAlerts, setRealAlerts] = useState<any[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [updatingPrices, setUpdatingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
   const [informes, setInformes] = useState<any[]>([]);
@@ -495,6 +513,12 @@ const SubscriberView: React.FC = () => {
   const [marketStatus, setMarketStatus] = useState<string>('');
   const [isUsingSimulatedPrices, setIsUsingSimulatedPrices] = useState(false);
 
+  // Estados para paginación de informes
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalInformes, setTotalInformes] = useState(0);
+  const [informesPerPage] = useState(8);
+
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -502,22 +526,101 @@ const SubscriberView: React.FC = () => {
   React.useEffect(() => {
     const checkUserRole = async () => {
       try {
+        console.log('🔍 Verificando rol del usuario...');
+        console.log('🔍 Sesión actual:', session);
+        
         const response = await fetch('/api/profile/get', {
           credentials: 'same-origin',
         });
+        
         if (response.ok) {
           const data = await response.json();
-          setUserRole(data.user?.role || '');
+          console.log('✅ Datos del perfil obtenidos:', {
+            email: data.user?.email,
+            role: data.user?.role,
+            success: data.success,
+            fullResponse: data
+          });
+          
+          if (data.success && data.user?.role) {
+            setUserRole(data.user.role);
+            console.log('👤 Rol del usuario establecido:', data.user.role);
+            console.log('👤 Estado userRole actualizado:', data.user.role);
+          } else {
+            console.warn('⚠️ No se pudo obtener el rol del usuario:', data);
+            setUserRole('');
+          }
+        } else {
+          console.error('❌ Error al obtener perfil:', response.status, response.statusText);
+          const errorData = await response.json().catch(() => ({}));
+          console.error('❌ Detalles del error:', errorData);
         }
       } catch (error) {
-        console.error('Error al verificar rol:', error);
+        console.error('❌ Error al verificar rol:', error);
+        setUserRole('');
       }
     };
 
     if (session?.user) {
+      console.log('🔐 Sesión activa, verificando rol para:', session.user.email);
       checkUserRole();
+    } else {
+      console.log('❌ No hay sesión activa');
+      setUserRole('');
     }
   }, [session]);
+
+  // Función para calcular métricas reales del dashboard usando alertas reales
+  const calculateDashboardMetrics = () => {
+    // Usar alertas reales en lugar de datos simulados
+    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE').length;
+    const alertasCerradas = realAlerts.filter(alert => alert.status === 'CLOSED');
+    
+    // Calcular ganadoras y perdedoras basándose en el profit
+    const alertasGanadoras = alertasCerradas.filter(alert => {
+      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      return profitValue > 0;
+    }).length;
+    
+    const alertasPerdedoras = alertasCerradas.filter(alert => {
+      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      return profitValue < 0;
+    }).length;
+    
+    // **CAMBIO: Calcular alertas del año actual (en lugar de semanal)**
+    const ahora = new Date();
+    const inicioAño = new Date(ahora.getFullYear(), 0, 1);
+    const alertasAnuales = realAlerts.filter(alert => {
+      const fechaAlert = new Date(alert.date);
+      return fechaAlert >= inicioAño;
+    }).length;
+
+    // **CAMBIO: Calcular rentabilidad anual usando alertas reales**
+    const alertasAnualConGanancias = realAlerts.filter(alert => {
+      const fechaAlert = new Date(alert.date);
+      return fechaAlert >= inicioAño;
+    });
+
+    const gananciasAnual = alertasAnualConGanancias.reduce((total, alert) => {
+      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      return total + profitValue;
+    }, 0);
+
+    const rentabilidadAnual = gananciasAnual.toFixed(1);
+
+    return {
+      alertasActivas,
+      alertasGanadoras,
+      alertasPerdedoras,
+      rentabilidadAnual: `${gananciasAnual >= 0 ? '+' : ''}${rentabilidadAnual}%`,
+      alertasAnuales
+    };
+  };
+
+  // Calcular métricas reactivamente cuando cambien las alertas reales
+  const dashboardMetrics = React.useMemo(() => {
+    return calculateDashboardMetrics();
+  }, [realAlerts]);
 
   // Función auxiliar para crear datos del gráfico de torta
   const createPieChartData = (alerts: any[]) => {
@@ -567,6 +670,548 @@ const SubscriberView: React.FC = () => {
     });
 
     return chartSegments;
+  };
+
+  // Generar actividad reciente con alertas e informes
+  const generateRecentActivity = () => {
+    const activities: any[] = [];
+    
+    // Agregar alertas recientes
+    realAlerts.forEach((alert) => {
+      const alertDate = new Date(alert.createdAt);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - alertDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      let timestamp;
+      if (diffDays > 0) {
+        timestamp = `${diffDays}d`;
+      } else if (diffHours > 0) {
+        timestamp = `${diffHours}h`;
+      } else {
+        timestamp = `${diffMinutes}min`;
+      }
+
+      let message = '';
+      let type = 'alert';
+      
+      if (alert.status === 'ACTIVE') {
+        const currentPrice = parseFloat(String(alert.currentPrice || '0').replace('$', ''));
+        const entryPrice = parseFloat(String(alert.entryPrice || '0').replace('$', ''));
+        const currentPnL = entryPrice > 0 
+          ? ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2)
+          : '0.00';
+        const pnlValue = parseFloat(currentPnL);
+        message = `${alert.symbol} actualizado: ${pnlValue > 0 ? '+' : ''}${currentPnL}% P&L #${alert.symbol}`;
+      } else if (alert.status === 'CLOSED') {
+        const profitString = String(alert.profit || '0%').replace('%', '').replace('+', '');
+        const profit = parseFloat(profitString) || 0;
+        message = `${alert.symbol} cerrado: ${profit > 0 ? '+' : ''}${profit.toFixed(2)}% ${profit > 0 ? 'ganancia' : 'pérdida'} #${alert.symbol}`;
+      } else {
+        const entryPriceFormatted = String(alert.entryPrice || '0').replace('$', '');
+        message = `Nueva alerta: ${alert.symbol} ${alert.action} a $${entryPriceFormatted} #${alert.symbol}`;
+      }
+
+      activities.push({
+        id: alert._id,
+        type,
+        message,
+        timestamp,
+        dateCreated: alertDate
+      });
+    });
+
+    // Agregar informes recientes
+    informes.forEach((informe) => {
+      const informeDate = new Date(informe.createdAt);
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - informeDate.getTime());
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+      let timestamp;
+      if (diffDays > 0) {
+        timestamp = `${diffDays}d`;
+      } else if (diffHours > 0) {
+        timestamp = `${diffHours}h`;
+      } else {
+        timestamp = `${diffMinutes}min`;
+      }
+
+      const typeIcon = informe.type === 'video' ? '🎥' : informe.type === 'analisis' ? '📊' : '📄';
+      const message = `Nuevo ${informe.type}: ${informe.title} ${typeIcon}`;
+
+      activities.push({
+        id: informe.id || informe._id,
+        type: 'informe',
+        message,
+        timestamp,
+        dateCreated: informeDate,
+        reportData: informe
+      });
+    });
+
+    // Ordenar por fecha más reciente y tomar los primeros 6
+    return activities
+      .sort((a, b) => b.dateCreated.getTime() - a.dateCreated.getTime())
+      .slice(0, 6);
+  };
+
+  // Generar actividad reciente reactivamente cuando cambien las alertas
+  const recentActivity = React.useMemo(() => {
+    return generateRecentActivity();
+  }, [realAlerts, informes]);
+
+  // Función para cargar alertas desde la API
+  const loadAlerts = async () => {
+    setLoadingAlerts(true);
+    try {
+      const response = await fetch('/api/alerts/list?tipo=SmartMoney', {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRealAlerts(data.alerts || []);
+        console.log('Alertas Smart Money cargadas:', data.alerts?.length || 0);
+      } else {
+        console.error('Error al cargar alertas:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al cargar alertas:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
+
+  // Función para actualizar precios en tiempo real
+  const updatePrices = async (silent: boolean = false) => {
+    if (!silent) setUpdatingPrices(true);
+    
+    try {
+      const response = await fetch('/api/alerts/update-prices', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Precios actualizados:', data.updated, 'alertas');
+        setLastPriceUpdate(new Date());
+        
+        // Actualizar información del mercado si está disponible
+        if (data.alerts && data.alerts.length > 0) {
+          // Verificar si alguna alerta está usando precios simulados
+          const hasSimulated = data.alerts.some((alert: any) => alert.isSimulated);
+          setIsUsingSimulatedPrices(hasSimulated);
+          
+          // Usar el estado del mercado de la primera alerta (todas deberían tener el mismo)
+          if (data.alerts[0].marketStatus) {
+            setMarketStatus(data.alerts[0].marketStatus);
+          }
+        }
+        
+        // Recargar alertas para mostrar los nuevos precios
+        await loadAlerts();
+      } else {
+        console.error('Error al actualizar precios:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al actualizar precios:', error);
+    } finally {
+      if (!silent) setUpdatingPrices(false);
+    }
+  };
+
+  // Función para cargar informes desde la API con paginación
+  const loadInformes = async (page: number = 1) => {
+    setLoadingInformes(true);
+    try {
+      // Filtrar solo informes de Smart Money con paginación
+      const response = await fetch(`/api/reports?page=${page}&limit=${informesPerPage}&featured=false&category=smart-money`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setInformes(data.data?.reports || []);
+        setTotalPages(data.data?.pagination?.totalPages || 1);
+        setTotalInformes(data.data?.pagination?.total || 0);
+        setCurrentPage(page);
+        console.log('Informes Smart Money cargados:', data.data?.reports?.length || 0, 'Página:', page);
+      } else {
+        console.error('Error al cargar informes:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al cargar informes:', error);
+    } finally {
+      setLoadingInformes(false);
+    }
+  };
+
+  // Funciones para manejar la paginación
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      loadInformes(page);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      handlePageChange(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      handlePageChange(currentPage - 1);
+    }
+  };
+
+  // Función para abrir informe completo - Ahora redirige a la página de reportes
+  const openReport = async (reportId: string) => {
+    try {
+      console.log('🔍 Redirigiendo a informe:', reportId);
+      
+      // Redirigir directamente a la página de reportes individuales
+      router.push(`/reports/${reportId}`);
+      
+    } catch (error) {
+      console.error('Error al redirigir al informe:', error);
+      alert('Error al abrir el informe. Intenta nuevamente.');
+    }
+  };
+
+  const closeReportModal = () => {
+    setShowReportModal(false);
+    setSelectedReport(null);
+  };
+
+  const handleCreateReport = async (formData: any) => {
+    setCreatingReport(true);
+    try {
+      console.log('📤 Enviando datos del informe:', {
+        title: formData.title,
+        type: formData.type,
+        category: formData.category,
+        readTime: formData.readTime,
+        hasArticles: !!formData.articles,
+        articlesCount: formData.articles?.length || 0
+      });
+      
+      const response = await fetch('/api/reports/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData, 
+          category: 'smart-money' // Asignar categoría Smart Money
+        }),
+      });
+
+      console.log('📡 Respuesta recibida del servidor:', response.status);
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Informe Smart Money creado exitosamente:', result);
+        const newReport = result.data.report;
+        setInformes(prev => [newReport, ...prev]);
+        setShowCreateReportModal(false);
+        // Mostrar mensaje de éxito
+        alert('Informe creado exitosamente.');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
+        alert(`Error: ${errorData.message || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al crear informe:', error);
+      alert('Error al crear el informe: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
+      console.log('🔄 Finalizando creación de informe...');
+      setCreatingReport(false);
+    }
+  };
+
+  // Refrescar actividad
+  const refreshActivity = async () => {
+    setRefreshingActivity(true);
+    try {
+      // Recargar alertas y informes
+      await Promise.all([
+        loadAlerts(),
+        loadInformes()
+      ]);
+      console.log('✅ Actividad actualizada correctamente');
+    } catch (error) {
+      console.error('❌ Error al actualizar actividad:', error);
+    } finally {
+      setRefreshingActivity(false);
+    }
+  };
+
+  // Función para filtrar alertas
+  const getFilteredAlerts = () => {
+    let filtered = [...realAlerts];
+
+    // Filtrar por símbolo
+    if (filterSymbol) {
+      filtered = filtered.filter(alert => 
+        alert.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
+      );
+    }
+
+    // Filtrar por estado
+    if (filterStatus) {
+      filtered = filtered.filter(alert => alert.status === filterStatus);
+    }
+
+    // Filtrar por fecha
+    if (filterDate) {
+      const filterDateObj = new Date(filterDate);
+      filtered = filtered.filter(alert => {
+        const alertDate = new Date(alert.date || alert.createdAt);
+        return alertDate >= filterDateObj;
+      });
+    }
+
+    return filtered;
+  };
+
+  // Limpiar filtros
+  const clearFilters = () => {
+    setFilterSymbol('');
+    setFilterStatus('');
+    setFilterDate('');
+  };
+
+  // Cargar alertas y informes al montar el componente
+  React.useEffect(() => {
+    loadAlerts();
+    loadInformes(1); // Cargar primera página
+  }, []);
+
+  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
+  React.useEffect(() => {
+    // Solo actualizar si hay alertas activas
+    const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
+    
+    if (!hasActiveAlerts) return;
+
+    // ✅ OPTIMIZADO: Solo actualizar si no se actualizó recientemente
+    if (!lastPriceUpdate) {
+      updatePrices(true);
+    } else {
+      const timeSinceLastUpdate = Date.now() - lastPriceUpdate.getTime();
+      const shouldUpdate = timeSinceLastUpdate >= 2 * 60 * 1000; // 2 minutos
+      
+      if (shouldUpdate) {
+        updatePrices(true);
+      }
+    }
+
+    // ✅ OPTIMIZADO: Intervalo más eficiente (2 minutos en lugar de 30 segundos)
+    const interval = setInterval(() => {
+      const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
+      if (hasActiveAlerts) {
+        updatePrices(true); // silent = true para no mostrar loading
+      }
+    }, 2 * 60 * 1000); // 2 minutos
+
+    return () => clearInterval(interval);
+  }, [realAlerts, lastPriceUpdate, updatePrices]);
+
+  // Función para obtener precio individual de una acción (modal crear alerta)
+  const fetchStockPrice = async (symbol: string) => {
+    if (!symbol.trim()) {
+      alert('Por favor ingresa un símbolo válido');
+      return;
+    }
+
+    setPriceLoading(true);
+    setStockPrice(null);
+    
+    try {
+      console.log(`🔍 Obteniendo precio para: ${symbol}`);
+      
+      const response = await fetch(`/api/stock-price?symbol=${symbol.toUpperCase()}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`💰 Precio obtenido para ${symbol}: $${data.price}`);
+        console.log(`📊 Estado del mercado: ${data.marketStatus}`);
+        
+        setStockPrice(data.price);
+        
+      } else {
+        console.error('Error al obtener precio:', response.status);
+        alert('Error al obtener el precio. Intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error al obtener precio:', error);
+      alert('Error de conexión. Verifica tu internet e intenta nuevamente.');
+    } finally {
+      setPriceLoading(false);
+    }
+  };
+
+  // Funciones para manejar imágenes
+  const handleChartImageUploaded = (image: CloudinaryImage) => {
+    setChartImage(image);
+    setUploadingChart(false);
+    console.log('✅ Gráfico de TradingView subido:', image.public_id);
+  };
+
+  const handleAdditionalImageUploaded = (image: CloudinaryImage) => {
+    setAdditionalImages(prev => [...prev, image]);
+    setUploadingImages(false);
+    console.log('✅ Imagen adicional subida:', image.public_id);
+  };
+
+  const removeChartImage = () => {
+    setChartImage(null);
+  };
+
+  const removeAdditionalImage = (indexToRemove: number) => {
+    setAdditionalImages(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const updateImageCaption = (index: number, caption: string) => {
+    setAdditionalImages(prev => prev.map((img, i) => 
+      i === index ? { ...img, caption } : img
+    ));
+  };
+
+  // Funciones para manejar modales de imágenes
+  const handleShowChart = (chartImage: CloudinaryImage) => {
+    setSelectedImage(chartImage);
+    setShowImageModal(true);
+  };
+
+  const handleShowAdditionalImages = (images: CloudinaryImage[]) => {
+    setSelectedAlertImages(images);
+    setShowAdditionalImagesModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+    setSelectedImage(null);
+  };
+
+  const closeAdditionalImagesModal = () => {
+    setShowAdditionalImagesModal(false);
+    setSelectedAlertImages([]);
+  };
+
+  const handleCreateAlert = async () => {
+    if (!newAlert.symbol || !stockPrice) {
+      alert('Por favor completa todos los campos obligatorios');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/alerts/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          tipo: 'SmartMoney',
+          symbol: newAlert.symbol.toUpperCase(),
+          action: newAlert.action,
+          entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : undefined, // Solo para alertas de precio específico
+          stopLoss: parseFloat(newAlert.stopLoss),
+          takeProfit: parseFloat(newAlert.takeProfit),
+          analysis: newAlert.analysis || '',
+          date: new Date().toISOString(),
+          chartImage: chartImage,
+          images: additionalImages,
+          // ✅ NUEVO: Campos para alertas de rango
+          tipoAlerta: newAlert.tipoAlerta,
+          precioMinimo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMinimo) : undefined,
+          precioMaximo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMaximo) : undefined,
+          horarioCierre: newAlert.horarioCierre,
+          // Campos de email opcionales
+          emailMessage: newAlert.emailMessage || undefined,
+          emailImageUrl: newAlert.emailImageUrl || (chartImage?.secure_url || chartImage?.url)
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Alerta Smart Money creada:', result.alert);
+        
+        // Recargar alertas y limpiar formulario
+        await loadAlerts();
+        setNewAlert({
+          symbol: '',
+          action: 'BUY',
+          stopLoss: '',
+          takeProfit: '',
+          analysis: '',
+          tipoAlerta: 'precio',
+          precioMinimo: '',
+          precioMaximo: '',
+          horarioCierre: '17:30',
+          emailMessage: '',
+          emailImageUrl: ''
+        });
+        setStockPrice(null);
+        setChartImage(null);
+        setAdditionalImages([]);
+        setShowCreateAlert(false);
+        
+        alert('¡Alerta de Smart Money creada exitosamente!');
+      } else {
+        const error = await response.json();
+        console.error('❌ Error del servidor:', error);
+        alert(`Error: ${error.message || 'No se pudo crear la alerta'}`);
+      }
+    } catch (error) {
+      console.error('Error creating alert:', error);
+      alert('Error al crear la alerta');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Función para cerrar posición
+  const [confirmClose, setConfirmClose] = useState<{open: boolean; alertId?: string; price?: string}>({ open: false });
+  const [closeEmailMessage, setCloseEmailMessage] = useState<string>('');
+  const [closeEmailImageUrl, setCloseEmailImageUrl] = useState<string>('');
+
+  const handleClosePosition = async (alertId: string, currentPrice: string) => {
+    console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
+    setConfirmClose({ open: true, alertId, price: currentPrice });
+  };
+
+  const confirmCloseAction = async () => {
+    if (!confirmClose.alertId || !confirmClose.price) { setConfirmClose({ open: false }); return; }
+    try {
+      if (userRole !== 'admin') { alert('❌ Solo los administradores pueden cerrar posiciones'); setConfirmClose({ open: false }); return; }
+      const priceNumber = parseFloat(confirmClose.price.replace('$',''));
+      if (isNaN(priceNumber) || priceNumber <= 0) { alert('❌ Precio inválido. Por favor, verifica el precio actual.'); setConfirmClose({ open: false }); return; }
+      const response = await fetch('/api/alerts/close', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ alertId: confirmClose.alertId, currentPrice: priceNumber, reason: 'MANUAL', emailMessage: closeEmailMessage || undefined, emailImageUrl: closeEmailImageUrl || undefined })
+      });
+      const result = await response.json();
+      if (response.ok && result.success) { await loadAlerts(); alert('✅ ¡Posición cerrada exitosamente!'); }
+      else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
+    } catch (error) {
+      console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
+    } finally { setConfirmClose({ open: false }); setCloseEmailMessage(''); setCloseEmailImageUrl(''); }
   };
 
   // Funciones auxiliares para el gráfico de torta
@@ -653,7 +1298,6 @@ const SubscriberView: React.FC = () => {
     }
   };
 
-  // Función auxiliar para renderizar el gráfico de torta
   const renderPieChart = (chartSegments: any[]) => (
     <div className={styles.pieChart3D}>
       <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
@@ -846,259 +1490,7 @@ const SubscriberView: React.FC = () => {
     }
   };
 
-  // Función para calcular métricas reales del dashboard usando alertas reales
-  const calculateDashboardMetrics = () => {
-    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE').length;
-    const alertasCerradas = realAlerts.filter(alert => alert.status === 'CLOSED');
-    
-    const alertasGanadoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
-      return profitValue > 0;
-    }).length;
-    
-    const alertasPerdedoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
-      return profitValue < 0;
-    }).length;
-    
-    const ahora = new Date();
-    const inicioAño = new Date(ahora.getFullYear(), 0, 1);
-    const alertasAnuales = realAlerts.filter(alert => {
-      const fechaAlert = new Date(alert.date);
-      return fechaAlert >= inicioAño;
-    }).length;
 
-    const alertasAnualConGanancias = realAlerts.filter(alert => {
-      const fechaAlert = new Date(alert.date);
-      return fechaAlert >= inicioAño;
-    });
-
-    const gananciasAnual = alertasAnualConGanancias.reduce((total, alert) => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
-      return total + profitValue;
-    }, 0);
-
-    const rentabilidadAnual = gananciasAnual.toFixed(1);
-
-    return {
-      alertasActivas,
-      alertasGanadoras,
-      alertasPerdedoras,
-      rentabilidadAnual: `${gananciasAnual >= 0 ? '+' : ''}${rentabilidadAnual}%`,
-      alertasAnuales
-    };
-  };
-
-  // Calcular métricas reactivamente cuando cambien las alertas reales
-  const dashboardMetrics = React.useMemo(() => {
-    return calculateDashboardMetrics();
-  }, [realAlerts]);
-
-  // Generar actividad reciente con alertas e informes
-  const generateRecentActivity = () => {
-    const activities: any[] = [];
-    
-    realAlerts.forEach((alert) => {
-      const alertDate = new Date(alert.createdAt);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - alertDate.getTime());
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-      let timestamp;
-      if (diffDays > 0) {
-        timestamp = `${diffDays}d`;
-      } else if (diffHours > 0) {
-        timestamp = `${diffHours}h`;
-      } else {
-        timestamp = `${diffMinutes}min`;
-      }
-
-      let message = '';
-      let type = 'alert';
-      
-      if (alert.status === 'ACTIVE') {
-        const currentPrice = parseFloat(String(alert.currentPrice || '0').replace('$', ''));
-        const entryPrice = parseFloat(String(alert.entryPrice || '0').replace('$', ''));
-        const currentPnL = entryPrice > 0 
-          ? ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2)
-          : '0.00';
-        const pnlValue = parseFloat(currentPnL);
-        message = `${alert.symbol} actualizado: ${pnlValue > 0 ? '+' : ''}${currentPnL}% P&L #${alert.symbol}`;
-      } else if (alert.status === 'CLOSED') {
-        const profitString = String(alert.profit || '0%').replace('%', '').replace('+', '');
-        const profit = parseFloat(profitString) || 0;
-        message = `${alert.symbol} cerrado: ${profit > 0 ? '+' : ''}${profit.toFixed(2)}% ${profit > 0 ? 'ganancia' : 'pérdida'} #${alert.symbol}`;
-      } else {
-        const entryPriceFormatted = String(alert.entryPrice || '0').replace('$', '');
-        message = `Nueva alerta: ${alert.symbol} ${alert.action} a $${entryPriceFormatted} #${alert.symbol}`;
-      }
-
-      activities.push({
-        id: alert._id,
-        type,
-        message,
-        timestamp,
-        dateCreated: alertDate
-      });
-    });
-
-    informes.forEach((informe) => {
-      const informeDate = new Date(informe.createdAt);
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - informeDate.getTime());
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
-      const diffMinutes = Math.floor(diffTime / (1000 * 60));
-
-      let timestamp;
-      if (diffDays > 0) {
-        timestamp = `${diffDays}d`;
-      } else if (diffHours > 0) {
-        timestamp = `${diffHours}h`;
-      } else {
-        timestamp = `${diffMinutes}min`;
-      }
-
-      const typeIcon = informe.type === 'video' ? '🎥' : informe.type === 'analisis' ? '📊' : '📄';
-      const message = `Nuevo ${informe.type}: ${informe.title} ${typeIcon}`;
-
-      activities.push({
-        id: informe.id || informe._id,
-        type: 'informe',
-        message,
-        timestamp,
-        dateCreated: informeDate,
-        reportData: informe
-      });
-    });
-
-    return activities
-      .sort((a, b) => b.dateCreated.getTime() - a.dateCreated.getTime())
-      .slice(0, 6);
-  };
-
-  // Generar actividad reciente reactivamente cuando cambien las alertas
-  const recentActivity = React.useMemo(() => {
-    return generateRecentActivity();
-  }, [realAlerts, informes]);
-
-  // Función para cargar alertas desde la API
-  const loadAlerts = async () => {
-    setLoadingAlerts(true);
-    try {
-      const response = await fetch('/api/alerts/list?tipo=SmartMoney', {
-        method: 'GET',
-        credentials: 'same-origin',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setRealAlerts(data.alerts || []);
-        console.log('Alertas cargadas:', data.alerts?.length || 0);
-      } else {
-        console.error('Error al cargar alertas:', response.status);
-      }
-    } catch (error) {
-      console.error('Error al cargar alertas:', error);
-    } finally {
-      setLoadingAlerts(false);
-    }
-  };
-
-  // Función para actualizar precios en tiempo real
-  const updatePrices = async (silent: boolean = false) => {
-    if (!silent) setUpdatingPrices(true);
-    
-    try {
-      const response = await fetch('/api/alerts/update-prices', {
-        method: 'POST',
-        credentials: 'same-origin',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Precios actualizados:', data.updated, 'alertas');
-        setLastPriceUpdate(new Date());
-        
-        if (data.alerts && data.alerts.length > 0) {
-          const hasSimulated = data.alerts.some((alert: any) => alert.isSimulated);
-          setIsUsingSimulatedPrices(hasSimulated);
-          
-          if (data.alerts[0].marketStatus) {
-            setMarketStatus(data.alerts[0].marketStatus);
-          }
-        }
-        
-        await loadAlerts();
-      } else {
-        console.error('Error al actualizar precios:', response.status);
-      }
-    } catch (error) {
-      console.error('Error al actualizar precios:', error);
-    } finally {
-      if (!silent) setUpdatingPrices(false);
-    }
-  };
-
-  // Función para cargar informes desde la API
-  const loadInformes = async () => {
-    setLoadingInformes(true);
-    try {
-      const response = await fetch('/api/reports?limit=6&featured=false&category=smart-money', {
-        method: 'GET',
-        credentials: 'same-origin',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setInformes(data.data?.reports || []);
-        console.log('Informes Smart Money cargados:', data.data?.reports?.length || 0);
-      } else {
-        console.error('Error al cargar informes:', response.status);
-      }
-    } catch (error) {
-      console.error('Error al cargar informes:', error);
-    } finally {
-      setLoadingInformes(false);
-    }
-  };
-
-  // Cargar alertas y informes al montar el componente
-  React.useEffect(() => {
-    loadAlerts();
-    loadInformes();
-  }, []);
-
-  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
-  React.useEffect(() => {
-    const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
-    
-    if (!hasActiveAlerts) return;
-
-    // ✅ OPTIMIZADO: Solo actualizar si no se actualizó recientemente
-    if (!lastPriceUpdate) {
-      updatePrices(true);
-    } else {
-      const timeSinceLastUpdate = Date.now() - lastPriceUpdate.getTime();
-      const shouldUpdate = timeSinceLastUpdate >= 2 * 60 * 1000; // 2 minutos
-      
-      if (shouldUpdate) {
-        updatePrices(true);
-      }
-    }
-
-    // ✅ OPTIMIZADO: Intervalo más eficiente (2 minutos en lugar de 30 segundos)
-    const interval = setInterval(() => {
-      const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
-      if (hasActiveAlerts) {
-        updatePrices(true); // silent = true para no mostrar loading
-      }
-    }, 2 * 60 * 1000); // 2 minutos
-
-    return () => clearInterval(interval);
-  }, [realAlerts, lastPriceUpdate, updatePrices]);
 
   return (
     <div className={styles.subscriberView}>
