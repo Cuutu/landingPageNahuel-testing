@@ -1147,88 +1147,29 @@ const SubscriberView: React.FC = () => {
   };
 
   // Función para cerrar posición
+  const [confirmClose, setConfirmClose] = useState<{open: boolean; alertId?: string; price?: string}>({ open: false });
+
   const handleClosePosition = async (alertId: string, currentPrice: string) => {
     console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
-    
-    if (!confirm('¿Estás seguro de que quieres cerrar esta posición?')) {
-      return;
-    }
+    setConfirmClose({ open: true, alertId, price: currentPrice });
+  };
 
+  const confirmCloseAction = async () => {
+    if (!confirmClose.alertId || !confirmClose.price) { setConfirmClose({ open: false }); return; }
     try {
-      // Validar que el usuario sea admin
-      console.log('🔍 Verificando rol antes de cerrar posición:', { userRole, isAdmin: userRole === 'admin' });
-      
-      if (userRole !== 'admin') {
-        console.warn('⚠️ Usuario no es admin, rol actual:', userRole);
-        alert('❌ Solo los administradores pueden cerrar posiciones');
-        return;
-      }
-
-      const priceNumber = parseFloat(currentPrice.replace('$', ''));
-      
-      if (isNaN(priceNumber) || priceNumber <= 0) {
-        alert('❌ Precio inválido. Por favor, verifica el precio actual.');
-        return;
-      }
-
-      console.log('🔄 Cerrando posición:', { alertId, currentPrice: priceNumber });
-      
+      if (userRole !== 'admin') { alert('❌ Solo los administradores pueden cerrar posiciones'); setConfirmClose({ open: false }); return; }
+      const priceNumber = parseFloat(confirmClose.price.replace('$',''));
+      if (isNaN(priceNumber) || priceNumber <= 0) { alert('❌ Precio inválido. Por favor, verifica el precio actual.'); setConfirmClose({ open: false }); return; }
       const response = await fetch('/api/alerts/close', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          alertId: alertId,
-          currentPrice: priceNumber,
-          reason: 'MANUAL'
-        }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+        body: JSON.stringify({ alertId: confirmClose.alertId, currentPrice: priceNumber, reason: 'MANUAL' })
       });
-
       const result = await response.json();
-
-      if (response.ok && result.success) {
-        console.log('✅ Posición cerrada:', result.alert);
-        
-        // Recargar alertas para mostrar cambios
-        await loadAlerts();
-        
-        alert('✅ ¡Posición cerrada exitosamente!');
-      } else {
-        console.error('❌ Error del servidor:', result);
-        
-        // Mostrar mensaje de error más específico
-        let errorMessage = 'No se pudo cerrar la posición';
-        
-        if (result.error) {
-          if (result.error.includes('Permisos insuficientes')) {
-            errorMessage = '❌ No tienes permisos para cerrar posiciones. Solo los administradores pueden hacerlo.';
-          } else if (result.error.includes('No autorizado')) {
-            errorMessage = '❌ Sesión expirada. Por favor, inicia sesión nuevamente.';
-          } else if (result.error.includes('Alerta no encontrada')) {
-            errorMessage = '❌ La alerta no fue encontrada. Puede que haya sido eliminada.';
-          } else if (result.error.includes('no está activa')) {
-            errorMessage = '❌ La alerta ya no está activa.';
-          } else {
-            errorMessage = `❌ ${result.error}`;
-          }
-        } else if (result.message) {
-          errorMessage = `❌ ${result.message}`;
-        }
-        
-        alert(errorMessage);
-      }
+      if (response.ok && result.success) { await loadAlerts(); alert('✅ ¡Posición cerrada exitosamente!'); }
+      else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
     } catch (error) {
-      console.error('❌ Error al cerrar posición:', error);
-      
-      // Mostrar mensaje de error más amigable
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert('❌ Error de conexión. Verifica tu internet e intenta nuevamente.');
-      } else {
-        alert('❌ Error inesperado al cerrar la posición. Por favor, intenta nuevamente.');
-      }
-    }
+      console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
+    } finally { setConfirmClose({ open: false }); }
   };
 
   // ✅ NUEVO: Función para probar el cierre de mercado
@@ -3259,6 +3200,24 @@ const SubscriberView: React.FC = () => {
       {/* Modales */}
       {renderCreateAlertModal()}
       {renderEditAlertModal()}
+      {/* Modal de confirmación de cierre */}
+      {confirmClose.open && (
+        <div className={styles.modalOverlay} onClick={() => setConfirmClose({ open: false })}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.imageModalHeader}>
+              <h3>Confirmar cierre</h3>
+              <button className={styles.closeModalButton} onClick={() => setConfirmClose({ open: false })}>×</button>
+            </div>
+            <div className={styles.imageModalContent}>
+              <p>¿Estás seguro de cerrar esta posición? Se venderá todo y la alerta pasará a cerrada.</p>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.clearFilters} onClick={() => setConfirmClose({ open: false })}>Cancelar</button>
+              <button className={styles.closeButton} onClick={confirmCloseAction}>Cerrar posición</button>
+            </div>
+          </div>
+        </div>
+      )}
       {showCreateReportModal && (
         <CreateReportModal 
           onClose={() => setShowCreateReportModal(false)}
