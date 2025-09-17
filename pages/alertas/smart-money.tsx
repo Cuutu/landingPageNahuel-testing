@@ -1264,21 +1264,41 @@ const SubscriberView: React.FC = () => {
                       {alertasActivas.length > 0 ? (
                         <div className={styles.dashboardChartLayout}>
                           {renderPieChart(chartSegments)}
-                          <div className={styles.chartLegend}>
-                            <h4>Alertas por Símbolo</h4>
-                            <div className={styles.legendItems}>
-                              {chartSegments.map((segment, index) => (
-                                <div key={segment.id} className={styles.legendItem}>
-                                  <div
-                                    className={styles.legendColor}
-                                    style={{ backgroundColor: segment.color }}
-                                  ></div>
-                                  <span className={styles.legendSymbol}>{segment.symbol}</span>
-                                  <span className={styles.legendProfit}>
-                                    {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(1)}%
-                                  </span>
+                          <div className={styles.chartInfoPanel}>
+                            <div className={styles.infoHeader}>
+                              <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
+                              <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
+                            </div>
+                            <div className={styles.statsSummary}>
+                              <div className={styles.summaryCard}>
+                                <div className={styles.summaryIcon}>📊</div>
+                                <div className={styles.summaryContent}>
+                                  <span className={styles.summaryLabel}>Total Alertas</span>
+                                  <span className={styles.summaryValue}>{chartSegments.length}</span>
                                 </div>
-                              ))}
+                              </div>
+                              <div className={styles.summaryCard}>
+                                <div className={styles.summaryIcon}>🟢</div>
+                                <div className={styles.summaryContent}>
+                                  <span className={styles.summaryLabel}>Activas</span>
+                                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className={styles.chartLegend3D}>
+                              <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
+                              <div className={styles.legendList}>
+                                {chartSegments.map((segment) => (
+                                  <div key={segment.id} className={styles.legendItem3D}>
+                                    <div className={styles.legendColor3D} style={{ backgroundColor: segment.color }} />
+                                    <div className={styles.legendInfo}>
+                                      <span className={styles.legendSymbol}>{segment.symbol}</span>
+                                      <span className={styles.legendProfit}>{segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%</span>
+                                      <span className={styles.legendStatus}>{segment.status === 'ACTIVE' ? '🟢' : '🔴'}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
                         </div>
