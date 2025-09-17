@@ -413,7 +413,9 @@ const SubscriberView: React.FC = () => {
     action: 'BUY',
     stopLoss: '',
     takeProfit: '',
-    analysis: ''
+    analysis: '',
+    emailMessage: '',
+    emailImageUrl: ''
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
@@ -1105,7 +1107,10 @@ const SubscriberView: React.FC = () => {
           analysis: newAlert.analysis || '',
           date: new Date().toISOString(),
           chartImage: chartImage,
-          images: additionalImages
+          images: additionalImages,
+          // Campos de email opcionales
+          emailMessage: newAlert.emailMessage || undefined,
+          emailImageUrl: newAlert.emailImageUrl || (chartImage?.secure_url || chartImage?.url)
         }),
       });
 
@@ -1120,7 +1125,9 @@ const SubscriberView: React.FC = () => {
           action: 'BUY',
           stopLoss: '',
           takeProfit: '',
-          analysis: ''
+          analysis: '',
+          emailMessage: '',
+          emailImageUrl: ''
         });
         setStockPrice(null);
         setChartImage(null);
@@ -1142,26 +1149,33 @@ const SubscriberView: React.FC = () => {
   };
 
   // Función para cerrar posición
-  const handleClosePosition = async (alertId: string, currentPrice: string) => {
-    if (!confirm('¿Estás seguro de que quieres cerrar esta posición?')) {
-      return;
-    }
+  const [confirmClose, setConfirmClose] = useState<{open: boolean; alertId?: string; price?: string}>({ open: false });
+  const [closeEmailMessage, setCloseEmailMessage] = useState<string>('');
+  const [closeEmailImageUrl, setCloseEmailImageUrl] = useState<string>('');
 
+  const handleClosePosition = async (alertId: string, currentPrice: string) => {
+    setConfirmClose({ open: true, alertId, price: currentPrice });
+  };
+
+  const confirmCloseAction = async () => {
+    if (!confirmClose.alertId || !confirmClose.price) { setConfirmClose({ open: false }); return; }
     try {
       // Validar que el usuario sea admin
       if (userRole !== 'admin') {
         alert('❌ Solo los administradores pueden cerrar posiciones');
+        setConfirmClose({ open: false });
         return;
       }
 
-      const priceNumber = parseFloat(currentPrice.replace('$', ''));
+      const priceNumber = parseFloat(confirmClose.price.replace('$', ''));
       
       if (isNaN(priceNumber) || priceNumber <= 0) {
         alert('❌ Precio inválido. Por favor, verifica el precio actual.');
+        setConfirmClose({ open: false });
         return;
       }
 
-      console.log('🔄 Cerrando posición:', { alertId, currentPrice: priceNumber });
+      console.log('🔄 Cerrando posición:', { alertId: confirmClose.alertId, currentPrice: priceNumber });
       
       const response = await fetch('/api/alerts/close', {
         method: 'POST',
@@ -1170,9 +1184,11 @@ const SubscriberView: React.FC = () => {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          alertId: alertId,
+          alertId: confirmClose.alertId,
           currentPrice: priceNumber,
-          reason: 'MANUAL'
+          reason: 'MANUAL',
+          emailMessage: closeEmailMessage || undefined,
+          emailImageUrl: closeEmailImageUrl || undefined
         }),
       });
 
@@ -1180,44 +1196,28 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok && result.success) {
         console.log('✅ Posición cerrada:', result.alert);
-        
         // Recargar alertas para mostrar cambios
         await loadAlerts();
-        
         alert('✅ ¡Posición cerrada exitosamente!');
       } else {
         console.error('❌ Error del servidor:', result);
-        
-        // Mostrar mensaje de error más específico
         let errorMessage = 'No se pudo cerrar la posición';
-        
         if (result.error) {
           if (result.error.includes('Permisos insuficientes')) {
             errorMessage = '❌ No tienes permisos para cerrar posiciones. Solo los administradores pueden hacerlo.';
           } else if (result.error.includes('No autorizado')) {
             errorMessage = '❌ Sesión expirada. Por favor, inicia sesión nuevamente.';
-          } else if (result.error.includes('Alerta no encontrada')) {
-            errorMessage = '❌ La alerta no fue encontrada. Puede que haya sido eliminada.';
-          } else if (result.error.includes('no está activa')) {
-            errorMessage = '❌ La alerta ya no está activa.';
-          } else {
-            errorMessage = `❌ ${result.error}`;
           }
-        } else if (result.message) {
-          errorMessage = `❌ ${result.message}`;
         }
-        
         alert(errorMessage);
       }
     } catch (error) {
       console.error('❌ Error al cerrar posición:', error);
-      
-      // Mostrar mensaje de error más amigable
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        alert('❌ Error de conexión. Verifica tu internet e intenta nuevamente.');
-      } else {
-        alert('❌ Error inesperado al cerrar la posición. Por favor, intenta nuevamente.');
-      }
+      alert('❌ Error inesperado al cerrar la posición.');
+    } finally {
+      setConfirmClose({ open: false });
+      setCloseEmailMessage('');
+      setCloseEmailImageUrl('');
     }
   };
 
@@ -2378,6 +2378,28 @@ const SubscriberView: React.FC = () => {
                 rows={4}
               />
             </div>
+
+            <div className={styles.inputGroup}>
+              <label>Mensaje personalizado para Email (opcional)</label>
+              <textarea
+                placeholder="Texto que verán los suscriptores en el correo"
+                value={newAlert.emailMessage}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, emailMessage: e.target.value }))}
+                className={styles.textarea}
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>URL de Imagen para Email (opcional)</label>
+              <input
+                type="text"
+                placeholder="https://... (si se deja vacío, usamos la imagen del gráfico si existe)"
+                value={newAlert.emailImageUrl}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, emailImageUrl: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
           </div>
 
           <div className={styles.modalFooter}>
@@ -2553,6 +2575,32 @@ const SubscriberView: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Modal de confirmación de cierre */}
+      {confirmClose.open && (
+        <div className={styles.modalOverlay} onClick={() => setConfirmClose({ open: false })}>
+          <div className={styles.confirmModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.imageModalHeader}>
+              <h3>Confirmar cierre</h3>
+              <button className={styles.closeModalButton} onClick={() => setConfirmClose({ open: false })}>×</button>
+            </div>
+            <div className={styles.imageModalContent}>
+              <p>¿Estás seguro de cerrar esta posición? Se venderá todo y la alerta pasará a cerrada.</p>
+              <div className={styles.inputGroup}>
+                <label>Mensaje para Email (opcional)</label>
+                <textarea className={styles.textarea} rows={3} placeholder="Texto a incluir en el email" value={closeEmailMessage} onChange={(e) => setCloseEmailMessage(e.target.value)} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>URL de Imagen para Email (opcional)</label>
+                <input className={styles.input} type="text" placeholder="https://..." value={closeEmailImageUrl} onChange={(e) => setCloseEmailImageUrl(e.target.value)} />
+              </div>
+            </div>
+            <div className={styles.modalActions}>
+              <button className={styles.clearFilters} onClick={() => setConfirmClose({ open: false })}>Cancelar</button>
+              <button className={styles.closeButton} onClick={confirmCloseAction}>Cerrar posición</button>
             </div>
           </div>
         </div>

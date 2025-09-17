@@ -9,7 +9,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 /**
  * Crea notificación automática cuando se crea una alerta
  */
-export async function createAlertNotification(alert: IAlert): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number }): Promise<void> {
   try {
     await dbConnect();
     
@@ -85,9 +85,11 @@ export async function createAlertNotification(alert: IAlert): Promise<void> {
         stopLoss: alert.stopLoss?.toString() || 'N/A'
       };
       
+      const rendered = template.render(variables);
+
       notification = {
-        title: template.render(variables).title,
-        message: template.render(variables).message,
+        title: rendered.title,
+        message: overrides?.message || rendered.message,
         type: 'alerta',
         priority: 'alta', // Usar valor válido en español
         targetUsers: targetUsers,
@@ -102,17 +104,19 @@ export async function createAlertNotification(alert: IAlert): Promise<void> {
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: alert.action,
-          alertPrice: alert.entryPriceRange?.max || alert.entryPrice || null,
+          alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
-          automatic: true
+          automatic: true,
+          imageUrl: overrides?.imageUrl || null
         }
       };
     } else {
       console.log('🎨 [ALERT NOTIFICATION] Usando notificación manual (sin plantilla)');
       // Crear notificación manual si no hay plantilla
+      const defaultMessage = `${alert.action} ${alert.symbol} en $${alert.entryPriceRange?.min || 'N/A'} - $${alert.entryPriceRange?.max || 'N/A'}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
       notification = {
         title: `🚨 Nueva Alerta ${alert.tipo}`,
-        message: `${alert.action} ${alert.symbol} en $${alert.entryPriceRange?.min || 'N/A'} - $${alert.entryPriceRange?.max || 'N/A'}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`,
+        message: overrides?.message || defaultMessage,
         type: 'alerta',
         priority: 'alta', // Usar valor válido en español
         targetUsers: targetUsers,
@@ -126,9 +130,10 @@ export async function createAlertNotification(alert: IAlert): Promise<void> {
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: alert.action,
-          alertPrice: alert.entryPriceRange?.max || alert.entryPrice || null,
+          alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
-          automatic: true
+          automatic: true,
+          imageUrl: overrides?.imageUrl || null
         }
       };
     }

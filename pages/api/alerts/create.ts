@@ -103,8 +103,10 @@ export default async function handler(
       tipoAlerta = 'precio',
       precioMinimo,
       precioMaximo,
-      horarioCierre = '17:30'
-    }: AlertRequest = req.body;
+      horarioCierre = '17:30',
+      emailMessage,
+      emailImageUrl
+    }: AlertRequest & { emailMessage?: string; emailImageUrl?: string } = req.body;
 
     if (!symbol || !action || !stopLoss || !takeProfit) {
       return res.status(400).json({ error: 'Todos los campos básicos son requeridos' });
@@ -184,7 +186,11 @@ export default async function handler(
 
     // 🔔 NUEVA FUNCIONALIDAD: Crear notificación automática
     try {
-      await createAlertNotification(newAlert);
+      await createAlertNotification(newAlert, {
+        message: emailMessage,
+        imageUrl: emailImageUrl || newAlert?.chartImage?.secure_url || newAlert?.chartImage?.url || undefined,
+        price: typeof newAlert.entryPrice === 'number' ? newAlert.entryPrice : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined)
+      });
       console.log('✅ Notificación automática enviada para alerta:', newAlert._id);
     } catch (notificationError) {
       console.error('❌ Error al enviar notificación automática:', notificationError);

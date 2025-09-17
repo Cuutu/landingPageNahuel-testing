@@ -74,9 +74,13 @@ const AdminLiquidityPage: React.FC = () => {
   const [smartSellId, setSmartSellId] = useState('');
   const [smartSellShares, setSmartSellShares] = useState('');
   const [smartSellPrice, setSmartSellPrice] = useState('');
+  const [smartSellMessage, setSmartSellMessage] = useState('');
+  const [smartSellImageUrl, setSmartSellImageUrl] = useState('');
   const [traderSellId, setTraderSellId] = useState('');
   const [traderSellShares, setTraderSellShares] = useState('');
   const [traderSellPrice, setTraderSellPrice] = useState('');
+  const [traderSellMessage, setTraderSellMessage] = useState('');
+  const [traderSellImageUrl, setTraderSellImageUrl] = useState('');
 
   const loadData = async () => {
     setLoading(true);
@@ -131,12 +135,16 @@ const AdminLiquidityPage: React.FC = () => {
       setTraderSellId('');
       setTraderSellShares('');
       setTraderSellPrice('');
+      setTraderSellMessage('');
+      setTraderSellImageUrl('');
     } else if (selectedPool === 'TraderCall') {
       setSmartAssignId('');
       setSmartAssignPct('');
       setSmartSellId('');
       setSmartSellShares('');
       setSmartSellPrice('');
+      setSmartSellMessage('');
+      setSmartSellImageUrl('');
     }
   }, [selectedPool]);
 
@@ -207,13 +215,25 @@ const AdminLiquidityPage: React.FC = () => {
     if (!Number.isFinite(p) || p <= 0) throw new Error('Precio inválido');
   };
 
-  const handleSell = async (alertId: string, shares: string, price: string) => {
+  const handleSell = async (alertId: string, shares: string, price: string, message?: string, imageUrl?: string) => {
     validateSell(shares, price);
-    await fetchJSON<{ success: boolean }>(
+    const result = await fetchJSON<{ success: boolean; result: { remainingShares: number } }>(
       '/api/liquidity/sell',
       { method: 'POST', body: JSON.stringify({ alertId, shares: Number(shares), price: Number(price) }) }
     );
     toast?.success('Venta registrada');
+    // Si se vendió todo, opcionalmente disparar notificación de cierre total con mensaje/imagen
+    if (result?.result?.remainingShares === 0) {
+      try {
+        await fetchJSON('/api/alerts/close', {
+          method: 'POST',
+          body: JSON.stringify({ alertId, currentPrice: Number(price), reason: 'MANUAL', emailMessage: message || undefined, emailImageUrl: imageUrl || undefined })
+        });
+        toast?.success('Cierre total notificado');
+      } catch {}
+    } else if (message || imageUrl) {
+      // TODO: agregar endpoint específico para notificar cierre parcial si se requiere notificación inmediata
+    }
     await Promise.all([loadData(), loadActiveAlerts()]);
   };
 
@@ -221,8 +241,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!smartSellId) throw new Error('Seleccione una alerta SmartMoney');
-      await handleSell(smartSellId, smartSellShares, smartSellPrice);
-      setSmartSellId(''); setSmartSellShares(''); setSmartSellPrice('');
+      await handleSell(smartSellId, smartSellShares, smartSellPrice, smartSellMessage, smartSellImageUrl);
+      setSmartSellId(''); setSmartSellShares(''); setSmartSellPrice(''); setSmartSellMessage(''); setSmartSellImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -230,8 +250,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!traderSellId) throw new Error('Seleccione una alerta TraderCall');
-      await handleSell(traderSellId, traderSellShares, traderSellPrice);
-      setTraderSellId(''); setTraderSellShares(''); setTraderSellPrice('');
+      await handleSell(traderSellId, traderSellShares, traderSellPrice, traderSellMessage, traderSellImageUrl);
+      setTraderSellId(''); setTraderSellShares(''); setTraderSellPrice(''); setTraderSellMessage(''); setTraderSellImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -343,7 +363,11 @@ const AdminLiquidityPage: React.FC = () => {
             </select>
             <input value={smartSellShares} onChange={e => setSmartSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
             <input value={smartSellPrice} onChange={e => setSmartSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
-            <button onClick={handleSellSmart} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
+            <button onClick={() => handleSellSmart()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
+          </div>
+          <div className={styles.row} style={{ marginTop: 8 }}>
+            <input value={smartSellMessage} onChange={e => setSmartSellMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
+            <input value={smartSellImageUrl} onChange={e => setSmartSellImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
           </div>
         </>)}
 
@@ -359,7 +383,11 @@ const AdminLiquidityPage: React.FC = () => {
             </select>
             <input value={traderSellShares} onChange={e => setTraderSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
             <input value={traderSellPrice} onChange={e => setTraderSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
-            <button onClick={handleSellTrader} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
+            <button onClick={() => handleSellTrader()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
+          </div>
+          <div className={styles.row} style={{ marginTop: 8 }}>
+            <input value={traderSellMessage} onChange={e => setTraderSellMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
+            <input value={traderSellImageUrl} onChange={e => setTraderSellImageUrl(e.target.value)} className={styles.input} placeholder="URL imagen email (opcional)" />
           </div>
         </>)}
 

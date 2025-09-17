@@ -14,6 +14,8 @@ interface ClosePositionRequest {
   alertId: string;
   currentPrice: number;
   reason?: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MANUAL';
+  emailMessage?: string;
+  emailImageUrl?: string;
 }
 
 interface ClosePositionResponse {
@@ -65,7 +67,7 @@ export default async function handler(
     }
 
     // Validar datos de entrada
-    const { alertId, currentPrice, reason = 'MANUAL' }: ClosePositionRequest = req.body;
+    const { alertId, currentPrice, reason = 'MANUAL', emailMessage, emailImageUrl }: ClosePositionRequest = req.body;
 
     if (!alertId || !currentPrice) {
       console.log('❌ Datos inválidos:', { alertId, currentPrice });
@@ -143,6 +145,18 @@ export default async function handler(
       }
     } catch (liqErr) {
       console.error('❌ Error actualizando liquidez al cerrar alerta:', liqErr);
+    }
+
+    // 🔔 Enviar notificación de cierre a suscriptores
+    try {
+      const { createAlertNotification } = await import('@/lib/notificationUtils');
+      await createAlertNotification(updatedAlert as any, {
+        message: emailMessage || `Cierre de posición en ${updatedAlert?.symbol} a $${currentPrice}. Resultado: ${finalProfit.toFixed(1)}%`,
+        imageUrl: emailImageUrl,
+        price: currentPrice
+      });
+    } catch (notifyErr) {
+      console.error('❌ Error enviando notificación de cierre:', notifyErr);
     }
 
     // Formatear la respuesta para el frontend - con validación de números

@@ -596,6 +596,12 @@ export function generateAlertEmailTemplate(
     </div>
   ` : '';
 
+  const imageBlock = notification.metadata?.imageUrl ? `
+    <div style="margin: 20px 0; text-align: center;">
+      <img src="${notification.metadata.imageUrl}" alt="Imagen de la alerta" style="max-width: 100%; border-radius: 10px; border: 1px solid #e2e8f0;" />
+    </div>
+  ` : '';
+
   return createNotificationEmailTemplate({
     title: `${notification.icon} ${notification.title}`,
     content: `
@@ -615,6 +621,7 @@ export function generateAlertEmailTemplate(
         <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
           ${notification.message}
         </p>
+        ${imageBlock}
         ${alertDetails}
       </div>
       

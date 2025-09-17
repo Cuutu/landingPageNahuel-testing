@@ -476,7 +476,9 @@ const SubscriberView: React.FC = () => {
     tipoAlerta: 'precio' as 'precio' | 'rango',
     precioMinimo: '',
     precioMaximo: '',
-    horarioCierre: '17:30'
+    horarioCierre: '17:30',
+    emailMessage: '',
+    emailImageUrl: ''
   });
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
@@ -1106,7 +1108,10 @@ const SubscriberView: React.FC = () => {
           tipoAlerta: newAlert.tipoAlerta,
           precioMinimo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMinimo) : undefined,
           precioMaximo: newAlert.tipoAlerta === 'rango' ? parseFloat(newAlert.precioMaximo) : undefined,
-          horarioCierre: newAlert.horarioCierre
+          horarioCierre: newAlert.horarioCierre,
+          // Campos de email opcionales
+          emailMessage: newAlert.emailMessage || undefined,
+          emailImageUrl: newAlert.emailImageUrl || (chartImage?.secure_url || chartImage?.url)
         }),
       });
 
@@ -1125,7 +1130,9 @@ const SubscriberView: React.FC = () => {
           tipoAlerta: 'precio',
           precioMinimo: '',
           precioMaximo: '',
-          horarioCierre: '17:30'
+          horarioCierre: '17:30',
+          emailMessage: '',
+          emailImageUrl: ''
         });
         setStockPrice(null);
         setChartImage(null);
@@ -1148,6 +1155,8 @@ const SubscriberView: React.FC = () => {
 
   // Función para cerrar posición
   const [confirmClose, setConfirmClose] = useState<{open: boolean; alertId?: string; price?: string}>({ open: false });
+  const [closeEmailMessage, setCloseEmailMessage] = useState<string>('');
+  const [closeEmailImageUrl, setCloseEmailImageUrl] = useState<string>('');
 
   const handleClosePosition = async (alertId: string, currentPrice: string) => {
     console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
@@ -1162,14 +1171,14 @@ const SubscriberView: React.FC = () => {
       if (isNaN(priceNumber) || priceNumber <= 0) { alert('❌ Precio inválido. Por favor, verifica el precio actual.'); setConfirmClose({ open: false }); return; }
       const response = await fetch('/api/alerts/close', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-        body: JSON.stringify({ alertId: confirmClose.alertId, currentPrice: priceNumber, reason: 'MANUAL' })
+        body: JSON.stringify({ alertId: confirmClose.alertId, currentPrice: priceNumber, reason: 'MANUAL', emailMessage: closeEmailMessage || undefined, emailImageUrl: closeEmailImageUrl || undefined })
       });
       const result = await response.json();
       if (response.ok && result.success) { await loadAlerts(); alert('✅ ¡Posición cerrada exitosamente!'); }
       else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
     } catch (error) {
       console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
-    } finally { setConfirmClose({ open: false }); }
+    } finally { setConfirmClose({ open: false }); setCloseEmailMessage(''); setCloseEmailImageUrl(''); }
   };
 
   // ✅ NUEVO: Función para probar el cierre de mercado
@@ -3103,6 +3112,28 @@ const SubscriberView: React.FC = () => {
                 rows={4}
               />
             </div>
+
+            <div className={styles.inputGroup}>
+              <label>Mensaje personalizado para Email (opcional)</label>
+              <textarea
+                placeholder="Texto que verán los suscriptores en el correo"
+                value={newAlert.emailMessage}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, emailMessage: e.target.value }))}
+                className={styles.textarea}
+                rows={3}
+              />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label>URL de Imagen para Email (opcional)</label>
+              <input
+                type="text"
+                placeholder="https://... (si se deja vacío, usamos la imagen del gráfico si existe)"
+                value={newAlert.emailImageUrl}
+                onChange={(e) => setNewAlert(prev => ({ ...prev, emailImageUrl: e.target.value }))}
+                className={styles.input}
+              />
+            </div>
           </div>
 
           <div className={styles.modalFooter}>
@@ -3224,6 +3255,14 @@ const SubscriberView: React.FC = () => {
             </div>
             <div className={styles.imageModalContent}>
               <p>¿Estás seguro de cerrar esta posición? Se venderá todo y la alerta pasará a cerrada.</p>
+              <div className={styles.inputGroup}>
+                <label>Mensaje para Email (opcional)</label>
+                <textarea className={styles.textarea} rows={3} placeholder="Texto a incluir en el email" value={closeEmailMessage} onChange={(e) => setCloseEmailMessage(e.target.value)} />
+              </div>
+              <div className={styles.inputGroup}>
+                <label>URL de Imagen para Email (opcional)</label>
+                <input className={styles.input} type="text" placeholder="https://..." value={closeEmailImageUrl} onChange={(e) => setCloseEmailImageUrl(e.target.value)} />
+              </div>
             </div>
             <div className={styles.modalActions}>
               <button className={styles.clearFilters} onClick={() => setConfirmClose({ open: false })}>Cancelar</button>
