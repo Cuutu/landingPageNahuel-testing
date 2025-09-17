@@ -169,9 +169,9 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-      // ✅ NUEVO: Obtener precio actual del mercado en tiempo real
+      // ✅ NUEVO: Obtener precio actual del mercado en tiempo real usando la API correcta
       try {
-        const currentMarketPrice = await fetchCurrentStockPrice(symbol);
+        const currentMarketPrice = await fetchCorrectStockPrice(symbol);
         alertData.currentPrice = currentMarketPrice || precioMaximo; // Fallback al precio máximo si falla
         console.log(`📊 Precio actual de ${symbol}: $${currentMarketPrice} (rango: $${precioMinimo}-$${precioMaximo})`);
       } catch (error) {
@@ -235,7 +235,46 @@ export default async function handler(
 }
 
 /**
- * ✅ NUEVO: Obtener precio actual de una acción desde Google Finance
+ * ✅ NUEVO: Obtener precio actual de una acción usando la API correcta (Yahoo Finance)
+ */
+async function fetchCorrectStockPrice(symbol: string): Promise<number | null> {
+  try {
+    // Usar la misma API que funciona correctamente en /api/stock-price
+    const response = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Error al obtener datos de Yahoo Finance');
+    }
+
+    const data = await response.json();
+
+    if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
+      const price = data.chart.result[0].meta.regularMarketPrice;
+      console.log(`✅ Yahoo Finance - ${symbol}: $${price}`);
+      return price;
+    } else {
+      // Si Yahoo Finance falla, usar precio simulado
+      console.log(`⚠️ Yahoo Finance no disponible para ${symbol}, usando precio simulado`);
+      return generateSimulatedPrice(symbol);
+    }
+
+  } catch (error: any) {
+    console.error(`❌ Error obteniendo precio desde Yahoo Finance para ${symbol}:`, error.message);
+    // Fallback a precio simulado si Yahoo Finance falla
+    console.log(`🔄 Usando precio simulado para ${symbol}`);
+    return generateSimulatedPrice(symbol);
+  }
+}
+
+/**
+ * ✅ NUEVO: Obtener precio actual de una acción desde Google Finance (DEPRECATED - usar fetchCorrectStockPrice)
  */
 async function fetchCurrentStockPrice(symbol: string): Promise<number | null> {
   try {
