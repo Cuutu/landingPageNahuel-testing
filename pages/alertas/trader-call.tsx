@@ -891,7 +891,7 @@ const SubscriberView: React.FC = () => {
         setInformes(prev => [newReport, ...prev]);
         setShowCreateReportModal(false);
         // Mostrar mensaje de éxito
-        alert('Informe creado exitosamente');
+        alert('Informe creado exitosamente.');
       } else {
         const errorData = await response.json();
         console.error('❌ Error del servidor:', errorData);
