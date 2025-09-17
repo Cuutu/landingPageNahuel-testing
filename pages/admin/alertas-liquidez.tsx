@@ -228,7 +228,7 @@ const AdminLiquidityPage: React.FC = () => {
     validateSell(shares, price);
     const result = await fetchJSON<{ success: boolean; result: { remainingShares: number } }>(
       '/api/liquidity/sell',
-      { method: 'POST', body: JSON.stringify({ alertId, shares: Number(shares), price: Number(price) }) }
+      { method: 'POST', body: JSON.stringify({ alertId, shares: Number(shares), price: Number(price), emailMessage: message || undefined, emailImageUrl: imageUrl || undefined }) }
     );
     toast?.success('Venta registrada');
     // Si se vendió todo, opcionalmente disparar notificación de cierre total con mensaje/imagen
