@@ -53,6 +53,8 @@ export default async function handler(
     }
 
     const { alertId, shares, price }: SellLiquidityRequest = req.body || {};
+    const emailMessage: string | undefined = (req.body as any)?.emailMessage;
+    const emailImageUrl: string | undefined = (req.body as any)?.emailImageUrl;
 
     if (!alertId || !shares || !price) {
       return res.status(400).json({ success: false, error: 'alertId, shares y price son requeridos' });
@@ -97,16 +99,16 @@ export default async function handler(
     try {
       const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
       const isTotal = remainingShares === 0;
-      const message = req.body?.emailMessage || (isTotal
+      const message = emailMessage || (isTotal
         ? `Cierre total en ${alert.symbol}: vendido 100% a $${price}.`
         : `Venta parcial en ${alert.symbol}: vendidos ${shares} shares a $${price}.`);
-      const imageUrl = req.body?.emailImageUrl || undefined;
+      const imageUrl = emailImageUrl || undefined;
       await notifyAlertSubscribers(alert as any, {
         message,
         imageUrl,
         price
       });
-      console.log('✅ Notificación de venta enviada');
+      console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl });
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de venta:', notifyErr);
     }

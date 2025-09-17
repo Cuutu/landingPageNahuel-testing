@@ -20,6 +20,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       tipo: alert.tipo,
       entryPriceRange: alert.entryPriceRange
     });
+    if (overrides) {
+      console.log('🎛️ [ALERT NOTIFICATION] Overrides recibidos:', overrides);
+    }
 
     // Determinar el grupo de usuarios basado en el tipo de alerta
     let targetUsers = 'alertas_trader'; // por defecto
@@ -87,6 +90,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       
       const rendered = template.render(variables);
 
+      const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
+
       notification = {
         title: rendered.title,
         message: overrides?.message || rendered.message,
@@ -107,13 +112,14 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
           automatic: true,
-          imageUrl: overrides?.imageUrl || null
+          imageUrl: finalImageUrl
         }
       };
     } else {
       console.log('🎨 [ALERT NOTIFICATION] Usando notificación manual (sin plantilla)');
       // Crear notificación manual si no hay plantilla
       const defaultMessage = `${alert.action} ${alert.symbol} en $${alert.entryPriceRange?.min || 'N/A'} - $${alert.entryPriceRange?.max || 'N/A'}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
+      const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
       notification = {
         title: `🚨 Nueva Alerta ${alert.tipo}`,
         message: overrides?.message || defaultMessage,
@@ -133,7 +139,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
           alertService: alert.tipo,
           automatic: true,
-          imageUrl: overrides?.imageUrl || null
+          imageUrl: finalImageUrl
         }
       };
     }
@@ -141,7 +147,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log('📧 [ALERT NOTIFICATION] Creando notificación global:', {
       title: notification.title,
       targetUsers: notification.targetUsers,
-      subscribedUsers: subscribedUsers.length
+      subscribedUsers: subscribedUsers.length,
+      hasImage: !!notification.metadata?.imageUrl
     });
 
     // Crear UNA notificación global que se muestre a todos los usuarios del grupo
