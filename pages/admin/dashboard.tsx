@@ -119,6 +119,7 @@ const useDashboardSections = () => {
         { label: 'Dashboard de Precios', href: '/admin/pricing', icon: <DollarSign size={16} /> },
         { label: 'Configuración de Videos', href: '/admin/video-config', icon: <Settings size={16} /> },
         { label: 'Configuración General', href: '/admin/site-config', icon: <FileText size={16} /> },
+        { label: 'Analíticas', href: '/admin/analytics', icon: <BarChart3 size={16} /> },
         { label: 'Ver Landing', href: '/', icon: <TrendingUp size={16} /> }
       ]
     },
