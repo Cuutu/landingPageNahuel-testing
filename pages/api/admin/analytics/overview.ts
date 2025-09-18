@@ -7,17 +7,6 @@ import UserSubscription from '@/models/UserSubscription'
 
 /**
  * API Admin: Analíticas generales
- * Método: GET
- * Parámetros query opcionales:
- *  - rangeDays: número de días hacia atrás para series temporales (por defecto 30)
- * Respuesta:
- *  - kpis: métricas clave (ingresos, usuarios, suscripciones)
- *  - revenueByService: ingresos por servicio
- *  - revenueByCategory: ingresos agrupados por categoría (Alertas/Entrenamientos/Asesorías)
- *  - revenueTimeseries: ingresos diarios últimos N días
- *  - subscriptionsByAlert: cantidad de usuarios suscritos por tipo de alerta (activos por pagos vigentes)
- *  - activeSubscriptionsByService: usuarios únicos con suscripción activa por servicio
- *  - latestPayments: últimos pagos aprobados
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
 	if (req.method !== 'GET') {
@@ -36,15 +25,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const rangeDays = Math.max(1, parseInt((req.query.rangeDays as string) || '30', 10))
 		const since = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000)
 
-		// Definir categorías por servicio (canónicos)
 		const alertServices = ['TraderCall', 'SmartMoney', 'CashFlow'] as const
 		const trainingServices = ['SwingTrading', 'DowJones'] as const
 		const advisoryServices = ['ConsultorioFinanciero'] as const
-
-		// Filtro de estados válidos (compatibilidad con datos históricos)
 		const validStatuses = ['approved', 'completed']
 
-		// Ingresos totales y del mes actual
 		const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
 
 		const [totalRevenueAgg, monthlyRevenueAgg] = await Promise.all([
@@ -61,7 +46,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const totalRevenue = totalRevenueAgg[0]?.total || 0
 		const monthlyRevenue = monthlyRevenueAgg[0]?.total || 0
 
-		// Usuarios
 		const [totalUsers, adminUsers, suscriptorUsers, normalUsers] = await Promise.all([
 			User.countDocuments({}),
 			User.countDocuments({ role: 'admin' }),
@@ -69,7 +53,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			User.countDocuments({ role: 'normal' })
 		])
 
-		// Normalización de servicio mediante regex en Mongo
 		const addCanonicalServiceStage = {
 			$addFields: {
 				canonicalService: {
@@ -88,7 +71,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			}
 		}
 
-		// Ingresos por servicio (normalizado)
 		const revenueByService = await Payment.aggregate([
 			{ $match: { status: { $in: validStatuses } } },
 			addCanonicalServiceStage as any,
@@ -97,7 +79,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			{ $sort: { total: -1 } }
 		])
 
-		// Ingresos por categoría usando canonicalService
 		const revenueByCategory = await Payment.aggregate([
 			{ $match: { status: { $in: validStatuses } } },
 			addCanonicalServiceStage as any,
@@ -120,7 +101,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			{ $sort: { total: -1 } }
 		])
 
-		// Serie temporal de ingresos últimos N días
 		const revenueTimeseries = await Payment.aggregate([
 			{ $match: { status: { $in: validStatuses }, transactionDate: { $gte: since } } },
 			{ $group: { _id: { y: { $year: '$transactionDate' }, m: { $month: '$transactionDate' }, d: { $dayOfMonth: '$transactionDate' } }, total: { $sum: '$amount' } } },
@@ -128,32 +108,59 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			{ $sort: { date: 1 } }
 		])
 
-		// Suscriptores activos por alerta (desde Payments vigentes, normalizados)
-		const activeAlertSubscribersAgg = await Payment.aggregate([
+		// 1) Set de emails activos por servicio desde Payments
+		const paymentsActiveByService = await Payment.aggregate([
 			{ $match: { status: { $in: validStatuses }, expiryDate: { $gt: now } } },
 			addCanonicalServiceStage as any,
-			{ $match: { canonicalService: { $in: [...alertServices] } } },
 			{ $group: { _id: { service: '$canonicalService', email: '$userEmail' } } },
-			{ $group: { _id: '$_id.service', users: { $sum: 1 } } },
+			{ $group: { _id: '$_id.service', users: { $addToSet: '$_id.email' } } },
 			{ $project: { _id: 0, service: '$_id', users: 1 } }
 		])
-		const subscribersByAlertMap: Record<string, number> = {}
-		activeAlertSubscribersAgg.forEach(r => { subscribersByAlertMap[r.service] = r.users })
+		const paymentsSetMap = new Map<string, Set<string>>()
+		paymentsActiveByService.forEach((r: any) => paymentsSetMap.set(r.service, new Set(r.users)))
 
-		// Usuarios únicos con suscripción activa por servicio (pagos no expirados, normalizados)
-		const activeSubscriptionsByService = await Payment.aggregate([
-			{ $match: { status: { $in: validStatuses }, expiryDate: { $gt: now } } },
-			addCanonicalServiceStage as any,
-			{ $group: { _id: { service: '$canonicalService', userEmail: '$userEmail' } } },
-			{ $group: { _id: '$_id.service', users: { $sum: 1 } } },
-			{ $project: { _id: 0, service: '$_id', users: 1 } },
-			{ $sort: { users: -1 } }
+		// 2) Set de emails activos por alerta desde suscripciones manuales del admin (User.subscriptions)
+		const manualSubsAgg = await User.aggregate([
+			{ $match: { 'subscriptions.0': { $exists: true } } },
+			{ $unwind: '$subscriptions' },
+			{ $match: { 'subscriptions.activa': true, $or: [ { 'subscriptions.fechaFin': { $exists: false } }, { 'subscriptions.fechaFin': null }, { 'subscriptions.fechaFin': { $gt: now } } ] } },
+			{ $project: { email: '$email', tipo: '$subscriptions.tipo', precio: '$subscriptions.precio' } },
+			{ $group: { _id: '$tipo', users: { $addToSet: '$email' }, totalManualRevenue: { $sum: { $ifNull: ['$precio', 0] } } } },
+			{ $project: { _id: 0, service: '$_id', users: 1, totalManualRevenue: 1 } }
 		])
+		const manualSetMap = new Map<string, Set<string>>()
+		const manualRevenueMap = new Map<string, number>()
+		manualSubsAgg.forEach((r: any) => {
+			manualSetMap.set(r.service, new Set(r.users))
+			manualRevenueMap.set(r.service, r.totalManualRevenue || 0)
+		})
 
+		// 3) Unificar sets por servicio (Payments ⊔ Manual)
+		const unionServices = new Set<string>([...alertServices, ...trainingServices, ...advisoryServices])
+		const activeByServiceUnion: Array<{ service: string; users: number }> = []
+		unionServices.forEach(service => {
+			const p = paymentsSetMap.get(service) || new Set<string>()
+			const m = manualSetMap.get(service) || new Set<string>()
+			const union = new Set<string>()
+			p.forEach((email) => union.add(email))
+			m.forEach((email) => union.add(email))
+			activeByServiceUnion.push({ service, users: union.size })
+		})
+
+		// 4) Suscripciones por alerta (solo TraderCall/SmartMoney/CashFlow) usando la unión
+		const subscribersByAlert = {
+			alertas_trader: activeByServiceUnion.find(s => s.service === 'TraderCall')?.users || 0,
+			alertas_smart: activeByServiceUnion.find(s => s.service === 'SmartMoney')?.users || 0,
+			alertas_cashflow: activeByServiceUnion.find(s => s.service === 'CashFlow')?.users || 0
+		}
+
+		const activeSubscriptionsByService = activeByServiceUnion
 		const activeSubscriptionsTotal = activeSubscriptionsByService.reduce((acc, it) => acc + (it.users || 0), 0)
 		const arpu = totalUsers > 0 ? totalRevenue / totalUsers : 0
 
-		// Últimos pagos aprobados
+		// 5) Ingresos manuales (se reportan aparte para no duplicar pagos)
+		const manualRevenueByService = Array.from(manualRevenueMap.entries()).map(([service, total]) => ({ service, total }))
+
 		const latestPayments = await Payment.find({ status: { $in: validStatuses } })
 			.select('userEmail service amount currency status transactionDate expiryDate')
 			.sort({ transactionDate: -1 })
@@ -177,12 +184,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			revenueByService,
 			revenueByCategory,
 			revenueTimeseries,
-			subscriptionsByAlert: {
-				alertas_trader: subscribersByAlertMap['TraderCall'] || 0,
-				alertas_smart: subscribersByAlertMap['SmartMoney'] || 0,
-				alertas_cashflow: subscribersByAlertMap['CashFlow'] || 0
-			},
+			subscriptionsByAlert: subscribersByAlert,
 			activeSubscriptionsByService,
+			manualRevenueByService,
 			latestPayments
 		})
 	} catch (error) {
