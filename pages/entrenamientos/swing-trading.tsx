@@ -11,6 +11,7 @@ import Carousel from '@/components/Carousel';
 import TrainingRoadmap from '@/components/TrainingRoadmap';
 import ClassCalendar from '@/components/ClassCalendar';
 import SwingTradingFAQ from '@/components/SwingTradingFAQ';
+import BackgroundVideo from '@/components/BackgroundVideo';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -582,6 +583,13 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       <main className={styles.main}>
         {/* Hero Section con Video Explicativo */}
         <section className={styles.heroSection}>
+          <BackgroundVideo 
+            videoSrc="/logos/Diseño Web-LozanoNahuel-Entrenamientos-SwingTrading.mp4"
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            showControls={false}
+          />
           <div className={styles.container}>
             <motion.div 
               className={styles.heroContent}

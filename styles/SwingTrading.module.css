@@ -22,7 +22,7 @@
   margin: 0 auto;
   padding: 0 2rem;
   position: relative;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* Hero Section - ROJO */
@@ -35,6 +35,19 @@
   position: relative;
   z-index: 2;
   overflow: hidden;
+}
+
+/* Overlay para el video de fondo */
+.heroSection::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(139, 0, 0, 0.4);
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* Video de fondo */
@@ -73,6 +86,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 4rem;
   align-items: center;
+  position: relative;
+  z-index: 3;
 }
 
 .heroText {
