@@ -48,16 +48,8 @@ export const createSubscriptionPreference = async (
       notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
-      payment_methods: {
-        // Permitir todos los métodos de pago disponibles
-        installments: 1, // Sin cuotas para suscripciones
-        default_installments: 1
-        // NO excluir ningún tipo de pago para permitir todos los métodos disponibles
-        // Removemos cualquier restricción que pueda limitar los métodos de pago
-      },
-      // Configuración adicional para asegurar que se muestren todos los métodos
-      binary_mode: false,
-      marketplace: 'NONE'
+      // NO incluir payment_methods para permitir TODOS los métodos disponibles
+      // Checkout Pro mostrará automáticamente todos los métodos habilitados en la cuenta
     };
 
     console.log('🔧 MercadoPago - Datos de preferencia:', preferenceData);
@@ -124,14 +116,8 @@ export const createTrainingPreference = async (
       notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
-      payment_methods: {
-        installments: 12, // Permitir hasta 12 cuotas para entrenamientos
-        default_installments: 1
-        // NO excluir ningún tipo de pago para permitir todos los métodos disponibles
-      },
-      // Configuración adicional para asegurar que se muestren todos los métodos
-      binary_mode: false,
-      marketplace: 'NONE'
+      // NO incluir payment_methods para permitir TODOS los métodos disponibles
+      // Checkout Pro mostrará automáticamente todos los métodos habilitados en la cuenta
     };
 
     const response = await preference.create({ body: preferenceData });
@@ -232,14 +218,8 @@ export const createBookingPreference = async (
       notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
-      payment_methods: {
-        installments: 12, // Permitir hasta 12 cuotas para reservas
-        default_installments: 1
-        // NO excluir ningún tipo de pago para permitir todos los métodos disponibles
-      },
-      // Configuración adicional para asegurar que se muestren todos los métodos
-      binary_mode: false,
-      marketplace: 'NONE'
+      // NO incluir payment_methods para permitir TODOS los métodos disponibles
+      // Checkout Pro mostrará automáticamente todos los métodos habilitados en la cuenta
     };
 
     console.log('🔧 MercadoPago - Datos de preferencia de reserva:', preferenceData);
@@ -306,15 +286,8 @@ export const createMercadoPagoPreference = async (
       notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
-      payment_methods: {
-        // Permitir todos los métodos de pago disponibles
-        installments: 12, // Permitir hasta 12 cuotas
-        default_installments: 1
-        // NO excluir ningún tipo de pago para permitir todos los métodos disponibles
-      },
-      // Configuración adicional para asegurar que se muestren todos los métodos
-      binary_mode: false,
-      marketplace: 'NONE'
+      // NO incluir payment_methods para permitir TODOS los métodos disponibles
+      // Checkout Pro mostrará automáticamente todos los métodos habilitados en la cuenta
     };
 
     const response = await preference.create({ body: preferenceData });
