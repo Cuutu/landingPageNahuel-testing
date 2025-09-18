@@ -56,11 +56,13 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 		fetchData()
 	}, [rangeDays])
 
+	const currency = (n: number) => `$${Number(n || 0).toLocaleString()}`
+
 	const kpis = useMemo(() => [
-		{ label: 'Ingresos Totales', value: data?.kpis?.totalRevenue || 0, icon: <DollarSign size={20} />, color: '#059669' },
-		{ label: 'Ingresos Mensuales', value: data?.kpis?.monthlyRevenue || 0, icon: <TrendingUp size={20} />, color: '#10b981' },
-		{ label: 'Suscripciones Activas', value: data?.kpis?.activeSubscriptionsTotal || 0, icon: <Activity size={20} />, color: '#3b82f6' },
-		{ label: 'Usuarios', value: data?.kpis?.totalUsers || 0, icon: <Users size={20} />, color: '#6366f1' }
+		{ label: 'Ingresos Totales', value: currency(data?.kpis?.totalRevenue || 0), icon: <DollarSign size={20} />, color: '#059669' },
+		{ label: 'Ingresos Mensuales', value: currency(data?.kpis?.monthlyRevenue || 0), icon: <TrendingUp size={20} />, color: '#10b981' },
+		{ label: 'Suscripciones Activas', value: Number(data?.kpis?.activeSubscriptionsTotal || 0).toLocaleString(), icon: <Activity size={20} />, color: '#3b82f6' },
+		{ label: 'Usuarios', value: Number(data?.kpis?.totalUsers || 0).toLocaleString(), icon: <Users size={20} />, color: '#6366f1' }
 	], [data])
 
 	const timeseries = (data?.revenueTimeseries || []).map((d: any) => ({
@@ -69,6 +71,20 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 	}))
 
 	const pieColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
+
+	// Combinar ingresos por servicio: pagos + manual
+	const revenueByServiceCombined = useMemo(() => {
+		const base = (data?.revenueByService || []) as Array<{ service: string; total: number; count: number }>
+		const manual = (data?.manualRevenueByService || []) as Array<{ service: string; total: number }>
+		const manualMap = new Map(manual.map(r => [r.service, r.total]))
+		return base.map(r => ({
+			service: r.service,
+			payments: r.total || 0,
+			manual: manualMap.get(r.service) || 0,
+			total: (r.total || 0) + (manualMap.get(r.service) || 0),
+			count: r.count || 0
+		}))
+	}, [data])
 
 	return (
 		<>
@@ -90,7 +106,7 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 						{kpis.map((k, idx) => (
 							<div key={idx} style={{ flex: '1 1 220px', background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16 }}>
 								<div style={{ display: 'flex', alignItems: 'center', gap: 8, color: k.color }}>{k.icon}<span style={{ fontWeight: 600 }}>{k.label}</span></div>
-								<div style={{ fontSize: 28, fontWeight: 700, marginTop: 6 }}>${Number(k.value).toLocaleString()}</div>
+								<div style={{ fontSize: 28, fontWeight: 700, marginTop: 6 }}>{k.value}</div>
 							</div>
 						))}
 					</div>
@@ -166,18 +182,21 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 									<thead>
 										<tr style={{ textAlign: 'left', color: '#94a3b8' }}>
 											<th>Servicio</th>
-											<th>Ingresos</th>
+											<th>Pagos</th>
+											<th>Manual</th>
+											<th>Total</th>
 											<th>Transacciones</th>
 										</tr>
 									</thead>
 									<tbody>
-										{(data?.revenueByService || []).map((row: any, i: number) => (
+										{revenueByServiceCombined.map((row: any, i: number) => (
 											<tr key={i}>
 												<td>{row.service}</td>
-												<td>${Number(row.total).toLocaleString()}</td>
+												<td>{currency(row.payments)}</td>
+												<td>{currency(row.manual)}</td>
+												<td>{currency(row.total)}</td>
 												<td>{row.count}</td>
-											</tr>
-										))}
+											</tr>) )}
 									</tbody>
 								</table>
 							</div>
@@ -205,7 +224,7 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 												<td>{new Date(p.transactionDate).toLocaleDateString('es-AR')}</td>
 												<td>{p.userEmail}</td>
 												<td>{p.service}</td>
-												<td>${Number(p.amount).toLocaleString()} {p.currency}</td>
+												<td>{currency(p.amount)} {p.currency}</td>
 												<td>{new Date(p.expiryDate).toLocaleDateString('es-AR')}</td>
 											</tr>
 										))}
