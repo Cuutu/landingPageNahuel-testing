@@ -15,7 +15,7 @@ import UserSubscription from '@/models/UserSubscription'
  *  - revenueByService: ingresos por servicio
  *  - revenueByCategory: ingresos agrupados por categoría (Alertas/Entrenamientos/Asesorías)
  *  - revenueTimeseries: ingresos diarios últimos N días
- *  - subscriptionsByAlert: cantidad de usuarios suscritos por tipo de alerta (toggles)
+ *  - subscriptionsByAlert: cantidad de usuarios suscritos por tipo de alerta (activos por pagos vigentes)
  *  - activeSubscriptionsByService: usuarios únicos con suscripción activa por servicio
  *  - latestPayments: últimos pagos aprobados
  */
@@ -36,21 +36,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const rangeDays = Math.max(1, parseInt((req.query.rangeDays as string) || '30', 10))
 		const since = new Date(now.getTime() - rangeDays * 24 * 60 * 60 * 1000)
 
-		// Definir categorías por servicio
+		// Definir categorías por servicio (canónicos)
 		const alertServices = ['TraderCall', 'SmartMoney', 'CashFlow'] as const
 		const trainingServices = ['SwingTrading', 'DowJones'] as const
 		const advisoryServices = ['ConsultorioFinanciero'] as const
+
+		// Filtro de estados válidos (compatibilidad con datos históricos)
+		const validStatuses = ['approved', 'completed']
 
 		// Ingresos totales y del mes actual
 		const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
 
 		const [totalRevenueAgg, monthlyRevenueAgg] = await Promise.all([
 			Payment.aggregate([
-				{ $match: { status: 'approved' } },
+				{ $match: { status: { $in: validStatuses } } },
 				{ $group: { _id: null, total: { $sum: '$amount' } } }
 			]),
 			Payment.aggregate([
-				{ $match: { status: 'approved', transactionDate: { $gte: startOfMonth } } },
+				{ $match: { status: { $in: validStatuses }, transactionDate: { $gte: startOfMonth } } },
 				{ $group: { _id: null, total: { $sum: '$amount' } } }
 			])
 		])
@@ -66,25 +69,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			User.countDocuments({ role: 'normal' })
 		])
 
-		// Ingresos por servicio
+		// Normalización de servicio mediante regex en Mongo
+		const addCanonicalServiceStage = {
+			$addFields: {
+				canonicalService: {
+					$switch: {
+						branches: [
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /trader|tradercall|trader-call/ } }, then: 'TraderCall' },
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /smart|smartmoney|smart-money/ } }, then: 'SmartMoney' },
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /cash\s?flow|cash-flow/ } }, then: 'CashFlow' },
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /swing|swingtrading|swing-trading/ } }, then: 'SwingTrading' },
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /dow|dowjones|dow-jones/ } }, then: 'DowJones' },
+							{ case: { $regexMatch: { input: { $toLower: '$service' }, regex: /consultorio/ } }, then: 'ConsultorioFinanciero' }
+						],
+						default: '$service'
+					}
+				}
+			}
+		}
+
+		// Ingresos por servicio (normalizado)
 		const revenueByService = await Payment.aggregate([
-			{ $match: { status: 'approved' } },
-			{ $group: { _id: '$service', total: { $sum: '$amount' }, count: { $sum: 1 } } },
+			{ $match: { status: { $in: validStatuses } } },
+			addCanonicalServiceStage as any,
+			{ $group: { _id: '$canonicalService', total: { $sum: '$amount' }, count: { $sum: 1 } } },
 			{ $project: { _id: 0, service: '$_id', total: 1, count: 1 } },
 			{ $sort: { total: -1 } }
 		])
 
-		// Ingresos por categoría usando $switch
+		// Ingresos por categoría usando canonicalService
 		const revenueByCategory = await Payment.aggregate([
-			{ $match: { status: 'approved' } },
+			{ $match: { status: { $in: validStatuses } } },
+			addCanonicalServiceStage as any,
 			{
 				$addFields: {
 					category: {
 						$switch: {
 							branches: [
-								{ case: { $in: ['$service', alertServices] }, then: 'Alertas' },
-								{ case: { $in: ['$service', trainingServices] }, then: 'Entrenamientos' },
-								{ case: { $in: ['$service', advisoryServices] }, then: 'Asesorías' }
+								{ case: { $in: ['$canonicalService', [...alertServices]] }, then: 'Alertas' },
+								{ case: { $in: ['$canonicalService', [...trainingServices]] }, then: 'Entrenamientos' },
+								{ case: { $in: ['$canonicalService', [...advisoryServices]] }, then: 'Asesorías' }
 							],
 							default: 'Otros'
 						}
@@ -98,23 +122,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 		// Serie temporal de ingresos últimos N días
 		const revenueTimeseries = await Payment.aggregate([
-			{ $match: { status: 'approved', transactionDate: { $gte: since } } },
+			{ $match: { status: { $in: validStatuses }, transactionDate: { $gte: since } } },
 			{ $group: { _id: { y: { $year: '$transactionDate' }, m: { $month: '$transactionDate' }, d: { $dayOfMonth: '$transactionDate' } }, total: { $sum: '$amount' } } },
 			{ $project: { _id: 0, date: { $dateFromParts: { year: '$_id.y', month: '$_id.m', day: '$_id.d' } }, total: 1 } },
 			{ $sort: { date: 1 } }
 		])
 
-		// Suscripciones por tipo de alerta (toggles)
-		const [subsTrader, subsSmart, subsCashflow] = await Promise.all([
-			UserSubscription.countDocuments({ 'subscriptions.alertas_trader': true }),
-			UserSubscription.countDocuments({ 'subscriptions.alertas_smart': true }),
-			UserSubscription.countDocuments({ 'subscriptions.alertas_cashflow': true })
+		// Suscriptores activos por alerta (desde Payments vigentes, normalizados)
+		const activeAlertSubscribersAgg = await Payment.aggregate([
+			{ $match: { status: { $in: validStatuses }, expiryDate: { $gt: now } } },
+			addCanonicalServiceStage as any,
+			{ $match: { canonicalService: { $in: [...alertServices] } } },
+			{ $group: { _id: { service: '$canonicalService', email: '$userEmail' } } },
+			{ $group: { _id: '$_id.service', users: { $sum: 1 } } },
+			{ $project: { _id: 0, service: '$_id', users: 1 } }
 		])
+		const subscribersByAlertMap: Record<string, number> = {}
+		activeAlertSubscribersAgg.forEach(r => { subscribersByAlertMap[r.service] = r.users })
 
-		// Usuarios únicos con suscripción activa por servicio (pagos no expirados)
+		// Usuarios únicos con suscripción activa por servicio (pagos no expirados, normalizados)
 		const activeSubscriptionsByService = await Payment.aggregate([
-			{ $match: { status: 'approved', expiryDate: { $gt: now } } },
-			{ $group: { _id: { service: '$service', userEmail: '$userEmail' } } },
+			{ $match: { status: { $in: validStatuses }, expiryDate: { $gt: now } } },
+			addCanonicalServiceStage as any,
+			{ $group: { _id: { service: '$canonicalService', userEmail: '$userEmail' } } },
 			{ $group: { _id: '$_id.service', users: { $sum: 1 } } },
 			{ $project: { _id: 0, service: '$_id', users: 1 } },
 			{ $sort: { users: -1 } }
@@ -124,7 +154,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 		const arpu = totalUsers > 0 ? totalRevenue / totalUsers : 0
 
 		// Últimos pagos aprobados
-		const latestPayments = await Payment.find({ status: 'approved' })
+		const latestPayments = await Payment.find({ status: { $in: validStatuses } })
 			.select('userEmail service amount currency status transactionDate expiryDate')
 			.sort({ transactionDate: -1 })
 			.limit(10)
@@ -148,9 +178,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 			revenueByCategory,
 			revenueTimeseries,
 			subscriptionsByAlert: {
-				alertas_trader: subsTrader,
-				alertas_smart: subsSmart,
-				alertas_cashflow: subsCashflow
+				alertas_trader: subscribersByAlertMap['TraderCall'] || 0,
+				alertas_smart: subscribersByAlertMap['SmartMoney'] || 0,
+				alertas_cashflow: subscribersByAlertMap['CashFlow'] || 0
 			},
 			activeSubscriptionsByService,
 			latestPayments
