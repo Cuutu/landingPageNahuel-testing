@@ -37,10 +37,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // GET /api/advisory-dates/[advisoryType] - Obtener fechas de asesoría
 async function handleGet(req: NextApiRequest, res: NextApiResponse, advisoryType: string) {
   try {
-    const advisoryDates = await AdvisoryDate.find({
-      advisoryType,
-      isActive: true
-    }).sort({ date: 1 });
+    const onlyAvailable = req.query.available === 'true';
+    const query: any = { advisoryType, isActive: true };
+    if (onlyAvailable) {
+      query.isBooked = false;
+    }
+
+    const advisoryDates = await AdvisoryDate.find(query).sort({ date: 1 });
 
     return res.status(200).json({
       success: true,

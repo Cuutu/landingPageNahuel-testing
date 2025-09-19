@@ -251,11 +251,13 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       setLoadingTurnos(true);
       console.log('📅 Cargando fechas específicas de asesoría...');
       
-      const response = await fetch('/api/advisory-dates/ConsultorioFinanciero');
+      const response = await fetch('/api/advisory-dates/ConsultorioFinanciero?available=true');
       const data = await response.json();
       
       if (data.success && data.dates) {
-        const dates = data.dates.map((date: AdvisoryDate) => ({
+        const dates = data.dates
+          .filter((d: AdvisoryDate) => !d.isBooked)
+          .map((date: AdvisoryDate) => ({
           ...date,
           date: new Date(date.date).toISOString()
         }));

@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import styles from '@/styles/AdminDashboard.module.css'
 import { useEffect, useMemo, useState } from 'react'
 import { BarChart3, PieChart as PieIcon, TrendingUp, Users, DollarSign, Activity } from 'lucide-react'
+import { useCallback } from 'react'
 
 // Carga condicional de recharts
 let ResponsiveContainer: any, LineChart: any, Line: any, XAxis: any, YAxis: any, Tooltip: any, CartesianGrid: any, PieChart: any, Pie: any, Cell: any, Legend: any
@@ -37,6 +38,8 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 	const [error, setError] = useState<string | null>(null)
 	const [data, setData] = useState<any>(null)
 	const [rangeDays, setRangeDays] = useState(30)
+	const [monthly, setMonthly] = useState<any>(null)
+	const [months, setMonths] = useState(6)
 
 	useEffect(() => {
 		const fetchData = async () => {
@@ -56,6 +59,19 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 		fetchData()
 	}, [rangeDays])
 
+	useEffect(() => {
+		const fetchMonthly = async () => {
+			try {
+				const res = await fetch(`/api/admin/analytics/monthly?months=${months}`)
+				if (res.ok) {
+					const json = await res.json()
+					setMonthly(json)
+				}
+			} catch (e) {}
+		}
+		fetchMonthly()
+	}, [months])
+
 	const currency = (n: number) => `$${Number(n || 0).toLocaleString()}`
 
 	const kpis = useMemo(() => [
@@ -69,6 +85,22 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 		date: new Date(d.date).toLocaleDateString('es-AR'),
 		total: d.total
 	}))
+
+	const monthlyBar = (monthly?.revenueByMonth || []).map((m: any) => ({
+		label: `${String(m.month).padStart(2,'0')}/${m.year}`,
+		total: m.total,
+		count: m.count,
+	}))
+
+	const monthlyArpu = (monthly?.arpuByMonth || []).map((m: any) => ({
+		label: `${String(m.month).padStart(2,'0')}/${m.year}`,
+		arpu: m.arpu
+	}))
+
+	const lastMom = (() => {
+		const arr = monthly?.mom || []
+		return arr.length ? arr[arr.length - 1] : null
+	})()
 
 	const pieColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
 
@@ -133,6 +165,64 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 								<div style={{ color: '#94a3b8' }}>Instalá recharts para ver el gráfico (npm i recharts)</div>
 							)}
 						</div>
+
+						<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16 }}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+								<BarChart3 size={20} />
+								<strong>Ingresos mensuales (últimos {months} meses)</strong>
+							</div>
+							{ResponsiveContainer && LineChart ? (
+								<div style={{ width: '100%', height: 280 }}>
+									<ResponsiveContainer>
+										<LineChart data={monthlyBar}>
+											<CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
+											<XAxis dataKey="label" stroke="#94a3b8" />
+											<YAxis stroke="#94a3b8" />
+											<Tooltip />
+											<Line type="monotone" dataKey="total" stroke="#10b981" strokeWidth={2} dot />
+										</LineChart>
+									</ResponsiveContainer>
+								</div>
+							) : null}
+						</div>
+
+						<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16 }}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+								<BarChart3 size={20} />
+								<strong>ARPU mensual</strong>
+							</div>
+							{ResponsiveContainer && LineChart ? (
+								<div style={{ width: '100%', height: 240 }}>
+									<ResponsiveContainer>
+										<LineChart data={monthlyArpu}>
+											<CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
+											<XAxis dataKey="label" stroke="#94a3b8" />
+											<YAxis stroke="#94a3b8" />
+											<Tooltip />
+											<Line type="monotone" dataKey="arpu" stroke="#f59e0b" strokeWidth={2} dot />
+										</LineChart>
+									</ResponsiveContainer>
+								</div>
+							) : null}
+						</div>
+
+						{lastMom && (
+							<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+								<div>
+									<div style={{ color: '#94a3b8' }}>Variación MoM (último mes)</div>
+									<div style={{ fontSize: 24, fontWeight: 700, color: (lastMom.revenueDelta||0) >= 0 ? '#10b981' : '#ef4444' }}>{(lastMom.revenueDelta||0).toFixed(1)}%</div>
+									<div style={{ fontSize: 12, color: '#94a3b8' }}>Ingresos</div>
+								</div>
+								<div>
+									<div style={{ color: '#94a3b8' }}>ARPU</div>
+									<div style={{ fontSize: 24, fontWeight: 700, color: (lastMom.arpuDelta||0) >= 0 ? '#10b981' : '#ef4444' }}>{(lastMom.arpuDelta||0).toFixed(1)}%</div>
+								</div>
+								<div>
+									<div style={{ color: '#94a3b8' }}>Cantidad de pagos</div>
+									<div style={{ fontSize: 24, fontWeight: 700, color: (lastMom.countDelta||0) >= 0 ? '#10b981' : '#ef4444' }}>{(lastMom.countDelta||0).toFixed(1)}%</div>
+								</div>
+							</div>
+						)}
 
 						<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
 							<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16 }}>
