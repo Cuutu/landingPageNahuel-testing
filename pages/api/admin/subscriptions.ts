@@ -34,17 +34,52 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log('✅ [SUBSCRIPTIONS] Acceso de admin confirmado:', session.user.email);
 
-    // Obtener todos los pagos aprobados
+    // ✅ IMPORTANTE: Obtener suscripciones de AMBAS fuentes
+    
+    // 1. Obtener todos los pagos aprobados (método anterior)
     const payments = await Payment.find({ 
       status: 'approved'
     })
     .populate('userId', 'name email')
     .sort({ transactionDate: -1 });
 
+    // 2. ✅ NUEVO: Obtener usuarios con activeSubscriptions activas
+    const usersWithActiveSubscriptions = await User.find({
+      'activeSubscriptions.0': { $exists: true }, // Tiene al menos 1 suscripción
+      'activeSubscriptions.isActive': true
+    }).select('name email activeSubscriptions');
+
     // Procesar suscripciones activas
     const subscriptions = [];
     const now = new Date();
     const services = ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'];
+
+    // ✅ NUEVO: Procesar activeSubscriptions de usuarios
+    for (const user of usersWithActiveSubscriptions) {
+      for (const activeSub of user.activeSubscriptions || []) {
+        if (!activeSub.isActive) continue;
+        
+        const expiryDate = new Date(activeSub.expiryDate);
+        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const status = expiryDate > now ? 'active' : 'expired';
+
+        subscriptions.push({
+          id: activeSub._id || `active_${user._id}_${activeSub.service}`,
+          userEmail: user.email,
+          userName: user.name || user.email.split('@')[0],
+          service: activeSub.service,
+          status,
+          startDate: activeSub.startDate.toISOString(),
+          expiryDate: activeSub.expiryDate.toISOString(),
+          amount: activeSub.amount || 0,
+          currency: activeSub.currency || 'ARS',
+          paymentMethod: activeSub.mercadopagoPaymentId ? 'MercadoPago' : 'Manual',
+          transactionId: activeSub.mercadopagoPaymentId || 'N/A',
+          daysUntilExpiry,
+          source: 'activeSubscriptions' // Para debug
+        });
+      }
+    }
 
     for (const payment of payments) {
       if (payment.expiryDate > now) {
