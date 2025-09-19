@@ -38,12 +38,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 async function handleGet(req: NextApiRequest, res: NextApiResponse, advisoryType: string) {
   try {
     const onlyAvailable = req.query.available === 'true';
+    const futureOnly = req.query.futureOnly !== 'false';
     const query: any = { advisoryType, isActive: true };
     if (onlyAvailable) {
       query.isBooked = false;
     }
 
-    const advisoryDates = await AdvisoryDate.find(query).sort({ date: 1 });
+    let advisoryDates = await AdvisoryDate.find(query).sort({ date: 1 });
+
+    // Excluir slots que ya hayan pasado (fecha anterior o misma fecha con hora menor)
+    if (futureOnly) {
+      const now = new Date();
+
+      advisoryDates = advisoryDates.filter((slot: any) => {
+        const slotDate = new Date(slot.date);
+        const [h, m] = (slot.time || '00:00').split(':').map((n: string) => parseInt(n, 10));
+        // Construir instante en UTC a partir del día guardado (mediodía UTC) + hora local de Montevideo
+        // Uruguay es UTC-3, por lo que sumamos 3 horas para llevarlo a UTC
+        const slotUtc = new Date(Date.UTC(
+          slotDate.getUTCFullYear(),
+          slotDate.getUTCMonth(),
+          slotDate.getUTCDate(),
+          h + 3,
+          m,
+          0,
+          0
+        ));
+        return slotUtc.getTime() > now.getTime();
+      });
+    }
 
     return res.status(200).json({
       success: true,
