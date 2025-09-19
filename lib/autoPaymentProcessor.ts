@@ -1,73 +1,51 @@
-import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
 import { getMercadoPagoPayment, isPaymentSuccessful } from '@/lib/mercadopago';
 
 /**
- * Cron job para procesar automáticamente pagos pendientes
- * Verifica el estado de pagos pendientes en MercadoPago y los procesa si están aprobados
+ * Procesa automáticamente los pagos pendientes de un usuario específico
+ * Esta función se ejecuta cuando el usuario visita la aplicación
  */
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  console.log(`📡 ${req.method} /api/cron/process-pending-payments`);
-
-  // Verificar que sea un cron job (solo GET desde Vercel)
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).json({ 
-      success: false,
-      error: 'Método no permitido' 
-    });
-  }
-
-  // Verificar autorización del cron (opcional)
-  const authHeader = req.headers.authorization;
-  const cronSecret = process.env.CRON_SECRET;
-  
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    console.log('❌ Acceso no autorizado al cron job');
-    return res.status(401).json({ 
-      success: false,
-      error: 'No autorizado' 
-    });
-  }
-
+export async function processUserPendingPayments(userEmail: string): Promise<{
+  success: boolean;
+  processed: number;
+  errors: any[];
+}> {
   try {
     await dbConnect();
-    console.log('✅ Conectado a MongoDB para procesar pagos pendientes');
-
-    // Buscar todos los pagos pendientes de los últimos 7 días
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    
+    // Buscar pagos pendientes del usuario de los últimos 3 días
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
     
     const pendingPayments = await Payment.find({
+      userEmail: userEmail,
       status: 'pending',
-      createdAt: { $gte: sevenDaysAgo },
+      createdAt: { $gte: threeDaysAgo },
       service: { $in: ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'] }
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).limit(5); // Máximo 5 pagos por usuario
 
-    console.log(`🔍 Encontrados ${pendingPayments.length} pagos pendientes para revisar`);
+    console.log(`🔍 Verificando ${pendingPayments.length} pagos pendientes para: ${userEmail}`);
 
     if (pendingPayments.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'No hay pagos pendientes para procesar',
-        processed: 0,
-        failed: 0
-      });
+      return { success: true, processed: 0, errors: [] };
     }
 
     const results = {
       processed: 0,
-      failed: 0,
       errors: [] as any[]
     };
+
+    // Buscar el usuario
+    const user = await User.findOne({ email: userEmail });
+    if (!user) {
+      console.error(`❌ Usuario no encontrado: ${userEmail}`);
+      return { success: false, processed: 0, errors: ['Usuario no encontrado'] };
+    }
 
     // Procesar cada pago pendiente
     for (const payment of pendingPayments) {
       try {
-        console.log(`🔄 Procesando pago: ${payment._id} (${payment.externalReference})`);
-
-        // Usar el external_reference para buscar el pago en MercadoPago
         const externalReference = payment.externalReference;
         
         if (!externalReference) {
@@ -75,14 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           continue;
         }
 
-        // Consultar el estado del pago en MercadoPago usando el external_reference
-        console.log(`🔍 Consultando pagos con external_reference: ${externalReference}`);
-        
-        // Buscar pagos asociados a este external_reference
-        const searchResult = await searchPaymentsByPreference(externalReference);
+        console.log(`🔄 Verificando pago: ${payment._id}`);
+
+        // Buscar pagos en MercadoPago por external_reference
+        const searchResult = await searchPaymentsByExternalReference(externalReference);
         
         if (!searchResult.success || !searchResult.payments || searchResult.payments.length === 0) {
-          console.log(`⚠️ No se encontraron pagos para el external_reference ${externalReference}`);
+          console.log(`⏳ No se encontraron pagos aprobados para: ${externalReference}`);
           continue;
         }
 
@@ -96,11 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           continue;
         }
 
-        console.log(`✅ Pago encontrado y aprobado en MercadoPago:`, {
-          paymentId: approvedPayment.id,
-          status: approvedPayment.status,
-          amount: approvedPayment.transaction_amount
-        });
+        console.log(`✅ Pago aprobado encontrado: ${approvedPayment.id}`);
 
         // Actualizar el pago en nuestra base de datos
         payment.status = 'approved';
@@ -117,22 +90,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         payment.metadata.processedAutomatically = true;
         payment.metadata.autoProcessingDate = new Date();
-        payment.metadata.originalMercadoPagoData = approvedPayment;
+        payment.metadata.processedOnUserVisit = true;
 
         await payment.save();
-        console.log(`✅ Pago ${payment._id} actualizado en la base de datos`);
-
-        // Buscar el usuario y procesar la suscripción
-        const user = await User.findById(payment.userId);
-        if (!user) {
-          console.error(`❌ Usuario no encontrado para pago ${payment._id}`);
-          results.errors.push({
-            paymentId: payment._id,
-            error: 'Usuario no encontrado'
-          });
-          results.failed++;
-          continue;
-        }
 
         // Procesar la suscripción según el tipo de servicio
         const service = payment.service;
@@ -148,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             payment.mercadopagoPaymentId
           );
           
-          console.log(`✅ Suscripción ${service} procesada para usuario: ${user.email}`);
+          console.log(`✅ Suscripción ${service} procesada para: ${user.email}`);
           
         } else if (isTraining) {
           // Procesar entrenamiento
@@ -165,15 +125,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           user.entrenamientos.push(nuevoEntrenamiento);
           await user.save();
           
-          console.log(`✅ Entrenamiento ${service} procesado para usuario: ${user.email}`);
+          console.log(`✅ Entrenamiento ${service} procesado para: ${user.email}`);
         }
 
         results.processed++;
-        console.log(`🎉 Pago ${payment._id} procesado exitosamente`);
+        console.log(`🎉 Pago ${payment._id} procesado automáticamente`);
 
       } catch (error) {
         console.error(`❌ Error procesando pago ${payment._id}:`, error);
-        results.failed++;
         results.errors.push({
           paymentId: payment._id,
           error: error instanceof Error ? error.message : 'Error desconocido'
@@ -181,44 +140,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    console.log(`✅ Procesamiento completado:`, {
-      total: pendingPayments.length,
-      processed: results.processed,
-      failed: results.failed
-    });
+    if (results.processed > 0) {
+      console.log(`🎉 Procesamiento automático completado para ${userEmail}: ${results.processed} pagos procesados`);
+    }
 
-    return res.status(200).json({
+    return {
       success: true,
-      message: `Procesamiento automático completado`,
-      total: pendingPayments.length,
       processed: results.processed,
-      failed: results.failed,
       errors: results.errors
-    });
+    };
 
   } catch (error) {
-    console.error('❌ Error en el cron job de procesamiento automático:', error);
-    return res.status(500).json({
+    console.error('❌ Error en procesamiento automático de pagos:', error);
+    return {
       success: false,
-      error: 'Error interno del servidor',
-      details: error instanceof Error ? error.message : 'Error desconocido'
-    });
+      processed: 0,
+      errors: [error instanceof Error ? error.message : 'Error desconocido']
+    };
   }
 }
 
 /**
- * Busca pagos asociados a un external_reference
+ * Busca pagos asociados a un external_reference en MercadoPago
  */
-async function searchPaymentsByPreference(externalReference: string) {
+async function searchPaymentsByExternalReference(externalReference: string) {
   try {
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
     if (!accessToken) {
       throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado');
     }
 
-    console.log(`🔍 Buscando pagos con external_reference: ${externalReference}`);
-
-    // Buscar pagos por external_reference
     const searchUrl = `https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(externalReference)}`;
     
     const response = await fetch(searchUrl, {
@@ -231,12 +182,11 @@ async function searchPaymentsByPreference(externalReference: string) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Error en búsqueda de pagos: ${response.status} ${response.statusText}`, errorText);
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
+      console.error(`Error en búsqueda de pagos: ${response.status}`, errorText);
+      return { success: false, payments: [] };
     }
 
     const data = await response.json();
-    console.log(`✅ Búsqueda completada. Encontrados ${data.results?.length || 0} pagos`);
     
     return {
       success: true,
@@ -247,8 +197,33 @@ async function searchPaymentsByPreference(externalReference: string) {
     console.error('Error buscando pagos por external_reference:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
       payments: []
     };
+  }
+}
+
+/**
+ * Verifica si un usuario necesita procesamiento automático de pagos
+ * (solo si tiene pagos pendientes recientes)
+ */
+export async function shouldProcessUserPayments(userEmail: string): Promise<boolean> {
+  try {
+    await dbConnect();
+    
+    // Verificar si hay pagos pendientes recientes (últimas 24 horas)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    
+    const pendingPaymentsCount = await Payment.countDocuments({
+      userEmail: userEmail,
+      status: 'pending',
+      createdAt: { $gte: oneDayAgo },
+      service: { $in: ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'] }
+    });
+
+    return pendingPaymentsCount > 0;
+
+  } catch (error) {
+    console.error('Error verificando si el usuario necesita procesamiento:', error);
+    return false;
   }
 }

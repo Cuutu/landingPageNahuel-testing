@@ -5,17 +5,39 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Solo aplicar a rutas administrativas
+  // Verificar token para todas las rutas (no solo admin)
+  const token = await getToken({ 
+    req: request, 
+    secret: process.env.NEXTAUTH_SECRET 
+  });
+  
+  // Si hay usuario logueado, verificar pagos pendientes en rutas específicas
+  if (token?.email && shouldCheckPendingPayments(pathname)) {
+    console.log('🔄 [MIDDLEWARE] Verificando pagos pendientes para:', token.email);
+    
+    try {
+      // Llamar al endpoint de procesamiento automático de forma asíncrona
+      // No esperamos la respuesta para no bloquear la navegación
+      fetch(`${request.nextUrl.origin}/api/auto-process-user-payments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXTAUTH_SECRET}`,
+        },
+        body: JSON.stringify({ userEmail: token.email })
+      }).catch(error => {
+        console.error('Error en procesamiento automático:', error);
+      });
+    } catch (error) {
+      console.error('Error iniciando procesamiento automático:', error);
+    }
+  }
+  
+  // Solo aplicar protección a rutas administrativas
   if (pathname.startsWith('/admin')) {
     console.log('🔒 [MIDDLEWARE] Protegiendo ruta administrativa:', pathname);
     
     try {
-      // Verificar token de autenticación
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET 
-      });
-      
       console.log('🔍 [MIDDLEWARE] Token encontrado:', !!token);
       console.log('👤 [MIDDLEWARE] Usuario:', token?.email);
       console.log('🔧 [MIDDLEWARE] Rol:', token?.role);
@@ -42,6 +64,22 @@ export async function middleware(request: NextRequest) {
   }
   
   return NextResponse.next();
+}
+
+/**
+ * Determina si debemos verificar pagos pendientes para esta ruta
+ */
+function shouldCheckPendingPayments(pathname: string): boolean {
+  // Verificar en páginas importantes donde el usuario podría necesitar acceso
+  const checkRoutes = [
+    '/alertas/trader-call',
+    '/alertas/smart-money',
+    '/entrenamientos',
+    '/perfil',
+    '/' // página principal
+  ];
+  
+  return checkRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
 }
 
 export const config = {
