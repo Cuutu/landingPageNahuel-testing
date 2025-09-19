@@ -441,6 +441,17 @@
   color: var(--text-primary);
   cursor: pointer;
   padding: 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.mobileMenuButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-50%) scale(1.05);
+}
+
+.mobileMenuButton:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 @media (min-width: 768px) {
@@ -455,11 +466,24 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--navbar-bg);
+  background: rgba(15, 15, 15, 0.98);
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   z-index: 1000;
   overflow-y: auto;
+  animation: slideInFromTop 0.3s ease-out;
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 768px) {
@@ -469,33 +493,50 @@
 }
 
 .mobileMenuContent {
-  padding: 20px 24px;
+  padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
 .mobileNavItem {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 0;
+  margin: 8px 0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .mobileNavItem:last-child {
   border-bottom: none;
 }
 
+.mobileNavItem:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
 .mobileNavLink {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   width: 100%;
-  padding: 12px 0;
+  padding: 16px 20px;
   color: var(--text-primary);
   text-decoration: none;
   background: none;
   border: none;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
   font-size: 16px;
+  font-weight: 500;
+  border-radius: 8px;
+  letter-spacing: 0.3px;
+}
+
+.mobileNavLink:hover {
+  color: var(--primary-color);
+  background: rgba(187, 134, 252, 0.08);
+  transform: translateX(4px);
 }
 
 .mobileNavLinkContainer {
@@ -549,44 +590,66 @@
   color: var(--primary-color);
 }
 
-/* Mobile Mentoring Logo Styles */
+/* Mobile Mentoring Logo Styles - Destacado como elemento principal */
 .mobileMentoringLogo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
-  padding: 14px 20px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.1), rgba(255, 165, 0, 0.05));
+  border: 2px solid rgba(255, 140, 0, 0.3);
+  border-radius: 12px;
   color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 8px;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
   letter-spacing: 0.5px;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.mobileMentoringLogo::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.mobileMentoringLogo:hover::before {
+  left: 100%;
 }
 
 .mobileMentoringLogo:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.15), rgba(255, 165, 0, 0.08));
+  border-color: rgba(255, 140, 0, 0.5);
   color: var(--text-primary);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 140, 0, 0.2);
 }
 
 .mobileMentoringImage {
-  height: 24px;
+  height: 28px;
   width: auto;
   object-fit: contain;
   transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
 .mobileUserSection {
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 16px;
-  margin-top: 16px;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  padding-top: 20px;
+  margin-top: 24px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .spinner {
@@ -605,29 +668,48 @@
 
 /* Responsive adjustments for both logos */
 @media (max-width: 768px) {
+  /* Ocultar el logo de mentoring en móvil */
   .mentoringLogo {
-    margin-left: 16px;
-  }
-  
-  .mentoringImage {
-    height: 50px;
+    display: none;
   }
   
   .logoImage {
     height: 130px;
   }
+  
+  /* Reorganizar el container para mobile */
+  .container {
+    padding: 0 16px;
+    position: relative;
+  }
+  
+  /* Mover el botón hamburguesa a la izquierda */
+  .mobileMenuButton {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+  }
+  
+  /* Centrar el logo principal */
+  .logo {
+    margin: 0 auto;
+    position: relative;
+    z-index: 5;
+  }
 }
 
 @media (max-width: 480px) {
-  .mentoringLogo {
-    margin-left: 12px;
-  }
-  
-  .mentoringImage {
-    height: 40px;
-  }
-  
   .logoImage {
     height: 100px;
+  }
+  
+  .container {
+    padding: 0 12px;
+  }
+  
+  .mobileMenuButton {
+    left: 12px;
   }
 } 
