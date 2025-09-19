@@ -67,22 +67,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         console.log(`🔄 Procesando pago: ${payment._id} (${payment.externalReference})`);
 
-        // Si no tiene preferenceId, intentar extraerlo del metadata
-        let preferenceId = payment.metadata?.preferenceId;
+        // Usar el external_reference para buscar el pago en MercadoPago
+        const externalReference = payment.externalReference;
         
-        if (!preferenceId) {
-          console.log(`⚠️ Pago ${payment._id} no tiene preferenceId, saltando`);
+        if (!externalReference) {
+          console.log(`⚠️ Pago ${payment._id} no tiene external_reference, saltando`);
           continue;
         }
 
-        // Consultar el estado del pago en MercadoPago usando la preferencia
-        console.log(`🔍 Consultando estado de preferencia: ${preferenceId}`);
+        // Consultar el estado del pago en MercadoPago usando el external_reference
+        console.log(`🔍 Consultando pagos con external_reference: ${externalReference}`);
         
-        // Buscar pagos asociados a esta preferencia
-        const searchResult = await searchPaymentsByPreference(preferenceId);
+        // Buscar pagos asociados a este external_reference
+        const searchResult = await searchPaymentsByPreference(externalReference);
         
         if (!searchResult.success || !searchResult.payments || searchResult.payments.length === 0) {
-          console.log(`⚠️ No se encontraron pagos para la preferencia ${preferenceId}`);
+          console.log(`⚠️ No se encontraron pagos para el external_reference ${externalReference}`);
           continue;
         }
 
@@ -207,17 +207,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 /**
- * Busca pagos asociados a una preferencia de MercadoPago
+ * Busca pagos asociados a un external_reference
  */
-async function searchPaymentsByPreference(preferenceId: string) {
+async function searchPaymentsByPreference(externalReference: string) {
   try {
     const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN;
     if (!accessToken) {
       throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado');
     }
 
-    // Buscar pagos por external_reference (que contiene información de la preferencia)
-    const searchUrl = `https://api.mercadopago.com/v1/payments/search?external_reference=${preferenceId}`;
+    console.log(`🔍 Buscando pagos con external_reference: ${externalReference}`);
+
+    // Buscar pagos por external_reference
+    const searchUrl = `https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(externalReference)}`;
     
     const response = await fetch(searchUrl, {
       method: 'GET',
@@ -228,10 +230,13 @@ async function searchPaymentsByPreference(preferenceId: string) {
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Error en búsqueda de pagos: ${response.status} ${response.statusText}`, errorText);
       throw new Error(`Error ${response.status}: ${response.statusText}`);
     }
 
     const data = await response.json();
+    console.log(`✅ Búsqueda completada. Encontrados ${data.results?.length || 0} pagos`);
     
     return {
       success: true,
@@ -239,7 +244,7 @@ async function searchPaymentsByPreference(preferenceId: string) {
     };
 
   } catch (error) {
-    console.error('Error buscando pagos por preferencia:', error);
+    console.error('Error buscando pagos por external_reference:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',
