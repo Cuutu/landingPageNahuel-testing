@@ -4118,10 +4118,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             new Date(sub.expiryDate) > new Date()
         );
 
-        // También verificar por rol de suscriptor
-        const hasSuscriptorRole = user.role === 'suscriptor';
-
-        isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription || hasSuscriptorRole);
+        // ✅ IMPORTANTE: Solo verificar suscripciones específicas a TraderCall
+        // NO verificar por rol general para evitar acceso cruzado entre servicios
+        isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
         
         console.log('🔍 Verificación de suscripción TraderCall:', {
           email: user.email,
@@ -4129,7 +4128,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           suscripcionActiva: !!suscripcionActiva,
           subscriptionActiva: !!subscriptionActiva,
           activeSubscription: !!activeSubscription,
-          hasSuscriptorRole,
+          activeSubscriptionDetails: activeSubscription ? {
+            service: activeSubscription.service,
+            isActive: activeSubscription.isActive,
+            expiryDate: activeSubscription.expiryDate,
+            expired: new Date(activeSubscription.expiryDate) <= new Date()
+          } : null,
           isSubscribed
         });
       }
