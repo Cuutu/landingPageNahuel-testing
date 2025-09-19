@@ -334,8 +334,19 @@ UserSchema.methods.renewSubscription = function(
     existingSub.amount = amount;
     existingSub.currency = currency;
   } else {
-    // Agregar nueva suscripción
-    this.addActiveSubscription(service, amount, currency, mercadopagoPaymentId);
+    // Agregar nueva suscripción SIN GUARDAR (evitar guardado paralelo)
+    const startDate = new Date();
+    const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    this.activeSubscriptions.push({
+      service,
+      startDate,
+      expiryDate,
+      isActive: true,
+      mercadopagoPaymentId,
+      amount,
+      currency
+    });
   }
   
   // Actualizar fechas generales
@@ -343,11 +354,12 @@ UserSchema.methods.renewSubscription = function(
   this.lastPaymentDate = new Date();
   
   // ✅ IMPORTANTE: Actualizar el rol del usuario a 'suscriptor'
-  if (this.role === 'normal') {
+  if (this.role === 'normal' || this.role === 'admin') {
     this.role = 'suscriptor';
     console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
   }
   
+  // Solo hacer UN save() al final
   return this.save();
 };
 
