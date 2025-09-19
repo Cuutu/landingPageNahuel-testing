@@ -167,11 +167,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
  */
 async function processSuccessfulPayment(payment: any, paymentInfo: any) {
   try {
-    // Buscar usuario
-    const user = await User.findById(payment.userId);
+    // Buscar usuario por ID o por email
+    let user = null;
+    
+    if (payment.userId) {
+      user = await User.findById(payment.userId);
+    }
+    
+    // Si no se encuentra por ID, buscar por email
+    if (!user && payment.userEmail) {
+      user = await User.findOne({ email: payment.userEmail });
+      console.log('🔍 Buscando usuario por email:', payment.userEmail);
+    }
+    
+    // Si aún no se encuentra, buscar por email del payer de MercadoPago
+    if (!user && paymentInfo.payer?.email) {
+      user = await User.findOne({ email: paymentInfo.payer.email });
+      console.log('🔍 Buscando usuario por payer email:', paymentInfo.payer.email);
+    }
+    
     if (!user) {
-      console.error('❌ Usuario no encontrado:', payment.userId);
+      console.error('❌ Usuario no encontrado. Intentado con:', {
+        userId: payment.userId,
+        userEmail: payment.userEmail,
+        payerEmail: paymentInfo.payer?.email
+      });
       return;
+    }
+
+    console.log('✅ Usuario encontrado:', user.email);
+
+    // Actualizar el userId en el pago si no estaba
+    if (!payment.userId) {
+      payment.userId = user._id;
+      await payment.save();
+      console.log('✅ UserId actualizado en el pago');
     }
 
     const service = payment.service;
@@ -193,6 +223,51 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         service,
         expiryDate: user.subscriptionExpiry
       });
+
+      // ✅ IMPORTANTE: Crear automáticamente entrada en admin panel
+      try {
+        const AdminSubscription = (await import('@/models/AdminSubscription')).default;
+        
+        // Verificar si ya existe
+        const existingAdminSub = await AdminSubscription.findOne({
+          userEmail: user.email,
+          service: service
+        });
+
+        if (!existingAdminSub) {
+          const startDate = new Date();
+          const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 días
+
+          const adminSubscription = new AdminSubscription({
+            userEmail: user.email,
+            service: service,
+            status: 'active',
+            amount: amount,
+            currency: currency,
+            startDate: startDate,
+            endDate: endDate,
+            mercadopagoPaymentId: paymentInfo.id,
+            createdBy: 'webhook_auto',
+            metadata: {
+              autoCreatedFromWebhook: true,
+              originalPaymentId: payment._id
+            }
+          });
+
+          await adminSubscription.save();
+          console.log('✅ Entrada de admin panel creada automáticamente:', service);
+        } else {
+          // Actualizar existente
+          existingAdminSub.status = 'active';
+          existingAdminSub.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+          existingAdminSub.mercadopagoPaymentId = paymentInfo.id;
+          await existingAdminSub.save();
+          console.log('✅ Entrada de admin panel actualizada:', service);
+        }
+      } catch (adminError) {
+        console.error('⚠️ Error creando entrada en admin panel:', adminError);
+        // No fallar el webhook por esto
+      }
 
     } else if (isTraining) {
       // Procesar entrenamiento
