@@ -11,11 +11,11 @@ import Payment from '@/models/Payment';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   console.log(`📡 ${req.method} /api/debug-webhook-status`);
 
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    res.setHeader('Allow', ['GET', 'POST']);
     return res.status(405).json({ 
       success: false,
-      error: 'Método no permitido' 
+      error: 'Método no permitido. Usa GET o POST.' 
     });
   }
 
