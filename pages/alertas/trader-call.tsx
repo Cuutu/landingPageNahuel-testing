@@ -4110,7 +4110,28 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             (!sub.fechaFin || new Date(sub.fechaFin) > new Date())
         );
 
-        isSubscribed = !!(suscripcionActiva || subscriptionActiva);
+        // ✅ IMPORTANTE: Verificar también en activeSubscriptions (MercadoPago)
+        const activeSubscription = user.activeSubscriptions?.find(
+          (sub: any) => 
+            sub.service === 'TraderCall' && 
+            sub.isActive === true &&
+            new Date(sub.expiryDate) > new Date()
+        );
+
+        // También verificar por rol de suscriptor
+        const hasSuscriptorRole = user.role === 'suscriptor';
+
+        isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription || hasSuscriptorRole);
+        
+        console.log('🔍 Verificación de suscripción TraderCall:', {
+          email: user.email,
+          role: user.role,
+          suscripcionActiva: !!suscripcionActiva,
+          subscriptionActiva: !!subscriptionActiva,
+          activeSubscription: !!activeSubscription,
+          hasSuscriptorRole,
+          isSubscribed
+        });
       }
     }
   } catch (error) {

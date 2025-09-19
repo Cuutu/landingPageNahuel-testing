@@ -4098,7 +4098,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         const suscripcionActiva = user.suscripciones?.find(
           (sub: any) => 
             sub.servicio === 'SmartMoney' && 
-            sub.activa === true &&
+            sub.activa === true && 
             new Date(sub.fechaVencimiento) > new Date()
         );
         
@@ -4106,11 +4106,32 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         const subscriptionActiva = user.subscriptions?.find(
           (sub: any) => 
             sub.tipo === 'SmartMoney' && 
-            sub.activa === true && 
+            sub.activa === true &&
             (!sub.fechaFin || new Date(sub.fechaFin) > new Date())
         );
 
-        isSubscribed = !!(suscripcionActiva || subscriptionActiva);
+        // ✅ IMPORTANTE: Verificar también en activeSubscriptions (MercadoPago)
+        const activeSubscription = user.activeSubscriptions?.find(
+          (sub: any) => 
+            sub.service === 'SmartMoney' && 
+            sub.isActive === true &&
+            new Date(sub.expiryDate) > new Date()
+        );
+
+        // También verificar por rol de suscriptor
+        const hasSuscriptorRole = user.role === 'suscriptor';
+
+        isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription || hasSuscriptorRole);
+        
+        console.log('🔍 Verificación de suscripción SmartMoney:', {
+          email: user.email,
+          role: user.role,
+          suscripcionActiva: !!suscripcionActiva,
+          subscriptionActiva: !!subscriptionActiva,
+          activeSubscription: !!activeSubscription,
+          hasSuscriptorRole,
+          isSubscribed
+        });
       }
       }
     } catch (error) {
