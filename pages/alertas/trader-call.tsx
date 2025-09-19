@@ -994,6 +994,37 @@ const SubscriberView: React.FC = () => {
     return () => clearInterval(interval);
   }, [realAlerts, lastPriceUpdate, updatePrices]);
 
+  // ✅ OPTIMIZADO: Cargar liquidez una sola vez y cachear
+  React.useEffect(() => {
+    let isMounted = true;
+    
+    const loadLiquidity = async () => {
+      try {
+        const res = await fetch('/api/liquidity/public?pool=TraderCall');
+        if (res.ok && isMounted) {
+          const json = await res.json();
+          const map: Record<string, any> = {};
+          (json.data?.distributions || []).forEach((d: any) => {
+            map[d.symbol] = d;
+          });
+          setLiquidityMap(map);
+          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
+        }
+      } catch (e) {
+        console.log('Error cargando liquidez:', e);
+      }
+    };
+
+    // Solo cargar si no hay datos de liquidez cargados
+    if (Object.keys(liquidityMap).length === 0) {
+      loadLiquidity();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [liquidityMap]);
+
   // Función para obtener precio individual de una acción (modal crear alerta)
   const fetchStockPrice = async (symbol: string) => {
     if (!symbol.trim()) {
@@ -1657,27 +1688,6 @@ const SubscriberView: React.FC = () => {
     // Obtener datos para el gráfico de torta (solo alertas activas)
     const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
     const chartSegments = createPieChartData(alertasActivas);
-
-    // Cargar liquidez para la leyenda/tooltip
-    // Nota: se carga una vez por dashboard render, podríamos mover a useEffect superior y cachear
-    // para evitar llamadas repetidas si el usuario navega tabs
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    (async () => {
-      try {
-        const res = await fetch('/api/liquidity/public?pool=TraderCall');
-        if (res.ok) {
-          const json = await res.json();
-          const map: Record<string, any> = {};
-          (json.data?.distributions || []).forEach((d: any) => {
-            map[d.symbol] = d;
-          });
-          setLiquidityMap(map);
-          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
-        }
-      } catch (e) {
-        // ignorar errores de visualización
-      }
-    })();
 
     return (
       <div className={styles.dashboardContent}>

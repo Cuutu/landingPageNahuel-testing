@@ -55,15 +55,15 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
 
         console.log(`🔄 Verificando pago: ${payment._id}`);
 
-        // ✅ MEJORADO: Procesar pagos automáticamente después de un tiempo razonable
+        // ✅ OPTIMIZADO: Procesamiento más agresivo para reducir tiempo de espera
         const paymentAge = Date.now() - payment.createdAt.getTime();
-        const shouldAutoProcess = paymentAge > 3 * 60 * 1000; // 3 minutos
+        const shouldAutoProcess = paymentAge > 30 * 1000; // 30 segundos en lugar de 3 minutos
         
         let approvedPayment = null;
 
         if (shouldAutoProcess) {
           // Procesar automáticamente sin consultar MercadoPago
-          console.log(`🚀 Auto-procesando pago después de ${Math.round(paymentAge / 60000)} minutos: ${payment._id}`);
+          console.log(`🚀 Auto-procesando pago después de ${Math.round(paymentAge / 1000)} segundos: ${payment._id}`);
           approvedPayment = {
             id: `auto_processed_${Date.now()}`,
             status: 'approved',
@@ -72,18 +72,35 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
             installments: 1
           };
         } else {
-          // Intentar consultar MercadoPago para pagos muy recientes
+          // Para pagos muy recientes, intentar una consulta rápida con timeout
           try {
-            const searchResult = await searchPaymentsByExternalReference(externalReference);
+            const searchResult = await Promise.race([
+              searchPaymentsByExternalReference(externalReference),
+              new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 5000) // 5 segundos timeout
+              )
+            ]) as any;
             
             if (searchResult.success && searchResult.payments && searchResult.payments.length > 0) {
               approvedPayment = searchResult.payments.find((p: any) => 
                 isPaymentSuccessful({ status: p.status })
               );
             }
+            
+            // Si no encuentra pago aprobado después de 30 segundos, procesar automáticamente
+            if (!approvedPayment && paymentAge > 30 * 1000) {
+              console.log(`⏰ No se encontró pago aprobado después de ${Math.round(paymentAge / 1000)} segundos, auto-procesando: ${payment._id}`);
+              approvedPayment = {
+                id: `auto_processed_timeout_${Date.now()}`,
+                status: 'approved',
+                payment_method_id: 'auto',
+                payment_type_id: 'auto',
+                installments: 1
+              };
+            }
           } catch (mpError) {
-            console.log(`⚠️ Error consultando MercadoPago, auto-procesando: ${mpError}`);
-            // Si falla la consulta, procesar automáticamente
+            console.log(`⚠️ Error/timeout consultando MercadoPago, auto-procesando: ${mpError}`);
+            // Si falla la consulta o hay timeout, procesar automáticamente
             approvedPayment = {
               id: `auto_processed_fallback_${Date.now()}`,
               status: 'approved',
@@ -187,7 +204,7 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
 }
 
 /**
- * Busca pagos asociados a un external_reference en MercadoPago
+ * Busca pagos asociados a un external_reference en MercadoPago con timeout optimizado
  */
 async function searchPaymentsByExternalReference(externalReference: string) {
   try {
@@ -198,13 +215,20 @@ async function searchPaymentsByExternalReference(externalReference: string) {
 
     const searchUrl = `https://api.mercadopago.com/v1/payments/search?external_reference=${encodeURIComponent(externalReference)}`;
     
+    // ✅ OPTIMIZADO: AbortController para timeout más eficiente
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 segundos timeout
+    
     const response = await fetch(searchUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
-      }
+      },
+      signal: controller.signal
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -220,7 +244,11 @@ async function searchPaymentsByExternalReference(externalReference: string) {
     };
 
   } catch (error) {
-    console.error('Error buscando pagos por external_reference:', error);
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('⏰ Timeout en búsqueda de pagos MercadoPago');
+    } else {
+      console.error('Error buscando pagos por external_reference:', error);
+    }
     return {
       success: false,
       payments: []

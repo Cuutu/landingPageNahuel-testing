@@ -31,19 +31,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const paymentId = data.id;
     console.log('🔔 Webhook recibido para pago:', paymentId);
 
-    // Obtener información del pago desde MercadoPago
-    const paymentResult = await getMercadoPagoPayment(paymentId.toString());
+    // ✅ OPTIMIZADO: Obtener información del pago con timeout y reintentos
+    let paymentInfo = null;
+    let attempts = 0;
+    const maxAttempts = 3;
     
-    if (!paymentResult.success) {
-      console.error('❌ Error obteniendo información del pago:', paymentResult.error);
-      return res.status(500).json({ error: 'Error obteniendo información del pago' });
+    while (attempts < maxAttempts && !paymentInfo) {
+      attempts++;
+      console.log(`🔄 Intento ${attempts}/${maxAttempts} para obtener información del pago`);
+      
+      try {
+        // Usar Promise.race para timeout más agresivo
+        const paymentResult = await Promise.race([
+          getMercadoPagoPayment(paymentId.toString()),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout webhook')), 3000) // 3 segundos
+          )
+        ]) as any;
+        
+        if (paymentResult.success) {
+          paymentInfo = paymentResult.payment;
+          break;
+        } else {
+          console.log(`⚠️ Intento ${attempts} falló:`, paymentResult.error);
+          if (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+          }
+        }
+      } catch (error) {
+        console.log(`⚠️ Timeout en intento ${attempts}:`, error);
+        if (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
+        }
+      }
     }
-
-    const paymentInfo = paymentResult.payment;
     
     if (!paymentInfo) {
-      console.error('❌ Información del pago no disponible');
-      return res.status(500).json({ error: 'Información del pago no disponible' });
+      console.error('❌ No se pudo obtener información del pago después de 3 intentos');
+      return res.status(500).json({ error: 'Error obteniendo información del pago' });
     }
     
     console.log('📊 Información del pago:', {
