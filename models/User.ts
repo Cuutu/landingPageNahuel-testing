@@ -304,6 +304,12 @@ UserSchema.methods.addActiveSubscription = function(
   this.subscriptionExpiry = expiryDate;
   this.lastPaymentDate = startDate;
   
+  // ✅ IMPORTANTE: Actualizar el rol del usuario a 'suscriptor'
+  if (this.role === 'normal') {
+    this.role = 'suscriptor';
+    console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
+  }
+  
   return this.save();
 };
 
@@ -335,6 +341,12 @@ UserSchema.methods.renewSubscription = function(
   // Actualizar fechas generales
   this.subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   this.lastPaymentDate = new Date();
+  
+  // ✅ IMPORTANTE: Actualizar el rol del usuario a 'suscriptor'
+  if (this.role === 'normal') {
+    this.role = 'suscriptor';
+    console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
+  }
   
   return this.save();
 };
