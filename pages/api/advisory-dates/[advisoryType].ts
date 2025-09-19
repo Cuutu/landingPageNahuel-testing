@@ -88,7 +88,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, advisoryTyp
     // Crear la fecha en UTC para evitar problemas de zona horaria
     // La fecha viene como "YYYY-MM-DD" desde el frontend
     const [year, month, day] = date.split('-').map(Number);
-    const utcDate = new Date(Date.UTC(year, month - 1, day)); // month - 1 porque los meses van de 0-11
+    const utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0)); // Guardar al mediodía UTC para evitar saltos de día
 
     const newAdvisoryDate = new AdvisoryDate({
       advisoryType,
@@ -152,7 +152,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, advisoryType
     // Crear la fecha en UTC para evitar problemas de zona horaria
     // La fecha viene como "YYYY-MM-DD" desde el frontend
     const [year, month, day] = date.split('-').map(Number);
-    const utcDate = new Date(Date.UTC(year, month - 1, day)); // month - 1 porque los meses van de 0-11
+    const utcDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0, 0)); // Guardar al mediodía UTC para evitar saltos de día
 
     const updatedAdvisoryDate = await AdvisoryDate.findByIdAndUpdate(
       id,

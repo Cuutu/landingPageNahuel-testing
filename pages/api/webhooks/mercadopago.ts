@@ -353,8 +353,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
                 $gte: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()),
                 $lt: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1)
               },
-              time: `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, '0')}`,
-              isBooked: false
+              time: `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, '0')}`
             });
             
             if (advisoryDate) {
@@ -399,10 +398,14 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             console.log('✅ Evento creado en Google Calendar:', eventResult.eventId);
             googleEventId = eventResult.eventId;
             
-            // Actualizar la reserva con el ID del evento
-            newBooking.googleEventId = eventResult.eventId;
-            await newBooking.save();
-            console.log('✅ Reserva actualizada con ID del evento de Google Calendar');
+            // Actualizar la reserva con el ID del evento y el link de Meet si existe
+            const bookingUpdate: any = { googleEventId: eventResult.eventId };
+            if (eventResult.meetLink) {
+              bookingUpdate.meetingLink = eventResult.meetLink;
+              console.log('🔗 Google Meet creado:', eventResult.meetLink);
+            }
+            await Booking.findByIdAndUpdate(newBooking._id, bookingUpdate);
+            console.log('✅ Reserva actualizada con datos de Google Calendar');
           } else {
             console.error('❌ Error creando evento en Google Calendar:', eventResult.error);
           }
@@ -423,16 +426,30 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             amount: amount
           });
           
-          const { sendBookingConfirmationEmail } = await import('@/lib/emailNotifications');
-          console.log('✅ Función sendBookingConfirmationEmail importada correctamente');
+          const { sendAdvisoryConfirmationEmail } = await import('@/lib/emailNotifications');
+          console.log('✅ Función sendAdvisoryConfirmationEmail importada correctamente');
           
-          await sendBookingConfirmationEmail(
+          // Preparar detalles con MeetLink si está disponible
+          const meetLinkForUser = (typeof googleEventId === 'string') ? undefined : undefined;
+          await sendAdvisoryConfirmationEmail(
             bookingUser.email,
             bookingUser.name || bookingUser.email,
-            serviceType,
-            startDate,
-            endDate,
-            amount
+            {
+              type: serviceType,
+              date: startDate.toLocaleDateString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              }),
+              time: startDate.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+              }),
+              duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
+              price: amount,
+              meetLink: (await Booking.findById(newBooking._id))?.meetingLink
+            }
           );
           
           console.log('✅ Email de confirmación enviado exitosamente a:', bookingUser.email);
@@ -465,7 +482,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             }),
             duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
             price: amount,
-            meetLink: googleEventId ? `https://calendar.google.com/event?eid=${googleEventId}` : undefined
+            meetLink: (await Booking.findById(newBooking._id))?.meetingLink
           };
           
           await sendAdminNotificationEmail(adminNotificationData);
