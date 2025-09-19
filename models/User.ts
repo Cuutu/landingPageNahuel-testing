@@ -353,10 +353,12 @@ UserSchema.methods.renewSubscription = function(
   this.subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
   this.lastPaymentDate = new Date();
   
-  // ✅ IMPORTANTE: Actualizar el rol del usuario a 'suscriptor'
-  if (this.role === 'normal' || this.role === 'admin') {
+  // ✅ IMPORTANTE: Actualizar el rol SOLO si es 'normal' (NO cambiar admin)
+  if (this.role === 'normal') {
     this.role = 'suscriptor';
     console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
+  } else if (this.role === 'admin') {
+    console.log('✅ Usuario admin mantiene su rol, suscripción agregada:', this.email);
   }
   
   // Solo hacer UN save() al final
