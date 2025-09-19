@@ -357,14 +357,39 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             });
             
             if (advisoryDate) {
+              // Reconstruir la fecha/hora exacta desde AdvisoryDate en zona America/Montevideo
+              const year = advisoryDate.date.getUTCFullYear();
+              const month = advisoryDate.date.getUTCMonth();
+              const day = advisoryDate.date.getUTCDate();
+              const [hh, mm] = (advisoryDate.time || '10:00').split(':').map((v: string) => parseInt(v, 10));
+              // Uruguay (America/Montevideo) UTC-3 (sin DST). Convertimos hora local -> UTC sumando 3h
+              const fixedStartUtc = new Date(Date.UTC(year, month, day, hh + 3, mm || 0, 0, 0));
+              const fixedEndUtc = new Date(fixedStartUtc.getTime() + Math.round((endDate.getTime() - startDate.getTime())));
+              
+              // Sobrescribir las fechas calculadas previamente para asegurar el día correcto
+              startDate = fixedStartUtc;
+              endDate = fixedEndUtc;
+              
+              // Confirmar la reserva sólo al aprobarse el pago
               advisoryDate.isBooked = true;
-              advisoryDate.confirmedBooking = true; // Marcar como confirmada por pago
-              advisoryDate.tempReservationTimestamp = undefined; // Limpiar datos temporales
+              advisoryDate.confirmedBooking = true;
+              advisoryDate.tempReservationTimestamp = undefined;
               advisoryDate.tempReservationExpiresAt = undefined;
               await advisoryDate.save();
-              console.log('✅ Fecha de asesoría marcada como reservada confirmada:', advisoryDate._id);
+              console.log('✅ Fecha de asesoría confirmada por pago:', advisoryDate._id);
+              
+              // Actualizar la reserva con la fecha corregida
+              try {
+                await Booking.findByIdAndUpdate(newBooking._id, {
+                  startDate: startDate,
+                  endDate: endDate
+                });
+                console.log('✅ Reserva actualizada con fecha/hora corregidas');
+              } catch (updateErr) {
+                console.error('⚠️ Error actualizando fechas de Booking:', updateErr);
+              }
             } else {
-              console.log('⚠️ No se encontró fecha de asesoría para marcar como reservada');
+              console.log('⚠️ No se encontró fecha de asesoría para confirmar');
             }
           } catch (advisoryError) {
             console.error('❌ Error marcando fecha de asesoría como reservada:', advisoryError);

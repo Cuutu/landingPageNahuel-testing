@@ -457,33 +457,9 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       const data = await response.json();
 
       if (data.success && data.checkoutUrl) {
-        console.log('✅ Checkout de MercadoPago creado, marcando fecha como reservada...');
-        
-        // Marcar la fecha de asesoría como reservada
-        try {
-          const bookResponse = await fetch('/api/advisory-dates/ConsultorioFinanciero/book', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              advisoryDateId: selectedDate
-            })
-          });
+        console.log('✅ Checkout de MercadoPago creado, redirigiendo al pago');
 
-          if (bookResponse.ok) {
-            console.log('✅ Fecha marcada como reservada exitosamente');
-            
-            // Actualizar la lista de fechas de asesoría
-            await loadAdvisoryDates();
-          } else {
-            console.error('❌ Error marcando fecha como reservada:', await bookResponse.json());
-          }
-        } catch (error) {
-          console.error('❌ Error marcando fecha como reservada:', error);
-        }
-        
-        // Limpiar selección inmediatamente
+        // Limpiar selección inmediatamente (la reserva real se hace en el webhook al aprobar pago)
         setSelectedDate('');
         setSelectedTime('');
         
