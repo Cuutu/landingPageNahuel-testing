@@ -137,12 +137,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const checkoutUrl = preferenceResult.initPoint;
 
-    // NO guardamos el pago en la base de datos hasta que llegue el webhook
-    // Esto evita problemas con índices únicos y valores null
-    console.log('✅ Preferencia creada, redirigiendo a checkout:', {
+    // ✅ IMPORTANTE: Crear el pago en la base de datos para que el webhook lo encuentre
+    const payment = new Payment({
+      userId: user._id,
+      userEmail: user.email,
+      service,
+      amount,
+      currency,
+      status: 'pending',
+      mercadopagoPaymentId: null, // Se actualizará en el webhook
+      externalReference: externalReference,
+      paymentMethodId: '',
+      paymentTypeId: '',
+      installments: 1,
+      transactionDate: new Date(),
+      expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      metadata: {
+        type,
+        preferenceId: preferenceResult.preferenceId,
+        createdFromCheckout: true
+      }
+    });
+
+    await payment.save();
+
+    console.log('✅ Preferencia creada y pago guardado:', {
       preferenceId: preferenceResult.preferenceId,
       externalReference: externalReference,
-      checkoutUrl: checkoutUrl
+      checkoutUrl: checkoutUrl,
+      paymentId: payment._id
     });
 
     console.log('✅ Checkout creado exitosamente:', {
@@ -151,7 +174,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       type,
       amount,
       currency,
-      externalReference: externalReference
+      externalReference: externalReference,
+      paymentId: payment._id
     });
 
     return res.status(200).json({

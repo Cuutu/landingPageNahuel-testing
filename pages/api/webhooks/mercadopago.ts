@@ -62,13 +62,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!payment) {
       console.log('🆕 Creando nuevo registro de pago para:', paymentInfo.external_reference);
       
+      // ✅ IMPORTANTE: Extraer servicio del external_reference
+      // Formato: subscription_TraderCall_userId_timestamp o training_SwingTrading_userId_timestamp
+      const externalRef = paymentInfo.external_reference;
+      let service = 'TraderCall'; // fallback
+      
+      if (externalRef) {
+        const refParts = externalRef.split('_');
+        if (refParts.length >= 2) {
+          service = refParts[1]; // TraderCall, SmartMoney, etc.
+        }
+      }
+      
+      console.log('🔍 Servicio extraído del external_reference:', {
+        externalRef,
+        extractedService: service
+      });
+      
       // Crear nuevo registro de pago con los datos del webhook
       const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
       
       payment = new Payment({
         userId: null, // Se actualizará cuando procesemos el pago
         userEmail: paymentInfo.payer?.email || '',
-        service: 'TraderCall', // Se actualizará basado en external_reference
+        service: service,
         amount: paymentInfo.transaction_amount,
         currency: paymentInfo.currency_id,
         status: paymentInfo.status,
@@ -86,6 +103,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       
       await payment.save();
+    }
+
+    // ✅ IMPORTANTE: Asegurar que el servicio esté correctamente extraído
+    if (!payment.service || payment.service === 'TraderCall') {
+      const externalRef = paymentInfo.external_reference;
+      if (externalRef) {
+        const refParts = externalRef.split('_');
+        if (refParts.length >= 2) {
+          payment.service = refParts[1]; // TraderCall, SmartMoney, etc.
+          console.log('✅ Servicio actualizado desde external_reference:', payment.service);
+        }
+      }
     }
 
     // Actualizar información del pago
