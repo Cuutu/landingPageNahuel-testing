@@ -73,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Obtener usuarios con paginación
         const users = await User.find(query)
-          .select('name email picture role createdAt lastLogin isActive subscriptions')
+          .select('name email picture role createdAt lastLogin isActive subscriptions activeSubscriptions')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(Number(limit));
@@ -83,9 +83,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Procesar usuarios para calcular ingresos mensuales
         const processedUsers = users.map(user => {
-          const ingresoMensual = user.subscriptions?.reduce((total: number, sub: any) => {
+          // ✅ IMPORTANTE: Combinar suscripciones de ambos arrays
+          const legacySubscriptions = user.subscriptions || [];
+          const activeSubscriptions = user.activeSubscriptions || [];
+          
+          // Convertir activeSubscriptions al formato esperado por el frontend
+          const convertedActiveSubscriptions = activeSubscriptions
+            .filter((sub: any) => sub.isActive && new Date(sub.expiryDate) > new Date())
+            .map((sub: any) => ({
+              tipo: sub.service, // TraderCall, SmartMoney, etc.
+              precio: sub.amount || 0,
+              fechaInicio: sub.startDate,
+              fechaFin: sub.expiryDate,
+              activa: true
+            }));
+
+          // Combinar ambos arrays, evitando duplicados por tipo
+          const allSubscriptions = [...legacySubscriptions];
+          convertedActiveSubscriptions.forEach((activeSub: any) => {
+            if (!allSubscriptions.some((legacySub: any) => legacySub.tipo === activeSub.tipo)) {
+              allSubscriptions.push(activeSub);
+            }
+          });
+
+          const ingresoMensual = allSubscriptions.reduce((total: number, sub: any) => {
             return sub.activa ? total + (sub.precio || 0) : total;
-          }, 0) || 0;
+          }, 0);
 
           return {
             _id: user._id,
@@ -96,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             createdAt: user.createdAt,
             lastLogin: user.lastLogin,
             isActive: user.isActive !== false, // Por defecto true si no existe
-            subscriptions: user.subscriptions || [],
+            subscriptions: allSubscriptions, // ✅ Array combinado
             ingresoMensual
           };
         });
