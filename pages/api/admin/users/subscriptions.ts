@@ -165,8 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        // Desactivar suscripción
-        await User.findByIdAndUpdate(userId, {
+        let subscriptionRemoved = false;
+
+        // ✅ IMPORTANTE: Buscar y desactivar en AMBOS arrays
+        
+        // 1. Desactivar en subscriptions legacy (si existe)
+        const legacyUpdateResult = await User.findByIdAndUpdate(userId, {
           $set: { 
             'subscriptions.$[elem].activa': false,
             'subscriptions.$[elem].fechaFin': new Date()
@@ -178,15 +182,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }]
         });
 
-        // Verificar si quedan suscripciones activas
+        if (legacyUpdateResult) {
+          subscriptionRemoved = true;
+          console.log(`✅ Suscripción ${tipo} desactivada en subscriptions legacy`);
+        }
+
+        // 2. ✅ NUEVO: Desactivar en activeSubscriptions (MercadoPago)
+        const activeUpdateResult = await User.findByIdAndUpdate(userId, {
+          $set: { 
+            'activeSubscriptions.$[elem].isActive': false,
+            'activeSubscriptions.$[elem].expiryDate': new Date() // Forzar expiración
+          }
+        }, {
+          arrayFilters: [{ 
+            'elem.service': tipo, 
+            'elem.isActive': true 
+          }]
+        });
+
+        if (activeUpdateResult) {
+          subscriptionRemoved = true;
+          console.log(`✅ Suscripción ${tipo} desactivada en activeSubscriptions`);
+        }
+
+        if (!subscriptionRemoved) {
+          return res.status(404).json({ 
+            error: `No se encontró suscripción activa de ${tipo} para este usuario` 
+          });
+        }
+
+        // Verificar si quedan suscripciones activas en AMBOS arrays
         const updatedUser = await User.findById(userId);
-        const hasActiveSubscriptions = updatedUser?.subscriptions?.some(
+        const hasLegacySubscriptions = updatedUser?.subscriptions?.some(
           (sub: any) => sub.activa
+        );
+        const hasActiveSubscriptions = updatedUser?.activeSubscriptions?.some(
+          (sub: any) => sub.isActive && new Date(sub.expiryDate) > new Date()
         );
 
         // Si no tiene más suscripciones activas, cambiar rol a normal (solo si no es admin)
-        if (!hasActiveSubscriptions && updatedUser?.role !== 'admin') {
+        if (!hasLegacySubscriptions && !hasActiveSubscriptions && updatedUser?.role !== 'admin') {
           await User.findByIdAndUpdate(userId, { role: 'normal' });
+          console.log(`✅ Rol cambiado a 'normal' para ${user.email} (sin suscripciones activas)`);
         }
 
         console.log(`❌ Suscripción ${tipo} desactivada para usuario ${user.email}`);
