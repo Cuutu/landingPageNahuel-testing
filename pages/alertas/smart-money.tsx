@@ -3180,6 +3180,40 @@ const SubscriberView: React.FC = () => {
         </div>
       </div>
 
+      {/* Navegación Móvil (Tabs) */}
+      <div className={styles.mobileTabs}>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'dashboard' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('dashboard')}
+        >
+          Dashboard
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'seguimiento' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('seguimiento')}
+        >
+          Seguimiento
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'vigentes' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('vigentes')}
+        >
+          Alertas
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'informes' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('informes')}
+        >
+          Informes
+        </button>
+        <button
+          className={`${styles.mobileTab} ${activeTab === 'comunidad' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('comunidad')}
+        >
+          Consultas
+        </button>
+      </div>
+
       {/* Layout Principal con Sidebar */}
       <div className={styles.mainLayout}>
         {/* Sidebar de Accesos Rápidos */}
