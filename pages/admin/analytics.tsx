@@ -92,11 +92,6 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 		count: m.count,
 	}))
 
-	const monthlyArpu = (monthly?.arpuByMonth || []).map((m: any) => ({
-		label: `${String(m.month).padStart(2,'0')}/${m.year}`,
-		arpu: m.arpu
-	}))
-
 	const lastMom = (() => {
 		const arr = monthly?.mom || []
 		return arr.length ? arr[arr.length - 1] : null
@@ -186,36 +181,12 @@ export default function AdminAnalyticsPage({ user }: AdminAnalyticsProps) {
 							) : null}
 						</div>
 
-						<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16 }}>
-							<div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-								<BarChart3 size={20} />
-								<strong>ARPU mensual</strong>
-							</div>
-							{ResponsiveContainer && LineChart ? (
-								<div style={{ width: '100%', height: 240 }}>
-									<ResponsiveContainer>
-										<LineChart data={monthlyArpu}>
-											<CartesianGrid strokeDasharray="3 3" stroke="#1f2a44" />
-											<XAxis dataKey="label" stroke="#94a3b8" />
-											<YAxis stroke="#94a3b8" />
-											<Tooltip />
-											<Line type="monotone" dataKey="arpu" stroke="#f59e0b" strokeWidth={2} dot />
-										</LineChart>
-									</ResponsiveContainer>
-								</div>
-							) : null}
-						</div>
-
 						{lastMom && (
 							<div style={{ background: '#0b1220', border: '1px solid #1f2a44', borderRadius: 12, padding: 16, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
 								<div>
 									<div style={{ color: '#94a3b8' }}>Variación MoM (último mes)</div>
 									<div style={{ fontSize: 24, fontWeight: 700, color: (lastMom.revenueDelta||0) >= 0 ? '#10b981' : '#ef4444' }}>{(lastMom.revenueDelta||0).toFixed(1)}%</div>
 									<div style={{ fontSize: 12, color: '#94a3b8' }}>Ingresos</div>
-								</div>
-								<div>
-									<div style={{ color: '#94a3b8' }}>ARPU</div>
-									<div style={{ fontSize: 24, fontWeight: 700, color: (lastMom.arpuDelta||0) >= 0 ? '#10b981' : '#ef4444' }}>{(lastMom.arpuDelta||0).toFixed(1)}%</div>
 								</div>
 								<div>
 									<div style={{ color: '#94a3b8' }}>Cantidad de pagos</div>

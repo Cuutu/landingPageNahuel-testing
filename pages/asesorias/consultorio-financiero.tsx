@@ -81,6 +81,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
   const { pricing, loading: pricingLoading } = usePricing();
   const [proximosTurnos, setProximosTurnos] = useState<TurnoDisponible[]>([]);
   const [advisoryDates, setAdvisoryDates] = useState<AdvisoryDate[]>([]);
+  // selectedDate almacenará el día seleccionado en formato YYYY-MM-DD
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -140,23 +141,10 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     console.log('🎯 handleCalendarDateSelect llamado con:', { date, events });
     
     if (events.length > 0) {
-      // Buscar la fecha de asesoría que coincida con la fecha seleccionada
-      const advisoryDate = advisoryDates.find(advisory => {
-        const advisoryDateObj = new Date(advisory.date);
-        // Comparar solo la fecha (sin hora) para evitar problemas de zona horaria
-        const advisoryDateOnly = new Date(advisoryDateObj.getUTCFullYear(), advisoryDateObj.getUTCMonth(), advisoryDateObj.getUTCDate());
-        const selectedDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        
-        return advisoryDateOnly.getTime() === selectedDateOnly.getTime();
-      });
-      
-      if (advisoryDate) {
-        console.log('✅ Fecha de asesoría encontrada:', advisoryDate);
-        setSelectedDate(advisoryDate._id);
-        setSelectedTime(advisoryDate.time);
-      } else {
-        console.log('❌ No se encontró fecha de asesoría para esta fecha');
-      }
+      // Guardar solo el día (YYYY-MM-DD) y limpiar hora para mostrar todos los horarios de ese día
+      const dayStr = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString().split('T')[0];
+      setSelectedDate(dayStr);
+      setSelectedTime('');
     } else {
       console.log('❌ No hay eventos para esta fecha');
     }
@@ -183,7 +171,10 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       // Debounce para evitar verificaciones excesivas
       const timeoutId = setTimeout(() => {
         // Verificar si la fecha seleccionada sigue disponible
-        const advisorySelected = advisoryDates.find(a => a._id === selectedDate);
+        const advisorySelected = advisoryDates.find(a => {
+          const day = new Date(a.date).toISOString().split('T')[0];
+          return day === selectedDate && a.time === selectedTime;
+        });
         if (advisorySelected && advisorySelected.isBooked) {
           console.log('⚠️ La fecha seleccionada ya no está disponible');
           setSelectedDate('');
@@ -331,7 +322,10 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     if (!selectedDate) return true; // Si no hay selección, no mostrar error
     
     // Verificar en la lista de fechas de asesoría
-    const advisorySelected = advisoryDates.find(a => a._id === selectedDate);
+    const advisorySelected = advisoryDates.find(a => {
+      const day = new Date(a.date).toISOString().split('T')[0];
+      return day === selectedDate && a.time === selectedTime;
+    });
     return advisorySelected ? !advisorySelected.isBooked : false;
   };
 
@@ -393,8 +387,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       return;
     }
 
-    // Buscar la fecha de asesoría seleccionada
-    const advisorySelected = advisoryDates.find(a => a._id === selectedDate);
+    // Buscar la fecha/horario seleccionados (día + hora)
+    const advisorySelected = advisoryDates.find(a => {
+      const day = new Date(a.date).toISOString().split('T')[0];
+      return day === selectedDate && a.time === selectedTime;
+    });
     if (!advisorySelected) {
       alert('Error: No se encontró la fecha seleccionada');
       return;
@@ -406,9 +403,9 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       return;
     }
 
-    // Crear fecha UTC para la reserva
+    // Crear fecha UTC para la reserva (día seleccionado + hora seleccionada)
     const targetDate = new Date(advisorySelected.date);
-    const [hour, minute] = advisorySelected.time.split(':').map(Number);
+    const [hour, minute] = (advisorySelected.time || selectedTime).split(':').map(Number);
     
     // Crear fecha UTC agregando 3 horas (Uruguay es UTC-3)
     const utcDate = new Date(Date.UTC(
@@ -608,32 +605,16 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                           </div>
                           <div className={styles.horariosGrid}>
                             {advisoryDates
-                              .filter(advisory => advisory._id === selectedDate)
+                              .filter(advisory => new Date(advisory.date).toISOString().split('T')[0] === selectedDate && !advisory.isBooked)
                               .map((advisory, index) => (
-                                <div key={index} className={styles.advisoryInfo}>
-                                  <div className={styles.advisoryTitle}>
-                                    <h5>{advisory.title}</h5>
-                                    {advisory.description && (
-                                      <p className={styles.advisoryDescription}>{advisory.description}</p>
-                                    )}
-                                  </div>
-                                  <div className={styles.advisoryTime}>
-                                    <Clock size={16} />
-                                    <span>{advisory.time}hs</span>
-                                  </div>
-                                  <div className={styles.advisoryDate}>
-                                    <Calendar size={16} />
-                                    <span>{formatDateForDisplay(advisory.date)}</span>
-                                  </div>
-                                  {advisory.isBooked && (
-                                    <div className={styles.advisoryBooked}>
-                                      <CheckCircle size={16} />
-                                      <span>Reservado</span>
-                                    </div>
-                                  )}
-                                </div>
-                              ))
-                            }
+                                <button
+                                  key={`${advisory._id}-${index}`}
+                                  className={`${styles.horarioButton} ${selectedTime === advisory.time ? styles.horarioSelected : ''}`}
+                                  onClick={() => setSelectedTime(advisory.time)}
+                                >
+                                  <Clock size={16} /> {advisory.time}hs
+                                </button>
+                              ))}
                           </div>
                           {selectedTime && (
                             <div className={styles.horarioConfirmado}>
@@ -744,7 +725,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         type="button"
                         className={styles.confirmarButton}
                         onClick={handleSacarTurno}
-                        disabled={!selectedDate || loading}
+                        disabled={!selectedDate || !selectedTime || loading}
                       >
                         {loading ? 'Procesando...' : 'Confirmar Turno >'}
                       </button>

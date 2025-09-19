@@ -1232,16 +1232,17 @@
 
 .horariosSection {
   margin-top: 2rem;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+  background: #ffffff;
   border-radius: 16px;
   padding: 2rem;
-  border: 1px solid rgba(139, 92, 246, 0.1);
+  border: 1px solid #e2e8f0;
+  color: #1f2937;
 }
 
 .horariosTitle {
   font-size: 1.4rem;
   font-weight: 600;
-  color: #1e293b;
+  color: #111827;
   margin-bottom: 1.5rem;
   text-align: center;
   position: relative;
@@ -1255,7 +1256,7 @@
   transform: translateX(-50%);
   width: 40px;
   height: 2px;
-  background: linear-gradient(90deg, #8B5CF6 0%, #A855F7 100%);
+  background: #8B5CF6;
   border-radius: 1px;
 }
 
@@ -1308,8 +1309,8 @@
 }
 
 .horarioButton {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  border: 2px solid #d1d5db;
   border-radius: 12px;
   padding: 1rem 1.25rem;
   cursor: pointer;
@@ -1320,7 +1321,7 @@
   gap: 0.5rem;
   font-size: 1rem;
   font-weight: 500;
-  color: #374151;
+  color: #111827;
   position: relative;
   overflow: hidden;
 }
@@ -1332,7 +1333,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  background: rgba(139, 92, 246, 0.08);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
