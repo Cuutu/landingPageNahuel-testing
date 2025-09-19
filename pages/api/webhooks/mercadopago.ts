@@ -224,50 +224,9 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         expiryDate: user.subscriptionExpiry
       });
 
-      // ✅ IMPORTANTE: Crear automáticamente entrada en admin panel
-      try {
-        const AdminSubscription = (await import('@/models/AdminSubscription')).default;
-        
-        // Verificar si ya existe
-        const existingAdminSub = await AdminSubscription.findOne({
-          userEmail: user.email,
-          service: service
-        });
-
-        if (!existingAdminSub) {
-          const startDate = new Date();
-          const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 días
-
-          const adminSubscription = new AdminSubscription({
-            userEmail: user.email,
-            service: service,
-            status: 'active',
-            amount: amount,
-            currency: currency,
-            startDate: startDate,
-            endDate: endDate,
-            mercadopagoPaymentId: paymentInfo.id,
-            createdBy: 'webhook_auto',
-            metadata: {
-              autoCreatedFromWebhook: true,
-              originalPaymentId: payment._id
-            }
-          });
-
-          await adminSubscription.save();
-          console.log('✅ Entrada de admin panel creada automáticamente:', service);
-        } else {
-          // Actualizar existente
-          existingAdminSub.status = 'active';
-          existingAdminSub.endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-          existingAdminSub.mercadopagoPaymentId = paymentInfo.id;
-          await existingAdminSub.save();
-          console.log('✅ Entrada de admin panel actualizada:', service);
-        }
-      } catch (adminError) {
-        console.error('⚠️ Error creando entrada en admin panel:', adminError);
-        // No fallar el webhook por esto
-      }
+      // ✅ La suscripción ya está activada en user.activeSubscriptions
+      // El admin panel se puede manejar manualmente si es necesario
+      console.log('✅ Suscripción procesada correctamente para:', user.email);
 
     } else if (isTraining) {
       // Procesar entrenamiento
