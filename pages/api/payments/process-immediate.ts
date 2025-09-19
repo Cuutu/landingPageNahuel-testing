@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
+import { logger } from '@/lib/logger';
 
 // Cargas diferidas para evitar dependencias pesadas si no se usan
 const importAdvisoryDate = async () => (await import('@/models/AdvisoryDate')).default;
@@ -45,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await dbConnect();
 
-    console.log(`🚀 [IMMEDIATE-PROCESS] Procesamiento inmediato para: ${session.user.email}, ref: ${externalReference}`);
+    logger.info('IMMEDIATE start', { module: 'payments', step: 'start', user: session.user.email, reference: externalReference });
 
     // Buscar el pago pendiente
     const payment = await Payment.findOne({
@@ -55,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (!payment) {
-      console.log(`⚠️ [IMMEDIATE-PROCESS] No se encontró pago pendiente para: ${externalReference}`);
+      logger.warn('IMMEDIATE payment not found', { module: 'payments', step: 'find_payment', user: session.user.email, reference: externalReference });
       return res.status(404).json({
         success: false,
         error: 'Pago no encontrado'
@@ -72,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // ✅ PROCESAMIENTO INMEDIATO: Asumir que el pago es exitoso si el usuario regresó
-    console.log(`✅ [IMMEDIATE-PROCESS] Procesando pago inmediatamente: ${payment._id}`);
+    logger.info('IMMEDIATE mark approved', { module: 'payments', step: 'mark_approved', paymentId: payment._id.toString() });
 
     // Actualizar el pago
     payment.status = 'approved';
@@ -92,6 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     payment.metadata.processedOnReturn = true;
 
     await payment.save();
+    logger.info('IMMEDIATE payment saved', { module: 'payments', step: 'payment_saved', paymentId: payment._id.toString(), status: payment.status });
 
     // Procesar según servicio
     const service = payment.service;
@@ -107,8 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         payment.currency,
         payment.mercadopagoPaymentId
       );
-      
-      console.log(`✅ [IMMEDIATE-PROCESS] Suscripción ${service} procesada para: ${user.email}`);
+      logger.info('IMMEDIATE subscription renewed', { module: 'payments', step: 'subscription', user: user.email, service });
       
     } else if (isTraining) {
       // Procesar entrenamiento inmediatamente
@@ -124,11 +125,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       user.entrenamientos.push(nuevoEntrenamiento);
       await user.save();
-      
-      console.log(`✅ [IMMEDIATE-PROCESS] Entrenamiento ${service} procesado para: ${user.email}`);
+      logger.info('IMMEDIATE training activated', { module: 'payments', step: 'training', user: user.email, service });
     } else if (isBooking) {
       // Fallback para reservas (asesorías)
-      console.log('✅ [IMMEDIATE-PROCESS] Procesando reserva (fallback webhook)...');
+      logger.info('IMMEDIATE booking start', { module: 'payments', step: 'booking_start', user: user.email, reference: externalReference });
       try {
         const refParts = externalReference.split('_');
         const serviceType = refParts[1];
@@ -172,10 +172,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               advisoryDate.tempReservationExpiresAt = undefined;
               await advisoryDate.save();
             } else {
-              console.log('⚠️ [IMMEDIATE-PROCESS] AdvisoryDate no encontrada para confirmar');
+              logger.warn('IMMEDIATE advisoryDate not found', { module: 'payments', step: 'advisory_lookup', reference: externalReference });
             }
           } catch (adErr) {
-            console.error('❌ [IMMEDIATE-PROCESS] Error confirmando AdvisoryDate:', adErr);
+            logger.error('IMMEDIATE advisory error', { module: 'payments', step: 'advisory_error', error: (adErr as Error).message });
           }
         }
 
@@ -197,7 +197,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           updatedAt: new Date()
         });
         await newBooking.save();
-        console.log('✅ [IMMEDIATE-PROCESS] Booking creado (fallback):', newBooking._id);
+        logger.info('IMMEDIATE booking saved', { module: 'payments', step: 'booking_saved', bookingId: newBooking._id.toString() });
 
         // Calendar + Meet
         try {
@@ -213,12 +213,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               googleEventId: eventResult.eventId,
               ...(eventResult.meetLink ? { meetingLink: eventResult.meetLink } : {})
             });
-            console.log('✅ [IMMEDIATE-PROCESS] Evento creado (fallback):', eventResult.eventId);
+            logger.info('IMMEDIATE calendar created', { module: 'payments', step: 'calendar_created', eventId: eventResult.eventId, hasMeet: !!eventResult.meetLink });
           } else {
-            console.error('❌ [IMMEDIATE-PROCESS] Error creando evento (fallback):', eventResult.error);
+            logger.error('IMMEDIATE calendar error', { module: 'payments', step: 'calendar_error', error: eventResult.error });
           }
         } catch (calErr) {
-          console.error('❌ [IMMEDIATE-PROCESS] Error Calendar (fallback):', calErr);
+          logger.error('IMMEDIATE calendar exception', { module: 'payments', step: 'calendar_exception', error: (calErr as Error).message });
         }
 
         // Emails
@@ -247,17 +247,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             price: payment.amount,
             meetLink: (await Booking.findById(newBooking._id))?.meetingLink
           });
-          console.log('✅ [IMMEDIATE-PROCESS] Emails enviados (fallback)');
+          logger.info('IMMEDIATE emails sent', { module: 'payments', step: 'emails_sent', user: bookingUser.email });
         } catch (emailErr) {
-          console.error('❌ [IMMEDIATE-PROCESS] Error enviando emails (fallback):', emailErr);
+          logger.error('IMMEDIATE email error', { module: 'payments', step: 'emails_error', error: (emailErr as Error).message });
         }
 
       } catch (bookingErr) {
-        console.error('❌ [IMMEDIATE-PROCESS] Error procesando reserva (fallback):', bookingErr);
+        logger.error('IMMEDIATE booking error', { module: 'payments', step: 'booking_exception', error: (bookingErr as Error).message });
       }
     }
 
-    console.log(`🎉 [IMMEDIATE-PROCESS] Pago ${payment._id} procesado inmediatamente`);
+    logger.info('IMMEDIATE done', { module: 'payments', step: 'done', paymentId: payment._id.toString() });
 
     return res.status(200).json({
       success: true,

@@ -41,6 +41,15 @@ export default function PaymentPending() {
         
         // Si el pago fue aprobado, redirigir a éxito
         if (data.status === 'approved') {
+          try {
+            await fetch('/api/payments/process-immediate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ externalReference: reference, paymentId: data.paymentId })
+            });
+          } catch (e) {
+            console.error('Error en fallback process-immediate (pending):', e);
+          }
           router.push(`/payment/success?reference=${reference}`);
         }
       }

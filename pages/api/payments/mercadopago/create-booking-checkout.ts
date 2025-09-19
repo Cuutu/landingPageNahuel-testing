@@ -64,7 +64,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Crear URLs de retorno
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const rawBase = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
     const externalReference = `booking_${serviceType}_${user._id}_${Date.now()}`;
     
     const successUrl = `${baseUrl}/payment/success?reference=${externalReference}&type=booking`;

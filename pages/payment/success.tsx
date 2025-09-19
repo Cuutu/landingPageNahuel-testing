@@ -30,6 +30,19 @@ export default function PaymentSuccess() {
       
       if (data.success) {
         setPaymentDetails(data);
+
+        // Fallback: si está aprobado, disparar procesamiento inmediato para crear Booking/Calendar/emails
+        if (data.status === 'approved') {
+          try {
+            await fetch('/api/payments/process-immediate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ externalReference: reference, paymentId: data.paymentId })
+            });
+          } catch (e) {
+            console.error('Error en fallback process-immediate:', e);
+          }
+        }
       }
     } catch (error) {
       console.error('Error verificando pago:', error);
