@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
 import { getMercadoPagoPayment, isPaymentSuccessful, isPaymentPending, isPaymentRejected } from '@/lib/mercadopago';
+import { PaymentErrorHandler } from '@/lib/paymentErrorHandler';
 
 /**
  * API de webhooks para MercadoPago
@@ -181,6 +182,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('❌ Error procesando webhook:', error);
+    
+    // Log estructurado del error
+    PaymentErrorHandler.logPaymentError(
+      'webhook_processing',
+      'UNKNOWN_ERROR',
+      { 
+        webhookData: req.body,
+        userAgent: req.headers['user-agent'],
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
+      },
+      error
+    );
+    
     return res.status(500).json({ 
       error: 'Error interno del servidor' 
     });
@@ -528,10 +542,45 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     payment.updatedAt = new Date();
     await payment.save();
 
+    // Enviar email de confirmación de pago exitoso
+    try {
+      const { sendPaymentSuccessEmail } = await import('@/lib/emailNotifications');
+      await sendPaymentSuccessEmail(
+        user.email,
+        user.name || user.email,
+        {
+          service: payment.service,
+          amount: payment.amount,
+          currency: payment.currency,
+          paymentId: paymentInfo.id,
+          transactionDate: new Date(),
+          paymentMethod: paymentInfo.payment_method_id
+        }
+      );
+      console.log('✅ Email de confirmación de pago exitoso enviado');
+    } catch (emailError) {
+      console.error('❌ Error enviando email de confirmación:', emailError);
+      // No es crítico, el pago ya está procesado
+    }
+
     console.log('✅ Pago procesado exitosamente:', paymentInfo.id);
 
   } catch (error) {
     console.error('❌ Error procesando pago exitoso:', error);
+    
+    // Log estructurado del error
+    PaymentErrorHandler.logPaymentError(
+      'successful_payment_processing',
+      'UNKNOWN_ERROR',
+      { 
+        paymentId: paymentInfo?.id,
+        userId: user?._id,
+        userEmail: user?.email,
+        service: payment?.service
+      },
+      error
+    );
+    
     throw error;
   }
 }
@@ -546,6 +595,41 @@ async function processRejectedPayment(payment: any, paymentInfo: any) {
     payment.updatedAt = new Date();
     await payment.save();
 
+    // Buscar usuario para enviar notificación
+    let user = null;
+    if (payment.userId) {
+      user = await User.findById(payment.userId);
+    }
+    if (!user && payment.userEmail) {
+      user = await User.findOne({ email: payment.userEmail });
+    }
+    if (!user && paymentInfo.payer?.email) {
+      user = await User.findOne({ email: paymentInfo.payer.email });
+    }
+
+    // Enviar email de notificación de pago fallido
+    if (user) {
+      try {
+        const { sendPaymentFailedEmail } = await import('@/lib/emailNotifications');
+        await sendPaymentFailedEmail(
+          user.email,
+          user.name || user.email,
+          {
+            service: payment.service,
+            amount: payment.amount,
+            currency: payment.currency,
+            errorCode: paymentInfo.status_detail,
+            errorMessage: paymentInfo.status_detail,
+            externalReference: payment.externalReference
+          }
+        );
+        console.log('✅ Email de notificación de pago fallido enviado');
+      } catch (emailError) {
+        console.error('❌ Error enviando email de notificación de pago fallido:', emailError);
+        // No es crítico
+      }
+    }
+
     console.log('❌ Pago rechazado procesado:', {
       paymentId: paymentInfo.id,
       reason: paymentInfo.status_detail
@@ -553,6 +637,21 @@ async function processRejectedPayment(payment: any, paymentInfo: any) {
 
   } catch (error) {
     console.error('❌ Error procesando pago rechazado:', error);
+    
+    // Log estructurado del error
+    PaymentErrorHandler.logPaymentError(
+      'rejected_payment_processing',
+      'UNKNOWN_ERROR',
+      { 
+        paymentId: paymentInfo?.id,
+        userId: user?._id,
+        userEmail: user?.email,
+        service: payment?.service,
+        rejectionReason: paymentInfo?.status_detail
+      },
+      error
+    );
+    
     throw error;
   }
 } 
