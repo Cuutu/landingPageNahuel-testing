@@ -145,7 +145,7 @@ export default function PaymentSuccess() {
           <h1 className={styles.title}>¡Pago Exitoso!</h1>
           
           <p className={styles.subtitle}>
-            Tu pago ha sido procesado correctamente. Ya puedes acceder a todo el contenido.
+            Tu pago ha sido procesado correctamente. En 30 segundos podrás acceder a todo el contenido!
           </p>
 
           {paymentDetails && (
@@ -213,40 +213,12 @@ export default function PaymentSuccess() {
               </Link>
             )}
             
-            <Link href="/" className={`${styles.button} ${styles.secondaryButton}`}>
+            <Link href="/" className={`${styles.button} ${styles.homeButton}`}>
               <Home size={20} />
               Volver al Inicio
             </Link>
           </div>
 
-          <div className={styles.info}>
-            <p>
-              <strong>¿Qué sigue?</strong>
-            </p>
-            <ul>
-              {paymentDetails?.service && ['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) && (
-                <>
-                  <li>Recibirás notificaciones de nuevas alertas</li>
-                  <li>Acceso completo a todos los recursos</li>
-                  <li>Soporte prioritario durante tu suscripción</li>
-                </>
-              )}
-              {paymentDetails?.service && ['SwingTrading', 'DowJones'].includes(paymentDetails.service) && (
-                <>
-                  <li>Acceso completo al entrenamiento</li>
-                  <li>Materiales descargables disponibles</li>
-                  <li>Soporte durante todo el curso</li>
-                </>
-              )}
-              {paymentDetails?.service && paymentDetails.service.includes('booking') && (
-                <>
-                  <li>Recibirás un email de confirmación</li>
-                  <li>Link de Google Meet en tu email</li>
-                  <li>Recordatorio 24h antes de la cita</li>
-                </>
-              )}
-            </ul>
-          </div>
 
           <div className={styles.supportInfo}>
             <p>
