@@ -119,7 +119,6 @@ export default function PaymentFailed() {
         'cc_rejected_blacklist': 'Tarjeta en lista negra',
         'cc_rejected_insufficient_data': 'Datos insuficientes',
         'cc_rejected_bad_filled_other': 'Datos de la tarjeta incorrectos',
-        'cc_rejected_high_risk': 'Transacción rechazada por seguridad',
         'cc_rejected_do_not_honor': 'Banco no autoriza la transacción',
         'cc_rejected_expired': 'Tarjeta expirada',
         'cc_rejected_restricted': 'Tarjeta restringida',

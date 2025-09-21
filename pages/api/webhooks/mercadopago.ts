@@ -574,8 +574,6 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       'UNKNOWN_ERROR',
       { 
         paymentId: paymentInfo?.id,
-        userId: user?._id,
-        userEmail: user?.email,
         service: payment?.service
       },
       error
@@ -644,8 +642,6 @@ async function processRejectedPayment(payment: any, paymentInfo: any) {
       'UNKNOWN_ERROR',
       { 
         paymentId: paymentInfo?.id,
-        userId: user?._id,
-        userEmail: user?.email,
         service: payment?.service,
         rejectionReason: paymentInfo?.status_detail
       },
