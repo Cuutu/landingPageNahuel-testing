@@ -132,7 +132,7 @@ const NonSubscriberView: React.FC<{
     
     try {
       // Obtener el precio dinámico del sistema
-      const subscriptionPrice = pricing?.alertas?.traderCall?.monthly || 15000;
+      const subscriptionPrice = pricing?.alertas?.smartMoney?.monthly || 22000;
       
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',
@@ -140,7 +140,7 @@ const NonSubscriberView: React.FC<{
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service: 'TraderCall',
+          service: 'SmartMoney',
           amount: subscriptionPrice,
           currency: 'ARS',
           type: 'subscription'
