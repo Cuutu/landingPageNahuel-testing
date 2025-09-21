@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let attempts = 0;
     const maxAttempts = 3;
     
-    while (attempts < maxAttempts && !paymentInfo) {
+    while (attempts < maxAttempts && !paymentInfo) { 
       attempts++;
       console.log(`🔄 Intento ${attempts}/${maxAttempts} para obtener información del pago`);
       
