@@ -1903,15 +1903,17 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // Mostrar TODAS las alertas activas (compradas pero no vendidas) en formato lista
-    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
+    // Mostrar solo las alertas que ya moviste a seguimiento (availableForPurchase: false)
+    const alertasEnSeguimiento = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE' && alert.availableForPurchase === false
+    );
     
     return (
       <div className={styles.seguimientoContent}>
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Todas las alertas activas que has comprado y están en seguimiento
+            Alertas que has movido a seguimiento (ya no disponibles para nuevos clientes)
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -1959,11 +1961,11 @@ const SubscriberView: React.FC = () => {
             <div className={styles.loadingSpinner}></div>
             <p>Cargando alertas...</p>
           </div>
-        ) : alertasActivas.length === 0 ? (
+        ) : alertasEnSeguimiento.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📊</div>
             <h3>No hay alertas en seguimiento</h3>
-            <p>Las alertas que compres aparecerán aquí para su seguimiento.</p>
+            <p>Las alertas que muevas desde "Alertas Vigentes" aparecerán aquí para su seguimiento.</p>
             {userRole === 'admin' && (
               <button 
                 className={styles.createFirstAlertButton}
@@ -1981,21 +1983,21 @@ const SubscriberView: React.FC = () => {
                 <div className={styles.summaryIcon}>📊</div>
                 <div className={styles.summaryContent}>
                   <span className={styles.summaryLabel}>Total Alertas</span>
-                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                  <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
                 </div>
               </div>
               <div className={styles.summaryCard}>
                 <div className={styles.summaryIcon}>🟢</div>
                 <div className={styles.summaryContent}>
                   <span className={styles.summaryLabel}>En Seguimiento</span>
-                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                  <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
                 </div>
               </div>
             </div>
             
-            {/* Lista de alertas activas */}
+            {/* Lista de alertas en seguimiento */}
             <div className={styles.alertsList}>
-              {alertasActivas.map((alert) => (
+              {alertasEnSeguimiento.map((alert) => (
                 <div key={alert.id} className={styles.alertCard}>
                   <div className={styles.alertHeader}>
                     <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
@@ -2843,8 +2845,8 @@ const SubscriberView: React.FC = () => {
                 </span>
               </label>
               <p className={styles.checkboxDescription}>
-                Marca esta opción si quieres que esta alerta aparezca en la sección "Alertas Vigentes" 
-                para que los clientes puedan comprarla ahora.
+                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
               </p>
             </div>
           </div>

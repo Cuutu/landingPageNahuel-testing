@@ -271,7 +271,7 @@ const AlertSchema: Schema = new Schema({
   // ✅ NUEVO: Campo para controlar disponibilidad para nuevos clientes
   availableForPurchase: {
     type: Boolean,
-    default: false
+    default: true
   },
   // Nuevos campos para imágenes
   chartImage: CloudinaryImageSchema, // Imagen principal del gráfico
