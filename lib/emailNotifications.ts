@@ -1,5 +1,6 @@
 import { sendEmail, createTrainingConfirmationTemplate, createAdvisoryConfirmationTemplate, createAdminNotificationTemplate, createAdminContactNotificationTemplate } from '@/lib/emailService';
 import { createAdminNewSubscriberTemplate } from '@/lib/emailService';
+import { createSubscriptionConfirmationTemplate } from '@/lib/emailService';
 
 /**
  * Envía email de confirmación para entrenamiento
@@ -241,6 +242,33 @@ export async function sendAdminNewSubscriberEmail(details: {
     console.log('✅ Email de nuevo suscriptor enviado al admin');
   } catch (error) {
     console.error('❌ Error enviando email de nuevo suscriptor al admin:', error);
+  }
+}
+
+/**
+ * Envía email de confirmación de suscripción al usuario
+ */
+export async function sendSubscriptionConfirmationEmail(params: {
+  userEmail: string;
+  userName: string;
+  service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  expiryDate?: Date | string;
+}) {
+  try {
+    console.log('📧 Enviando confirmación de suscripción a usuario:', params.userEmail);
+    const html = createSubscriptionConfirmationTemplate({
+      userName: params.userName,
+      service: params.service,
+      expiryDate: params.expiryDate
+    });
+    await sendEmail({
+      to: params.userEmail,
+      subject: `✅ Suscripción Activa - ${params.service}`,
+      html
+    });
+    console.log('✅ Confirmación de suscripción enviada al usuario');
+  } catch (error) {
+    console.error('❌ Error enviando confirmación de suscripción al usuario:', error);
   }
 }
 

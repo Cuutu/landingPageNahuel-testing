@@ -1291,3 +1291,51 @@ export function createNotificationEmailTemplate({
     </html>
   `;
 } 
+
+/**
+ * Plantilla para confirmación de suscripción al usuario
+ */
+export function createSubscriptionConfirmationTemplate(details: {
+  userName: string;
+  service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  expiryDate?: Date | string;
+  featuresUrl?: string;
+}): string {
+  const serviceInfo: Record<string, { name: string; emoji: string; url: string }> = {
+    TraderCall: { name: 'Trader Call', emoji: '📈', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/trader-call` },
+    SmartMoney: { name: 'Smart Money', emoji: '💡', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/smart-money` },
+    CashFlow: { name: 'Cash Flow', emoji: '💵', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas` }
+  };
+  const svc = serviceInfo[details.service] || { name: details.service, emoji: '🔔', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas` };
+  const expiryStr = details.expiryDate ? new Date(details.expiryDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
+
+  const featuresHtml = `
+    <ul style="margin: 0; padding-left: 20px;">
+      <li>🔔 Notificaciones en tiempo real de nuevas alertas</li>
+      <li>📊 Tablero con métricas y rendimiento histórico</li>
+      <li>🗂️ Acceso a informes y análisis recientes</li>
+      <li>⚙️ Preferencias personalizables de notificación</li>
+    </ul>
+  `;
+
+  return createNotificationEmailTemplate({
+    title: `${svc.emoji} Suscripción Activa: ${svc.name}`,
+    content: `
+      <p>¡Gracias por suscribirte, <strong>${details.userName}</strong>! 🎉</p>
+      <p>Tu suscripción a <strong>${svc.name}</strong> fue activada exitosamente.</p>
+      ${expiryStr ? `<p><strong>Vencimiento:</strong> ${expiryStr}</p>` : ''}
+
+      <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
+        <h4 style="margin: 0 0 10px; color: #1e293b;">Funciones para suscriptores</h4>
+        ${featuresHtml}
+      </div>
+
+      <p>Podés acceder desde aquí:</p>
+      <p><a href="${svc.url}" style="display:inline-block;background:#10b981;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Ir a ${svc.name}</a></p>
+    `,
+    notificationType: 'success',
+    urgency: 'normal',
+    buttonText: `Ir a ${svc.name}`,
+    buttonUrl: svc.url
+  });
+}

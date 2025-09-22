@@ -291,6 +291,26 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
       }
 
+      // 📧 Confirmación de suscripción al usuario (idempotente)
+      try {
+        if (!payment.metadata) payment.metadata = {};
+        if (!payment.metadata.userSubscriptionConfirmationSent) {
+          const { sendSubscriptionConfirmationEmail } = await import('@/lib/emailNotifications');
+          await sendSubscriptionConfirmationEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: service,
+            expiryDate: user.subscriptionExpiry
+          });
+          payment.metadata.userSubscriptionConfirmationSent = true;
+          await payment.save();
+        } else {
+          console.log('ℹ️ Confirmación de suscripción al usuario ya enviada previamente.');
+        }
+      } catch (e) {
+        console.error('❌ Error enviando confirmación de suscripción al usuario:', e);
+      }
+
     } else if (isTraining) {
       // Procesar entrenamiento
       const nuevoEntrenamiento = {

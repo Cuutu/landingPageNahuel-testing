@@ -123,6 +123,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
     }
 
+    // 📧 Confirmación de suscripción al usuario (idempotente)
+    try {
+      if (!pendingPayment.metadata) pendingPayment.metadata = {};
+      if (!pendingPayment.metadata.userSubscriptionConfirmationSent) {
+        const { sendSubscriptionConfirmationEmail } = await import('@/lib/emailNotifications');
+        await sendSubscriptionConfirmationEmail({
+          userEmail: user.email,
+          userName: user.name || user.email,
+          service: pendingPayment.service as any,
+          expiryDate: user.subscriptionExpiry
+        });
+        pendingPayment.metadata.userSubscriptionConfirmationSent = true;
+        await pendingPayment.save();
+      } else {
+        console.log('ℹ️ Confirmación de suscripción al usuario ya enviada previamente (manual).');
+      }
+    } catch (e) {
+      console.error('❌ Error enviando confirmación de suscripción al usuario (manual):', e);
+    }
+
     // Obtener usuario actualizado para verificar los cambios
     const updatedUser = await User.findById(user._id);
     
