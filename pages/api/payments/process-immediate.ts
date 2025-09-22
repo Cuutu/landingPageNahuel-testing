@@ -110,7 +110,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         payment.mercadopagoPaymentId
       );
       logger.info('IMMEDIATE subscription renewed', { module: 'payments', step: 'subscription', user: user.email, service });
-      
+
+      // Emails (idempotentes) para suscripción
+      try {
+        if (!payment.metadata) payment.metadata = {};
+        // Admin
+        if (!payment.metadata.adminNewSubscriberNotified) {
+          const { sendAdminNewSubscriberEmail } = await importEmails();
+          await sendAdminNewSubscriberEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: service as any,
+            amount: payment.amount,
+            currency: payment.currency,
+            paymentId: payment.mercadopagoPaymentId,
+            transactionDate: new Date(),
+            expiryDate: user.subscriptionExpiry
+          });
+          payment.metadata.adminNewSubscriberNotified = true;
+          await payment.save();
+        }
+        // Usuario
+        if (!payment.metadata.userSubscriptionConfirmationSent) {
+          const { sendSubscriptionConfirmationEmail } = await importEmails();
+          await sendSubscriptionConfirmationEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: service as any,
+            expiryDate: user.subscriptionExpiry
+          });
+          payment.metadata.userSubscriptionConfirmationSent = true;
+          await payment.save();
+        }
+      } catch (emailErr) {
+        logger.error('IMMEDIATE subscription emails error', { module: 'payments', step: 'emails', error: (emailErr as Error).message });
+      }
+       
     } else if (isTraining) {
       // Procesar entrenamiento inmediatamente
       const nuevoEntrenamiento = {

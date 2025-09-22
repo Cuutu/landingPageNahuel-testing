@@ -45,7 +45,7 @@ export const createSubscriptionPreference = async (
         pending: pendingUrl
       },
       auto_return: 'approved',
-      notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
+      notification_url: `${(process.env.NEXTAUTH_URL || '').replace(/\/$/, '')}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
       // NO incluir payment_methods para permitir TODOS los métodos disponibles
@@ -113,7 +113,7 @@ export const createTrainingPreference = async (
         pending: pendingUrl
       },
       auto_return: 'approved',
-      notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
+      notification_url: `${(process.env.NEXTAUTH_URL || '').replace(/\/$/, '')}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
       // NO incluir payment_methods para permitir TODOS los métodos disponibles
@@ -283,7 +283,7 @@ export const createMercadoPagoPreference = async (
         pending: pendingUrl
       },
       auto_return: 'approved',
-      notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
+      notification_url: `${(process.env.NEXTAUTH_URL || '').replace(/\/$/, '')}/api/webhooks/mercadopago`,
       expires: true,
       expiration_date_to: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutos
       // NO incluir payment_methods para permitir TODOS los métodos disponibles
