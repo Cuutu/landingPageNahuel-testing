@@ -269,17 +269,24 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
 
       // 📧 Notificar al admin sobre el nuevo suscriptor
       try {
-        const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
-        await sendAdminNewSubscriberEmail({
-          userEmail: user.email,
-          userName: user.name || user.email,
-          service: service,
-          amount,
-          currency,
-          paymentId: paymentInfo.id,
-          transactionDate: new Date(),
-          expiryDate: user.subscriptionExpiry
-        });
+        if (!payment.metadata) payment.metadata = {};
+        if (!payment.metadata.adminNewSubscriberNotified) {
+          const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
+          await sendAdminNewSubscriberEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: service,
+            amount,
+            currency,
+            paymentId: paymentInfo.id,
+            transactionDate: new Date(),
+            expiryDate: user.subscriptionExpiry
+          });
+          payment.metadata.adminNewSubscriberNotified = true;
+          await payment.save();
+        } else {
+          console.log('ℹ️ Notificación admin ya enviada previamente para este pago.');
+        }
       } catch (e) {
         console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
       }

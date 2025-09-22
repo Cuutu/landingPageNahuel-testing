@@ -101,17 +101,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // 📧 Notificar al admin sobre el nuevo suscriptor
     try {
-      const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
-      await sendAdminNewSubscriberEmail({
-        userEmail: user.email,
-        userName: user.name || user.email,
-        service: pendingPayment.service,
-        amount: pendingPayment.amount,
-        currency: pendingPayment.currency,
-        paymentId: pendingPayment.mercadopagoPaymentId,
-        transactionDate: new Date(),
-        expiryDate: user.subscriptionExpiry
-      });
+      if (!pendingPayment.metadata) pendingPayment.metadata = {};
+      if (!pendingPayment.metadata.adminNewSubscriberNotified) {
+        const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
+        await sendAdminNewSubscriberEmail({
+          userEmail: user.email,
+          userName: user.name || user.email,
+          service: pendingPayment.service,
+          amount: pendingPayment.amount,
+          currency: pendingPayment.currency,
+          paymentId: pendingPayment.mercadopagoPaymentId,
+          transactionDate: new Date(),
+          expiryDate: user.subscriptionExpiry
+        });
+        pendingPayment.metadata.adminNewSubscriberNotified = true;
+        await pendingPayment.save();
+      } else {
+        console.log('ℹ️ Notificación admin ya enviada previamente para este pago (manual).');
+      }
     } catch (e) {
       console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
     }
