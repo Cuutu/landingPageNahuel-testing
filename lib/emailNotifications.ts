@@ -1,4 +1,5 @@
 import { sendEmail, createTrainingConfirmationTemplate, createAdvisoryConfirmationTemplate, createAdminNotificationTemplate, createAdminContactNotificationTemplate } from '@/lib/emailService';
+import { createAdminNewSubscriberTemplate } from '@/lib/emailService';
 
 /**
  * Envía email de confirmación para entrenamiento
@@ -204,6 +205,42 @@ export async function sendAdminContactNotificationEmail(
   } catch (error) {
     console.error('❌ Error al enviar notificación de contacto al admin:', error);
     throw error;
+  }
+}
+
+/**
+ * Envía notificación al admin sobre nuevo suscriptor de alertas
+ */
+export async function sendAdminNewSubscriberEmail(details: {
+  userEmail: string;
+  userName: string;
+  service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  amount?: number;
+  currency?: string;
+  paymentId?: string;
+  transactionDate?: Date;
+  expiryDate?: Date | string;
+}) {
+  try {
+    console.log('📧 Enviando notificación al admin sobre nuevo suscriptor');
+
+    const html = createAdminNewSubscriberTemplate(details);
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+
+    if (!adminEmail) {
+      console.error('❌ No se encontró email válido para el administrador');
+      throw new Error('Email del administrador no configurado');
+    }
+
+    await sendEmail({
+      to: adminEmail,
+      subject: `🔔 Nuevo Suscriptor - ${details.service} - ${details.userName || details.userEmail}`,
+      html
+    });
+
+    console.log('✅ Email de nuevo suscriptor enviado al admin');
+  } catch (error) {
+    console.error('❌ Error enviando email de nuevo suscriptor al admin:', error);
   }
 }
 

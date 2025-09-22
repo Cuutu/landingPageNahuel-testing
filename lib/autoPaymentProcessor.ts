@@ -152,6 +152,23 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
           );
           
           console.log(`✅ Suscripción ${service} procesada para: ${user.email}`);
+
+          // 📧 Notificar al admin sobre el nuevo suscriptor
+          try {
+            const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
+            await sendAdminNewSubscriberEmail({
+              userEmail: user.email,
+              userName: user.name || user.email,
+              service: service,
+              amount: payment.amount,
+              currency: payment.currency,
+              paymentId: payment.mercadopagoPaymentId,
+              transactionDate: new Date(),
+              expiryDate: user.subscriptionExpiry
+            });
+          } catch (e) {
+            console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
+          }
           
         } else if (isTraining) {
           // Procesar entrenamiento

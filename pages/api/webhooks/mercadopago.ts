@@ -267,6 +267,23 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       // El admin panel se puede manejar manualmente si es necesario
       console.log('✅ Suscripción procesada correctamente para:', user.email);
 
+      // 📧 Notificar al admin sobre el nuevo suscriptor
+      try {
+        const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
+        await sendAdminNewSubscriberEmail({
+          userEmail: user.email,
+          userName: user.name || user.email,
+          service: service,
+          amount,
+          currency,
+          paymentId: paymentInfo.id,
+          transactionDate: new Date(),
+          expiryDate: user.subscriptionExpiry
+        });
+      } catch (e) {
+        console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
+      }
+
     } else if (isTraining) {
       // Procesar entrenamiento
       const nuevoEntrenamiento = {

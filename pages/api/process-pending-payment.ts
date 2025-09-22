@@ -99,6 +99,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log('✅ Suscripción de TraderCall procesada exitosamente');
 
+    // 📧 Notificar al admin sobre el nuevo suscriptor
+    try {
+      const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
+      await sendAdminNewSubscriberEmail({
+        userEmail: user.email,
+        userName: user.name || user.email,
+        service: pendingPayment.service,
+        amount: pendingPayment.amount,
+        currency: pendingPayment.currency,
+        paymentId: pendingPayment.mercadopagoPaymentId,
+        transactionDate: new Date(),
+        expiryDate: user.subscriptionExpiry
+      });
+    } catch (e) {
+      console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
+    }
+
     // Obtener usuario actualizado para verificar los cambios
     const updatedUser = await User.findById(user._id);
     

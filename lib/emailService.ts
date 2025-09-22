@@ -874,6 +874,73 @@ export function createAdminNotificationTemplate(
 }
 
 /**
+ * Plantilla para notificación de nuevo suscriptor (alertas)
+ */
+export function createAdminNewSubscriberTemplate(details: {
+  userEmail: string;
+  userName: string;
+  service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  amount?: number;
+  currency?: string;
+  paymentId?: string;
+  transactionDate?: Date;
+  expiryDate?: Date | string;
+}): string {
+  const serviceNames: { [key: string]: { label: string; emoji: string } } = {
+    TraderCall: { label: 'Trader Call', emoji: '📈' },
+    SmartMoney: { label: 'Smart Money', emoji: '💡' },
+    CashFlow: { label: 'Cash Flow', emoji: '💵' }
+  };
+  const serviceInfo = serviceNames[details.service] || { label: details.service, emoji: '🔔' };
+
+  const dateStr = details.transactionDate
+    ? new Date(details.transactionDate).toLocaleString('es-AR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : new Date().toLocaleString('es-AR');
+  const expiryStr = details.expiryDate
+    ? new Date(details.expiryDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
+    : undefined;
+
+  return createEmailTemplate({
+    title: `${serviceInfo.emoji} Nuevo Suscriptor - ${serviceInfo.label}`,
+    content: `
+      <div style="text-align: center; margin-bottom: 30px;">
+        <div style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 24px; border-radius: 50px; font-weight: 600; font-size: 14px; margin-bottom: 20px;">
+          🔔 Alta de Suscripción
+        </div>
+      </div>
+
+      <p>Se registró un <strong>nuevo suscriptor</strong> al servicio <strong>${serviceInfo.label}</strong>.</p>
+
+      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a;">👤 Datos del Usuario</h3>
+        <p style="margin: 8px 0;"><strong>Nombre:</strong> ${details.userName || details.userEmail}</p>
+        <p style="margin: 8px 0;"><strong>Email:</strong> ${details.userEmail}</p>
+      </div>
+
+      <div style="background-color: #eef2ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3 style="margin: 0 0 15px 0; color: #1a1a1a;">📦 Detalles de la Suscripción</h3>
+        <p style="margin: 8px 0;"><strong>Servicio:</strong> ${serviceInfo.label}</p>
+        <p style="margin: 8px 0;"><strong>Fecha de activación:</strong> ${dateStr}</p>
+        ${details.amount ? `<p style=\"margin: 8px 0;\"><strong>Monto:</strong> $${details.amount} ${details.currency || ''}</p>` : ''}
+        ${details.paymentId ? `<p style=\"margin: 8px 0;\"><strong>ID de pago:</strong> ${details.paymentId}</p>` : ''}
+        ${expiryStr ? `<p style=\"margin: 8px 0;\"><strong>Vence:</strong> ${expiryStr}</p>` : ''}
+      </div>
+
+      <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+        <h3 style="color: #92400e; margin-top: 0;">📋 Acciones Recomendadas</h3>
+        <ul style="color: #92400e; line-height: 1.6; margin: 0; padding-left: 20px;">
+          <li>Verificar acceso del usuario al módulo correspondiente</li>
+          <li>Agregar a lista de difusión si aplica</li>
+          <li>Monitorear primeras alertas recibidas</li>
+        </ul>
+      </div>
+    `,
+    buttonText: 'Ir al Panel Admin',
+    buttonUrl: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/admin`
+  });
+}
+
+/**
  * Plantilla para notificaciones de contacto al admin
  */
 export function createAdminContactNotificationTemplate(
