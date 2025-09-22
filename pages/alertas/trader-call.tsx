@@ -494,7 +494,8 @@ const SubscriberView: React.FC = () => {
     entryPrice: '',
     stopLoss: '',
     takeProfit: '',
-    analysis: ''
+    analysis: '',
+    availableForPurchase: false
   });
   const [editLoading, setEditLoading] = useState(false);
   // Estados para imágenes del gráfico de TradingView
@@ -1403,7 +1404,8 @@ const SubscriberView: React.FC = () => {
       entryPrice: alert.entryPrice ? alert.entryPrice.replace('$', '') : '',
       stopLoss: alert.stopLoss ? alert.stopLoss.replace('$', '') : '',
       takeProfit: alert.takeProfit ? alert.takeProfit.replace('$', '') : '',
-      analysis: alert.analysis || ''
+      analysis: alert.analysis || '',
+      availableForPurchase: alert.availableForPurchase || false
     });
 
     // Mostrar el modal de edición
@@ -1457,6 +1459,7 @@ const SubscriberView: React.FC = () => {
           stopLoss: parseFloat(editAlert.stopLoss),
           takeProfit: parseFloat(editAlert.takeProfit),
           analysis: editAlert.analysis,
+          availableForPurchase: editAlert.availableForPurchase,
           reason: 'Edición por administrador desde panel de control'
         }),
       });
@@ -1900,59 +1903,16 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // Solo mostrar alertas activas en el seguimiento 3D
+    // Mostrar TODAS las alertas activas (compradas pero no vendidas) en formato lista
     const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
-    const alertasCerradas = realAlerts.filter(alert => alert.status === 'CLOSED');
     
-    // Paleta de colores dinámicos para cada alerta
-    const colorPalette = [
-      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
-      '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
-    ];
-    
-    // Preparar datos para el gráfico de torta 3D - Solo alertas activas
-    const chartData = alertasActivas.map((alert, index) => {
-      const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
-      return {
-        id: alert.id,
-        symbol: alert.symbol,
-        profit: profitValue,
-        status: alert.status,
-        entryPrice: alert.entryPrice,
-        currentPrice: alert.currentPrice,
-        stopLoss: alert.stopLoss,
-        takeProfit: alert.takeProfit,
-        action: alert.action,
-        date: alert.date,
-        analysis: alert.analysis,
-        // Color único para cada alerta
-        color: colorPalette[index % colorPalette.length],
-        // Color más oscuro para efecto 3D
-        darkColor: colorPalette[index % colorPalette.length] + '80'
-      };
-    });
-
-    // Calcular el tamaño de cada segmento basado en el profit
-    const totalProfit = chartData.reduce((sum, alert) => sum + Math.abs(alert.profit), 0);
-    const chartSegments = chartData.map((alert, index) => {
-      const size = totalProfit > 0 ? (Math.abs(alert.profit) / totalProfit) * 100 : 100 / chartData.length;
-      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + (Math.abs(a.profit) / totalProfit) * 360, 0);
-      const endAngle = startAngle + (Math.abs(alert.profit) / totalProfit) * 360;
-      
-      return {
-        ...alert,
-        size,
-        startAngle,
-        endAngle,
-        centerAngle: (startAngle + endAngle) / 2
-      };
-    });
-
     return (
       <div className={styles.seguimientoContent}>
         <div className={styles.seguimientoHeader}>
-          <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas 3D</h2>
+          <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
+          <p className={styles.sectionDescription}>
+            Todas las alertas activas que has comprado y están en seguimiento
+          </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
               <button 
@@ -1999,11 +1959,11 @@ const SubscriberView: React.FC = () => {
             <div className={styles.loadingSpinner}></div>
             <p>Cargando alertas...</p>
           </div>
-        ) : realAlerts.length === 0 ? (
+        ) : alertasActivas.length === 0 ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📊</div>
-            <h3>No hay alertas disponibles</h3>
-            <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
+            <h3>No hay alertas en seguimiento</h3>
+            <p>Las alertas que compres aparecerán aquí para su seguimiento.</p>
             {userRole === 'admin' && (
               <button 
                 className={styles.createFirstAlertButton}
@@ -2014,196 +1974,112 @@ const SubscriberView: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className={styles.chartContainer}>
-            <div className={styles.chartLayout}>
-              {/* Gráfico de torta 3D - Lado izquierdo */}
-              <div className={styles.pieChart3D}>
-                <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
-                  {/* Sombra del gráfico para efecto 3D */}
-                  <defs>
-                    <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
-                      <feDropShadow dx="3" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.3"/>
-                    </filter>
-                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                      <feMerge> 
-                        <feMergeNode in="coloredBlur"/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  
-                  {/* Fondo del gráfico con efecto 3D */}
-                  <circle cx="150" cy="150" r="120" className={styles.chartBackground3D} />
-                  
-                  {/* Segmentos del gráfico 3D */}
-                  {chartSegments.map((segment, index) => (
-                    <g key={segment.id} className={styles.chartSegment3D}>
-                      {/* Sombra del segmento */}
-                      <path
-                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
-                        fill={segment.darkColor}
-                        filter="url(#shadow3D)"
-                        className={styles.segmentShadow}
-                      />
-                      {/* Segmento principal */}
-                      <path
-                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
-                        fill={segment.color}
-                        className={styles.segmentPath3D}
-                        onMouseEnter={(e) => showTooltip(e, segment)}
-                        onMouseLeave={hideTooltip}
-                        filter="url(#glow)"
-                      />
-                      {/* Borde del segmento */}
-                      <path
-                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
-                        fill="none"
-                        stroke="#ffffff"
-                        strokeWidth="2"
-                        opacity="0.3"
-                        className={styles.segmentBorder}
-                      />
-                      {/* Etiqueta del símbolo */}
-                      {segment.size > 5 && (
-                        <text
-                          x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 80}
-                          y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 80}
-                          className={styles.segmentLabel}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="12"
-                          fontWeight="bold"
-                          fill="#ffffff"
-                          filter="url(#shadow3D)"
-                        >
-                          {segment.symbol}
-                        </text>
-                      )}
-                    </g>
-                  ))}
-                  
-                  {/* Círculo central con efecto 3D */}
-                  <circle cx="150" cy="150" r="40" className={styles.chartCenter3D} />
-                </svg>
-              </div>
-              
-              {/* Información complementaria - Lado derecho */}
-              <div className={styles.chartInfoPanel}>
-                <div className={styles.infoHeader}>
-                  <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
-                  <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
-                </div>
-                
-                {/* Resumen estadístico */}
-                <div className={styles.statsSummary}>
-                  <div className={styles.summaryCard}>
-                    <div className={styles.summaryIcon}>📊</div>
-                    <div className={styles.summaryContent}>
-                      <span className={styles.summaryLabel}>Total Alertas</span>
-                      <span className={styles.summaryValue}>{chartData.length}</span>
-                    </div>
-                  </div>
-                  <div className={styles.summaryCard}>
-                    <div className={styles.summaryIcon}>🟢</div>
-                    <div className={styles.summaryContent}>
-                      <span className={styles.summaryLabel}>Activas</span>
-                      <span className={styles.summaryValue}>{alertasActivas.length}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Leyenda mejorada con colores dinámicos */}
-                <div className={styles.chartLegend3D}>
-                  <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
-                  <div className={styles.legendList}>
-                    {chartSegments.map((segment, index) => (
-                      <div key={segment.id} className={styles.legendItem3D}>
-                        <div 
-                          className={styles.legendColor3D}
-                          style={{ backgroundColor: segment.color }}
-                        ></div>
-                        <div className={styles.legendInfo}>
-                          <span className={styles.legendSymbol}>{segment.symbol}</span>
-                          <span className={styles.legendProfit}>
-                            {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%
-                          </span>
-                          <span className={styles.legendStatus}>
-                            {segment.status === 'ACTIVE' ? '🟢' : '🔴'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Información adicional */}
-                <div className={styles.additionalInfo}>
-                  <h4 className={styles.additionalTitle}>💡 Información Adicional</h4>
-                  <div className={styles.infoGrid}>
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>Mejor Rendimiento:</span>
-                      <span className={styles.infoValue}>
-                        {chartSegments.length > 0 ? 
-                          chartSegments.reduce((max, segment) => 
-                            segment.profit > max.profit ? segment : max
-                          ).symbol : 'N/A'}
-                      </span>
-                    </div>
-                    <div className={styles.infoItem}>
-                      <span className={styles.infoLabel}>Promedio P&L:</span>
-                      <span className={styles.infoValue}>
-                        {chartSegments.length > 0 ? 
-                          (chartSegments.reduce((sum, segment) => sum + segment.profit, 0) / chartSegments.length).toFixed(2) + '%' : '0%'}
-                      </span>
-                    </div>
-                  </div>
+          <div className={styles.alertsListContainer}>
+            {/* Resumen estadístico */}
+            <div className={styles.statsSummary}>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryIcon}>📊</div>
+                <div className={styles.summaryContent}>
+                  <span className={styles.summaryLabel}>Total Alertas</span>
+                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
                 </div>
               </div>
+              <div className={styles.summaryCard}>
+                <div className={styles.summaryIcon}>🟢</div>
+                <div className={styles.summaryContent}>
+                  <span className={styles.summaryLabel}>En Seguimiento</span>
+                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Lista de alertas activas */}
+            <div className={styles.alertsList}>
+              {alertasActivas.map((alert) => (
+                <div key={alert.id} className={styles.alertCard}>
+                  <div className={styles.alertHeader}>
+                    <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
+                    <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                      {alert.action}
+                    </span>
+                    <span className={styles.alertStatus}>🟢 ACTIVA</span>
+                  </div>
+                  
+                  <div className={styles.alertDetails}>
+                    <div className={styles.alertDetail}>
+                      <span>Precio Entrada:</span>
+                      <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
+                        {alert.entryPrice}
+                        {alert.entryPrice?.includes(' / ') && (
+                          <span className={styles.rangeIndicator}>RANGO</span>
+                        )}
+                      </strong>
+                    </div>
+                    <div className={styles.alertDetail}>
+                      <span>Precio Actual:</span>
+                      <strong>{alert.currentPrice}</strong>
+                    </div>
+                    <div className={styles.alertDetail}>
+                      <span>Stop Loss:</span>
+                      <strong>{alert.stopLoss}</strong>
+                    </div>
+                    <div className={styles.alertDetail}>
+                      <span>Take Profit:</span>
+                      <strong>{alert.takeProfit}</strong>
+                    </div>
+                    <div className={styles.alertDetail}>
+                      <span>P&L:</span>
+                      <strong className={alert.profit.includes('+') ? styles.profit : styles.loss}>
+                        {alert.profit}
+                      </strong>
+                    </div>
+                    <div className={styles.alertDetail}>
+                      <span>Fecha:</span>
+                      <strong>{alert.date}</strong>
+                    </div>
+                  </div>
+                  
+                  {alert.analysis && (
+                    <div className={styles.alertAnalysis}>
+                      <h4>📊 Análisis:</h4>
+                      <p>{alert.analysis}</p>
+                    </div>
+                  )}
+                  
+                  <div className={styles.alertActions}>
+                    {userRole === 'admin' && (
+                      <button
+                        className={styles.editButton}
+                        onClick={() => handleEditAlert(alert)}
+                        title="Editar alerta"
+                      >
+                        ✏️ Editar
+                      </button>
+                    )}
+                    <button
+                      className={styles.closeButton}
+                      onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
+                      disabled={userRole !== 'admin'}
+                      title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
+                    >
+                      Cierre total
+                    </button>
+                    {userRole === 'admin' && (
+                      <Link
+                        href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}
+                        className={styles.editButton}
+                        title="Cierre parcial (Liquidez)"
+                      >
+                        Cierre parcial
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
         
-        {/* Tooltip mejorado para mostrar información de alerta */}
-        <div id="chartTooltip" className={styles.chartTooltip3D}>
-          <div className={styles.tooltipContent3D}>
-            <h4 className={styles.tooltipSymbol}></h4>
-            <div className={styles.tooltipDetails}>
-              <div className={styles.tooltipRow}>
-                <span>📈 Acción:</span>
-                <span className={styles.tooltipAction}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>💰 Entrada:</span>
-                <span className={styles.tooltipEntry}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>📊 Actual:</span>
-                <span className={styles.tooltipCurrent}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>📈 P&L:</span>
-                <span className={styles.tooltipPnl}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>🎯 Estado:</span>
-                <span className={styles.tooltipStatus}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>💵 Liquidez:</span>
-                <span className={styles.tooltipLiquidity}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>🧩 Shares:</span>
-                <span className={styles.tooltipShares}></span>
-              </div>
-              <div className={styles.tooltipRow}>
-                <span>✅ Realizado:</span>
-                <span className={styles.tooltipRealized}></span>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     );
   };
@@ -2307,12 +2183,18 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderAlertasVigentes = () => {
-    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
+    // Solo mostrar alertas que están disponibles para compra (manejadas manualmente por el admin)
+    const alertasVigentes = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE' && alert.availableForPurchase === true
+    );
     
     return (
       <div className={styles.vigentesContent}>
         <div className={styles.vigentesHeader}>
           <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
+          <p className={styles.sectionDescription}>
+            Alertas disponibles para compra ahora - seleccionadas manualmente
+          </p>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
               <>
@@ -2367,12 +2249,12 @@ const SubscriberView: React.FC = () => {
           <div className={styles.loadingContainer}>
             <p>Cargando alertas...</p>
           </div>
-        ) : alertasActivas.length === 0 ? (
+        ) : alertasVigentes.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No hay alertas vigentes en este momento.</p>
+            <p>No hay alertas vigentes disponibles para compra en este momento.</p>
           </div>
         ) : (
-          alertasActivas.map((alert) => (
+          alertasVigentes.map((alert) => (
             <div key={alert.id} className={styles.alertCard}>
               <div className={styles.alertHeader}>
                 <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
@@ -2946,6 +2828,24 @@ const SubscriberView: React.FC = () => {
                 className={styles.textarea}
                 rows={4}
               />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={editAlert.availableForPurchase}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
+                  className={styles.checkbox}
+                />
+                <span className={styles.checkboxText}>
+                  🛒 Disponible para compra (aparece en Alertas Vigentes)
+                </span>
+              </label>
+              <p className={styles.checkboxDescription}>
+                Marca esta opción si quieres que esta alerta aparezca en la sección "Alertas Vigentes" 
+                para que los clientes puedan comprarla ahora.
+              </p>
             </div>
           </div>
 

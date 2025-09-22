@@ -114,6 +114,8 @@ export default async function handler(
         tipoAlerta: alert.tipoAlerta || 'precio', // 'precio' o 'rango'
         hasRange: !!(alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max),
         hasFinalPrice: !!alert.finalPrice,
+        // ✅ NUEVO: Campo para controlar disponibilidad para compra
+        availableForPurchase: alert.availableForPurchase || false,
         // Campos adicionales para mostrar si está cerrada
         exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
         exitDate: alert.exitDate?.toISOString().split('T')[0] || null,

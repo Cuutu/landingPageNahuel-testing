@@ -70,6 +70,8 @@ export interface IAlert extends Document {
   isRecommended: boolean; // Si es recomendada por Nahuel
   recommendedBy?: mongoose.Types.ObjectId;
   recommendedAt?: Date;
+  // ✅ NUEVO: Campo para controlar disponibilidad para nuevos clientes
+  availableForPurchase: boolean; // Si está disponible para que nuevos clientes la compren
   // Nuevos campos para imágenes
   chartImage?: CloudinaryImage; // Imagen principal del gráfico
   images?: CloudinaryImage[]; // Imágenes adicionales
@@ -266,6 +268,11 @@ const AlertSchema: Schema = new Schema({
     ref: 'User'
   },
   recommendedAt: Date,
+  // ✅ NUEVO: Campo para controlar disponibilidad para nuevos clientes
+  availableForPurchase: {
+    type: Boolean,
+    default: false
+  },
   // Nuevos campos para imágenes
   chartImage: CloudinaryImageSchema, // Imagen principal del gráfico
   images: [CloudinaryImageSchema] // Imágenes adicionales

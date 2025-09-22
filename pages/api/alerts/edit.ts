@@ -18,6 +18,7 @@ interface EditAlertRequest {
   stopLoss?: number;
   takeProfit?: number;
   analysis?: string;
+  availableForPurchase?: boolean;
   reason?: string;
 }
 
@@ -65,7 +66,7 @@ export default async function handler(
     }
 
     // Validar datos de entrada
-    const { alertId, symbol, action, entryPrice, stopLoss, takeProfit, analysis, reason }: EditAlertRequest = req.body;
+    const { alertId, symbol, action, entryPrice, stopLoss, takeProfit, analysis, availableForPurchase, reason }: EditAlertRequest = req.body;
 
     if (!alertId) {
       return res.status(400).json({ error: 'alertId es requerido' });
@@ -134,6 +135,11 @@ export default async function handler(
     if (analysis !== undefined && analysis !== alert.analysis) {
       oldValues.analysis = alert.analysis;
       changes.analysis = analysis;
+    }
+
+    if (availableForPurchase !== undefined && availableForPurchase !== alert.availableForPurchase) {
+      oldValues.availableForPurchase = alert.availableForPurchase;
+      changes.availableForPurchase = availableForPurchase;
     }
 
     // Verificar que haya al menos un cambio
@@ -215,6 +221,7 @@ export default async function handler(
       status: updatedAlert.status,
       date: updatedAlert.date ? updatedAlert.date.toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
       analysis: updatedAlert.analysis || '',
+      availableForPurchase: updatedAlert.availableForPurchase || false,
       tipo: updatedAlert.tipo
     };
 
