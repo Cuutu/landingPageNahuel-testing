@@ -177,7 +177,7 @@ export default function PaymentSuccess() {
                     day: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
-                    timeZone: 'America/Montevideo'
+                    timeZone: 'America/Argentina/Buenos_Aires'
                   })}</span>
                 </div>
               )}

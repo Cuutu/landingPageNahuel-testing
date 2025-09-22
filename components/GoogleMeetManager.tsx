@@ -127,7 +127,7 @@ const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({ bookings, onUpdat
       day: 'numeric',
       month: 'long',
       year: 'numeric',
-      timeZone: 'America/Montevideo'
+      timeZone: 'America/Argentina/Buenos_Aires'
     });
   };
 
@@ -135,7 +135,7 @@ const GoogleMeetManager: React.FC<GoogleMeetManagerProps> = ({ bookings, onUpdat
     return new Date(dateString).toLocaleTimeString('es-ES', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'America/Montevideo'
+      timeZone: 'America/Argentina/Buenos_Aires'
     });
   };
 

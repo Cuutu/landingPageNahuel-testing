@@ -72,13 +72,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         day: 'numeric',
         month: 'long',
         year: 'numeric',
-        timeZone: 'America/Montevideo'
+        timeZone: 'America/Argentina/Buenos_Aires'
       });
       
       const formattedTime = booking.startDate.toLocaleTimeString('es-ES', {
         hour: '2-digit',
         minute: '2-digit',
-        timeZone: 'America/Montevideo'
+        timeZone: 'America/Argentina/Buenos_Aires'
       });
 
       const emailDetails = {

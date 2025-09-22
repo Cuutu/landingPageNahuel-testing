@@ -264,8 +264,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             bookingUser.name || bookingUser.email,
             {
               type: serviceType,
-              date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Montevideo' }),
-              time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Montevideo' }),
+              date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
+              time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
               duration: reservationData?.duration || 60,
               price: payment.amount,
               meetLink: (await Booking.findById(newBooking._id))?.meetingLink
@@ -276,8 +276,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             userName: bookingUser.name || bookingUser.email,
             type: 'advisory',
             serviceType,
-            date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Montevideo' }),
-            time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Montevideo' }),
+            date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
+            time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
             duration: reservationData?.duration || 60,
             price: payment.amount,
             meetLink: (await Booking.findById(newBooking._id))?.meetingLink

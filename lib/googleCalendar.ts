@@ -209,7 +209,7 @@ export async function createTrainingEvent(
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     
     // CORREGIDO: Usar fechas UTC directamente (ya vienen ajustadas del frontend)
-    const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo';
+    const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
     
     console.log('🕒 Usando fechas UTC directamente (entrenamiento):', {
       startDateUTC: startDate.toISOString(),
@@ -293,14 +293,14 @@ export async function createAdvisoryEvent(
       advisoryName,
       startDate: startDate.toISOString(),
       durationMinutes,
-      timezone: 'America/Montevideo'
+      timezone: 'America/Argentina/Buenos_Aires'
     });
 
     const calendar = await getAdminCalendarClient();
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     
-    // CORREGIDO: Usar America/Montevideo para mostrar hora local correctamente
-    const timezone = 'America/Montevideo';
+    // CORREGIDO: Usar America/Argentina/Buenos_Aires para mostrar hora local correctamente
+    const timezone = 'America/Argentina/Buenos_Aires';
     
     console.log('🕒 Usando fechas UTC con timezone local:', {
       startDateUTC: startDate.toISOString(),

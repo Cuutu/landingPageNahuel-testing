@@ -86,12 +86,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'America/Montevideo'
+          timeZone: 'America/Argentina/Buenos_Aires'
         })
       });
 
              // ✅ NUEVO: Verificar disponibilidad según el tipo de reserva
-       const timezone = 'America/Montevideo';
+       const timezone = 'America/Argentina/Buenos_Aires';
        let availableSlot = null;
        let advisoryDate = null;
        
@@ -215,7 +215,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            timeZone: 'America/Montevideo'
+            timeZone: 'America/Argentina/Buenos_Aires'
           })}`);
         });
         
@@ -348,13 +348,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           day: 'numeric',
           month: 'long',
           year: 'numeric',
-          timeZone: 'America/Montevideo'
+          timeZone: 'America/Argentina/Buenos_Aires'
         });
         
         const formattedTime = startDateTime.toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'America/Montevideo'
+          timeZone: 'America/Argentina/Buenos_Aires'
         });
 
         const emailDetails = {

@@ -62,8 +62,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Log detallado para debug
         console.log(`🕐 Comparando: ${slot.date} ${slot.time}`);
-        console.log(`   SlotDate: ${slotDate.toISOString()} (Local: ${slotDate.toLocaleString('es-ES', { timeZone: 'America/Montevideo' })})`);
-        console.log(`   Now: ${now.toISOString()} (Local: ${now.toLocaleString('es-ES', { timeZone: 'America/Montevideo' })})`);
+        console.log(`   SlotDate: ${slotDate.toISOString()} (Local: ${slotDate.toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' })})`);
+        console.log(`   Now: ${now.toISOString()} (Local: ${now.toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' })})`);
         console.log(`   Buffer: ${fiveMinutesFromNow.toISOString()}`);
         console.log(`   ¿Es futuro?: ${isFuture} (available: ${slot.available})`);
         
@@ -77,9 +77,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return false;
       }
     });
-
+    
     console.log(`📊 Horarios futuros: ${futureSlots.length}`);
-
+    
     // Agrupar por fecha
     const turnosPorFecha = new Map<string, string[]>();
     
@@ -89,18 +89,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       turnosPorFecha.get(slot.date)!.push(slot.time);
     });
-
+    
     // Convertir a formato esperado por el frontend
     const turnos = Array.from(turnosPorFecha.entries()).map(([fecha, horarios]) => ({
       fecha,
       horarios: horarios.sort(), // Ordenar horarios
       disponibles: horarios.length
     }));
-
+    
     const responseTime = Date.now() - startTime;
-
+    
     console.log(`✅ Respuesta generada en ${responseTime}ms - ${turnos.length} días con turnos`);
-
+    
     res.status(200).json({
       success: true,
       turnos,
@@ -111,7 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       responseTime: `${responseTime}ms`,
       cached: false
     });
-
+    
   } catch (error) {
     console.error('❌ Error al obtener horarios disponibles:', error);
     
@@ -121,4 +121,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       details: process.env.NODE_ENV === 'development' ? error : undefined
     });
   }
-} 
+}
