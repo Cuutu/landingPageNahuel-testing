@@ -462,6 +462,11 @@ export function generateReportEmailTemplate(
         </h3>
       </div>
       
+      <div style="margin: 8px 0 16px;">
+        <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Título</div>
+        <div style="font-size: 14px; color: #111827; font-weight: 700;">${notification.metadata?.reportTitle || notification.title || 'Nuevo Informe'}</div>
+      </div>
+      
       <table role="presentation" width="100%" cellspacing="0" cellpadding="8" border="0">
         ${notification.metadata.serviceType ? `
           <tr>
