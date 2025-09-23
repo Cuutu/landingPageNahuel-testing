@@ -9,6 +9,7 @@ import { Star, CheckCircle, ArrowRight, Users, TrendingUp, Clock } from 'lucide-
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import BackgroundVideo from '@/components/BackgroundVideo';
 import styles from '@/styles/Alertas.module.css';
 
 interface AlertServiceProps {
@@ -151,6 +152,16 @@ const AlertasPage: React.FC = () => {
       <main className={styles.main}>
         {/* Hero Section - Nuevo diseño con video */}
         <section className={styles.hero}>
+          {/* Video de fondo */}
+          <BackgroundVideo
+            videoSrc="/logos/DiseñoWeb-LozanoNahuel-Alertas-TraderCall.mp4"
+            className={styles.heroVideoBackground}
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            showControls={false}
+          />
+          
           <div className={styles.container}>
             <motion.div 
               className={styles.heroContent}
