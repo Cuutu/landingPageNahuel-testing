@@ -97,9 +97,10 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
       const chartSegments = activeAlerts.map((alert, index) => {
         const profitValue = Math.abs(alert.profit || 0);
         const liquidity = liquidityMap?.[alert.symbol];
+        const allocated = Number(liquidity?.allocatedAmount || 0);
         return {
           name: alert.symbol,
-          value: profitValue > 0 ? profitValue : 1,
+          value: allocated > 0 ? allocated : 1,
           symbol: alert.symbol,
           profit: alert.profit || 0,
           action: alert.action,
@@ -319,7 +320,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         <div className={styles.infoItem}>
           <Info size={14} />
           <span>
-            El tamaño de cada segmento representa el profit relativo de la alerta. Si hay liquidez asignada, el tooltip muestra el monto y P&L.
+            El tamaño de cada segmento representa la liquidez asignada a la alerta. Si hay liquidez asignada, el tooltip muestra el monto y P&L.
           </span>
         </div>
       </div>

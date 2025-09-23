@@ -1575,6 +1575,8 @@ const SubscriberView: React.FC = () => {
     // Preparar datos para el gráfico de torta 3D - Solo alertas activas
     const chartData = alerts.map((alert, index) => {
       const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
+      const liquidity = liquidityMap?.[alert.symbol];
+      const allocated = Number(liquidity?.allocatedAmount || 0);
       return {
         id: alert.id,
         symbol: alert.symbol,
@@ -1587,6 +1589,7 @@ const SubscriberView: React.FC = () => {
         action: alert.action,
         date: alert.date,
         analysis: alert.analysis,
+        allocatedAmount: allocated,
         // Color único para cada alerta
         color: colorPalette[index % colorPalette.length],
         // Color más oscuro para efecto 3D
@@ -1594,12 +1597,13 @@ const SubscriberView: React.FC = () => {
       };
     });
 
-    // Calcular el tamaño de cada segmento basado en el profit
-    const totalProfit = chartData.reduce((sum, alert) => sum + Math.abs(alert.profit), 0);
+    // Calcular el tamaño de cada segmento basado en la liquidez asignada
+    const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
     const chartSegments = chartData.map((alert, index) => {
-      const size = totalProfit > 0 ? (Math.abs(alert.profit) / totalProfit) * 100 : 100 / chartData.length;
-      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + (Math.abs(a.profit) / totalProfit) * 360, 0);
-      const endAngle = startAngle + (Math.abs(alert.profit) / totalProfit) * 360;
+      const segmentBase = Math.abs(alert.allocatedAmount || 0);
+      const size = totalAllocated > 0 ? (segmentBase / totalAllocated) * 100 : 100 / chartData.length;
+      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + ((Math.abs(a.allocatedAmount || 0) / (totalAllocated || 1)) * 360), 0);
+      const endAngle = startAngle + ((segmentBase / (totalAllocated || 1)) * 360);
 
       return {
         ...alert,
