@@ -94,7 +94,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         setChartData([]);
         return;
       }
-      const chartSegments = activeAlerts.map((alert, index) => {
+      const chartSegments: ChartSegment[] = activeAlerts.map((alert, index) => {
         const profitValue = Math.abs(alert.profit || 0);
         const liquidity = liquidityMap?.[alert.symbol];
         const allocated = Number(liquidity?.allocatedAmount || 0);
@@ -110,8 +110,30 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
           allocatedAmount: liquidity?.allocatedAmount,
           shares: liquidity?.shares,
           realizedProfitLoss: liquidity?.realizedProfitLoss,
-        };
+        } as ChartSegment;
       });
+
+      // Agregar segmento de Liquidez disponible para que la torta sume 100%
+      if (typeof totalLiquidity === 'number') {
+        const allocatedSum = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
+        const available = Math.max(totalLiquidity - allocatedSum, 0);
+        if (available > 0) {
+          chartSegments.push({
+            name: 'Liquidez',
+            value: available,
+            symbol: 'LIQUIDEZ',
+            profit: 0,
+            action: 'BUY',
+            tipo: 'CashFlow',
+            color: '#9CA3AF',
+            darkColor: '#9CA3AF80',
+            allocatedAmount: undefined,
+            shares: undefined,
+            realizedProfitLoss: undefined,
+          } as ChartSegment);
+        }
+      }
+
       setChartData(chartSegments);
     } else {
       setChartData([]);

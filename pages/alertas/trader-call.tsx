@@ -1614,6 +1614,34 @@ const SubscriberView: React.FC = () => {
       };
     });
 
+    // Agregar segmento de liquidez disponible
+    const available = Math.max((liquidityTotal || 0) - totalAllocated, 0);
+    if (available > 0) {
+      const lastEnd = chartSegments.length ? chartSegments[chartSegments.length - 1].endAngle : 0;
+      const liqStart = lastEnd;
+      const liqEnd = liqStart + ((available / ((liquidityTotal || 1))) * 360);
+      chartSegments.push({
+        id: 'LIQ-SEG',
+        symbol: 'LIQUIDEZ',
+        profit: 0,
+        status: 'ACTIVE',
+        entryPrice: 0,
+        currentPrice: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+        action: 'BUY',
+        date: '',
+        analysis: '',
+        allocatedAmount: available,
+        color: '#9CA3AF',
+        darkColor: '#9CA3AF80',
+        size: (available / ((liquidityTotal || 1))) * 100,
+        startAngle: liqStart,
+        endAngle: liqEnd,
+        centerAngle: (liqStart + liqEnd) / 2,
+      } as any);
+    }
+
     return chartSegments;
   };
 
