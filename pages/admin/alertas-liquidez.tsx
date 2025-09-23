@@ -68,10 +68,12 @@ const AdminLiquidityPage: React.FC = () => {
   // Asignación
   const [smartAssignId, setSmartAssignId] = useState('');
   const [smartAssignPct, setSmartAssignPct] = useState('');
+  const [smartAssignAmount, setSmartAssignAmount] = useState('');
   const [smartAssignMessage, setSmartAssignMessage] = useState('');
   const [smartAssignImageUrl, setSmartAssignImageUrl] = useState('');
   const [traderAssignId, setTraderAssignId] = useState('');
   const [traderAssignPct, setTraderAssignPct] = useState('');
+  const [traderAssignAmount, setTraderAssignAmount] = useState('');
   const [traderAssignMessage, setTraderAssignMessage] = useState('');
   const [traderAssignImageUrl, setTraderAssignImageUrl] = useState('');
 
@@ -137,6 +139,7 @@ const AdminLiquidityPage: React.FC = () => {
     if (selectedPool === 'SmartMoney') {
       setTraderAssignId('');
       setTraderAssignPct('');
+      setTraderAssignAmount('');
       setTraderAssignMessage('');
       setTraderAssignImageUrl('');
       setTraderSellId('');
@@ -147,6 +150,7 @@ const AdminLiquidityPage: React.FC = () => {
     } else if (selectedPool === 'TraderCall') {
       setSmartAssignId('');
       setSmartAssignPct('');
+      setSmartAssignAmount('');
       setSmartAssignMessage('');
       setSmartAssignImageUrl('');
       setSmartSellId('');
@@ -179,21 +183,26 @@ const AdminLiquidityPage: React.FC = () => {
     }
   };
 
-  const validateAssign = (pct: string) => {
+  const validateAssign = (pct: string, amount?: string) => {
     const n = Number(pct);
-    if (!Number.isFinite(n) || n <= 0) throw new Error('Porcentaje inválido');
-    if (n > 100) throw new Error('El porcentaje no puede exceder 100%');
-    // Validar disponible aproximado
+    const m = Number(amount);
+    if ((!Number.isFinite(n) || n <= 0) && (!Number.isFinite(m) || m <= 0)) throw new Error('Ingrese % (>0) o monto (>0)');
+    if (Number.isFinite(n) && n > 100) throw new Error('El porcentaje no puede exceder 100%');
     if (!liquidity) return;
-    const required = (liquidity.totalLiquidity * n) / 100;
+    const required = Number.isFinite(m) && m > 0 ? m : (liquidity.totalLiquidity * n) / 100;
     if (required > liquidity.availableLiquidity) throw new Error('No hay liquidez suficiente disponible');
   };
 
-  const handleAssign = async (alertId: string, pct: string, message?: string, imageUrl?: string) => {
-    validateAssign(pct);
+  const handleAssign = async (alertId: string, pct: string, amount?: string, message?: string, imageUrl?: string) => {
+    validateAssign(pct, amount);
+    const body: any = { alertId };
+    if (Number(pct) > 0) body.percentage = Number(pct);
+    if (Number(amount) > 0) body.amount = Number(amount);
+    if (message) body.emailMessage = message;
+    if (imageUrl) body.emailImageUrl = imageUrl;
     await fetchJSON<{ success: boolean }>(
       '/api/liquidity/distribute',
-      { method: 'POST', body: JSON.stringify({ alertId, percentage: Number(pct), emailMessage: message || undefined, emailImageUrl: imageUrl || undefined }) }
+      { method: 'POST', body: JSON.stringify(body) }
     );
     toast?.success('Liquidez asignada');
     await Promise.all([loadData(), loadActiveAlerts()]);
@@ -203,8 +212,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!smartAssignId) throw new Error('Seleccione una alerta SmartMoney');
-      await handleAssign(smartAssignId, smartAssignPct, smartAssignMessage, smartAssignImageUrl);
-      setSmartAssignId(''); setSmartAssignPct(''); setSmartAssignMessage(''); setSmartAssignImageUrl('');
+      await handleAssign(smartAssignId, smartAssignPct, smartAssignAmount, smartAssignMessage, smartAssignImageUrl);
+      setSmartAssignId(''); setSmartAssignPct(''); setSmartAssignAmount(''); setSmartAssignMessage(''); setSmartAssignImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -212,8 +221,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!traderAssignId) throw new Error('Seleccione una alerta TraderCall');
-      await handleAssign(traderAssignId, traderAssignPct, traderAssignMessage, traderAssignImageUrl);
-      setTraderAssignId(''); setTraderAssignPct(''); setTraderAssignMessage(''); setTraderAssignImageUrl('');
+      await handleAssign(traderAssignId, traderAssignPct, traderAssignAmount, traderAssignMessage, traderAssignImageUrl);
+      setTraderAssignId(''); setTraderAssignPct(''); setTraderAssignAmount(''); setTraderAssignMessage(''); setTraderAssignImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -362,6 +371,7 @@ const AdminLiquidityPage: React.FC = () => {
               ))}
             </select>
             <input value={smartAssignPct} onChange={e => setSmartAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
+            <input value={smartAssignAmount} onChange={e => setSmartAssignAmount(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="$ monto" />
             <button onClick={handleAssignSmart} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
@@ -390,6 +400,7 @@ const AdminLiquidityPage: React.FC = () => {
               ))}
             </select>
             <input value={traderAssignPct} onChange={e => setTraderAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
+            <input value={traderAssignAmount} onChange={e => setTraderAssignAmount(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="$ monto" />
             <button onClick={handleAssignTrader} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>

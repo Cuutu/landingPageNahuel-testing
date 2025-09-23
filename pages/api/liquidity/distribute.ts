@@ -8,7 +8,8 @@ import User from "@/models/User";
 
 interface DistributeLiquidityRequest {
   alertId: string;
-  percentage: number;
+  percentage?: number;
+  amount?: number;
   emailMessage?: string;
   emailImageUrl?: string;
 }
@@ -45,14 +46,14 @@ export default async function handler(
       return res.status(403).json({ success: false, error: "Permisos insuficientes. Solo los administradores pueden distribuir liquidez." });
     }
 
-    const { alertId, percentage }: DistributeLiquidityRequest = req.body;
+    const { alertId, percentage, amount }: DistributeLiquidityRequest = req.body;
 
-    if (!alertId || !percentage) {
-      return res.status(400).json({ success: false, error: "AlertId y percentage son requeridos" });
+    if (!alertId) {
+      return res.status(400).json({ success: false, error: "alertId es requerido" });
     }
 
-    if (percentage <= 0 || percentage > 100) {
-      return res.status(400).json({ success: false, error: "El porcentaje debe estar entre 0 y 100" });
+    if ((!percentage && !amount) || (percentage && percentage <= 0) || (amount && amount <= 0)) {
+      return res.status(400).json({ success: false, error: "Debe especificar un porcentaje (>0) o un monto (>0)" });
     }
 
     const alert = await Alert.findById(alertId);
@@ -79,18 +80,27 @@ export default async function handler(
       return res.status(400).json({ success: false, error: "La alerta no tiene precio de entrada válido" });
     }
 
+    // Calcular porcentaje objetivo según entrada
+    const targetPercentage = typeof amount === 'number' && amount > 0
+      ? (amount / liquidity.totalLiquidity) * 100
+      : (percentage as number);
+
+    if (targetPercentage <= 0 || targetPercentage > 100) {
+      return res.status(400).json({ success: false, error: "El porcentaje debe estar entre 0 y 100" });
+    }
+
     if (existingDistribution) {
-      const requiredAmount = (liquidity.totalLiquidity * percentage) / 100;
+      const requiredAmount = (liquidity.totalLiquidity * targetPercentage) / 100;
       if (requiredAmount > liquidity.availableLiquidity) {
         return res.status(400).json({ success: false, error: "No hay suficiente liquidez disponible para aumentar esta asignación" });
       }
-      if (currentTotalPercentage + percentage > 100) {
+      if (currentTotalPercentage + targetPercentage > 100) {
         return res.status(400).json({ success: false, error: "El porcentaje total no puede exceder 100%" });
       }
       const additionalShares = Math.floor(requiredAmount / entryPrice);
       const actualAllocatedAmount = additionalShares * entryPrice;
 
-      existingDistribution.percentage += percentage;
+      existingDistribution.percentage += targetPercentage;
       existingDistribution.shares += additionalShares;
       existingDistribution.allocatedAmount += actualAllocatedAmount;
       existingDistribution.currentPrice = entryPrice;
@@ -116,11 +126,11 @@ export default async function handler(
           isActive: existingDistribution.isActive,
           createdAt: existingDistribution.createdAt
         },
-        message: `Liquidez incrementada en ${pool}: +${percentage}% para ${alert.symbol}`
+        message: `Liquidez incrementada: +${targetPercentage.toFixed(2)}% para ${alert.symbol}`
       });
     }
 
-    const distribution = liquidity.addDistribution(alertId, alert.symbol, percentage, entryPrice);
+    const distribution = liquidity.addDistribution(alertId, alert.symbol, targetPercentage, entryPrice);
     await liquidity.save();
 
     // 🔔 Notificar compra/asignación a suscriptores
@@ -150,7 +160,7 @@ export default async function handler(
         isActive: distribution.isActive,
         createdAt: distribution.createdAt
       },
-      message: `Liquidez distribuida exitosamente en ${pool}: ${percentage}% para ${alert.symbol}`
+      message: `Liquidez distribuida exitosamente: ${targetPercentage.toFixed(2)}% para ${alert.symbol}`
     });
 
   } catch (error) {
