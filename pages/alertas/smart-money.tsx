@@ -1791,7 +1791,10 @@ const SubscriberView: React.FC = () => {
                   <div className={styles.chartSection}>
                     <div className={styles.chartHeader}>
             {typeof liquidityTotal === 'number' && (
-              <span className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</span>
+              <>
+                <span className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</span>
+                <span className={styles.totalLiquidityBadge}>Liquidez Distribuida: ${Object.values(liquidityMap || {}).reduce((s: number, d: any) => s + (d?.allocatedAmount || 0), 0).toFixed(2)}</span>
+              </>
             )}
                       <h3>📊 Distribución de Alertas Activas</h3>
                       <div className={styles.chartActions}>
