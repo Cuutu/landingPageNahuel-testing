@@ -261,12 +261,12 @@ const SecurityWarning: React.FC<SecurityWarningProps> = ({
     >
       <div 
         style={{
-          background: 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)',
+          background: 'linear-gradient(135deg, #6b46c1 0%, #4c1d95 100%)',
           color: 'white',
           padding: '2.5rem',
           borderRadius: '1.5rem',
           boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8)',
-          border: '2px solid #ef4444',
+          border: '2px solid #8b5cf6',
           maxWidth: '28rem',
           margin: '0 1rem',
           textAlign: 'center',
@@ -298,13 +298,13 @@ const SecurityWarning: React.FC<SecurityWarningProps> = ({
               justifyContent: 'center',
               width: '5rem',
               height: '5rem',
-              backgroundColor: '#991b1b',
+              backgroundColor: '#374151',
               borderRadius: '50%',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
               animation: 'pulse 2s infinite'
             }}
           >
-            <AlertTriangle size={40} style={{ color: 'white' }} />
+            <AlertTriangle size={40} style={{ color: '#8b5cf6' }} />
           </div>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -338,7 +338,7 @@ const SecurityWarning: React.FC<SecurityWarningProps> = ({
             onClick={() => setShowWarning(false)}
             style={{
               padding: '1rem 2rem',
-              backgroundColor: '#991b1b',
+              backgroundColor: '#374151',
               color: 'white',
               fontWeight: 'bold',
               borderRadius: '0.75rem',
@@ -352,11 +352,11 @@ const SecurityWarning: React.FC<SecurityWarningProps> = ({
               transform: 'scale(1)'
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#7f1d1d';
+              e.currentTarget.style.backgroundColor = '#1f2937';
               e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#991b1b';
+              e.currentTarget.style.backgroundColor = '#374151';
               e.currentTarget.style.transform = 'scale(1)';
             }}
             aria-label="Cerrar advertencia de seguridad"
@@ -368,7 +368,7 @@ const SecurityWarning: React.FC<SecurityWarningProps> = ({
           {/* Texto de ayuda */}
           <p style={{ 
             fontSize: '0.75rem', 
-            color: '#fca5a5',
+            color: '#d1d5db',
             marginTop: '1rem'
           }}>
             Presiona ESC o haz clic fuera para cerrar
