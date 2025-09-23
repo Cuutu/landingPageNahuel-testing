@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ✅ OPTIMIZADO: Obtener información del pago con timeout y reintentos
     let paymentInfo = null;
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 3; 
     
     while (attempts < maxAttempts && !paymentInfo) { 
       attempts++;
