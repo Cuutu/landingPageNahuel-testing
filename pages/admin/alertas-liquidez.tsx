@@ -269,6 +269,11 @@ const AdminLiquidityPage: React.FC = () => {
     return liquidity.distributions.reduce((sum, d) => sum + (d.percentage || 0), 0);
   }, [liquidity]);
 
+  const remainingPct = useMemo(() => {
+    const rem = 100 - totalAssignedPct;
+    return rem < 0 ? 0 : rem;
+  }, [totalAssignedPct]);
+
   const activeDistributionsOptions = React.useMemo(() => {
     if (!liquidity) return { smart: [], trader: [] } as { smart: Array<{ id: string; symbol: string }>; trader: Array<{ id: string; symbol: string }> };
     const dists = (liquidity.distributions || []).filter((d: any) => d.isActive && d.shares > 0);
@@ -330,6 +335,10 @@ const AdminLiquidityPage: React.FC = () => {
               <div className={styles.label}>P&L Total</div>
               <div className={styles.value}>${liquidity.totalProfitLoss.toFixed(2)} ({liquidity.totalProfitLossPercentage.toFixed(2)}%)</div>
             </>)}
+            {card(<>
+              <div className={styles.label}>% restante por distribuir</div>
+              <div className={styles.value}>{remainingPct.toFixed(2)}%</div>
+            </>)}
           </div>
         )}
 
@@ -365,7 +374,9 @@ const AdminLiquidityPage: React.FC = () => {
               multiple={false}
             />
           </div>
-          <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>% asignado total: {totalAssignedPct.toFixed(2)}%</div>
+          <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>
+            % asignado total: {totalAssignedPct.toFixed(2)}% · % restante: {remainingPct.toFixed(2)}%
+          </div>
         </>)}
 
         {/* Asignar TraderCall */}
@@ -390,6 +401,9 @@ const AdminLiquidityPage: React.FC = () => {
               maxFiles={1}
               multiple={false}
             />
+          </div>
+          <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>
+            % asignado total: {totalAssignedPct.toFixed(2)}% · % restante: {remainingPct.toFixed(2)}%
           </div>
         </>)}
 
