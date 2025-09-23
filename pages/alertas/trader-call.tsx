@@ -2245,6 +2245,7 @@ const SubscriberView: React.FC = () => {
                 >
                   + Crear Alerta
                 </button>
+                {/* Botones de testing ocultados temporalmente
                 <button 
                   className={styles.testCloseButton}
                   onClick={handleTestMarketClose}
@@ -2273,6 +2274,7 @@ const SubscriberView: React.FC = () => {
                 >
                   🧪 Probar Cron
                 </button>
+                */}
               </>
             )}
             <button 

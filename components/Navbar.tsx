@@ -136,6 +136,15 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
 
   // Verificación defensiva para asegurar que session.user existe
   const sessionUser = session?.user;
+  
+  // Debug: verificar rol del usuario
+  if (sessionUser) {
+    console.log('🔍 Navbar - Usuario logueado:', { 
+      email: sessionUser.email, 
+      role: sessionUser.role,
+      name: sessionUser.name 
+    });
+  }
 
   return (
     <>
@@ -328,7 +337,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                         <User size={16} />
                         Mi Perfil
                       </Link>
-                      {sessionUser.role === 'admin' && (
+                      {sessionUser && sessionUser.role === 'admin' && (
                         <>
                           <Link href="/admin/dashboard" className={styles.dropdownItem}>
                             <Settings size={16} />
@@ -470,7 +479,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
                       />
                       Mi Perfil
                     </Link>
-                    {sessionUser.role === 'admin' && (
+                    {sessionUser && sessionUser.role === 'admin' && (
                       <>
                         <Link href="/admin/dashboard" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
                           <Settings size={16} />
