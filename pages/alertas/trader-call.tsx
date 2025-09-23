@@ -3295,7 +3295,7 @@ const ReportViewModal = ({ report, onClose }: {
   report: any;
   onClose: () => void;
 }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(-1);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -3533,7 +3533,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     type: 'text',
     category: 'trader-call',
     content: '',
-    summary: '',
     isFeature: false,
     publishedAt: new Date().toISOString().split('T')[0],
     status: 'published'
@@ -3542,22 +3541,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   const [images, setImages] = useState<CloudinaryImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  // Nuevos estados para artículos
-  const [articles, setArticles] = useState<Array<{
-    _id: string;
-    title: string;
-    content: string;
-    order: number;
-    isPublished: boolean;
-    createdAt: string;
-  }>>([]);
-
-  const [newArticle, setNewArticle] = useState({
-    title: '',
-    content: '',
-    order: 1,
-    isPublished: true
-  });
 
   // Debug: monitorear cambios en formData
   React.useEffect(() => {
@@ -3577,20 +3560,11 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
       return;
     }
 
-    // Preparar datos con imágenes de Cloudinary y artículos
+    // Preparar datos con imágenes de Cloudinary
     const submitData = {
       ...formData,
       publishedAt: new Date(formData.publishedAt),
-      images: images,
-      // Limpiar artículos eliminando campos temporales antes de enviar
-      articles: articles.map(article => ({
-        title: article.title,
-        content: article.content,
-        order: article.order,
-        isPublished: article.isPublished,
-        createdAt: article.createdAt
-        // No incluir _id ni createdAt - MongoDB los generará automáticamente
-      }))
+      images: images
     };
 
     // Debug: mostrar qué datos se están enviando
@@ -3599,9 +3573,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
       type: submitData.type,
       category: submitData.category,
       content: submitData.content?.substring(0, 100) + '...',
-      hasImages: submitData.images?.length || 0,
-      articlesCount: submitData.articles?.length || 0,
-      articles: submitData.articles
+      hasImages: submitData.images?.length || 0
     });
     
     onSubmit(submitData);
@@ -3616,38 +3588,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     }));
   };
 
-  // Funciones para gestionar artículos
-  const addArticle = () => {
-    if (newArticle.title && newArticle.content) {
-      const articleToAdd = {
-        ...newArticle,
-        _id: `temp-${Date.now()}`,
-        createdAt: new Date().toISOString()
-      };
-      
-      setArticles(prev => [...prev, articleToAdd]);
-      
-      // Resetear el formulario de artículo
-      setNewArticle({
-        title: '',
-        content: '',
-        order: articles.length + 1,
-        isPublished: true
-      });
-    } else {
-      alert('Por favor completa el título y contenido del artículo');
-    }
-  };
-
-  const removeArticle = (index: number) => {
-    setArticles(prev => prev.filter((_, i) => i !== index));
-    
-    // Reordenar artículos restantes
-    setArticles(prev => prev.map((article, i) => ({
-      ...article,
-      order: i + 1
-    })));
-  };
 
 
 
@@ -3749,17 +3689,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
               
             </div>
 
-            <div className={styles.formGroup}>
-              <label htmlFor="summary">Resumen</label>
-              <textarea
-                id="summary"
-                value={formData.summary}
-                onChange={(e) => handleInputChange('summary', e.target.value)}
-                placeholder="Breve descripción del análisis de Trader Call"
-                rows={3}
-                disabled={loading}
-              />
-            </div>
 
             
 
@@ -3827,143 +3756,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
             </div>
           </div>
 
-          {/* Sección de artículos */}
-          <div className={styles.formSection}>
-            <h3>📚 Artículos del Informe (Opcional)</h3>
-            <p style={{ color: '#6b7280', marginBottom: '1rem', fontSize: '0.9rem' }}>
-              Puedes dividir el informe en artículos más pequeños para mejor organización. 
-              Máximo 10 artículos permitidos.
-            </p>
-
-            {/* Formulario para agregar artículo */}
-            <div style={{
-              background: 'rgba(102, 126, 234, 0.05)',
-              border: '1px solid rgba(102, 126, 234, 0.2)',
-              borderRadius: '12px',
-              padding: '1.5rem',
-              marginBottom: '1.5rem'
-            }}>
-              <h4 style={{ margin: '0 0 1rem 0', color: '#667eea' }}>➕ Agregar Nuevo Artículo</h4>
-              
-              <div className={styles.formRow}>
-                <div className={styles.formGroup}>
-                  <label>Título del Artículo *</label>
-                  <input
-                    type="text"
-                    value={newArticle.title}
-                    onChange={(e) => setNewArticle(prev => ({...prev, title: e.target.value}))}
-                    placeholder="Ej: Análisis Técnico del SPY500"
-                    maxLength={200}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Orden *</label>
-                  <input
-                    type="number"
-                    value={newArticle.order}
-                    onChange={(e) => setNewArticle(prev => ({...prev, order: parseInt(e.target.value)}))}
-                    min={1}
-                    max={10}
-                  />
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Contenido del Artículo *</label>
-                <textarea
-                  value={newArticle.content}
-                  onChange={(e) => setNewArticle(prev => ({...prev, content: e.target.value}))}
-                  rows={4}
-                  placeholder="Contenido del artículo (puede incluir HTML)..."
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={newArticle.isPublished}
-                    onChange={(e) => setNewArticle(prev => ({...prev, isPublished: e.target.checked}))}
-                  />
-                  Publicar inmediatamente
-                </label>
-              </div>
-
-              <button
-                type="button"
-                onClick={addArticle}
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: '500'
-                }}
-              >
-                + Agregar Artículo al Informe
-              </button>
-            </div>
-
-            {/* Lista de artículos agregados */}
-            {articles.length > 0 && (
-              <div style={{
-                background: 'rgba(255, 255, 255, 0.03)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                padding: '1.5rem'
-              }}>
-                <h4 style={{ margin: '0 0 1rem 0', color: '#ffffff' }}>
-                  📋 Artículos Agregados ({articles.length})
-                </h4>
-                
-                <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                  {articles
-                    .sort((a, b) => a.order - b.order)
-                    .map((article, index) => (
-                      <div key={article._id} style={{
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
-                        borderRadius: '8px',
-                        padding: '1rem',
-                        marginBottom: '0.75rem',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <div>
-                          <div style={{ fontWeight: '600', color: '#ffffff', marginBottom: '0.25rem' }}>
-                            Artículo {article.order}: {article.title}
-                          </div>
-                          <div style={{ fontSize: '0.8rem', color: '#a0a0a0' }}>
-                            {article.content.substring(0, 100)}...
-                          </div>
-                          <div style={{ fontSize: '0.75rem', color: '#667eea', marginTop: '0.25rem' }}>
-                            Estado: {article.isPublished ? 'Publicado' : 'Borrador'}
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeArticle(index)}
-                          style={{
-                            background: '#ef4444',
-                            color: 'white',
-                            border: 'none',
-                            padding: '0.5rem',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontSize: '0.8rem'
-                          }}
-                        >
-                          Eliminar
-                        </button>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            )}
-          </div>
 
           <div className={styles.formActions}>
             <button 

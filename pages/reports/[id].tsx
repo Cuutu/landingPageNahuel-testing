@@ -73,7 +73,7 @@ interface ReportViewProps {
 
 const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }) => {
   const router = useRouter();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(-1);
   const [isLoading, setIsLoading] = useState(false);
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
   const [showArticlesList, setShowArticlesList] = useState(false);
