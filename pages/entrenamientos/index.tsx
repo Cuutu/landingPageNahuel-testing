@@ -5,6 +5,7 @@ import { GetServerSideProps } from 'next';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import BackgroundVideo from '@/components/BackgroundVideo';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -157,6 +158,16 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
       <main className={styles.main}>
         {/* Hero Section - Nuevo diseño basado en la imagen */}
         <section className={styles.heroSection}>
+          {/* Video de fondo */}
+          <BackgroundVideo
+            videoSrc="/logos/Diseño Web-LozanoNahuel-Entrenamientos-SwingTrading.mp4"
+            className={styles.heroVideoBackground}
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            showControls={false}
+          />
+          
           <div className={styles.container}>
             <div className={styles.heroContent}>
               {/* Contenido izquierdo - Texto y botón */}
