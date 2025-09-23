@@ -477,6 +477,7 @@ const SubscriberView: React.FC = () => {
     precioMinimo: '',
     precioMaximo: '',
     horarioCierre: '17:30',
+    availableForPurchase: true,
     emailMessage: '',
     emailImageUrl: ''
   });
@@ -494,7 +495,8 @@ const SubscriberView: React.FC = () => {
     entryPrice: '',
     stopLoss: '',
     takeProfit: '',
-    analysis: ''
+    analysis: '',
+    availableForPurchase: false
   });
   const [editLoading, setEditLoading] = useState(false);
   // Estados para imágenes del gráfico de TradingView
@@ -1162,6 +1164,7 @@ const SubscriberView: React.FC = () => {
           precioMinimo: '',
           precioMaximo: '',
           horarioCierre: '17:30',
+          availableForPurchase: true,
           emailMessage: '',
           emailImageUrl: ''
         });
@@ -1403,11 +1406,48 @@ const SubscriberView: React.FC = () => {
       entryPrice: alert.entryPrice ? alert.entryPrice.replace('$', '') : '',
       stopLoss: alert.stopLoss ? alert.stopLoss.replace('$', '') : '',
       takeProfit: alert.takeProfit ? alert.takeProfit.replace('$', '') : '',
-      analysis: alert.analysis || ''
+      analysis: alert.analysis || '',
+      availableForPurchase: alert.availableForPurchase || false
     });
 
     // Mostrar el modal de edición
     setShowEditAlert(true);
+  };
+
+  // Función para alternar el estado de disponibilidad para compra
+  const handleToggleAvailableForPurchase = async (alertId: string, availableForPurchase: boolean) => {
+    try {
+      console.log('🔄 Cambiando disponibilidad de alerta:', { alertId, availableForPurchase });
+      
+      const response = await fetch('/api/alerts/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: alertId,
+          availableForPurchase: availableForPurchase
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Disponibilidad actualizada correctamente');
+          // Recargar las alertas para reflejar el cambio
+          await loadAlerts();
+        } else {
+          console.error('❌ Error al actualizar disponibilidad:', result.error);
+          alert('Error al actualizar la disponibilidad de la alerta');
+        }
+      } else {
+        console.error('❌ Error en la respuesta del servidor');
+        alert('Error al actualizar la disponibilidad de la alerta');
+      }
+    } catch (error) {
+      console.error('❌ Error al cambiar disponibilidad:', error);
+      alert('Error inesperado al actualizar la disponibilidad');
+    }
   };
 
   // Función para guardar los cambios de la alerta
@@ -1938,9 +1978,10 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // Solo mostrar alertas activas en el seguimiento 3D
-    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
-    const alertasCerradas = realAlerts.filter(alert => alert.status === 'CLOSED');
+    // Mostrar solo las alertas que ya moviste a seguimiento (availableForPurchase: false)
+    const alertasEnSeguimiento = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE' && alert.availableForPurchase === false
+    );
     
     // Paleta de colores dinámicos para cada alerta
     const colorPalette = [
@@ -1949,8 +1990,8 @@ const SubscriberView: React.FC = () => {
       '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
     ];
     
-    // Preparar datos para el gráfico de torta 3D - Solo alertas activas
-    const chartData = alertasActivas.map((alert, index) => {
+    // Preparar datos para el gráfico de torta 3D - Solo alertas en seguimiento
+    const chartData = alertasEnSeguimiento.map((alert, index) => {
       const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
       return {
         id: alert.id,
@@ -1990,7 +2031,10 @@ const SubscriberView: React.FC = () => {
     return (
             <div className={styles.seguimientoContent}>
         <div className={styles.seguimientoHeader}>
-          <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas 3D</h2>
+          <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
+          <p className={styles.sectionDescription}>
+            Alertas que has movido a seguimiento (ya no disponibles para nuevos clientes)
+          </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
               <button 
@@ -2037,20 +2081,20 @@ const SubscriberView: React.FC = () => {
             <div className={styles.loadingSpinner}></div>
             <p>Cargando alertas...</p>
           </div>
-        ) : realAlerts.length === 0 ? (
-                  <div className={styles.emptyState}>
+        ) : alertasEnSeguimiento.length === 0 ? (
+          <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📊</div>
-            <h3>No hay alertas disponibles</h3>
-            <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
+            <h3>No hay alertas en seguimiento</h3>
+            <p>Las alertas que muevas desde "Alertas Vigentes" aparecerán aquí para su seguimiento.</p>
             {userRole === 'admin' && (
               <button 
-                className={styles.createFirstAlertButton}
+                className={styles.createAlertButton}
                 onClick={() => setShowCreateAlert(true)}
               >
-                + Crear Primera Alerta
+                + Crear Nueva Alerta
               </button>
             )}
-                  </div>
+          </div>
         ) : (
           <div className={styles.chartContainer}>
             <div className={styles.chartLayout}>
@@ -2139,14 +2183,14 @@ const SubscriberView: React.FC = () => {
                     <div className={styles.summaryIcon}>📊</div>
                     <div className={styles.summaryContent}>
                       <span className={styles.summaryLabel}>Total Alertas</span>
-                      <span className={styles.summaryValue}>{chartData.length}</span>
+                      <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
                     </div>
                   </div>
                   <div className={styles.summaryCard}>
                     <div className={styles.summaryIcon}>🟢</div>
                     <div className={styles.summaryContent}>
-                      <span className={styles.summaryLabel}>Activas</span>
-                      <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                      <span className={styles.summaryLabel}>En Seguimiento</span>
+                      <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
                     </div>
                   </div>
                 </div>
@@ -2241,6 +2285,103 @@ const SubscriberView: React.FC = () => {
               </div>
             </div>
           </div>
+        </div>
+        
+        {/* Lista de alertas en seguimiento */}
+        <div className={styles.alertsList}>
+          {alertasEnSeguimiento.map((alert) => (
+            <div key={alert.id} className={styles.alertCard}>
+              <div className={styles.alertHeader}>
+                <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
+                <div className={styles.alertStatus}>
+                  <span className={`${styles.statusBadge} ${alert.status === 'ACTIVE' ? styles.statusActive : styles.statusClosed}`}>
+                    {alert.status === 'ACTIVE' ? '🟢 Activa' : '🔴 Cerrada'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className={styles.alertContent}>
+                <div className={styles.alertDetails}>
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Acción:</span>
+                    <span className={`${styles.alertValue} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                      {alert.action === 'BUY' ? '📈 COMPRA' : '📉 VENTA'}
+                    </span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Precio Entrada:</span>
+                    <span className={styles.alertValue}>${alert.entryPrice}</span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Precio Actual:</span>
+                    <span className={styles.alertValue}>${alert.currentPrice}</span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>P&L:</span>
+                    <span className={`${styles.alertValue} ${parseFloat(alert.profit.replace(/[+%]/g, '')) >= 0 ? styles.profitPositive : styles.profitNegative}`}>
+                      {alert.profit}
+                    </span>
+                  </div>
+                  
+                  {alert.stopLoss && (
+                    <div className={styles.alertRow}>
+                      <span className={styles.alertLabel}>Stop Loss:</span>
+                      <span className={styles.alertValue}>${alert.stopLoss}</span>
+                    </div>
+                  )}
+                  
+                  {alert.takeProfit && (
+                    <div className={styles.alertRow}>
+                      <span className={styles.alertLabel}>Take Profit:</span>
+                      <span className={styles.alertValue}>${alert.takeProfit}</span>
+                    </div>
+                  )}
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Fecha:</span>
+                    <span className={styles.alertValue}>
+                      {new Date(alert.date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+                
+                {alert.analysis && (
+                  <div className={styles.alertAnalysis}>
+                    <h4 className={styles.analysisTitle}>📊 Análisis</h4>
+                    <p className={styles.analysisText}>{alert.analysis}</p>
+                  </div>
+                )}
+                
+                {userRole === 'admin' && (
+                  <div className={styles.alertActions}>
+                    <button
+                      className={styles.editButton}
+                      onClick={() => handleEditAlert(alert)}
+                      title="Editar alerta"
+                    >
+                      ✏️ Editar
+                    </button>
+                    {alert.status === 'ACTIVE' && (
+                      <button
+                        className={styles.closeButton}
+                        onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
+                        title="Cerrar posición"
+                      >
+                        🔒 Cerrar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -2345,7 +2486,10 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderAlertasVigentes = () => {
-    const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
+    // Mostrar solo las alertas que están disponibles para nuevos clientes (availableForPurchase: true)
+    const alertasActivas = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE' && alert.availableForPurchase === true
+    );
     
     return (
             <div className={styles.vigentesContent}>
@@ -2451,13 +2595,32 @@ const SubscriberView: React.FC = () => {
               
                           <div className={styles.alertActions}>
                 {userRole === 'admin' && (
-                            <button
-                              className={styles.editButton}
-                              onClick={() => handleEditAlert(alert)}
-                              title="Editar alerta"
-                            >
-                              ✏️ Editar
-                            </button>
+                  <>
+                    <div className={styles.checkboxContainer}>
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={alert.availableForPurchase}
+                          onChange={(e) => handleToggleAvailableForPurchase(alert.id, e.target.checked)}
+                          className={styles.checkboxInput}
+                        />
+                        <span className={styles.checkboxText}>
+                          {alert.availableForPurchase ? 'Disponible para compra' : 'En seguimiento'}
+                        </span>
+                      </label>
+                      <p className={styles.checkboxDescription}>
+                        <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                        <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+                      </p>
+                    </div>
+                    <button
+                      className={styles.editButton}
+                      onClick={() => handleEditAlert(alert)}
+                      title="Editar alerta"
+                    >
+                      ✏️ Editar
+                    </button>
+                  </>
                 )}
                             <button
                               className={styles.closeButton}
@@ -2985,6 +3148,24 @@ const SubscriberView: React.FC = () => {
                   rows={4}
                 />
               </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={editAlert.availableForPurchase}
+                    onChange={(e) => setEditAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
+                    className={styles.checkboxInput}
+                  />
+                  <span className={styles.checkboxText}>
+                    Disponible para compra
+                  </span>
+                </label>
+                <p className={styles.checkboxDescription}>
+                  <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                  <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+                </p>
+              </div>
             </div>
 
             <div className={styles.modalFooter}>
@@ -3159,6 +3340,24 @@ const SubscriberView: React.FC = () => {
                 className={styles.textarea}
                 rows={4}
               />
+            </div>
+
+            <div className={styles.inputGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={newAlert.availableForPurchase}
+                  onChange={(e) => setNewAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
+                  className={styles.checkboxInput}
+                />
+                <span className={styles.checkboxText}>
+                  Disponible para compra
+                </span>
+              </label>
+              <p className={styles.checkboxDescription}>
+                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+              </p>
             </div>
 
             <div className={styles.inputGroup}>
