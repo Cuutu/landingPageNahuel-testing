@@ -1596,11 +1596,15 @@ const SubscriberView: React.FC = () => {
 
     // Calcular el tamaño de cada segmento basado en la liquidez asignada
     const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
-    const chartSegments = chartData.map((alert, index) => {
+    const totalBase = (liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalAllocated;
+    let cumulativeAngle = 0;
+    const chartSegments = chartData.map((alert) => {
       const segmentBase = Math.abs(alert.allocatedAmount || 0);
-      const size = totalAllocated > 0 ? (segmentBase / totalAllocated) * 100 : 100 / chartData.length;
-      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + ((Math.abs(a.allocatedAmount || 0) / (totalAllocated || 1)) * 360), 0);
-      const endAngle = startAngle + ((segmentBase / (totalAllocated || 1)) * 360);
+      const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
+      const angle = (segmentBase / (totalBase || 1)) * 360;
+      const startAngle = cumulativeAngle;
+      const endAngle = startAngle + angle;
+      cumulativeAngle = endAngle;
 
       return {
         ...alert,
@@ -1612,11 +1616,10 @@ const SubscriberView: React.FC = () => {
     });
 
     // Agregar segmento de liquidez disponible
-    const available = Math.max((liquidityTotal || 0) - totalAllocated, 0);
+    const available = Math.max((totalBase || 0) - totalAllocated, 0);
     if (available > 0) {
-      const lastEnd = chartSegments.length ? chartSegments[chartSegments.length - 1].endAngle : 0;
-      const liqStart = lastEnd;
-      const liqEnd = liqStart + ((available / ((liquidityTotal || 1))) * 360);
+      const liqStart = cumulativeAngle;
+      const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
       chartSegments.push({
         id: 'LIQ-SEG',
         symbol: 'LIQUIDEZ',
@@ -1632,7 +1635,7 @@ const SubscriberView: React.FC = () => {
         allocatedAmount: available,
         color: '#9CA3AF',
         darkColor: '#9CA3AF80',
-        size: (available / ((liquidityTotal || 1))) * 100,
+        size: (available / (totalBase || 1)) * 100,
         startAngle: liqStart,
         endAngle: liqEnd,
         centerAngle: (liqStart + liqEnd) / 2,
@@ -2691,7 +2694,7 @@ const SubscriberView: React.FC = () => {
 
     const fetchMessages = async () => {
       try {
-        const response = await fetch('/api/chat/messages?chatType=trader-call');
+        const response = await fetch('/api/chat/messages?chatType=smart-money');
         if (response.ok) {
           const data = await response.json();
           setMessages(data.messages || []);
@@ -2708,7 +2711,7 @@ const SubscriberView: React.FC = () => {
         try {
           const messageData: any = {
             message: message.trim(),
-            chatType: 'trader-call'
+            chatType: 'smart-money'
           };
 
           // Si estamos respondiendo a un mensaje, incluir la referencia
