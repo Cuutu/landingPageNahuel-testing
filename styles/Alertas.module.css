@@ -30,6 +30,23 @@
   z-index: 0;
 }
 
+.heroVideoBackground :global(.background-video-container) {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  z-index: 0 !important;
+}
+
+.heroVideoBackground :global(.background-video) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
 .hero::before {
   content: '';
   position: absolute;
