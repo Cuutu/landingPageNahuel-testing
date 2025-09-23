@@ -44,7 +44,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import styles from '@/styles/TraderCall.module.css';
+import styles from '@/styles/SmartMoney.module.css';
 import { useRouter } from 'next/router';
 import { calculateDaysRemaining, calculateDaysSinceSubscription } from '../../utils/dateUtils';
 import SPY500Indicator from '@/components/SPY500Indicator';
@@ -92,7 +92,7 @@ interface HistoricalAlert {
   profitPercentage: string;
 }
 
-interface TraderCallPageProps {
+interface SmartMoneyPageProps {
   isSubscribed: boolean;
   metrics: {
     performance: string;
@@ -132,7 +132,7 @@ const NonSubscriberView: React.FC<{
     
     try {
       // Obtener el precio dinámico del sistema
-      const subscriptionPrice = pricing?.alertas?.traderCall?.monthly || 15000;
+      const subscriptionPrice = pricing?.alertas?.smartMoney?.monthly || 22000;
       
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',
@@ -140,7 +140,7 @@ const NonSubscriberView: React.FC<{
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service: 'TraderCall',
+          service: 'SmartMoney',
           amount: subscriptionPrice,
           currency: 'ARS',
           type: 'subscription'
@@ -170,19 +170,19 @@ const NonSubscriberView: React.FC<{
   const exampleImages = [
     {
       src: '/alerts/trader-call-example-1.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis AAPL',
+      alt: 'Ejemplo de alerta Smart Money - Análisis AAPL',
       title: 'Alerta AAPL - Entrada Perfecta',
       description: 'Señal de compra en Apple con +15% de ganancia en 3 días'
     },
     {
       src: '/alerts/trader-call-example-2.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis TSLA',
+      alt: 'Ejemplo de alerta Smart Money - Análisis TSLA',
       title: 'Alerta TSLA - Stop Loss Activado',
       description: 'Protección de capital con stop loss inteligente'
     },
     {
       src: '/alerts/trader-call-example-3.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis SPY',
+      alt: 'Ejemplo de alerta Smart Money - Análisis SPY',
       title: 'Alerta SPY - Take Profit',
       description: 'Maximización de ganancias con take profit automático'
     }
@@ -206,7 +206,7 @@ const NonSubscriberView: React.FC<{
           >
             <div className={styles.heroText}>
               <h1 className={styles.heroTitle}>
-                Trader Call
+                Smart Money
               </h1>
               <p className={styles.heroDescription}>
                 Servicio de alertas de compra y venta con estrategia de corto plazo, informes detallados y seguimiento activo, para que puedas invertir en CEDEARs y acciones de forma simple y estratégica. Ideal para quienes buscan grandes rendimientos.
@@ -284,50 +284,50 @@ const NonSubscriberView: React.FC<{
 
       {/* Métricas - Sección independiente para ocupar todo el ancho */}
       <section className={styles.metricsSection}>
-        <div className={styles.metricsGrid}>
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-          >
+          <div className={styles.metricsGrid}>
+            <motion.div 
+              className={styles.metricCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
             <h3 className={styles.metricNumber}>+700</h3>
             <p className={styles.metricLabel}>USUARIOS ACTIVOS</p>
-          </motion.div>
+            </motion.div>
 
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
+            <motion.div 
+              className={styles.metricCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+            >
             <h3 className={styles.metricNumber}>+87%</h3> 
             <p className={styles.metricLabel}>RENTABILIDAD ANUAL</p>
-          </motion.div>
+            </motion.div>
 
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-          >
+            <motion.div 
+              className={styles.metricCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+            >
             <h3 className={styles.metricNumber}>+200</h3>
             <p className={styles.metricLabel}>ALERTAS ENVIADAS</p>
-          </motion.div>
+            </motion.div>
 
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-          >
+            <motion.div 
+              className={styles.metricCard}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+            >
             <h3 className={styles.metricNumber}>+79%</h3>
             <p className={styles.metricLabel}>EFECTIVIDAD</p>
-          </motion.div>
+            </motion.div>
         </div>
       </section>
 
@@ -354,7 +354,7 @@ const NonSubscriberView: React.FC<{
               alt="Alertas Históricas - Rendimiento de Trading"
               className={styles.historyImage}
             />
-          </motion.div>
+            </motion.div>
         </div>
       </section>
 
@@ -378,7 +378,7 @@ const NonSubscriberView: React.FC<{
           >
             <FAQAccordion 
               faqs={faqs}
-              category="trader-call"
+              category="smart-money"
               maxItems={10}
             />
           </motion.div>
@@ -477,6 +477,7 @@ const SubscriberView: React.FC = () => {
     precioMinimo: '',
     precioMaximo: '',
     horarioCierre: '17:30',
+    availableForPurchase: true,
     emailMessage: '',
     emailImageUrl: ''
   });
@@ -799,8 +800,8 @@ const SubscriberView: React.FC = () => {
   const loadInformes = async (page: number = 1) => {
     setLoadingInformes(true);
     try {
-      // Filtrar solo informes de Trader Call con paginación
-      const response = await fetch(`/api/reports?page=${page}&limit=${informesPerPage}&featured=false&category=trader-call`, {
+      // Filtrar solo informes de Smart Money con paginación
+      const response = await fetch(`/api/reports?page=${page}&limit=${informesPerPage}&featured=false&category=smart-money`, {
         method: 'GET',
         credentials: 'same-origin',
       });
@@ -811,7 +812,7 @@ const SubscriberView: React.FC = () => {
         setTotalPages(data.data?.pagination?.totalPages || 1);
         setTotalInformes(data.data?.pagination?.total || 0);
         setCurrentPage(page);
-        console.log('Informes Trader Call cargados:', data.data?.reports?.length || 0, 'Página:', page);
+        console.log('Informes Smart Money cargados:', data.data?.reports?.length || 0, 'Página:', page);
       } else {
         console.error('Error al cargar informes:', response.status);
       }
@@ -879,7 +880,7 @@ const SubscriberView: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData, 
-          category: 'trader-call' // Asignar categoría Trader Call
+          category: 'smart-money' // Asignar categoría Smart Money
         }),
       });
 
@@ -887,7 +888,7 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Informe Trader Call creado exitosamente:', result);
+        console.log('✅ Informe Smart Money creado exitosamente:', result);
         const newReport = result.data.report;
         setInformes(prev => [newReport, ...prev]);
         setShowCreateReportModal(false);
@@ -1001,7 +1002,7 @@ const SubscriberView: React.FC = () => {
     
     const loadLiquidity = async () => {
       try {
-        const res = await fetch('/api/liquidity/public?pool=TraderCall');
+        const res = await fetch('/api/liquidity/public?pool=SmartMoney');
         if (res.ok && isMounted) {
           const json = await res.json();
           const map: Record<string, any> = {};
@@ -1126,7 +1127,7 @@ const SubscriberView: React.FC = () => {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          tipo: 'TraderCall',
+          tipo: 'SmartMoney',
           symbol: newAlert.symbol.toUpperCase(),
           action: newAlert.action,
           entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : undefined, // Solo para alertas de precio específico
@@ -1149,7 +1150,7 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Alerta Trader Call creada:', result.alert);
+        console.log('✅ Alerta Smart Money creada:', result.alert);
         
         // Recargar alertas y limpiar formulario
         await loadAlerts();
@@ -1163,6 +1164,7 @@ const SubscriberView: React.FC = () => {
           precioMinimo: '',
           precioMaximo: '',
           horarioCierre: '17:30',
+          availableForPurchase: true,
           emailMessage: '',
           emailImageUrl: ''
         });
@@ -1171,7 +1173,7 @@ const SubscriberView: React.FC = () => {
         setAdditionalImages([]);
         setShowCreateAlert(false);
         
-        alert('¡Alerta de Trader Call creada exitosamente!');
+        alert('¡Alerta de Smart Money creada exitosamente!');
       } else {
         const error = await response.json();
         console.error('❌ Error del servidor:', error);
@@ -1412,6 +1414,42 @@ const SubscriberView: React.FC = () => {
     setShowEditAlert(true);
   };
 
+  // Función para alternar el estado de disponibilidad para compra
+  const handleToggleAvailableForPurchase = async (alertId: string, availableForPurchase: boolean) => {
+    try {
+      console.log('🔄 Cambiando disponibilidad de alerta:', { alertId, availableForPurchase });
+      
+      const response = await fetch('/api/alerts/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: alertId,
+          availableForPurchase: availableForPurchase
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          console.log('✅ Disponibilidad actualizada correctamente');
+          // Recargar las alertas para reflejar el cambio
+          await loadAlerts();
+        } else {
+          console.error('❌ Error al actualizar disponibilidad:', result.error);
+          alert('Error al actualizar la disponibilidad de la alerta');
+        }
+      } else {
+        console.error('❌ Error en la respuesta del servidor');
+        alert('Error al actualizar la disponibilidad de la alerta');
+      }
+    } catch (error) {
+      console.error('❌ Error al cambiar disponibilidad:', error);
+      alert('Error inesperado al actualizar la disponibilidad');
+    }
+  };
+
   // Función para guardar los cambios de la alerta
   const handleSaveEditAlert = async () => {
     if (!editingAlert) return;
@@ -1459,7 +1497,6 @@ const SubscriberView: React.FC = () => {
           stopLoss: parseFloat(editAlert.stopLoss),
           takeProfit: parseFloat(editAlert.takeProfit),
           analysis: editAlert.analysis,
-          availableForPurchase: editAlert.availableForPurchase,
           reason: 'Edición por administrador desde panel de control'
         }),
       });
@@ -1719,7 +1756,7 @@ const SubscriberView: React.FC = () => {
         {/* Círculo central con efecto 3D */}
         <circle cx="150" cy="150" r="40" className={styles.chartCenter3D} />
       </svg>
-    </div>
+            </div>
   );
 
   const renderDashboard = () => {
@@ -1728,130 +1765,130 @@ const SubscriberView: React.FC = () => {
     const chartSegments = createPieChartData(alertasActivas);
 
     return (
-      <div className={styles.dashboardContent}>
+            <div className={styles.dashboardContent}>
         <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
 
-        {/* Métricas principales */}
-        <div className={styles.modernMetricsGrid}>
-          <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
-            <div className={styles.cardHeader}>
-              <div className={styles.iconContainer}>
-                <Activity size={20} />
-              </div>
-              <div className={styles.statusDot}></div>
-            </div>
-            <div className={styles.metricContent}>
-              <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
-              <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
-              <p className={styles.metricSubtext}>Posiciones abiertas</p>
-            </div>
-          </div>
+              {/* Métricas principales */}
+              <div className={styles.modernMetricsGrid}>
+                <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <Activity size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS ACTIVAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasActivas}</div>
+                    <p className={styles.metricSubtext}>Posiciones abiertas</p>
+                  </div>
+                </div>
 
-          <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
-            <div className={styles.cardHeader}>
-              <div className={styles.iconContainer}>
-                <TrendingUp size={20} />
-              </div>
-              <div className={styles.statusDot}></div>
-            </div>
-            <div className={styles.metricContent}>
-              <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
-              <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
-              <p className={styles.metricSubtext}>Cerradas con ganancia</p>
-            </div>
-          </div>
+                <div className={`${styles.modernMetricCard} ${styles.successCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <TrendingUp size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS GANADORAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasGanadoras}</div>
+                    <p className={styles.metricSubtext}>Cerradas con ganancia</p>
+                  </div>
+                </div>
 
-          <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
-            <div className={styles.cardHeader}>
-              <div className={styles.iconContainer}>
-                <TrendingDown size={20} />
-              </div>
-              <div className={styles.statusDot}></div>
-            </div>
-            <div className={styles.metricContent}>
-              <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
-              <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
-              <p className={styles.metricSubtext}>Cerradas con pérdida</p>
-            </div>
-          </div>
+                <div className={`${styles.modernMetricCard} ${styles.errorCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <TrendingDown size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>ALERTAS PERDEDORAS</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.alertasPerdedoras}</div>
+                    <p className={styles.metricSubtext}>Cerradas con pérdida</p>
+                  </div>
+                </div>
 
-          <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
-            <div className={styles.cardHeader}>
-              <div className={styles.iconContainer}>
-                <BarChart3 size={20} />
+                <div className={`${styles.modernMetricCard} ${styles.warningCard}`}>
+                  <div className={styles.cardHeader}>
+                    <div className={styles.iconContainer}>
+                      <BarChart3 size={20} />
+                    </div>
+                    <div className={styles.statusDot}></div>
+                  </div>
+                  <div className={styles.metricContent}>
+                    <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
+                    <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
+                    <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
+                  </div>
+                </div>
               </div>
-              <div className={styles.statusDot}></div>
-            </div>
-            <div className={styles.metricContent}>
-              <h3 className={styles.metricTitle}>RENTABILIDAD ANUAL</h3>
-              <div className={styles.metricValue}>{dashboardMetrics.rentabilidadAnual}</div>
-              <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Gráfico de Distribución de Alertas */}
-        <div className={styles.chartSection}>
-          <div className={styles.chartHeader}>
+              {/* Gráfico de Distribución de Alertas */}
+                  <div className={styles.chartSection}>
+                    <div className={styles.chartHeader}>
             {typeof liquidityTotal === 'number' && (
               <>
                 <span className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</span>
                 <span className={styles.totalLiquidityBadge}>Liquidez Distribuida: ${Object.values(liquidityMap || {}).reduce((s: number, d: any) => s + (d?.allocatedAmount || 0), 0).toFixed(2)}</span>
               </>
             )}
-            <h3>📊 Distribución de Alertas Activas</h3>
-            <div className={styles.chartActions}>
-              <button
-                className={styles.viewDetailedButton}
-                onClick={() => setActiveTab('seguimiento')}
-              >
-                Ver Análisis Detallado
-              </button>
-            </div>
-          </div>
-          <div className={styles.dashboardChartContainer}>
-            {alertasActivas.length > 0 ? (
+                      <h3>📊 Distribución de Alertas Activas</h3>
+                      <div className={styles.chartActions}>
+                        <button
+                          className={styles.viewDetailedButton}
+                          onClick={() => setActiveTab('seguimiento')}
+                        >
+                          Ver Análisis Detallado
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles.dashboardChartContainer}>
+                      {alertasActivas.length > 0 ? (
               <>
-                <div className={styles.dashboardChartLayout}>
-                  {renderPieChart(chartSegments)}
-                  <div className={styles.chartInfoPanel}>
-                    <div className={styles.infoHeader}>
-                      <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
-                      <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
-                    </div>
-                    <div className={styles.statsSummary}>
-                      <div className={styles.summaryCard}>
-                        <div className={styles.summaryIcon}>📊</div>
-                        <div className={styles.summaryContent}>
-                          <span className={styles.summaryLabel}>Total Alertas</span>
-                          <span className={styles.summaryValue}>{chartSegments.length}</span>
-                        </div>
-                      </div>
-                      <div className={styles.summaryCard}>
-                        <div className={styles.summaryIcon}>🟢</div>
-                        <div className={styles.summaryContent}>
-                          <span className={styles.summaryLabel}>Activas</span>
-                          <span className={styles.summaryValue}>{alertasActivas.length}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={styles.chartLegend3D}>
-                      <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
-                      <div className={styles.legendList}>
-                        {chartSegments.map((segment) => (
-                          <div key={segment.id} className={styles.legendItem3D}>
-                            <div className={styles.legendColor3D} style={{ backgroundColor: segment.color }} />
-                            <div className={styles.legendInfo}>
-                              <span className={styles.legendSymbol}>{segment.symbol}</span>
-                              <span className={styles.legendProfit}>{segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%</span>
-                              <span className={styles.legendStatus}>{segment.status === 'ACTIVE' ? '🟢' : '🔴'}</span>
+                        <div className={styles.dashboardChartLayout}>
+                          {renderPieChart(chartSegments)}
+                          <div className={styles.chartInfoPanel}>
+                            <div className={styles.infoHeader}>
+                              <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
+                              <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
+                            </div>
+                            <div className={styles.statsSummary}>
+                              <div className={styles.summaryCard}>
+                                <div className={styles.summaryIcon}>📊</div>
+                                <div className={styles.summaryContent}>
+                                  <span className={styles.summaryLabel}>Total Alertas</span>
+                                  <span className={styles.summaryValue}>{chartSegments.length}</span>
+                                </div>
+                              </div>
+                              <div className={styles.summaryCard}>
+                                <div className={styles.summaryIcon}>🟢</div>
+                                <div className={styles.summaryContent}>
+                                  <span className={styles.summaryLabel}>Activas</span>
+                                  <span className={styles.summaryValue}>{alertasActivas.length}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className={styles.chartLegend3D}>
+                              <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
+                              <div className={styles.legendList}>
+                                {chartSegments.map((segment) => (
+                                  <div key={segment.id} className={styles.legendItem3D}>
+                                    <div className={styles.legendColor3D} style={{ backgroundColor: segment.color }} />
+                                    <div className={styles.legendInfo}>
+                                      <span className={styles.legendSymbol}>{segment.symbol}</span>
+                                      <span className={styles.legendProfit}>{segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%</span>
+                                      <span className={styles.legendStatus}>{segment.status === 'ACTIVE' ? '🟢' : '🔴'}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                        </div>
                 {/* Tooltip flotante para el dashboard (no usado, duplicado evitado) */}
                 <div id="chartTooltipDashboard" className={styles.chartTooltip3D}>
                   <div className={styles.tooltipContent3D}>
@@ -1893,50 +1930,50 @@ const SubscriberView: React.FC = () => {
                   </div>
                 </div>
               </>
-            ) : (
-              <div className={styles.emptyChartState}>
-                <div className={styles.emptyChartIcon}>📊</div>
-                <h4>No hay alertas activas</h4>
-                <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
-              </div>
-            )}
-          </div>
-        </div>
+                      ) : (
+                        <div className={styles.emptyChartState}>
+                          <div className={styles.emptyChartIcon}>📊</div>
+                          <h4>No hay alertas activas</h4>
+                          <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-        {/* Comparación con SP500 */}
-        <SP500Comparison />
+              {/* Comparación con SP500 */}
+              <SP500Comparison />
 
-        {/* Actividad Reciente */}
-        <div className={styles.activitySection}>
-          <div className={styles.activityHeader}>
-            <h3>Actividad Reciente</h3>
-            <div className={styles.activityActions}>
-              <button
-                className={styles.viewAllButton}
-                onClick={() => setActiveTab('seguimiento')}
-              >
-                Ver toda la actividad
-              </button>
-              <button
-                className={styles.refreshButton}
+              {/* Actividad Reciente */}
+              <div className={styles.activitySection}>
+                <div className={styles.activityHeader}>
+                  <h3>Actividad Reciente</h3>
+                  <div className={styles.activityActions}>
+                    <button
+                      className={styles.viewAllButton}
+                      onClick={() => setActiveTab('seguimiento')}
+                    >
+                      Ver toda la actividad
+                    </button>
+                    <button
+                      className={styles.refreshButton}
                 onClick={() => refreshActivity()}
-                disabled={refreshingActivity}
-              >
-                <Activity size={16} />
-                {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
-              </button>
-            </div>
-          </div>
-          <div className={styles.activityList}>
-            {recentActivity.slice(0, 5).map((activity, index) => (
-              <div key={activity.id || index} className={styles.activityItem}>
-                <span className={styles.activityTime}>{activity.timestamp}</span>
-                <span className={styles.activityMessage}>{activity.message}</span>
+                      disabled={refreshingActivity}
+                    >
+                      <Activity size={16} />
+                      {refreshingActivity ? 'Actualizando...' : 'Actualizar'}
+                    </button>
+                  </div>
+                </div>
+                <div className={styles.activityList}>
+                  {recentActivity.slice(0, 5).map((activity, index) => (
+                    <div key={activity.id || index} className={styles.activityItem}>
+                      <span className={styles.activityTime}>{activity.timestamp}</span>
+                      <span className={styles.activityMessage}>{activity.message}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </div>
     );
   };
 
@@ -2145,6 +2182,412 @@ const SubscriberView: React.FC = () => {
     ].join(" ");
   };
 
+  const renderAlertasVigentes = () => {
+    // Mostrar solo las alertas que están disponibles para nuevos clientes (availableForPurchase: true)
+    const alertasActivas = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE' && alert.availableForPurchase === true
+    );
+        // Color más oscuro para efecto 3D
+        darkColor: colorPalette[index % colorPalette.length] + '80'
+      };
+    });
+
+    // Calcular el tamaño de cada segmento basado en el profit
+    const totalProfit = chartData.reduce((sum, alert) => sum + Math.abs(alert.profit), 0);
+    const chartSegments = chartData.map((alert, index) => {
+      const size = totalProfit > 0 ? (Math.abs(alert.profit) / totalProfit) * 100 : 100 / chartData.length;
+      const startAngle = chartData.slice(0, index).reduce((sum, a) => sum + (Math.abs(a.profit) / totalProfit) * 360, 0);
+      const endAngle = startAngle + (Math.abs(alert.profit) / totalProfit) * 360;
+      
+      return {
+        ...alert,
+        size,
+        startAngle,
+        endAngle,
+        centerAngle: (startAngle + endAngle) / 2
+      };
+    });
+
+    return (
+            <div className={styles.seguimientoContent}>
+        <div className={styles.seguimientoHeader}>
+          <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
+          <p className={styles.sectionDescription}>
+            Alertas que has movido a seguimiento (ya no disponibles para nuevos clientes)
+          </p>
+          <div className={styles.chartControls}>
+            {userRole === 'admin' && (
+              <button 
+                className={styles.createAlertButton}
+                onClick={() => setShowCreateAlert(true)}
+                title="Crear nueva alerta"
+              >
+                + Crear Nueva Alerta
+              </button>
+            )}
+            <div className={styles.filtersContainer}>
+              <input
+                type="text"
+                placeholder="Filtrar por símbolo..."
+                value={filterSymbol}
+                onChange={(e) => setFilterSymbol(e.target.value)}
+                className={styles.filterInput}
+              />
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className={styles.filterSelect}
+              >
+                <option value="">Todos los estados</option>
+                <option value="ACTIVE">Activas</option>
+                <option value="CLOSED">Cerradas</option>
+                <option value="STOPPED">Detenidas</option>
+              </select>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className={styles.filterDate}
+              />
+              <button onClick={clearFilters} className={styles.clearFilters}>
+                Limpiar Filtros
+              </button>
+                        </div>
+                        </div>
+                      </div>
+        
+        {loadingAlerts ? (
+          <div className={styles.loadingState}>
+            <div className={styles.loadingSpinner}></div>
+            <p>Cargando alertas...</p>
+          </div>
+        ) : alertasEnSeguimiento.length === 0 ? (
+                  <div className={styles.emptyState}>
+            <div className={styles.emptyIcon}>📊</div>
+            <h3>No hay alertas en seguimiento</h3>
+            <p>Las alertas que muevas desde "Alertas Vigentes" aparecerán aquí para su seguimiento.</p>
+            {userRole === 'admin' && (
+              <button 
+                className={styles.createAlertButton}
+                onClick={() => setShowCreateAlert(true)}
+              >
+                + Crear Nueva Alerta
+              </button>
+            )}
+                  </div>
+        ) : (
+          <div className={styles.chartContainer}>
+            <div className={styles.chartLayout}>
+              {/* Gráfico de torta 3D - Lado izquierdo */}
+              <div className={styles.pieChart3D}>
+                <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
+                  {/* Sombra del gráfico para efecto 3D */}
+                  <defs>
+                    <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
+                      <feDropShadow dx="3" dy="3" stdDeviation="3" floodColor="#000000" floodOpacity="0.3"/>
+                    </filter>
+                    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                      <feMerge> 
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  {/* Fondo del gráfico con efecto 3D */}
+                  <circle cx="150" cy="150" r="120" className={styles.chartBackground3D} />
+                  
+                  {/* Segmentos del gráfico 3D */}
+                  {chartSegments.map((segment, index) => (
+                    <g key={segment.id} className={styles.chartSegment3D}>
+                      {/* Sombra del segmento */}
+                      <path
+                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+                        fill={segment.darkColor}
+                        filter="url(#shadow3D)"
+                        className={styles.segmentShadow}
+                      />
+                      {/* Segmento principal */}
+                      <path
+                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+                        fill={segment.color}
+                        className={styles.segmentPath3D}
+                        onMouseEnter={(e) => showTooltip(e, segment)}
+                        onMouseLeave={hideTooltip}
+                        filter="url(#glow)"
+                      />
+                      {/* Borde del segmento */}
+                      <path
+                        d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeWidth="2"
+                        opacity="0.3"
+                        className={styles.segmentBorder}
+                      />
+                      {/* Etiqueta del símbolo */}
+                      {segment.size > 5 && (
+                        <text
+                          x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 80}
+                          y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 80}
+                          className={styles.segmentLabel}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fontSize="12"
+                          fontWeight="bold"
+                          fill="#ffffff"
+                          filter="url(#shadow3D)"
+                        >
+                          {segment.symbol}
+                        </text>
+                      )}
+                    </g>
+                  ))}
+                  
+                  {/* Círculo central con efecto 3D */}
+                  <circle cx="150" cy="150" r="40" className={styles.chartCenter3D} />
+                </svg>
+              </div>
+              
+              {/* Información complementaria - Lado derecho */}
+              <div className={styles.chartInfoPanel}>
+                <div className={styles.infoHeader}>
+                  <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
+                  <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
+                </div>
+                
+                {/* Resumen estadístico */}
+                <div className={styles.statsSummary}>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>📊</div>
+                    <div className={styles.summaryContent}>
+                      <span className={styles.summaryLabel}>Total Alertas</span>
+                      <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
+                    </div>
+                  </div>
+                  <div className={styles.summaryCard}>
+                    <div className={styles.summaryIcon}>🟢</div>
+                    <div className={styles.summaryContent}>
+                      <span className={styles.summaryLabel}>En Seguimiento</span>
+                      <span className={styles.summaryValue}>{alertasEnSeguimiento.length}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Leyenda mejorada con colores dinámicos */}
+                <div className={styles.chartLegend3D}>
+                  <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
+                  <div className={styles.legendList}>
+                    {chartSegments.map((segment, index) => (
+                      <div key={segment.id} className={styles.legendItem3D}>
+                        <div 
+                          className={styles.legendColor3D}
+                          style={{ backgroundColor: segment.color }}
+                        ></div>
+                        <div className={styles.legendInfo}>
+                          <span className={styles.legendSymbol}>{segment.symbol}</span>
+                          <span className={styles.legendProfit}>
+                            {segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%
+                          </span>
+                          <span className={styles.legendStatus}>
+                            {segment.status === 'ACTIVE' ? '🟢' : '🔴'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* Información adicional */}
+                <div className={styles.additionalInfo}>
+                  <h4 className={styles.additionalTitle}>💡 Información Adicional</h4>
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Mejor Rendimiento:</span>
+                      <span className={styles.infoValue}>
+                        {chartSegments.length > 0 ? 
+                          chartSegments.reduce((max, segment) => 
+                            segment.profit > max.profit ? segment : max
+                          ).symbol : 'N/A'}
+                      </span>
+                    </div>
+                    <div className={styles.infoItem}>
+                      <span className={styles.infoLabel}>Promedio P&L:</span>
+                      <span className={styles.infoValue}>
+                        {chartSegments.length > 0 ? 
+                          (chartSegments.reduce((sum, segment) => sum + segment.profit, 0) / chartSegments.length).toFixed(2) + '%' : '0%'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+            </div>
+          )}
+
+        {/* Tooltip mejorado para mostrar información de alerta */}
+        <div id="chartTooltip" className={styles.chartTooltip3D}>
+          <div className={styles.tooltipContent3D}>
+            <h4 className={styles.tooltipSymbol}></h4>
+            <div className={styles.tooltipDetails}>
+              <div className={styles.tooltipRow}>
+                <span>📈 Acción:</span>
+                <span className={styles.tooltipAction}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>💰 Entrada:</span>
+                <span className={styles.tooltipEntry}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>📊 Actual:</span>
+                <span className={styles.tooltipCurrent}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>📈 P&L:</span>
+                <span className={styles.tooltipPnl}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>🎯 Estado:</span>
+                <span className={styles.tooltipStatus}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>💵 Liquidez:</span>
+                <span className={styles.tooltipLiquidity}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>🧩 Shares:</span>
+                <span className={styles.tooltipShares}></span>
+              </div>
+              <div className={styles.tooltipRow}>
+                <span>✅ Realizado:</span>
+                <span className={styles.tooltipRealized}></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Lista de alertas en seguimiento */}
+        <div className={styles.alertsList}>
+          {alertasEnSeguimiento.map((alert) => (
+            <div key={alert.id} className={styles.alertCard}>
+              <div className={styles.alertHeader}>
+                <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
+                <div className={styles.alertStatus}>
+                  <span className={`${styles.statusBadge} ${alert.status === 'ACTIVE' ? styles.statusActive : styles.statusClosed}`}>
+                    {alert.status === 'ACTIVE' ? '🟢 Activa' : '🔴 Cerrada'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className={styles.alertContent}>
+                <div className={styles.alertDetails}>
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Acción:</span>
+                    <span className={`${styles.alertValue} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                      {alert.action === 'BUY' ? '📈 COMPRA' : '📉 VENTA'}
+                    </span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Precio Entrada:</span>
+                    <span className={styles.alertValue}>${alert.entryPrice}</span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Precio Actual:</span>
+                    <span className={styles.alertValue}>${alert.currentPrice}</span>
+                  </div>
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>P&L:</span>
+                    <span className={`${styles.alertValue} ${parseFloat(alert.profit.replace(/[+%]/g, '')) >= 0 ? styles.profitPositive : styles.profitNegative}`}>
+                      {alert.profit}
+                    </span>
+                  </div>
+                  
+                  {alert.stopLoss && (
+                    <div className={styles.alertRow}>
+                      <span className={styles.alertLabel}>Stop Loss:</span>
+                      <span className={styles.alertValue}>${alert.stopLoss}</span>
+                    </div>
+                  )}
+                  
+                  {alert.takeProfit && (
+                    <div className={styles.alertRow}>
+                      <span className={styles.alertLabel}>Take Profit:</span>
+                      <span className={styles.alertValue}>${alert.takeProfit}</span>
+                    </div>
+                  )}
+                  
+                  <div className={styles.alertRow}>
+                    <span className={styles.alertLabel}>Fecha:</span>
+                    <span className={styles.alertValue}>
+                      {new Date(alert.date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </div>
+                </div>
+                
+                {alert.analysis && (
+                  <div className={styles.alertAnalysis}>
+                    <h4 className={styles.analysisTitle}>📊 Análisis</h4>
+                    <p className={styles.analysisText}>{alert.analysis}</p>
+                  </div>
+                )}
+                
+                {userRole === 'admin' && (
+                  <div className={styles.alertActions}>
+                    <button
+                      className={styles.editButton}
+                      onClick={() => handleEditAlert(alert)}
+                      title="Editar alerta"
+                    >
+                      ✏️ Editar
+                    </button>
+                    {alert.status === 'ACTIVE' && (
+                      <button
+                        className={styles.closeButton}
+                        onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
+                        title="Cerrar posición"
+                      >
+                        🔒 Cerrar
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Funciones auxiliares para el gráfico de torta
+  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+    return {
+      x: centerX + (radius * Math.cos(angleInRadians)),
+      y: centerY + (radius * Math.sin(angleInRadians))
+    };
+  };
+
+  const describeArc = (x: number, y: number, radius: number, startAngle: number, endAngle: number) => {
+    const start = polarToCartesian(x, y, radius, endAngle);
+    const end = polarToCartesian(x, y, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+    return [
+      "M", start.x, start.y,
+      "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+      "L", x, y,
+      "Z"
+    ].join(" ");
+  };
+
   const showTooltip = (event: React.MouseEvent, segment: any) => {
     const liq = (liquidityMap as any)?.[segment.symbol];
     const tooltip = (document.getElementById('chartTooltip') as HTMLElement) || (document.getElementById('chartTooltipDashboard') as HTMLElement);
@@ -2223,18 +2666,15 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderAlertasVigentes = () => {
-    // Solo mostrar alertas que están disponibles para compra (manejadas manualmente por el admin)
-    const alertasVigentes = realAlerts.filter(alert => 
+    // Mostrar solo las alertas que están disponibles para nuevos clientes (availableForPurchase: true)
+    const alertasActivas = realAlerts.filter(alert => 
       alert.status === 'ACTIVE' && alert.availableForPurchase === true
     );
     
     return (
-      <div className={styles.vigentesContent}>
+            <div className={styles.vigentesContent}>
         <div className={styles.vigentesHeader}>
-          <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
-          <p className={styles.sectionDescription}>
-            Alertas disponibles para compra ahora - seleccionadas manualmente
-          </p>
+              <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
               <>
@@ -2289,21 +2729,21 @@ const SubscriberView: React.FC = () => {
           <div className={styles.loadingContainer}>
             <p>Cargando alertas...</p>
           </div>
-        ) : alertasVigentes.length === 0 ? (
+        ) : alertasActivas.length === 0 ? (
           <div className={styles.emptyState}>
-            <p>No hay alertas vigentes disponibles para compra en este momento.</p>
+            <p>No hay alertas vigentes en este momento.</p>
           </div>
         ) : (
-          alertasVigentes.map((alert) => (
+          alertasActivas.map((alert) => (
             <div key={alert.id} className={styles.alertCard}>
-              <div className={styles.alertHeader}>
+                        <div className={styles.alertHeader}>
                 <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
                 <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
                   {alert.action}
                 </span>
-              </div>
+                        </div>
               
-              <div className={styles.alertDetails}>
+                        <div className={styles.alertDetails}>
                 <div className={styles.alertDetail}>
                   <span>Precio Entrada:</span>
                   <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
@@ -2312,7 +2752,7 @@ const SubscriberView: React.FC = () => {
                       <span className={styles.rangeIndicator}>RANGO</span>
                     )}
                   </strong>
-                </div>
+                        </div>
                 <div className={styles.alertDetail}>
                   <span>Precio Actual:</span>
                   <strong>{alert.currentPrice}</strong>
@@ -2333,27 +2773,46 @@ const SubscriberView: React.FC = () => {
                 </div>
               </div>
               
-              <div className={styles.alertActions}>
+                          <div className={styles.alertActions}>
                 {userRole === 'admin' && (
-                  <button
-                    className={styles.editButton}
-                    onClick={() => handleEditAlert(alert)}
-                    title="Editar alerta"
-                  >
-                    ✏️ Editar
-                  </button>
+                  <>
+                    <div className={styles.checkboxContainer}>
+                      <label className={styles.checkboxLabel}>
+                        <input
+                          type="checkbox"
+                          checked={alert.availableForPurchase}
+                          onChange={(e) => handleToggleAvailableForPurchase(alert.id, e.target.checked)}
+                          className={styles.checkboxInput}
+                        />
+                        <span className={styles.checkboxText}>
+                          {alert.availableForPurchase ? 'Disponible para compra' : 'En seguimiento'}
+                        </span>
+                      </label>
+                      <p className={styles.checkboxDescription}>
+                        <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                        <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+                      </p>
+                    </div>
+                            <button
+                              className={styles.editButton}
+                              onClick={() => handleEditAlert(alert)}
+                              title="Editar alerta"
+                            >
+                              ✏️ Editar
+                            </button>
+                  </>
                 )}
-                <button
-                  className={styles.closeButton}
+                            <button
+                              className={styles.closeButton}
                   onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
-                  disabled={userRole !== 'admin'}
+                              disabled={userRole !== 'admin'}
                   title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
-                >
-                  Cierre total
-                </button>
+                            >
+                              Cierre total
+                            </button>
                 {userRole === 'admin' && (
                   <Link
-                    href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=SmartMoney`}
+                    href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}
                     className={styles.editButton}
                     title="Cierre parcial (Liquidez)"
                   >
@@ -2361,10 +2820,10 @@ const SubscriberView: React.FC = () => {
                   </Link>
                 )}
               </div>
-            </div>
-          ))
+                      </div>
+                    ))
         )}
-      </div>
+                  </div>
     );
   };
 
@@ -2382,14 +2841,14 @@ const SubscriberView: React.FC = () => {
               <PlusCircle size={16} />
               Crear Informe
             </button>
-          )}
-        </div>
+                )}
+              </div>
         
         {loadingInformes ? (
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>⏳</div>
             <h3>Cargando informes...</h3>
-          </div>
+            </div>
         ) : informes.length > 0 ? (
           <>
             <div className={styles.informesList}>
@@ -2401,8 +2860,8 @@ const SubscriberView: React.FC = () => {
                 
                 return (
                   <div key={informe.id || informe._id} className={styles.informeCard}>
-                    <div className={styles.informeHeader}>
-                      <h3>{informe.title}</h3>
+                      <div className={styles.informeHeader}>
+                        <h3>{informe.title}</h3>
                       <div className={styles.informeMeta}>
                         <span className={styles.informeDate}>
                           📅 {reportDate.toLocaleDateString('es-ES', {
@@ -2425,7 +2884,7 @@ const SubscriberView: React.FC = () => {
                           </span>
                         )}
                       </div>
-                    </div>
+                      </div>
                     
 
                     
@@ -2547,14 +3006,14 @@ const SubscriberView: React.FC = () => {
               </div>
             )}
           </>
-        ) : (
-          <div className={styles.emptyState}>
+                ) : (
+                  <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📄</div>
             <h3>No hay informes disponibles</h3>
             <p>Los informes y análisis aparecerán aquí cuando estén disponibles.</p>
-          </div>
-        )}
-      </div>
+                  </div>
+                )}
+              </div>
     );
   };
 
@@ -2581,7 +3040,7 @@ const SubscriberView: React.FC = () => {
 
     const fetchMessages = async () => {
       try {
-        const response = await fetch('/api/chat/messages?chatType=trader-call');
+        const response = await fetch('/api/chat/messages?chatType=smart-money');
         if (response.ok) {
           const data = await response.json();
           setMessages(data.messages || []);
@@ -2598,7 +3057,7 @@ const SubscriberView: React.FC = () => {
         try {
           const messageData: any = {
             message: message.trim(),
-            chatType: 'trader-call'
+            chatType: 'smart-money'
           };
 
           // Si estamos respondiendo a un mensaje, incluir la referencia
@@ -2668,8 +3127,8 @@ const SubscriberView: React.FC = () => {
           <div className={styles.chatContainer}>
             <div className={styles.chatHeader}>
               <div className={styles.chatTitle}>
-                <h2>💬 Comunidad Trader Call</h2>
-              </div>
+                <h2>💬 Comunidad Smart Money</h2>
+            </div>
             </div>
             <div className={styles.loadingChat}>
               <div className={styles.loadingSpinner}></div>
@@ -2681,20 +3140,20 @@ const SubscriberView: React.FC = () => {
     }
 
     return (
-      <div className={styles.comunidadContent}>
+            <div className={styles.comunidadContent}>
         <div className={styles.chatContainer}>
           <div className={styles.chatHeader}>
             <div className={styles.chatTitle}>
-              <h2>💬 Comunidad Trader Call</h2>
-            </div>
-          </div>
+              <h2>💬 Comunidad Smart Money</h2>
+                  </div>
+                  </div>
           
           <div className={styles.chatMainFull}>
             {messages.length === 0 ? (
               <div className={styles.emptyChat}>
                 <div className={styles.emptyChatIcon}>💬</div>
                 <p>¡Sé el primero en escribir un mensaje!</p>
-              </div>
+                  </div>
             ) : (
               <div className={styles.messagesContainer}>
                 {messages.map((msg, index) => (
@@ -2704,7 +3163,7 @@ const SubscriberView: React.FC = () => {
                         <div className={styles.userAvatar}>
                           <div className={styles.userAvatarPlaceholder}>
                             {msg.userName?.charAt(0)?.toUpperCase() || 'U'}
-                          </div>
+                </div>
                         </div>
                         <span className={styles.userName}>{msg.userName || 'Usuario'}</span>
                       </div>
@@ -2720,13 +3179,13 @@ const SubscriberView: React.FC = () => {
                           <div className={styles.replyContent}>
                             <span className={styles.replyUser}>{msg.replyTo.userName}</span>
                             <span className={styles.replyText}>{msg.replyTo.message}</span>
-                          </div>
-                        </div>
-                      )}
+              </div>
+            </div>
+          )}
                       
                       <div className={styles.messageText}>{msg.message}</div>
-                    </div>
-                    
+      </div>
+
                     <div className={styles.messageActions}>
                       <button 
                         className={styles.replyButton}
@@ -2735,13 +3194,13 @@ const SubscriberView: React.FC = () => {
                         <Reply size={14} />
                         Responder
                       </button>
-                    </div>
-                  </div>
+            </div>
+            </div>
                 ))}
                 <div ref={messagesEndRef} />
-              </div>
+            </div>
             )}
-          </div>
+            </div>
           
           <div className={styles.chatInput}>
             {replyingTo && (
@@ -2751,9 +3210,9 @@ const SubscriberView: React.FC = () => {
                   <button onClick={cancelReply} className={styles.cancelReply}>
                     <X size={14} />
                   </button>
-                </div>
+            </div>
                 <div className={styles.replyingText}>{replyingTo.message}</div>
-              </div>
+          </div>
             )}
             
             <div className={styles.inputContainer}>
@@ -2772,8 +3231,8 @@ const SubscriberView: React.FC = () => {
               >
                 <Send size={16} />
               </button>
-            </div>
-          </div>
+        </div>
+      </div>
         </div>
       </div>
     );
@@ -2784,131 +3243,131 @@ const SubscriberView: React.FC = () => {
     if (!showEditAlert) return null;
 
     return (
-      <div className={styles.modalOverlay}>
-        <div className={styles.modalContent}>
-          <div className={styles.modalHeader}>
-            <h3>Editar Alerta - {editingAlert?.symbol}</h3>
-            <button
-              className={styles.closeModal}
-              onClick={() => {
-                setShowEditAlert(false);
-                setEditingAlert(null);
-              }}
-            >
-              ×
-            </button>
-          </div>
-
-          <div className={styles.modalBody}>
-            <div className={styles.inputGroup}>
-              <label>Símbolo de la Acción</label>
-              <input
-                type="text"
-                placeholder="Ej: AAPL, TSLA, MSFT"
-                value={editAlert.symbol}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, symbol: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Precio de Entrada</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Precio de entrada"
-                value={editAlert.entryPrice}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, entryPrice: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Acción</label>
-              <select
-                value={editAlert.action}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, action: e.target.value }))}
-                className={styles.select}
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h3>Editar Alerta - {editingAlert?.symbol}</h3>
+              <button
+                className={styles.closeModal}
+                onClick={() => {
+                  setShowEditAlert(false);
+                  setEditingAlert(null);
+                }}
               >
-                <option value="BUY">BUY (Compra)</option>
-                <option value="SELL">SELL (Venta)</option>
-              </select>
+                ×
+              </button>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label>Stop Loss</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Precio de stop loss"
-                value={editAlert.stopLoss}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, stopLoss: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Take Profit</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Precio de take profit"
-                value={editAlert.takeProfit}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, takeProfit: e.target.value }))}
-                className={styles.input}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Análisis / Descripción</label>
-              <textarea
-                placeholder="Descripción del análisis técnico o fundamental..."
-                value={editAlert.analysis}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, analysis: e.target.value }))}
-                className={styles.textarea}
-                rows={4}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label className={styles.checkboxLabel}>
+            <div className={styles.modalBody}>
+              <div className={styles.inputGroup}>
+                <label>Símbolo de la Acción</label>
                 <input
-                  type="checkbox"
-                  checked={editAlert.availableForPurchase}
-                  onChange={(e) => setEditAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
-                  className={styles.checkbox}
+                  type="text"
+                  placeholder="Ej: AAPL, TSLA, MSFT"
+                  value={editAlert.symbol}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, symbol: e.target.value }))}
+                  className={styles.input}
                 />
-                <span className={styles.checkboxText}>
-                  🛒 Disponible para compra (aparece en Alertas Vigentes)
-                </span>
-              </label>
-              <p className={styles.checkboxDescription}>
-                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
-                <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
-              </p>
-            </div>
-          </div>
+              </div>
 
-          <div className={styles.modalFooter}>
-            <button
-              onClick={() => {
-                setShowEditAlert(false);
-                setEditingAlert(null);
-              }}
-              className={styles.cancelButton}
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSaveEditAlert}
-              disabled={editLoading}
-              className={styles.createButton}
-            >
-              {editLoading ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
+              <div className={styles.inputGroup}>
+                <label>Precio de Entrada</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Precio de entrada"
+                  value={editAlert.entryPrice}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, entryPrice: e.target.value }))}
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Acción</label>
+                <select
+                  value={editAlert.action}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, action: e.target.value }))}
+                  className={styles.select}
+                >
+                  <option value="BUY">BUY (Compra)</option>
+                  <option value="SELL">SELL (Venta)</option>
+                </select>
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Stop Loss</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Precio de stop loss"
+                  value={editAlert.stopLoss}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, stopLoss: e.target.value }))}
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Take Profit</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  placeholder="Precio de take profit"
+                  value={editAlert.takeProfit}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, takeProfit: e.target.value }))}
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label>Análisis / Descripción</label>
+                <textarea
+                  placeholder="Descripción del análisis técnico o fundamental..."
+                  value={editAlert.analysis}
+                  onChange={(e) => setEditAlert(prev => ({ ...prev, analysis: e.target.value }))}
+                  className={styles.textarea}
+                  rows={4}
+                />
+              </div>
+
+              <div className={styles.inputGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={editAlert.availableForPurchase}
+                    onChange={(e) => setEditAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
+                    className={styles.checkboxInput}
+                  />
+                  <span className={styles.checkboxText}>
+                    Disponible para compra
+                  </span>
+                </label>
+                <p className={styles.checkboxDescription}>
+                  <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                  <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button
+                onClick={() => {
+                  setShowEditAlert(false);
+                  setEditingAlert(null);
+                }}
+                className={styles.cancelButton}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEditAlert}
+                disabled={editLoading}
+                className={styles.createButton}
+              >
+                {editLoading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
     );
   };
 
@@ -3064,6 +3523,24 @@ const SubscriberView: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={newAlert.availableForPurchase}
+                  onChange={(e) => setNewAlert(prev => ({ ...prev, availableForPurchase: e.target.checked }))}
+                  className={styles.checkboxInput}
+                />
+                <span className={styles.checkboxText}>
+                  Disponible para compra
+                </span>
+              </label>
+              <p className={styles.checkboxDescription}>
+                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
+                <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+              </p>
+            </div>
+
+            <div className={styles.inputGroup}>
               <label>Mensaje personalizado para Email (opcional)</label>
               <textarea
                 placeholder="Texto que verán los suscriptores en el correo"
@@ -3102,9 +3579,9 @@ const SubscriberView: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  };
+    </div>
+  );
+};
 
   return (
     <div className={styles.subscriberView}>
@@ -3399,7 +3876,7 @@ const ReportViewModal = ({ report, onClose }: {
 
 
 
-  return (
+    return (
     <>
       <div className={styles.modalOverlay} onClick={onClose}>
         <div className={styles.reportViewModal} onClick={(e) => e.stopPropagation()}>
@@ -3423,7 +3900,7 @@ const ReportViewModal = ({ report, onClose }: {
                     📂 {report.category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
                   </span>
                 )}
-              </div>
+      </div>
             </div>
             <button 
               className={styles.closeModal}
@@ -3569,7 +4046,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   const [formData, setFormData] = useState({
     title: '',
     type: 'text',
-    category: 'trader-call',
+    category: 'smart-money',
     content: '',
     isFeature: false,
     publishedAt: new Date().toISOString().split('T')[0],
@@ -3645,7 +4122,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.createReportModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Crear Nuevo Informe Trader Call</h2>
+          <h2>Crear Nuevo Informe Smart Money</h2>
           <button 
             className={styles.closeModal}
             onClick={onClose}
@@ -3667,7 +4144,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Título del informe Trader Call"
+                placeholder="Título del informe Smart Money"
                 required
                 disabled={loading}
               />
@@ -3818,7 +4295,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   );
 };
 
-const TraderCallPage: React.FC<TraderCallPageProps> = ({ 
+const SmartMoneyPage: React.FC<SmartMoneyPageProps> = ({ 
   isSubscribed, 
   metrics, 
   historicalAlerts,
@@ -3841,7 +4318,7 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
         ) : (
           <NonSubscriberView 
             metrics={metrics} 
-            historicalAlerts={historicalAlerts}
+            historicalAlerts={historicalAlerts} 
             alertExamples={alertExamples}
             faqs={faqs}
           />
@@ -3857,11 +4334,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   // Verificar autenticación y suscripción
   let isSubscribed = false;
   
-  try {
-    // Importar dinámicamente para evitar errores de SSR
+    try {
+      // Importar dinámicamente para evitar errores de SSR
     const { getSession } = await import('next-auth/react');
-    const dbConnect = (await import('@/lib/mongodb')).default;
-    const User = (await import('@/models/User')).default;
+      const dbConnect = (await import('@/lib/mongodb')).default;
+      const User = (await import('@/models/User')).default;
 
     const session = await getSession(context);
     
@@ -3913,11 +4390,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           isSubscribed
         });
       }
-    }
-  } catch (error) {
+      }
+    } catch (error) {
     console.error('Error verificando suscripción:', error);
-    // En caso de error, mostramos vista no suscrita por defecto
-    isSubscribed = false;
+      // En caso de error, mostramos vista no suscrita por defecto
+      isSubscribed = false;
   }
 
   const metrics = {
@@ -3939,9 +4416,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const siteConfig = await SiteConfig.findOne({}).lean();
     
     if (siteConfig) {
-      alertExamples = (siteConfig as any).alertExamples?.traderCall || [];
+      alertExamples = (siteConfig as any).alertExamples?.smartMoney || [];
       faqs = (siteConfig as any).faqs?.filter((faq: any) => 
-        faq.visible && (faq.category === 'trader-call' || faq.category === 'general')
+        faq.visible && (faq.category === 'smart-money' || faq.category === 'general')
       ) || [];
     }
   } catch (error) {
@@ -3956,17 +4433,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         title: 'Alerta de Compra SATL',
         description: 'Señal de compra confirmada: precio por encima de SMA200 y EMA50, MACD cruza a positivo y RSI > 50.',
         chartImage: '/logos/ALERTACOMPRASATL.png',
-        entryPrice: 'USD $132.31',
+    entryPrice: 'USD $132.31',
         exitPrice: 'USD $145.54',
         profit: '$13.23',
         profitPercentage: '+10.0%',
         riskLevel: 'MEDIO' as const,
         status: 'CERRADO TP1' as const,
-        country: 'United States',
+    country: 'United States',
         ticker: 'SATL',
-        order: 1
-      },
-      {
+    order: 1
+  },
+  {
         id: 'example-2',
         title: 'Alerta de Venta Parcial EDN',
         description: 'Venta parcial del 50% tras fuerte avance: aseguramos ganancias y mantenemos el resto con stop ajustado.',
@@ -3977,26 +4454,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         profitPercentage: '+25.0%',
         riskLevel: 'MEDIO' as const,
         status: 'CERRADO TP1 Y SL' as const,
-        country: 'United States',
+    country: 'United States',
         ticker: 'EDN',
-        order: 2
-      },
-      {
+    order: 2
+  },
+  {
         id: 'example-3',
         title: 'Alerta de Compra ETHA',
         description: 'Objetivo alcanzado: cerramos el 50% restante y finalizamos el trade con excelente rendimiento.',
         chartImage: '/logos/ALERTACOMPRAETHA.png',
-        entryPrice: 'USD $420.00',
-        exitPrice: 'USD $504.00',
-        profit: '$84.00',
-        profitPercentage: '+20.0%',
+    entryPrice: 'USD $420.00',
+    exitPrice: 'USD $504.00',
+    profit: '$84.00',
+    profitPercentage: '+20.0%',
         riskLevel: 'BAJO' as const,
         status: 'CERRADO TP1' as const,
-        country: 'United States',
-        ticker: 'ETHA',
-        order: 3
-      },
-      {
+    country: 'United States',
+    ticker: 'ETHA',
+    order: 3
+  },
+  {
         id: 'example-4',
         title: 'Alerta de Venta Total SPOT',
         description: 'Venta total exitosa con excelente rendimiento en SPOT.',
@@ -4004,29 +4481,29 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         entryPrice: 'USD $150.00',
         exitPrice: 'USD $180.00',
         profit: '$30.00',
-        profitPercentage: '+20.0%',
+    profitPercentage: '+20.0%',
         riskLevel: 'BAJO' as const,
         status: 'CERRADO TP1' as const,
-        country: 'United States',
+    country: 'United States',
         ticker: 'SPOT',
-        order: 4
-      },
-      {
+    order: 4
+  },
+  {
         id: 'example-5',
         title: 'Alerta de Venta Parcial SATL',
         description: 'Venta parcial inteligente para proteger ganancias.',
         chartImage: '/logos/ALERTAVENTAPARCIALSATL.png',
-        entryPrice: 'USD $200.00',
-        exitPrice: 'USD $240.00',
-        profit: '$40.00',
-        profitPercentage: '+20.0%',
+    entryPrice: 'USD $200.00',
+    exitPrice: 'USD $240.00',
+    profit: '$40.00',
+    profitPercentage: '+20.0%',
         riskLevel: 'MEDIO' as const,
         status: 'CERRADO TP1 Y SL' as const,
-        country: 'United States',
-        ticker: 'SATL',
-        order: 5
-      },
-      {
+    country: 'United States',
+    ticker: 'SATL',
+    order: 5
+  },
+  {
         id: 'example-6',
         title: 'Alerta de Venta Total ETHA',
         description: 'Venta total exitosa en ETHA con análisis técnico.',
@@ -4034,40 +4511,40 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         entryPrice: 'USD $300.00',
         exitPrice: 'USD $360.00',
         profit: '$60.00',
-        profitPercentage: '+20.0%',
+    profitPercentage: '+20.0%',
         riskLevel: 'BAJO' as const,
         status: 'CERRADO TP1' as const,
-        country: 'United States',
-        ticker: 'ETHA',
-        order: 6
-      },
-
-    ];
+    country: 'United States',
+    ticker: 'ETHA',
+    order: 6
+  },
+  
+];
   }
 
   if (faqs.length === 0) {
     faqs = [
       {
         id: 'faq-1',
-        question: '¿Qué es Trader Call? ¿Para qué sirve?',
-        answer: 'Trader Call es un servicio de suscripción de alertas de trading, donde comparto mi estrategia de trading de corto-mediano plazo que vengo llevando a cabo en los mercados desde hace varios años. Este servicio tiene como finalidad ayudar a la comunidad inversora a invertir de manera profesional en el mercado de capitales argentino, proporcionando mi mirada y para que empiecen con el pie derecho en este mundo tan hostil. De la mano de Trader Call, podrás comenzar a operar en el mercado con la seguridad de una análisis técnico exhaustivo y profesional para enterarte antes que nadie de las mejores oportunidades de inversión.\n\nLuego de la suscripción, se enviará un mail a la dirección de correo electrónico vinculada a la cuenta de mercadopago con la que se realizó la suscripción. En dicho correo se enviará el link de acceso al canal privado de telegram para comenzar a disfrutar del servicio. tenga en cuenta que tanto el envío del correo con la información como la aceptación en telegram puede demorar hasta 48hs hábiles.',
-        category: 'trader-call' as const,
-        order: 1,
-        visible: true
-      },
-      {
+        question: '¿Qué es Smart Money? ¿Para qué sirve?',
+        answer: 'Smart Money es un servicio de suscripción de alertas de trading, donde comparto mi estrategia de trading de corto-mediano plazo que vengo llevando a cabo en los mercados desde hace varios años. Este servicio tiene como finalidad ayudar a la comunidad inversora a invertir de manera profesional en el mercado de capitales argentino, proporcionando mi mirada y para que empiecen con el pie derecho en este mundo tan hostil. De la mano de Smart Money, podrás comenzar a operar en el mercado con la seguridad de una análisis técnico exhaustivo y profesional para enterarte antes que nadie de las mejores oportunidades de inversión.\n\nLuego de la suscripción, se enviará un mail a la dirección de correo electrónico vinculada a la cuenta de mercadopago con la que se realizó la suscripción. En dicho correo se enviará el link de acceso al canal privado de telegram para comenzar a disfrutar del servicio. tenga en cuenta que tanto el envío del correo con la información como la aceptación en telegram puede demorar hasta 48hs hábiles.',
+        category: 'smart-money' as const,
+      order: 1,
+      visible: true
+    },
+    {
         id: 'faq-2',
         question: '¿Como funcionan las alertas de trading?',
         answer: 'EL MECANISMO DE LAS ALERTAS FUNCIONA A TRAVÉS DE UN CANAL PRIVADO DE TELEGRAM DONDE, LES COMENTO MI MIRADA DEL MERCADO MEDIANTE UN INFORME DIARIO Y QUÉ SEÑALES DE COMPRA O VENTA TENEMOS CADA DÍA. ESTE INFORME SE PUBLICA ENTRE LAS 18 Y LAS 22 HS DE CADA HÁBIL BURSÁTIL, DESPUÉS DEL CIERRE DEL MERCADO. ESTO SE DEBE A QUE EL ANÁLISIS TÉCNICO DEBE REALIZARSE CON EL MERCADO CERRADO, PARA TENER UNA MAYOR PRECISIÓN Y FIABILIDAD. ES POR ESTO QUE LAS OPERACIONES A MERCADO DE LOS SUSCRIPTORES QUE QUIERAN OPERAR BAJO ESTA ESTRATEGIA DEBERÁN PASARSE AL DÍA HÁBIL BURSÁTIL SIGUIENTE, EN CUALQUIER HORARIO. CABE DESTACAR QUE, NO HAY ALERTAS DE COMPRA O VENTA TODOS LOS DÍAS, YA QUE, EL MERCADO PUEDE NO ARROJAR NINGUNA SEÑAL MEDIANTE MI MÉTODO DE TRADING.\n\nEl análisis y las alertas de trading son sobre el activo que cotiza en usa, en dólares. pero esto no presenta ningun inconveniente en realizar operaciones en cedears contra pesos y en argentina. ESTO PERMITE QUE PUEDAS INGRESAR EN CADA ALERTA CON MENOR CANTIDAD DE DINERO Y EN PESOS, YA QUE LOS CEDEARS COTIZAN TANTO EN PESOS COMO EN DÓLARES Y TIENEN UN RATIO DE CONVERSIÓN QUE FACILITA EL ACCESO A INVERSORES CON MENOR CAPITAL INICIAL. de hecho, el servicio contempla LA INVERSIÓN EN CEDEARS Y EN PESOS COMO la preferible YA QUE SUELE HABER MUCHO MÁS VOLUMEN DE OPERACIONES EN EL MERCADO LOCAL EN ESA MONEDA.\n\nTODOS LOS DÍAS SE HACE UN REPASO DEL ESTADO ACTUAL DE TODAS LAS ALERTAS ACTIVADAS MEDIANTE UN INFORME DE MERCADO. LAS ALERTAS ESTÁN RIGUROSAMENTE ANALIZADAS BAJO MI MÉTODO DE TRADING Y TIENEN COMO HORIZONTE UNA DURACIÓN DESDE UN PAR DE DÍAS HASTA 3 MESES.\n\nCADA ALERTA DE COMPRA TIENE ASIGNADO UN NIVEL DE RIESGO PROPIO, QUE CONTEMPLA TANTO EL RIESGO DEL CONTEXTO GENERAL DE MERCADO, COMO DEL RIESGO PARTICULAR DE CADA ACTIVO.\n\nESTE SERVICIO NO TIENE VÍNCULO ALGUNO CON BROKERS DE BOLSA ARGENTINOS O INTERNACIONALES, POR LO QUE DICHA ESTRATEGIA PUEDE SER APLICADA POR LOS INVERSORES EN CUALQUIER CUENTA DE INVERSIONES, INDEPENDIENTEMENTE DEL BROKER O INTERMEDIARIO QUE UTILICE.',
-        category: 'trader-call' as const,
-        order: 2,
-        visible: true
+        category: 'smart-money' as const,
+      order: 2,
+      visible: true
       },
       {
         id: 'faq-3',
         question: '¿Las alertas tienen vencimiento?',
         answer: 'Si, tanto las alertas de compra como de venta tienen 24 horas de vencimiento. Esto se debe a que el análisis realizado del activo y del contexto en general cambia día a día, siguiendo el desarrollo del mercado. EN CADA INFORME DETALLAMOS A QUÉ ACTIVOS, DE LOS QUE YA TUVIERON ALERTAS DE COMPRA CON FECHAS ANTERIORES, SE PUEDE INGRESAR AL DÍA SIGUIENTE EN EL CASO QUE HUBIERA ALGUNO.',
-        category: 'trader-call' as const,
+        category: 'smart-money' as const,
         order: 3,
         visible: true
       },
@@ -4075,7 +4552,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         id: 'faq-4',
         question: '¿CUÁNTO DINERO HAY QUE INVERTIR?',
         answer: 'NO HAY UN MÍNIMO DE DINERO CON EL QUE TENGAS QUE COMENZAR, PERO UNA SUMA RECOMENDABLE SERÍA EL EQUIVALENTE A u$D 1.000.-',
-        category: 'trader-call' as const,
+        category: 'smart-money' as const,
         order: 4,
         visible: true
       },
@@ -4083,7 +4560,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         id: 'faq-5',
         question: '¿Como son los pagos de la suscripción?',
         answer: 'Solo aceptamos suscripciones y pagos por mercadopago\n\nLos cobros de mercado pago son automáticos y tienen en cuenta la oferta de los 30 días gratis, por lo que usted empezará a pagar su suscripción luego de 30 días. Todos los 1ro de mes, se debitará del método de pago asociado el importe de la suscripción con la referencia "TRADERCALL". En el caso del primer pago, luego de los 30 días gratis, se debitará el prorrateo correspondiente de los días del mes en curso hasta llegar al primer día del mes siguiente. Esto quiere decir, que el primer cobro por la suscripción, que será luego de los 30 días de iniciada la suscripción, puede ser menor al valor del mes entero, ya que corresponden al prorrateo de días. Luego de hecho el primer pago, todos los 1ro de cada mes, se debitará el valor total de la suscripción. Cabe destacar, que son días corridos y no días hábiles.\n\nIMPORTANTE: Tenga a bien contar con los fondos suficientes en el método de pago seleccionado para no tener inconvenientes con el estado de su suscripción.\n\nES OPORTUNO ACLARAR QUE, EN NINGÚN CASO SE COBRARÁN COMISIONES EXTRAS A LA HORA DE REALIZAR LAS OPERACIONES A MERCADO, YA QUE NO EXISTE VÍNCULO ALGUNO ENTRE EL SERVICIO DE ALERTAS Y NINGUN BROKER DE BOLSA ARGENTINO O INTERNACIONAL.\n\nTenga en cuenta que las comunicaciones respecto al estado de su suscripción serán por correo electrónico, el mismo con el cual se realizó la suscripción por mercadopago. no se harán comunicaciones de este tipo por telegram.',
-        category: 'trader-call' as const,
+        category: 'smart-money' as const,
         order: 5,
         visible: true
       },
@@ -4091,9 +4568,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         id: 'faq-6',
         question: '¿SEGUÍs con dudas?',
         answer: 'Escribime un correo ELECTRÓNICO a la siguiente casilla para resolver las dudas que te puedan surgir: lozanonahuel@gmail.com',
-        category: 'trader-call' as const,
+        category: 'smart-money' as const,
         order: 6,
-        visible: true
+      visible: true
       }
     ];
   }
@@ -4268,4 +4745,4 @@ const YouTubeAutoCarousel: React.FC = () => {
   );
 };
 
-export default TraderCallPage; 
+export default SmartMoneyPage; 
