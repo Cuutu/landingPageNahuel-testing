@@ -1440,10 +1440,10 @@
   font-size: 1.1rem;
 }
 
-/* === CTA SECTION - FONDO OSCURO === */
+/* === CTA SECTION - FONDO MARRÓN OSCURO === */
 .ctaSection {
   padding: 6rem 0;
-  background: #1a1a1a;
+  background: #001f3f;
   position: relative;
 }
 
