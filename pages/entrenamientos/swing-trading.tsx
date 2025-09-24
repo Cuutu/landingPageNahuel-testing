@@ -161,6 +161,24 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       name: 'Tamara Rodriguez', 
       text: '"Las recomendaciones que brindan en las asesorías a 1 a 1 son muy buenas. Estoy muy conforme"',
       backgroundColor: '#22c55e'
+    },
+    {
+      initial: 'M',
+      name: 'María González',
+      text: '"Excelente servicio de trading. Las señales son muy precisas y me han ayudado mucho en mis inversiones."',
+      backgroundColor: '#f59e0b'
+    },
+    {
+      initial: 'R',
+      name: 'Roberto Silva',
+      text: '"Los webinars son increíbles, aprendí mucho sobre análisis técnico. Muy recomendado para principiantes."',
+      backgroundColor: '#8b5cf6'
+    },
+    {
+      initial: 'L',
+      name: 'Laura Martínez',
+      text: '"El soporte al cliente es excepcional. Siempre responden rápido y con mucha paciencia a mis dudas."',
+      backgroundColor: '#06b6d4'
     }
   ];
 
@@ -552,15 +570,18 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   };
 
   // Funciones para el carrusel de testimonios
+  const testimoniosPerGroup = 3;
+  const totalTestimonialGroups = Math.ceil(carouselTestimonials.length / testimoniosPerGroup);
+
   const nextTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev === carouselTestimonials.length - 1 ? 0 : prev + 1
+      prev === totalTestimonialGroups - 1 ? 0 : prev + 1
     );
   };
 
   const prevTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev === 0 ? carouselTestimonials.length - 1 : prev - 1
+      prev === 0 ? totalTestimonialGroups - 1 : prev - 1
     );
   };
 
@@ -1151,7 +1172,9 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
             >
               <div className={styles.testimonialsCarousel}>
                 <div className={styles.testimonialsSlider}>
-                  {carouselTestimonials.map((testimonial, index) => (
+                  {carouselTestimonials
+                    .slice(currentTestimonialIndex * testimoniosPerGroup, (currentTestimonialIndex + 1) * testimoniosPerGroup)
+                    .map((testimonial, index) => (
                     <div key={index} className={styles.testimonialSlide}>
                       <div className={styles.testimonialHorizontalItem}>
                         <div 
@@ -1163,9 +1186,10 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                         <div className={styles.testimonialVerticalInfo}>
                           <h4 className={styles.testimonialName}>{testimonial.name}</h4>
                           <div className={styles.testimonialRating}>
-                            {[...Array(5)].map((_, i) => (
-                              <Star key={i} size={16} className={styles.testimonialStar} />
+                            {[...Array(4)].map((_, i) => (
+                              <Star key={i} size={16} className={styles.testimonialStar} fill="#fbbf24" />
                             ))}
+                            <Star key={4} size={16} className={styles.testimonialStarEmpty} fill="none" stroke="#fbbf24" />
                           </div>
                           <p className={styles.testimonialText}>
                             {testimonial.text}
