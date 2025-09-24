@@ -165,11 +165,13 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
             <div className={styles.sp500Change}>
               <div>
                 <div className={styles.sp500ChangeLabel}>Rendimiento diario</div>
-                <div className={`${styles.sp500ChangeValue} ${getPerformanceClass(sp500Data?.changePercent ?? 0)}`}>
-                  {formatPercentage(sp500Data?.changePercent ?? 0)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
+                  <span className={`${styles.sp500ChangeValue} ${getPerformanceClass(sp500Data?.changePercent ?? 0)}`}>
+                    {formatPercentage(sp500Data?.changePercent ?? 0)}
+                  </span>
                 </div>
               </div>
-              {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
             </div>
           </div>
         </div>
