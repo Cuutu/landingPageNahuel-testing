@@ -181,7 +181,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
         ))}
       </div>
 
-      {/* Comparison Cards */}
+      {/* Comparison Cards */} 
       <div
         style={{
           display: 'grid',
