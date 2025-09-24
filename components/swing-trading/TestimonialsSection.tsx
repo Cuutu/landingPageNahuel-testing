@@ -78,13 +78,13 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
 
   const nextTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev === carouselTestimonials.length - 1 ? 0 : prev + 1
+      prev >= carouselTestimonials.length - 3 ? 0 : prev + 1
     );
   };
 
   const prevTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev === 0 ? carouselTestimonials.length - 1 : prev - 1
+      prev === 0 ? carouselTestimonials.length - 3 : prev - 1
     );
   };
 
@@ -165,8 +165,8 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
               </svg>
             </button>
             
-            <div className={styles.testimonialsSlider} style={{ transform: `translateX(-${currentTestimonialIndex * 33.333}%)` }}>
-              {carouselTestimonials.map((testimonial, index) => (
+            <div className={styles.testimonialsSlider}>
+              {carouselTestimonials.slice(currentTestimonialIndex, currentTestimonialIndex + 3).map((testimonial, index) => (
                 <div key={index} className={styles.testimonialSlide}>
                   <div className={styles.testimonialHorizontalItem}>
                     <div 
