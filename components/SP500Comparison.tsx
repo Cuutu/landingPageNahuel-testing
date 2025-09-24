@@ -247,7 +247,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
           </div>
           
           <div>
-            <p
+            {/* Valor del índice ocultado - solo mostrar porcentaje */}
+            {/* <p
               style={{
                 margin: '0 0 0.25rem 0',
                 fontSize: '0.75rem',
@@ -265,7 +266,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
               }}
             >
               {sp500Data?.currentPrice?.toFixed(2) || '0.00'}
-            </p>
+            </p> */}
             <div
               style={{
                 display: 'flex',
@@ -277,8 +278,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
               {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
               <span
                 style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 600,
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
                   color: (sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0) >= 0 ? '#10B981' : '#EF4444'
                 }}
               >
@@ -387,8 +388,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
         </div>
       </div>
 
-      {/* Summary Metrics */}
-      <div
+      {/* Summary Metrics - OCULTADO */}
+      {/* <div
         style={{
           background: 'var(--bg-secondary)',
           borderRadius: '12px',
@@ -536,7 +537,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 };
