@@ -150,25 +150,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
           </div>
           
           <div>
-            <p className={styles.sp500Value}>
-              Valor actual
-            </p>
-            <p className={styles.sp500Price}>
-              {sp500Data?.currentPrice?.toFixed(2) || '4,567.89'}
-            </p>
-            
-            <div className={styles.sp500Change}>
-              <div>
-                <div className={styles.sp500ChangeLabel}>Cambio diario</div>
-                <div className={`${styles.sp500ChangeValue} ${getPerformanceClass(sp500Data?.changePercent ?? 0)}`}>
-                  {formatPercentage(sp500Data?.changePercent ?? 0)}
-                </div>
-              </div>
-              {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
-            </div>
-            
-            <div className={styles.performanceContainer} style={{ marginTop: '0.75rem' }}>
-              <span className={styles.performanceLabel}>Período seleccionado</span>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Rendimiento en el período seleccionado</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
                 {getPerformanceIcon(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}
                 <span
@@ -177,6 +160,16 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                   {formatPercentage(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}
                 </span>
               </div>
+            </div>
+            
+            <div className={styles.sp500Change}>
+              <div>
+                <div className={styles.sp500ChangeLabel}>Rendimiento diario</div>
+                <div className={`${styles.sp500ChangeValue} ${getPerformanceClass(sp500Data?.changePercent ?? 0)}`}>
+                  {formatPercentage(sp500Data?.changePercent ?? 0)}
+                </div>
+              </div>
+              {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
             </div>
           </div>
         </div>
