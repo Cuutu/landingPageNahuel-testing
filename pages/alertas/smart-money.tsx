@@ -1731,8 +1731,11 @@ const SubscriberView: React.FC = () => {
       <div className={styles.dashboardContent}>
         <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
 
-        {/* Métricas principales */}
-        <div className={styles.modernMetricsGrid}>
+        {/* Comparación con SP500 - MOVIDO AL INICIO */}
+        <SP500Comparison />
+
+        {/* Métricas principales - OCULTADO */}
+        {/* <div className={styles.modernMetricsGrid}>
           <div className={`${styles.modernMetricCard} ${styles.activeCard}`}>
             <div className={styles.cardHeader}>
               <div className={styles.iconContainer}>
@@ -1788,7 +1791,7 @@ const SubscriberView: React.FC = () => {
               <p className={styles.metricSubtext}>Año {new Date().getFullYear()}</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Gráfico de Distribución de Alertas */}
         <div className={styles.chartSection}>
@@ -1903,8 +1906,7 @@ const SubscriberView: React.FC = () => {
           </div>
         </div>
 
-        {/* Comparación con SP500 */}
-        <SP500Comparison />
+        {/* Comparación con SP500 - MOVIDO AL INICIO DEL DASHBOARD */}
 
         {/* Actividad Reciente */}
         <div className={styles.activitySection}>
