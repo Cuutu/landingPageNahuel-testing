@@ -130,6 +130,7 @@
   border-radius: 8px;
   padding: 1.5rem 1rem;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   min-width: 80px;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
@@ -1084,11 +1085,12 @@
 
 /* Testimonials Card - Similar to Hero Card */
 .testimonialsCard {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #4A1717;
+  border: 1px solid #8B5CF6;
   border-radius: 20px;
   padding: 3rem 2rem;
   color: white;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   position: relative;
@@ -1127,11 +1129,11 @@
 }
 
 .testimonialsButton {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  border: none;
+  background: #4A1717;
+  border: 1px solid #ffffff;
   border-radius: 12px;
   padding: 1rem 2.5rem;
-  color: #8B0000;
+  color: #ffffff;
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
@@ -1141,7 +1143,8 @@
 
 .testimonialsButton:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 10px 25px rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 /* Nuevo contenedor para testimonios horizontales separado */
@@ -1202,6 +1205,11 @@
   text-align: center;
   flex: 1;
   max-width: 280px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
 }
 
 .testimonialVerticalInfo {
@@ -1252,6 +1260,13 @@
 .testimonialStar {
   color: #fbbf24;
   fill: #fbbf24;
+}
+
+.testimonialStarEmpty {
+  color: #fbbf24;
+  fill: none;
+  stroke: #fbbf24;
+  stroke-width: 2;
 }
 
 .testimonialText {

@@ -169,9 +169,10 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
                     <div className={styles.testimonialVerticalInfo}>
                       <h4 className={styles.testimonialName}>{testimonial.name}</h4>
                       <div className={styles.testimonialRating}>
-                        {[...Array(5)].map((_, i) => (
-                          <Star key={i} size={16} className={styles.testimonialStar} />
+                        {[...Array(4)].map((_, i) => (
+                          <Star key={i} size={16} className={styles.testimonialStar} fill="#fbbf24" />
                         ))}
+                        <Star key={4} size={16} className={styles.testimonialStarEmpty} fill="none" stroke="#fbbf24" />
                       </div>
                       <p className={styles.testimonialText}>
                         {testimonial.text}
