@@ -55,6 +55,24 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
       name: 'Tamara Rodriguez', 
       text: '"Las recomendaciones que brindan en las asesorías a 1 a 1 son muy buenas. Estoy muy conforme"',
       backgroundColor: '#22c55e'
+    },
+    {
+      initial: 'M',
+      name: 'María González',
+      text: '"Excelente servicio de trading. Las señales son muy precisas y me han ayudado mucho en mis inversiones."',
+      backgroundColor: '#f59e0b'
+    },
+    {
+      initial: 'R',
+      name: 'Roberto Silva',
+      text: '"Los webinars son increíbles, aprendí mucho sobre análisis técnico. Muy recomendado para principiantes."',
+      backgroundColor: '#8b5cf6'
+    },
+    {
+      initial: 'L',
+      name: 'Laura Martínez',
+      text: '"El soporte al cliente es excepcional. Siempre responden rápido y con mucha paciencia a mis dudas."',
+      backgroundColor: '#06b6d4'
     }
   ];
 
@@ -147,7 +165,7 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
               </svg>
             </button>
             
-            <div className={styles.testimonialsSlider}>
+            <div className={styles.testimonialsSlider} style={{ transform: `translateX(-${currentTestimonialIndex * 33.333}%)` }}>
               {carouselTestimonials.map((testimonial, index) => (
                 <div key={index} className={styles.testimonialSlide}>
                   <div className={styles.testimonialHorizontalItem}>

@@ -1159,7 +1159,7 @@
 .testimonialsCarousel {
   position: relative;
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1169,19 +1169,19 @@
 
 .testimonialsSlider {
   display: flex;
-  justify-content: space-between;
   gap: 2rem;
   align-items: flex-start;
   transition: transform 0.5s ease-in-out;
   flex: 1;
+  width: 600%; /* 6 testimonios * 100% */
 }
 
 .testimonialSlide {
-  flex: 1;
+  flex: 0 0 16.666%; /* 100% / 6 testimonios */
   display: flex;
   justify-content: center;
   align-items: center;
-  max-width: 300px;
+  min-width: 0;
 }
 
 .testimonialSlide .testimonialHorizontalItem {
