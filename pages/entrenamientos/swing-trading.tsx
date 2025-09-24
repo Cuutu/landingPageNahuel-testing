@@ -585,11 +585,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     );
   };
 
-  // Auto-play del carrusel
-  useEffect(() => {
-    const interval = setInterval(nextTestimonial, 5000); // Cambia cada 5 segundos
-    return () => clearInterval(interval);
-  }, []);
+  // Sin auto-play - solo navegación manual
 
   return (
     <>
