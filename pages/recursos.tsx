@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BackgroundVideo from '@/components/BackgroundVideo';
 import { motion } from 'framer-motion';
 import { 
   ExternalLink,
@@ -88,8 +89,16 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       <Navbar />
 
       <main className={styles.main}>
-        {/* Hero Section con Video Explicativo */}
+        {/* Hero Section con Video de Fondo */}
         <section className={styles.heroSection}>
+          <BackgroundVideo 
+            videoSrc="/logos/TradingView.mp4"
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            showControls={false}
+            className={styles.backgroundVideo}
+          />
           <div className={styles.heroOverlay}></div>
           <div className={styles.container}>
             <motion.div 
