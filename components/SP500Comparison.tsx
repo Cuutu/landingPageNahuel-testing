@@ -161,18 +161,6 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                 </span>
               </div>
             </div>
-            
-            <div className={styles.sp500Change}>
-              <div>
-                <div className={styles.sp500ChangeLabel}>Rendimiento diario</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
-                  {getPerformanceIcon(sp500Data?.changePercent ?? 0)}
-                  <span className={`${styles.sp500ChangeValue} ${getPerformanceClass(sp500Data?.changePercent ?? 0)}`}>
-                    {formatPercentage(sp500Data?.changePercent ?? 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -193,42 +181,14 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
           </div>
           
           <div>
-            <p className={styles.performanceLabel}>
-              Rendimiento total
-            </p>
-            <p className={`${styles.performanceValue} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}>
-              {formatPercentage(serviceData?.totalReturnPercent ?? 0)}
-            </p>
-            
-            <div className={styles.performanceContainer} style={{ marginTop: '0.75rem' }}>
-              <div className={`${styles.performanceSubtext} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Rendimiento total</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
                 {getPerformanceIcon(serviceData?.totalReturnPercent ?? 0)}
-                <span>Retorno acumulado</span>
-              </div>
-            </div>
-            
-            {/* Información adicional del servicio */}
-            <div style={{ 
-              marginTop: '1rem', 
-              padding: '0.75rem', 
-              background: 'rgba(255, 255, 255, 0.02)', 
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.05)'
-            }}>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                fontSize: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.6)'
-              }}>
-                <span>Alertas activas</span>
-                <span style={{ 
-                  color: '#8B5CF6', 
-                  fontWeight: '600',
-                  fontFamily: 'SF Mono, Monaco, Inconsolata, Roboto Mono, monospace'
-                }}>
-                  {serviceData?.activeAlerts ?? 0}
+                <span
+                  className={`${styles.performanceValue} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}
+                >
+                  {formatPercentage(serviceData?.totalReturnPercent ?? 0)}
                 </span>
               </div>
             </div>
