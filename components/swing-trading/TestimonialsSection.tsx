@@ -128,24 +128,6 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
             </button>
           </div>
 
-          <div className={styles.testimonialsNavigation}>
-            <button 
-              className={styles.testimonialNavButton}
-              onClick={prevTestimonial}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            <button 
-              className={styles.testimonialNavButton}
-              onClick={nextTestimonial}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
         </motion.div>
         
         <motion.div
@@ -156,6 +138,15 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
           transition={{ duration: 0.8, delay: 0.2 }}
         >
           <div className={styles.testimonialsCarousel}>
+            <button 
+              className={styles.testimonialNavButton}
+              onClick={prevTestimonial}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
             <div className={styles.testimonialsSlider}>
               {carouselTestimonials.map((testimonial, index) => (
                 <div key={index} className={styles.testimonialSlide}>
@@ -182,6 +173,15 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
                 </div>
               ))}
             </div>
+            
+            <button 
+              className={styles.testimonialNavButton}
+              onClick={nextTestimonial}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M9 18L15 12L9 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </motion.div>
       </div>
