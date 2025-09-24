@@ -1149,10 +1149,10 @@
 
 /* Nuevo contenedor para testimonios horizontales separado */
 .testimonialsHorizontalContainer {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 1rem;
-  overflow: hidden;
+  padding: 0 2rem;
+  overflow: visible;
 }
 
 /* Carrusel de testimonios - Mostrar todos los testimonios */
@@ -1164,6 +1164,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  min-height: 200px;
 }
 
 .testimonialsSlider {
@@ -1295,6 +1296,9 @@
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
   pointer-events: all;
+  z-index: 10;
+  position: relative;
+  flex-shrink: 0;
 }
 
 .testimonialNavButton:hover {
