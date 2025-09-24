@@ -76,15 +76,18 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
     }
   ];
 
+  const testimoniosPerGroup = 3;
+  const totalTestimonialGroups = Math.ceil(carouselTestimonials.length / testimoniosPerGroup);
+
   const nextTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev >= carouselTestimonials.length - 3 ? 0 : prev + 1
+      prev === totalTestimonialGroups - 1 ? 0 : prev + 1
     );
   };
 
   const prevTestimonial = () => {
     setCurrentTestimonialIndex((prev) => 
-      prev === 0 ? carouselTestimonials.length - 3 : prev - 1
+      prev === 0 ? totalTestimonialGroups - 1 : prev - 1
     );
   };
 
@@ -166,7 +169,9 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
             </button>
             
             <div className={styles.testimonialsSlider}>
-              {carouselTestimonials.slice(currentTestimonialIndex, currentTestimonialIndex + 3).map((testimonial, index) => (
+              {carouselTestimonials
+                .slice(currentTestimonialIndex * testimoniosPerGroup, (currentTestimonialIndex + 1) * testimoniosPerGroup)
+                .map((testimonial, index) => (
                 <div key={index} className={styles.testimonialSlide}>
                   <div className={styles.testimonialHorizontalItem}>
                     <div 
