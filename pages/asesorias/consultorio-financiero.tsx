@@ -595,164 +595,175 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                           initialDate={earliestDate}
                         />
                       </div>
-
-                      {/* Selector de Horarios */}
-                      {selectedDate && (
-                        <div className={styles.horariosSection}>
-                          <div className={styles.horariosHeader}>
-                            <h4 className={styles.horariosTitle}>
-                              Fecha de Asesoría Seleccionada
-                            </h4>
-                            <button 
-                              className={styles.closeHorariosButton}
-                              onClick={() => {
-                                setSelectedDate('');
-                                setSelectedTime('');
-                              }}
-                            >
-                              ×
-                            </button>
-                          </div>
-                          <div className={styles.horariosGrid}>
-                            {advisoryDates
-                              .filter(advisory => new Date(advisory.date).toISOString().split('T')[0] === selectedDate && !advisory.isBooked)
-                              .map((advisory, index) => (
-                                <button
-                                  key={`${advisory._id}-${index}`}
-                                  className={`${styles.horarioButton} ${selectedTime === advisory.time ? styles.horarioSelected : ''}`}
-                                  onClick={() => setSelectedTime(advisory.time)}
-                                >
-                                  <Clock size={16} /> {advisory.time}hs
-                                </button>
-                              ))}
-                          </div>
-                          {selectedTime && (
-                            <div className={styles.horarioConfirmado}>
-                              <CheckCircle size={20} />
-                              <span>Fecha seleccionada: {selectedTime}hs</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </>
                   )}
                 </div>
 
-                {/* Formulario de Datos */}
-                <div className={styles.formularioSection}>
-                  <h3 className={styles.formularioTitle}>Introduzca los detalles</h3>
-                  
-                  <form className={styles.formulario}>
-                    <div className={styles.formGrid}>
-                      <div className={styles.formGroup}>
-                        <label htmlFor="nombre" className={styles.formLabel}>
-                          Nombre *
-                        </label>
-                        <input
-                          type="text"
-                          id="nombre"
-                          name="nombre"
-                          className={styles.formInput}
-                          defaultValue={session?.user?.name?.split(' ')[0] || ''}
-                          placeholder="Tu nombre"
-                          required
-                        />
-                      </div>
-                      
-                      <div className={styles.formGroup}>
-                        <label htmlFor="apellido" className={styles.formLabel}>
-                          Apellido *
-                        </label>
-                        <input
-                          type="text"
-                          id="apellido"
-                          name="apellido"
-                          className={styles.formInput}
-                          defaultValue={session?.user?.name?.split(' ').slice(1).join(' ') || ''}
-                          placeholder="Tu apellido"
-                          required
-                        />
-                      </div>
-                      
-                      <div className={styles.formGroup}>
-                        <label htmlFor="email" className={styles.formLabel}>
-                          Correo electrónico *
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          className={styles.formInput}
-                          defaultValue={session?.user?.email || ''}
-                          placeholder="Tu email"
-                          required
-                        />
-                      </div>
-                      
-                      <div className={styles.formGroup}>
-                        <label htmlFor="whatsapp" className={styles.formLabel}>
-                          Número de Whatsapp *
-                        </label>
-                        <input
-                          type="tel"
-                          id="whatsapp"
-                          name="whatsapp"
-                          className={styles.formInput}
-                          placeholder="+54 9 11 1234-5678"
-                          required
-                        />
-                      </div>
-                      
-                      <div className={styles.formGroup}>
-                        <label htmlFor="comoConociste" className={styles.formLabel}>
-                          Donde o como conociste
-                        </label>
-                        <textarea
-                          id="comoConociste"
-                          name="comoConociste"
-                          className={styles.formTextarea}
-                          rows={3}
-                          placeholder="Cuéntanos cómo llegaste a nosotros..."
-                        ></textarea>
-                      </div>
+                {/* Columna derecha: Horarios */}
+                <div className={styles.horariosPanel}>
+                  <h3 className={styles.calendarioTitle}>Horarios</h3>
+                  {loadingTurnos ? (
+                    <div className={styles.loadingTurnos}>
+                      <p>Cargando horarios...</p>
                     </div>
-                    
-                                    <div className={styles.precioSection}>
-                  <span className={styles.precioLabel}>Valor de la consulta:</span>
-                  <span className={styles.precioValor}>
-                    {pricingLoading ? (
-                      'Cargando precio...'
-                    ) : pricing ? (
-                      `$${pricing.asesorias.consultorioFinanciero.price.toLocaleString('es-AR')} ARS`
-                    ) : (
-                      '$50.000 ARS'
-                    )}
-                  </span>
-                </div>
-                    
-                    {session ? (
-                      <button 
-                        type="button"
-                        className={styles.confirmarButton}
-                        onClick={handleSacarTurno}
-                        disabled={!selectedDate || !selectedTime || loading}
-                      >
-                        {loading ? 'Procesando...' : 'Confirmar Turno >'}
-                      </button>
-                    ) : (
-                      <div className={styles.loginRequired}>
-                        <p>Necesitas iniciar sesión para reservar un turno</p>
+                  ) : !selectedDate ? (
+                    <div className={styles.horariosPlaceholder}>
+                      <p>Elegí una fecha del calendario para ver horarios disponibles.</p>
+                    </div>
+                  ) : (
+                    <div className={styles.horariosSection}>
+                      <div className={styles.horariosHeader}>
+                        <h4 className={styles.horariosTitle}>
+                          Fecha de Asesoría Seleccionada
+                        </h4>
                         <button 
-                          type="button"
-                          className={styles.loginButton}
-                          onClick={handleLogin}
+                          className={styles.closeHorariosButton}
+                          onClick={() => {
+                            setSelectedDate('');
+                            setSelectedTime('');
+                          }}
                         >
-                          Iniciar Sesión
+                          ×
                         </button>
                       </div>
-                    )}
-                  </form>
+                      <div className={styles.horariosGrid}>
+                        {advisoryDates
+                          .filter(advisory => new Date(advisory.date).toISOString().split('T')[0] === selectedDate && !advisory.isBooked)
+                          .map((advisory, index) => (
+                            <button
+                              key={`${advisory._id}-${index}`}
+                              className={`${styles.horarioButton} ${selectedTime === advisory.time ? styles.horarioSelected : ''}`}
+                              onClick={() => setSelectedTime(advisory.time)}
+                            >
+                              <Clock size={16} /> {advisory.time}hs
+                            </button>
+                          ))}
+                      </div>
+                      {selectedTime && (
+                        <div className={styles.horarioConfirmado}>
+                          <CheckCircle size={20} />
+                          <span>Fecha seleccionada: {selectedTime}hs</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Formulario de Datos debajo del grid */}
+              <div className={styles.formularioSection}>
+                <h3 className={styles.formularioTitle}>Introduzca los detalles</h3>
+                
+                <form className={styles.formulario}>
+                  <div className={styles.formGrid}>
+                    <div className={styles.formGroup}>
+                      <label htmlFor="nombre" className={styles.formLabel}>
+                        Nombre *
+                      </label>
+                      <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        className={styles.formInput}
+                        defaultValue={session?.user?.name?.split(' ')[0] || ''}
+                        placeholder="Tu nombre"
+                        required
+                      />
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="apellido" className={styles.formLabel}>
+                        Apellido *
+                      </label>
+                      <input
+                        type="text"
+                        id="apellido"
+                        name="apellido"
+                        className={styles.formInput}
+                        defaultValue={session?.user?.name?.split(' ').slice(1).join(' ') || ''}
+                        placeholder="Tu apellido"
+                        required
+                      />
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="email" className={styles.formLabel}>
+                        Correo electrónico *
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        className={styles.formInput}
+                        defaultValue={session?.user?.email || ''}
+                        placeholder="Tu email"
+                        required
+                      />
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="whatsapp" className={styles.formLabel}>
+                        Número de Whatsapp *
+                      </label>
+                      <input
+                        type="tel"
+                        id="whatsapp"
+                        name="whatsapp"
+                        className={styles.formInput}
+                        placeholder="+54 9 11 1234-5678"
+                        required
+                      />
+                    </div>
+                    
+                    <div className={styles.formGroup}>
+                      <label htmlFor="comoConociste" className={styles.formLabel}>
+                        Donde o como conociste
+                      </label>
+                      <textarea
+                        id="comoConociste"
+                        name="comoConociste"
+                        className={styles.formTextarea}
+                        rows={3}
+                        placeholder="Cuéntanos cómo llegaste a nosotros..."
+                      ></textarea>
+                    </div>
+                  </div>
+                  
+                  <div className={styles.precioSection}>
+                    <span className={styles.precioLabel}>Valor de la consulta:</span>
+                    <span className={styles.precioValor}>
+                      {pricingLoading ? (
+                        'Cargando precio...'
+                      ) : pricing ? (
+                        `$${pricing.asesorias.consultorioFinanciero.price.toLocaleString('es-AR')} ARS`
+                      ) : (
+                        '$50.000 ARS'
+                      )}
+                    </span>
+                  </div>
+                  
+                  {session ? (
+                    <button 
+                      type="button"
+                      className={styles.confirmarButton}
+                      onClick={handleSacarTurno}
+                      disabled={!selectedDate || !selectedTime || loading}
+                    >
+                      {loading ? 'Procesando...' : 'Confirmar Turno >'}
+                    </button>
+                  ) : (
+                    <div className={styles.loginRequired}>
+                      <p>Necesitas iniciar sesión para reservar un turno</p>
+                      <button 
+                        type="button"
+                        className={styles.loginButton}
+                        onClick={handleLogin}
+                      >
+                        Iniciar Sesión
+                      </button>
+                    </div>
+                  )}
+                </form>
               </div>
             </div>
           </div>

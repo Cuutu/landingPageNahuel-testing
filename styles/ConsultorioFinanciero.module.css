@@ -1046,6 +1046,22 @@
   z-index: 2;
 }
 
+/* Panel derecho de horarios */
+.horariosPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.horariosPlaceholder {
+  background: rgba(30, 41, 59, 0.05);
+  border: 1px dashed rgba(139, 92, 246, 0.4);
+  border-radius: 12px;
+  padding: 1.25rem;
+  color: #6b7280;
+  text-align: center;
+}
+
 /* Calendario Section */
 .calendarioSection {
   display: flex;
