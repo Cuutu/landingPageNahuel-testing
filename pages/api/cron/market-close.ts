@@ -11,6 +11,15 @@ import { sendEmail } from '@/lib/emailService';
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
+    // ✅ NUEVO: Verificar método HTTP para cronjobs externos
+    if (req.method !== 'GET') {
+      return res.status(405).json({
+        success: false,
+        message: 'Método no permitido. Use GET para cronjobs.',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     // ✅ NUEVO: Verificar que solo Vercel pueda ejecutar este cron job
     const authHeader = req.headers.authorization;
     const token = authHeader?.replace('Bearer ', '');

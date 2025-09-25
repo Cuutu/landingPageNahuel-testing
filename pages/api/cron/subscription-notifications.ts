@@ -2,9 +2,12 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { processSubscriptionNotifications, cleanupOldNotifications } from '../../../lib/subscriptionNotifications';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Solo permitir POST para cron jobs
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+  // Permitir GET para cronjobs externos (cron-job.org)
+  if (req.method !== 'GET') {
+    return res.status(405).json({ 
+      error: 'Método no permitido. Use GET para cronjobs.',
+      timestamp: new Date().toISOString()
+    });
   }
 
   // Verificar token de seguridad para cron jobs (opcional)

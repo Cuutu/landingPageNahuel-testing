@@ -18,11 +18,11 @@ interface AutoConvertCronResponse {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
-  // Solo permitir POST
-  if (req.method !== 'POST') {
+  // Permitir GET para cronjobs externos (cron-job.org)
+  if (req.method !== 'GET') {
     return res.status(405).json({
       success: false,
-      message: 'Método no permitido',
+      message: 'Método no permitido. Use GET para cronjobs.',
       timestamp: new Date().toISOString()
     });
   }
