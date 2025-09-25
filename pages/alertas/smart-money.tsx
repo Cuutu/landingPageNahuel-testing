@@ -121,6 +121,8 @@ const NonSubscriberView: React.FC<{
   const { pricing, loading: pricingLoading } = usePricing();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  // Rango de rentabilidad (vista pública)
+  const [publicPortfolioRange, setPublicPortfolioRange] = useState('30d');
 
   const handleSubscribe = async () => {
     if (!session) {
@@ -282,52 +284,13 @@ const NonSubscriberView: React.FC<{
         </div>
       </section>
 
-      {/* Métricas - Sección independiente para ocupar todo el ancho */}
+      {/* Evolución y Rentabilidad (rango seleccionable) */}
       <section className={styles.metricsSection}>
-        <div className={styles.metricsGrid}>
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-          >
-            <h3 className={styles.metricNumber}>+700</h3>
-            <p className={styles.metricLabel}>USUARIOS ACTIVOS</p>
-          </motion.div>
-
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-          >
-            <h3 className={styles.metricNumber}>+87%</h3> 
-            <p className={styles.metricLabel}>RENTABILIDAD ANUAL</p>
-          </motion.div>
-
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-          >
-            <h3 className={styles.metricNumber}>+200</h3>
-            <p className={styles.metricLabel}>ALERTAS ENVIADAS</p>
-          </motion.div>
-
-          <motion.div 
-            className={styles.metricCard}
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.4 }}
-          >
-            <h3 className={styles.metricNumber}>+79%</h3>
-            <p className={styles.metricLabel}>EFECTIVIDAD</p>
-          </motion.div>
+        <div className={styles.container}>
+          <PortfolioTimeRange 
+            selectedRange={publicPortfolioRange}
+            onRangeChange={(range) => setPublicPortfolioRange(range)}
+          />
         </div>
       </section>
 
@@ -1730,6 +1693,12 @@ const SubscriberView: React.FC = () => {
     return (
       <div className={styles.dashboardContent}>
         <h2 className={styles.sectionTitle}>Dashboard de Trabajo</h2>
+        <div className={styles.chartSection}>
+          <PortfolioTimeRange 
+            selectedRange={portfolioRange}
+            onRangeChange={handlePortfolioRangeChange}
+          />
+        </div>
 
         {/* Comparación con SP500 - MOVIDO AL INICIO */}
         <SP500Comparison />
