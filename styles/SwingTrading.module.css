@@ -1,7 +1,7 @@
 /* Swing Trading Page Styles */
 .main {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1A1A1A 0%, #6D28D9 50%, #1A1A1A 100%);
+  background: #2C3E50;
   position: relative;
   overflow-x: hidden;
 }
@@ -13,7 +13,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(26, 26, 26, 0.3);
+  background: rgba(44, 62, 80, 0.3);
   z-index: 1;
 }
 
@@ -569,9 +569,10 @@
   font-size: 1.1rem;
 }
 
-/* Roadmap Section */
+/* Roadmap Section - OCULTO */
 .roadmapSection {
   padding: 4rem 0;
+  display: none;
 }
 
 /* Program Section */
@@ -1026,10 +1027,13 @@
   }
 }
 
-/* Roadmap Section - ROJO */
+/* Roadmap Section - CON IMAGEN DE FONDO */
 .roadmapSection {
   padding: 6rem 0;
-  background: linear-gradient(135deg, #8B0000 0%, #A52A2A 50%, #8B0000 100%);
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.8) 0%, rgba(165, 42, 42, 0.8) 50%, rgba(139, 0, 0, 0.8) 100%), url('/logos/Diseño Web - LozanoNahuel - Entrenamientos - Swing Trading.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   z-index: 2;
 }
@@ -1045,10 +1049,13 @@
   z-index: 1;
 }
 
-/* Calendar Section - ROJO */
+/* Calendar Section - CON IMAGEN DE FONDO */
 .calendarSection {
   padding: 4rem 0;
-  background: linear-gradient(135deg, #8B0000 0%, #A52A2A 50%, #8B0000 100%);
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.8) 0%, rgba(165, 42, 42, 0.8) 50%, rgba(139, 0, 0, 0.8) 100%), url('/logos/Diseño Web - LozanoNahuel - Entrenamientos - Swing Trading.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   z-index: 2;
 }
