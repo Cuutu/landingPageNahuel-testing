@@ -2554,7 +2554,7 @@ const SubscriberView: React.FC = () => {
 
     const fetchMessages = async () => {
       try {
-        const response = await fetch('/api/chat/messages?chatType=trader-call');
+        const response = await fetch('/api/chat/messages?chatType=smart-money');
         if (response.ok) {
           const data = await response.json();
           setMessages(data.messages || []);
@@ -2571,7 +2571,7 @@ const SubscriberView: React.FC = () => {
         try {
           const messageData: any = {
             message: message.trim(),
-            chatType: 'trader-call'
+            chatType: 'smart-money'
           };
 
           // Si estamos respondiendo a un mensaje, incluir la referencia
