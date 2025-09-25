@@ -429,29 +429,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         href: '/entrenamientos/swing-trading',
         image: '/entrenamientos/swing-trading.jpg',
         badge: 'Más Popular'
-      },
-      {
-        id: 'day-trading',
-        title: 'Day Trading',
-        subtitle: 'Estrategias Avanzadas de Trading Intradía',
-        description: 'Domina el arte del Day Trading con estrategias profesionales. Aprende técnicas avanzadas de trading intradía, scalping, gestión de riesgo y psicología del trader.',
-        level: 'Intermedio - Avanzado',
-        duration: '45 horas',
-        lessons: 85,
-        students: 500,
-        rating: 4.9,
-        price: '$100000 ARS',
-        features: [
-          'Estrategias de scalping profesionales',
-          'Análisis técnico avanzado',
-          'Gestión de riesgo especializada',
-          'Psicología del day trading',
-          'Clases en vivo semanales',
-          'Acceso de por vida'
-        ],
-        href: '/entrenamientos/day-trading',
-        image: '/entrenamientos/day-trading.jpg',
-        badge: 'Nuevo'
       }
     ];
 
@@ -507,29 +484,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         href: '/entrenamientos/swing-trading',
         image: '/entrenamientos/swing-trading.jpg',
         badge: 'Más Popular'
-      },
-      {
-        id: 'day-trading',
-        title: 'Day Trading',
-        subtitle: 'Estrategias Avanzadas de Trading Intradía',
-        description: 'Domina el arte del Day Trading con estrategias profesionales. Aprende técnicas avanzadas de trading intradía, scalping, gestión de riesgo y psicología del trader.',
-        level: 'Intermedio - Avanzado',
-        duration: '45 horas',
-        lessons: 85,
-        students: 500,
-        rating: 4.9,
-        price: '$100000 ARS',
-        features: [
-          'Estrategias de scalping profesionales',
-          'Análisis técnico avanzado',
-          'Gestión de riesgo especializada',
-          'Psicología del day trading',
-          'Clases en vivo semanales',
-          'Acceso de por vida'
-        ],
-        href: '/entrenamientos/day-trading',
-        image: '/entrenamientos/day-trading.jpg',
-        badge: 'Nuevo'
       }
     ];
 
