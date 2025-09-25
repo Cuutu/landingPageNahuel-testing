@@ -236,12 +236,19 @@ export async function createTrainingEvent(
         {
           email: userEmail,
           responseStatus: 'needsAction'
-        }
+        },
+        // Agregar administradores como asistentes si están configurados
+        ...(process.env.ADMIN_EMAIL ? [{ email: process.env.ADMIN_EMAIL }] : []),
+        ...(process.env.ADMIN_EMAILS
+          ? process.env.ADMIN_EMAILS.split(',').map(e => ({ email: e.trim() })).filter(a => a.email)
+          : [])
       ],
       reminders: {
         useDefault: false,
         overrides: [
           { method: 'email', minutes: 24 * 60 }, // 24 horas antes
+          { method: 'email', minutes: 60 }, // 1 hora antes por email
+          { method: 'popup', minutes: 60 }, // 1 hora antes por notificación
           { method: 'popup', minutes: 30 }, // 30 minutos antes
         ],
       },

@@ -182,6 +182,10 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     }
   ];
 
+  // Estados para gestión de meeting link de la próxima clase
+  const [nextMeetingLink, setNextMeetingLink] = useState<string | null>(null);
+  const [nextMeetingStart, setNextMeetingStart] = useState<Date | null>(null);
+
   // Función para calcular el countdown basado en la fecha de inicio
   const calculateCountdown = (startDate: Date, startTime: string) => {
     const now = new Date();
@@ -337,6 +341,34 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
         const data = await response.json();
         const hasSwingTrading = data.data.tiposDisponibles.includes('SwingTrading');
         setIsEnrolled(hasSwingTrading);
+        
+        // Si está inscrito, buscar su próxima reserva con link de Meet
+        if (hasSwingTrading) {
+          try {
+            const bookingsRes = await fetch('/api/bookings');
+            if (bookingsRes.ok) {
+              const bookingsData = await bookingsRes.json();
+              const now = Date.now();
+              const upcoming = (bookingsData.bookings || [])
+                .filter((b: any) => b.type === 'training' && (b.serviceType === 'SwingTrading' || b.serviceType === 'swingtrading'))
+                .map((b: any) => ({ ...b, start: new Date(b.startDate).getTime() }))
+                .filter((b: any) => b.start > now)
+                .sort((a: any, b: any) => a.start - b.start)[0];
+              if (upcoming) {
+                setNextMeetingLink(upcoming.meetingLink || null);
+                setNextMeetingStart(new Date(upcoming.startDate));
+              } else {
+                setNextMeetingLink(null);
+                setNextMeetingStart(null);
+              }
+            }
+          } catch (err) {
+            console.error('Error obteniendo próximas reservas:', err);
+          }
+        } else {
+          setNextMeetingLink(null);
+          setNextMeetingStart(null);
+        }
       }
     } catch (error) {
       console.error('Error checking enrollment:', error);
@@ -470,8 +502,13 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     }
     
     if (isEnrolled) {
-      // Si ya está inscrito, ir directamente a las lecciones
-      window.location.href = '/entrenamientos/SwingTrading/lecciones';
+      // Si ya está inscrito y hay link de reunión, ir al Meet
+      if (nextMeetingLink) {
+        window.open(nextMeetingLink, '_blank');
+        return;
+      }
+      // Fallback: permanecer en la página para reservar un horario
+      toast('Aún no tienes una clase programada. Elige un horario disponible.');
       return;
     }
     
@@ -1225,7 +1262,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 {checkingEnrollment 
                   ? 'Verificando...' 
                   : isEnrolled 
-                    ? 'Ir a las Lecciones' 
+                    ? 'Entrar a la Reunión' 
                     : 'Inscribirme ahora >'
                 }
               </button>

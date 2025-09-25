@@ -31,8 +31,8 @@ export async function createTrainingEnrollmentNotification(
       priority: 'alta',
       targetUsers: 'todos', // Se mostrará solo al usuario específico
       icon: '🎓',
-      actionUrl: `/entrenamientos/${trainingType.toLowerCase()}/lecciones`,
-      actionText: 'Comenzar Entrenamiento',
+      actionUrl: `/entrenamientos/swing-trading`,
+      actionText: 'Ir al Entrenamiento',
       isActive: true,
       createdBy: 'sistema',
       isAutomatic: true,
@@ -169,7 +169,7 @@ export async function createTrainingScheduleNotification(
       priority: 'alta',
       targetUsers: 'suscriptores', // Se mostrará a usuarios inscritos
       icon: '📅',
-      actionUrl: `/entrenamientos/${trainingType.toLowerCase()}`,
+      actionUrl: `/entrenamientos/swing-trading`,
       actionText: 'Reservar Clase',
       isActive: true,
       createdBy: 'admin',
@@ -221,6 +221,28 @@ export async function createTrainingScheduleNotification(
     console.log(`📊 [TRAINING SCHEDULE] Resumen de emails: ${emailsSent} enviados, ${emailErrors.length} errores`);
     if (emailErrors.length > 0) {
       console.error('❌ [TRAINING SCHEDULE] Errores de email:', emailErrors);
+    }
+
+    // Enviar resumen a administradores
+    try {
+      const adminRecipients = [
+        ...(process.env.ADMIN_EMAIL ? [process.env.ADMIN_EMAIL] : []),
+        ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim()).filter(Boolean) : [])
+      ];
+      if (adminRecipients.length > 0) {
+        const adminHtml = `
+          <h2>Nuevo horario creado: ${trainingName}</h2>
+          <p>Día: <strong>${dayName}</strong></p>
+          <p>Hora: <strong>${timeString}</strong></p>
+          <p>Duración: <strong>${durationString}</strong></p>
+          <p>Usuarios notificados: <strong>${enrolledUsers.length}</strong>, emails enviados: <strong>${emailsSent}</strong></p>
+        `;
+        for (const adminEmail of adminRecipients) {
+          await sendEmail({ to: adminEmail, subject: `📅 Nuevo horario: ${trainingName} - ${dayName} ${timeString}`, html: adminHtml });
+        }
+      }
+    } catch (e) {
+      console.error('⚠️ Error enviando resumen a administradores:', e);
     }
 
   } catch (error) {

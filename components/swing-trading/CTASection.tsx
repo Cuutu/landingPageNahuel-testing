@@ -54,7 +54,7 @@ const CTASection: React.FC<CTASectionProps> = ({
             {checkingEnrollment 
               ? 'Verificando...' 
               : isEnrolled 
-                ? 'Ir a las Lecciones' 
+                ? 'Entrar a la Reunión' 
                 : 'Comenzar Ahora'
             }
             <ArrowRight size={20} />
