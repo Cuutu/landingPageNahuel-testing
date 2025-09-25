@@ -8,6 +8,8 @@ export interface ITrainingDate extends Document {
   description?: string; // Descripción opcional
   isActive: boolean; // Si la fecha está activa
   createdBy: string; // Email del admin que creó la fecha
+  googleEventId?: string; // ID del evento en Google Calendar
+  meetLink?: string; // Link de Google Meet generado
   createdAt: Date;
   updatedAt: Date;
 }
@@ -43,6 +45,13 @@ const TrainingDateSchema: Schema = new Schema({
   createdBy: {
     type: String,
     required: true
+  },
+  googleEventId: {
+    type: String
+  },
+  meetLink: {
+    type: String,
+    maxlength: 500
   }
 }, {
   timestamps: true

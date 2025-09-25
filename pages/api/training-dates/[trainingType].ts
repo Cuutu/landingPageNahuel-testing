@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import TrainingDate from '@/models/TrainingDate';
+import Training from '@/models/Training';
+import { createTrainingEvent } from '@/lib/googleCalendar';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -85,9 +87,20 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
       });
     }
 
-    const newTrainingDate = new TrainingDate({
+    // Parsear fecha y hora a Date
+    const startDate = new Date(date);
+    const [hour, minute] = String(time).split(':').map((v: string) => parseInt(v, 10));
+    startDate.setHours(hour || 0, minute || 0, 0, 0);
+
+    // Obtener configuración del entrenamiento (duración y nombre)
+    const trainingDoc = await Training.findOne({ tipo: trainingType });
+    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Swing Trading' : 'Entrenamiento');
+    const durationMinutes = (trainingDoc?.duracion ? Number(trainingDoc.duracion) : 3) * 60; // duracion en horas -> minutos
+
+    // Crear entidad en BD primero
+    const newTrainingDate = await TrainingDate.create({
       trainingType,
-      date: new Date(date),
+      date: startDate,
       time,
       title,
       isActive: true,
@@ -96,11 +109,28 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
       updatedAt: new Date()
     });
 
-    await newTrainingDate.save();
+    // Crear evento en Google Calendar con Google Meet automáticamente
+    try {
+      const attendeeEmail = session.user.email || process.env.ADMIN_EMAIL || 'admin@example.com';
+      const meetData = await createTrainingEvent(attendeeEmail, trainingName, startDate, durationMinutes);
+
+      if (meetData?.success) {
+        await TrainingDate.findByIdAndUpdate(newTrainingDate._id, {
+          googleEventId: meetData.eventId,
+          meetLink: meetData.meetLink
+        });
+      }
+    } catch (calendarError) {
+      console.error('⚠️ Error creando evento en Google Calendar para TrainingDate:', calendarError);
+      // No fallemos la creación de la fecha si Calendar falla
+    }
+
+    // Devolver la fecha (posiblemente ya actualizada con meetLink)
+    const saved = await TrainingDate.findById(newTrainingDate._id);
 
     return res.status(201).json({
       success: true,
-      data: newTrainingDate,
+      data: saved,
       message: 'Fecha de entrenamiento creada exitosamente'
     });
   } catch (error) {
@@ -142,10 +172,21 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, trainingType
       });
     }
 
+    // Preparar nueva fecha/hora
+    const startDate = new Date(date);
+    const [hour, minute] = String(time).split(':').map((v: string) => parseInt(v, 10));
+    startDate.setHours(hour || 0, minute || 0, 0, 0);
+
+    // Obtener training para duración/nombre
+    const trainingDoc = await Training.findOne({ tipo: trainingType });
+    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Swing Trading' : 'Entrenamiento');
+    const durationMinutes = (trainingDoc?.duracion ? Number(trainingDoc.duracion) : 3) * 60;
+
+    // Actualizar documento
     const updatedTrainingDate = await TrainingDate.findByIdAndUpdate(
       id,
       {
-        date: new Date(date),
+        date: startDate,
         time,
         title,
         updatedAt: new Date()
@@ -160,10 +201,45 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, trainingType
       });
     }
 
+    // Sincronizar con Google Calendar
+    try {
+      const calendar = await (await import('@/lib/googleCalendar'));
+      const calendarClient = await (await (calendar as any)).getAdminCalendarClient?.();
+      const calendarId = calendarClient ? await (await (calendar as any)).getCorrectCalendarId?.(calendarClient) : null;
+
+      if (updatedTrainingDate.googleEventId && calendarClient && calendarId) {
+        // Actualizar evento existente
+        await calendarClient.events.patch({
+          calendarId,
+          eventId: updatedTrainingDate.googleEventId,
+          requestBody: {
+            start: { dateTime: startDate.toISOString(), timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires' },
+            end: { dateTime: new Date(startDate.getTime() + durationMinutes * 60000).toISOString(), timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires' },
+            summary: `${trainingName} - ${session.user.email} - ${startDate.toLocaleDateString('es-ES')}`,
+          },
+          conferenceDataVersion: 1
+        });
+      } else {
+        // Crear evento nuevo si no existe
+        const meetData = await createTrainingEvent(session.user.email!, trainingName, startDate, durationMinutes);
+        if (meetData?.success) {
+          await TrainingDate.findByIdAndUpdate(updatedTrainingDate._id, {
+            googleEventId: meetData.eventId,
+            meetLink: meetData.meetLink
+          });
+        }
+      }
+    } catch (calendarError) {
+      console.error('⚠️ Error sincronizando con Google Calendar:', calendarError);
+    }
+
+    // Devolver entidad actualizada
+    const saved = await TrainingDate.findById(updatedTrainingDate._id);
+
     return res.status(200).json({
       success: true,
-      data: updatedTrainingDate,
-      message: 'Fecha de entrenamiento actualizada exitosamente'
+      data: saved,
+      message: 'Fecha de entrenamiento actualizada y sincronizada'
     });
   } catch (error) {
     console.error('Error actualizando fecha de entrenamiento:', error);

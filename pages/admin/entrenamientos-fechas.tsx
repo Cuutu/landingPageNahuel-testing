@@ -15,7 +15,8 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  ArrowLeft
+  ArrowLeft,
+  ExternalLink
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -31,6 +32,7 @@ interface TrainingDate {
   isActive: boolean;
   createdBy: string;
   createdAt: string;
+  meetLink?: string; // Added meetLink to the interface
 }
 
 interface NewTrainingDateForm {
@@ -389,6 +391,22 @@ export default function EntrenamientosFechasPage() {
                         <AlertCircle size={16} />
                         {trainingDate.title}
                       </div>
+                      {trainingDate.meetLink && (
+                        <div className={styles.scheduleDetail}>
+                          <ExternalLink size={16} />
+                          <a href={trainingDate.meetLink} target="_blank" rel="noopener noreferrer">Abrir Meet</a>
+                          <button
+                            className={styles.copyButton}
+                            onClick={() => {
+                              navigator.clipboard.writeText(trainingDate.meetLink as string);
+                              toast.success('Link de Meet copiado');
+                            }}
+                            style={{ marginLeft: 8 }}
+                          >
+                            Copiar
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className={styles.scheduleActions}>
