@@ -40,7 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         targetUsers: "todos",
         createdBy: session.user.email,
         icon: "📚",
-        actionUrl: "/entrenamientos/day-trading",
+        actionUrl: "/entrenamientos/swing-trading",
         actionText: "Ver Curso"
       },
       {

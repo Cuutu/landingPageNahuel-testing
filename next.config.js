@@ -54,6 +54,15 @@ const nextConfig = {
     }
     return config;
   },
+  async redirects() {
+    return [
+      {
+        source: '/entrenamientos/day-trading',
+        destination: '/entrenamientos',
+        permanent: false,
+      },
+    ];
+  },
 }
 
 module.exports = nextConfig 
