@@ -32,6 +32,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import styles from '@/styles/SwingTrading.module.css';
+import YouTubePlayer from '@/components/YouTubePlayer';
 
 interface TrainingData {
   tipo: string;
@@ -50,6 +51,19 @@ interface TrainingData {
     lecciones: number;
     certificacion: boolean;
     nivelAcceso: string;
+  };
+  siteConfig?: {
+    trainingVideos?: {
+      swingTrading?: {
+        heroVideo?: {
+          youtubeId: string;
+          title?: string;
+          autoplay?: boolean;
+          muted?: boolean;
+          loop?: boolean;
+        };
+      };
+    };
   };
 }
 
@@ -100,12 +114,20 @@ interface TradingPageProps {
   training: TrainingData;
   program: ProgramModule[];
   testimonials: Testimonial[];
+  swingHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  };
 }
 
 const SwingTradingPage: React.FC<TradingPageProps> = ({ 
   training,
   program, 
-  testimonials
+  testimonials,
+  swingHeroVideo
 }) => {
   const { data: session } = useSession();
   const [isEnrolling, setIsEnrolling] = useState(false);
@@ -697,31 +719,27 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               </div>
               <div className={styles.heroVideo}>
                 <div className={styles.videoContainer}>
-                  <div className={styles.videoPlayer}>
-                    <div className={styles.videoPlaceholder}>
-                      <div className={styles.playButton}>
-                        <PlayCircle size={60} />
-                      </div>
-                    </div>
-                    <div className={styles.videoControls}>
-                      <div className={styles.videoProgress}>
-                        <span className={styles.currentTime}>2:21</span>
-                        <div className={styles.progressBar}>
-                          <div className={styles.progressFill}></div>
-                        </div>
-                        <span className={styles.totalTime}>20:00</span>
-                      </div>
-                      <div className={styles.controlButtons}>
-                        <button className={styles.controlBtn}>⏮</button>
-                        <button className={styles.controlBtn}>⏯</button>
-                        <button className={styles.controlBtn}>⏭</button>
-                        <button className={styles.controlBtn}>🔊</button>
-                        <button className={styles.controlBtn}>⚙️</button>
-                        <button className={styles.controlBtn}>⛶</button>
-                        <button className={styles.controlBtn}>⛶</button>
-                      </div>
-                    </div>
-                  </div>
+                  {swingHeroVideo?.youtubeId ? (
+                    <YouTubePlayer
+                      videoId={swingHeroVideo.youtubeId}
+                      title={swingHeroVideo.title || 'Swing Trading - Video'}
+                      autoplay={!!swingHeroVideo.autoplay}
+                      muted={!!swingHeroVideo.muted}
+                      loop={!!swingHeroVideo.loop}
+                      controls={true}
+                      className={styles.videoPlayer}
+                    />
+                  ) : (
+                    <YouTubePlayer
+                      videoId="dQw4w9WgXcQ"
+                      title="Swing Trading - Video"
+                      autoplay={false}
+                      muted={true}
+                      loop={false}
+                      controls={true}
+                      className={styles.videoPlayer}
+                    />
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -1394,19 +1412,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
     // Obtener datos del entrenamiento desde la API
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/entrenamientos/SwingTrading`);
+    const [trainingRes, siteConfigRes] = await Promise.all([
+      fetch(`${baseUrl}/api/entrenamientos/SwingTrading`),
+      fetch(`${baseUrl}/api/site-config`)
+    ]);
     
-    if (!response.ok) {
+    if (!trainingRes.ok) {
       throw new Error('Error fetching training data');
     }
     
-    const data = await response.json();
+    const data = await trainingRes.json();
+    const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
+
+    const swingHeroVideo = siteConfig?.trainingVideos?.swingTrading?.heroVideo || null;
     
     return {
       props: {
         training: data.data.training,
         program: data.data.program,
-        testimonials: data.data.testimonials
+        testimonials: data.data.testimonials,
+        swingHeroVideo
       }
     };
   } catch (error) {
@@ -1435,7 +1460,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           }
         },
         program: [],
-        testimonials: []
+        testimonials: [],
+        swingHeroVideo: null
       }
     };
   }
