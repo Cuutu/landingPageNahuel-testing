@@ -291,8 +291,8 @@ AlertSchema.index({ finalPriceSetAt: 1 }); // ✅ NUEVO: Para búsquedas por fec
 // ✅ NUEVO: Método para calcular el profit usando el rango de entrada
 AlertSchema.methods.calculateProfit = function(this: IAlert) {
   const currentPrice = this.currentPrice;
-  // Usar el precio máximo del rango para cálculos conservadores
-  const entryPrice = this.entryPriceRange?.max || this.entryPrice; // Usar el nuevo campo o el antiguo
+  // Usar el precio mínimo del rango para cálculos más favorables
+  const entryPrice = this.entryPriceRange?.min || this.entryPrice; // Usar el nuevo campo o el antiguo
   
   if (this.action === 'BUY') {
     this.profit = ((currentPrice - entryPrice!) / entryPrice!) * 100; // Usar el nuevo campo o el antiguo
@@ -311,7 +311,7 @@ AlertSchema.methods.setFinalPrice = function(this: IAlert, price: number, isFrom
   
   // Recalcular profit con el precio final
   if (this.entryPriceRange) {
-    const entryPrice = this.entryPriceRange.max;
+    const entryPrice = this.entryPriceRange.min; // Usar precio mínimo del rango
     if (this.action === 'BUY') {
       this.profit = ((price - entryPrice) / entryPrice) * 100;
     } else { // SELL

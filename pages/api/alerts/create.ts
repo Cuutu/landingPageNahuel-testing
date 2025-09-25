@@ -169,15 +169,10 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-      // ✅ NUEVO: Obtener precio actual del mercado en tiempo real usando la API correcta
-      try {
-        const currentMarketPrice = await fetchCorrectStockPrice(symbol);
-        alertData.currentPrice = currentMarketPrice || precioMaximo; // Fallback al precio máximo si falla
-        console.log(`📊 Precio actual de ${symbol}: $${currentMarketPrice} (rango: $${precioMinimo}-$${precioMaximo})`);
-      } catch (error) {
-        console.error(`❌ Error obteniendo precio actual para ${symbol}:`, error);
-        alertData.currentPrice = precioMaximo; // Fallback al precio máximo
-      }
+      // ✅ CORREGIDO: Para alertas de rango, usar el precio mínimo como currentPrice inicial
+      // El precio actual del mercado se actualizará automáticamente por el cronjob
+      alertData.currentPrice = precioMinimo; // Usar precio mínimo del rango como precio inicial
+      console.log(`📊 Alerta de rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMinimo}`);
     }
 
     const newAlert = await Alert.create(alertData);
