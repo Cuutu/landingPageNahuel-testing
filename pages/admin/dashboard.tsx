@@ -1520,8 +1520,10 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
         </div>
       )}
 
-      {/* ✅ NUEVO: Componente de prueba temporal para verificar menús */}
-      <AdminDropdownTest />
+      {/* ✅ NUEVO: Componente de prueba temporal para verificar menús - OCULTO */}
+      <div className={styles.hiddenSection}>
+        <AdminDropdownTest />
+      </div>
 
       <Footer />
     </>
