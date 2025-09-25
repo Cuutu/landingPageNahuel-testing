@@ -1713,4 +1713,14 @@
   user-select: auto !important;
   pointer-events: auto !important;
   z-index: 10000 !important;
+}
+
+/* Ocultar secciones específicas del dashboard */
+.hiddenSection {
+  display: none !important;
+}
+
+/* Ocultar enlaces específicos dentro de las secciones */
+.hiddenLink {
+  display: none !important;
 } 

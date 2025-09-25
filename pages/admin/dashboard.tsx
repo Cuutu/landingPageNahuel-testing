@@ -847,10 +847,15 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
             {/* Main Dashboard Sections */}
             <div className={styles.sectionsGrid}>
-              {dashboardSections.map((section, index) => (
+              {dashboardSections.map((section, index) => {
+                // Definir qué secciones ocultar
+                const hiddenSections = ['billing', 'pricing', 'database'];
+                const isHidden = hiddenSections.includes(section.id);
+                
+                return (
                 <motion.div
                   key={section.id}
-                  className={styles.sectionCard}
+                  className={`${styles.sectionCard} ${isHidden ? styles.hiddenSection : ''}`}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -866,12 +871,24 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                   </div>
 
                   <div className={styles.sectionActions}>
-                    {section.links.map((link, linkIndex) => (
-                      section.id === 'roadmaps' ? (
+                    {section.links.map((link, linkIndex) => {
+                      // Definir qué enlaces ocultar
+                      const hiddenLinks = [
+                        'Ver Pagos',
+                        'Expiraciones Próximas',
+                        'Horarios Asesorías',
+                        'Enviar Link de Reunión',
+                        'Exportar Contactos',
+                        'Gestión de BD',
+                        'Day Trading'
+                      ];
+                      const isLinkHidden = hiddenLinks.includes(link.label);
+                      
+                      return section.id === 'roadmaps' ? (
                         <button
                           key={linkIndex}
                           onClick={(e) => handleRoadmapLinkClick(e, link.href)}
-                          className={styles.sectionLink}
+                          className={`${styles.sectionLink} ${isLinkHidden ? styles.hiddenLink : ''}`}
                         >
                           {link.icon}
                           <span>{link.label}</span>
@@ -880,16 +897,17 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                       <Link
                         key={linkIndex}
                         href={link.href}
-                        className={styles.sectionLink}
+                        className={`${styles.sectionLink} ${isLinkHidden ? styles.hiddenLink : ''}`}
                       >
                         {link.icon}
                         <span>{link.label}</span>
                       </Link>
-                      )
-                    ))}
+                      );
+                    })}
                   </div>
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Sección de herramientas de administración */}
