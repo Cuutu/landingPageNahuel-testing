@@ -169,12 +169,13 @@ export const useTrainingDates = (session: Session | null, trainingType: string) 
     };
 
     try {
-      const response = await fetch('/api/training-dates', {
+      const response = await fetch('/api/training-dates/SwingTrading', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trainingType: 'SwingTrading',
-          ...newDate
+          date: newDate.date,
+          time: newDate.time,
+          title: newDate.title
         })
       });
 
