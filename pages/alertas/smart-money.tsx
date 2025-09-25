@@ -2641,7 +2641,7 @@ const SubscriberView: React.FC = () => {
           <div className={styles.chatContainer}>
             <div className={styles.chatHeader}>
               <div className={styles.chatTitle}>
-                <h2>💬 Comunidad Trader Call</h2>
+                <h2>💬 Comunidad Smart Money</h2>
               </div>
             </div>
             <div className={styles.loadingChat}>
@@ -2658,7 +2658,7 @@ const SubscriberView: React.FC = () => {
         <div className={styles.chatContainer}>
           <div className={styles.chatHeader}>
             <div className={styles.chatTitle}>
-              <h2>💬 Comunidad Trader Call</h2>
+              <h2>💬 Comunidad Smart Money</h2>
             </div>
           </div>
           
