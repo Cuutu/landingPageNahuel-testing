@@ -17,9 +17,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
+    // Verificar si es admin por rol en la sesión
+    if (session.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         error: 'Permisos insuficientes'
