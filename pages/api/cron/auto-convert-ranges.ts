@@ -41,8 +41,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
 
     console.log(`📊 CRON: Encontradas ${alertsWithRange.length} alertas con rangos para convertir`);
+    
+    // Log de las alertas encontradas para debugging
+    if (alertsWithRange.length > 0) {
+      console.log(`🔍 CRON: Alertas encontradas:`, alertsWithRange.map(alert => ({
+        symbol: alert.symbol,
+        tipo: alert.tipo,
+        entryPriceRange: alert.entryPriceRange,
+        precioMinimo: alert.precioMinimo,
+        precioMaximo: alert.precioMaximo,
+        status: alert.status
+      })));
+    }
 
     if (alertsWithRange.length === 0) {
+      console.log(`⚠️ CRON: No hay alertas de rango para convertir`);
       return res.status(200).json({
         success: true,
         message: 'No hay alertas de rango para convertir',
@@ -119,6 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
+    console.log(`📊 CRON: Detalles de conversión:`, conversionDetails);
 
     return res.status(200).json({
       success: true,
@@ -145,11 +159,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
  */
 async function sendRangeConversionNotification(alert: any, finalPrice: number, oldRange: string) {
   try {
+    console.log(`📧 CRON: Iniciando envío de notificación para ${alert.symbol}`);
+    console.log(`📧 CRON: Detalles de la alerta:`, {
+      symbol: alert.symbol,
+      tipo: alert.tipo,
+      action: alert.action,
+      oldRange: oldRange,
+      finalPrice: finalPrice
+    });
+    
     // Importar la función de notificaciones
     const { createAlertNotification } = await import('@/lib/notificationUtils');
     
-    console.log(`📧 CRON: Enviando notificación de conversión de rango para ${alert.symbol}`);
-    console.log(`📧 CRON: Rango anterior: ${oldRange} -> Precio final: $${finalPrice}`);
+    console.log(`📧 CRON: Función createAlertNotification importada correctamente`);
     
     // Crear una notificación usando el sistema existente que envía a TODOS los suscriptores
     await createAlertNotification(alert, {
@@ -162,6 +184,7 @@ async function sendRangeConversionNotification(alert: any, finalPrice: number, o
     
   } catch (error) {
     console.error(`❌ CRON: Error enviando notificación de conversión:`, error);
+    console.error(`❌ CRON: Stack trace:`, error instanceof Error ? error.stack : 'No stack trace available');
     throw error;
   }
 }

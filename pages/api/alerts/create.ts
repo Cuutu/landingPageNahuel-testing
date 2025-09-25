@@ -169,16 +169,10 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-    // ✅ CORREGIDO: Para alertas de rango, usar el precio actual del mercado como currentPrice inicial
-    // Esto asegura que el P&L sea realista desde el momento de la creación
-    try {
-      const currentMarketPrice = await fetchCorrectStockPrice(symbol);
-      alertData.currentPrice = currentMarketPrice || precioMinimo; // Fallback al precio mínimo si falla
-      console.log(`📊 Alerta de rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio actual del mercado: $${currentMarketPrice}`);
-    } catch (error) {
-      alertData.currentPrice = precioMinimo; // Fallback al precio mínimo
-      console.log(`⚠️ No se pudo obtener precio actual para ${symbol}, usando precio mínimo: $${precioMinimo}`);
-    }
+    // ✅ CORREGIDO: Para alertas de rango, usar el precio mínimo como currentPrice inicial
+    // Esto hace que el P&L empiece en 0% al momento de crear la alerta
+    alertData.currentPrice = precioMinimo; // Usar precio mínimo del rango como precio inicial
+    console.log(`📊 Alerta de rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMinimo} (P&L: 0%)`);
     }
 
     const newAlert = await Alert.create(alertData);
