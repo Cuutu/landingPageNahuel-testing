@@ -911,7 +911,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
             </div>
 
             {/* Sección de herramientas de administración */}
-            <div className={styles.adminTools}>
+            <div className={`${styles.adminTools} ${styles.hiddenSection}`}>
               <h2 className={styles.toolsTitle}>Herramientas de Sistema</h2>
               <div className={styles.toolsGrid}>
                 <button
