@@ -6,6 +6,7 @@ import User from '@/models/User';
 import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
 import { logger } from '@/lib/logger';
+import { createTrainingEnrollmentNotification } from '@/lib/trainingNotifications';
 
 // Cargas diferidas para evitar dependencias pesadas si no se usan
 const importAdvisoryDate = async () => (await import('@/models/AdvisoryDate')).default;
@@ -164,6 +165,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       await user.save();
       logger.info('IMMEDIATE training activated', { module: 'payments', step: 'training', user: user.email, service });
+
+      try {
+        const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
+        await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, payment.amount);
+      } catch (e) {
+        logger.error('IMMEDIATE training enrollment notify error', { module: 'payments', step: 'notify', error: (e as Error).message });
+      }
     } else if (isBooking) {
       // Fallback para reservas (asesorías)
       logger.info('IMMEDIATE booking start', { module: 'payments', step: 'booking_start', user: user.email, reference: externalReference });

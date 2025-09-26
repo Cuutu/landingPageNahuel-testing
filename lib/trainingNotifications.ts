@@ -92,17 +92,16 @@ export async function createTrainingEnrollmentNotification(
 
     // Enviar email al administrador
     try {
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
-      if (adminEmail) {
+      const adminRecipients = [
+        ...(process.env.ADMIN_EMAIL ? [process.env.ADMIN_EMAIL] : []),
+        ...(process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim()).filter(Boolean) : [])
+      ];
+      if (adminRecipients.length > 0) {
         const adminEmailHtml = createAdminEnrollmentNotificationTemplate(userName, userEmail, trainingName, price);
-        
-        await sendEmail({
-          to: adminEmail,
-          subject: `🎓 Nueva inscripción: ${trainingName} - ${userName}`,
-          html: adminEmailHtml
-        });
-
-        console.log('✅ [TRAINING ENROLLMENT] Email de notificación enviado al admin');
+        for (const to of adminRecipients) {
+          await sendEmail({ to, subject: `🎓 Nueva inscripción: ${trainingName} - ${userName}`, html: adminEmailHtml });
+        }
+        console.log('✅ [TRAINING ENROLLMENT] Email de notificación enviado a administradores');
       }
     } catch (adminEmailError) {
       console.error('❌ [TRAINING ENROLLMENT] Error enviando email al admin:', adminEmailError);

@@ -1544,6 +1544,45 @@
   transform: none;
 }
 
+/* Variantes para intercalar rojo y negro */
+.ctaRed {
+  background: #8B0000;
+  border-color: #8B0000;
+}
+
+.ctaRed:hover {
+  background: #a70f0f;
+  color: #fff;
+  box-shadow: 0 8px 25px rgba(167, 15, 15, 0.4);
+}
+
+.ctaBlack {
+  background: #111827;
+  border-color: #111827;
+}
+
+.ctaBlack:hover {
+  background: #0b1220;
+  color: #fff;
+  box-shadow: 0 8px 25px rgba(17, 24, 39, 0.4);
+}
+
+/* Estilo del selector de fechas en CTA */
+.ctaSelect {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  min-width: 240px;
+}
+
+.ctaSelect:focus {
+  outline: none;
+  border-color: #FFD700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.25);
+}
+
 /* === YOUTUBE SECTION - FONDO VIOLETA === */
 .youtubeSection {
   padding: 6rem 0;

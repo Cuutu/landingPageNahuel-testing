@@ -1306,7 +1306,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               {!isEnrolled && (
                 <button 
                   onClick={handleEnroll}
-                  className={styles.ctaButton}
+                  className={`${styles.ctaButton} ${styles.ctaRed}`}
                   disabled={checkingEnrollment}
                 >
                   {checkingEnrollment ? 'Verificando...' : 'Inscribirme ahora >'}
@@ -1315,7 +1315,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               {isEnrolled && (
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <select
-                    className={styles.input}
+                    className={styles.ctaSelect}
                     value={selectedDateId || ''}
                     onChange={e => setSelectedDateId(e.target.value || null)}
                   >
@@ -1329,9 +1329,9 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                         </option>
                       ))}
                   </select>
-                  <button className={styles.ctaButton} onClick={handleReserve}>Reservar mi lugar</button>
+                  <button className={`${styles.ctaButton} ${styles.ctaBlack}`} onClick={handleReserve}>Reservar mi lugar</button>
                   {nextMeetingLink && (
-                    <a className={styles.ctaButton} href={nextMeetingLink} target="_blank" rel="noreferrer">Entrar a la Reunión</a>
+                    <a className={`${styles.ctaButton} ${styles.ctaRed}`} href={nextMeetingLink} target="_blank" rel="noreferrer">Entrar a la Reunión</a>
                   )}
                 </div>
               )}

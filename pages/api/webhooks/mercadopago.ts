@@ -5,6 +5,7 @@ import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
 import { getMercadoPagoPayment, isPaymentSuccessful, isPaymentPending, isPaymentRejected } from '@/lib/mercadopago';
 import { PaymentErrorHandler } from '@/lib/paymentErrorHandler';
+import { createTrainingEnrollmentNotification } from '@/lib/trainingNotifications';
 
 /**
  * API de webhooks para MercadoPago
@@ -324,6 +325,14 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         training: service,
         transactionId: paymentInfo.id
       });
+
+      // Notificación de confirmación al usuario y admins
+      try {
+        const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
+        await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, amount);
+      } catch (e) {
+        console.error('⚠️ Error enviando notificación de inscripción:', e);
+      }
 
     } else if (isBooking) {
       // Procesar reserva
