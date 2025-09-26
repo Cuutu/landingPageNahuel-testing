@@ -88,10 +88,17 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
       });
     }
 
-    // Parsear fecha y hora a Date
-    const startDate = new Date(date);
+    // Parsear fecha y hora a Date (normalizado a zona configurada)
+    const base = new Date(date);
     const [hour, minute] = String(time).split(':').map((v: string) => parseInt(v, 10));
-    startDate.setHours(hour || 0, minute || 0, 0, 0);
+    const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+    const yyyy = base.getFullYear();
+    const mm = (base.getMonth() + 1).toString().padStart(2, '0');
+    const dd = base.getDate().toString().padStart(2, '0');
+    const hh = (hour || 0).toString().padStart(2, '0');
+    const mi = (minute || 0).toString().padStart(2, '0');
+    // Construir como local y que Calendar lo interprete con tz al crear
+    const startDate = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00`);
 
     // Obtener configuración del entrenamiento (duración y nombre)
     const trainingDoc = await Training.findOne({ tipo: trainingType });
@@ -112,8 +119,12 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
 
     // Crear evento en Google Calendar con Google Meet automáticamente
     try {
-      const attendeeEmail = session.user.email || process.env.ADMIN_EMAIL || 'admin@example.com';
-      const meetData = await createTrainingEvent(attendeeEmail, trainingName, startDate, durationMinutes);
+      // Evitar duplicado si por alguna razón ya existe un eventId
+      let meetData: any = null;
+      if (!newTrainingDate.googleEventId) {
+        const attendeeEmail = session.user.email || process.env.ADMIN_EMAIL || 'admin@example.com';
+        meetData = await createTrainingEvent(attendeeEmail, trainingName, startDate, durationMinutes);
+      }
 
       if (meetData?.success) {
         await TrainingDate.findByIdAndUpdate(newTrainingDate._id, {

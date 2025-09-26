@@ -50,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const closeDate = await TrainingDate.findOne({
         trainingType: serviceType,
-        date: { $gte: new Date(start.getTime() - 60 * 60 * 1000), $lte: new Date(start.getTime() + 60 * 60 * 1000) }
+        date: { $gte: new Date(start.getTime() - 2 * 60 * 60 * 1000), $lte: new Date(start.getTime() + 2 * 60 * 60 * 1000) }
       });
       if (closeDate) {
         meetLink = closeDate.meetLink;
@@ -69,7 +69,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       endDate: { $gt: start },
       status: { $ne: 'cancelled' }
     });
-    if (overlapping) {
+    const isAdminUser = user.role === 'admin';
+    const allowOverlap = process.env.ALLOW_TEST_OVERLAP === 'true' || isAdminUser;
+    if (overlapping && !allowOverlap) {
       return res.status(409).json({ error: 'Ya tenés una reserva que se superpone con ese horario' });
     }
 
