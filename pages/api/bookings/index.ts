@@ -344,25 +344,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('📧 Enviando notificaciones por email...');
         
         // Formatear fecha y hora para los emails
+        const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
         const formattedDate = startDateTime.toLocaleDateString('es-ES', {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
           year: 'numeric',
-          timeZone: 'America/Argentina/Buenos_Aires'
+          timeZone: tz
         });
         
         const formattedTime = startDateTime.toLocaleTimeString('es-ES', {
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'America/Argentina/Buenos_Aires'
+          timeZone: tz
         });
 
         const emailDetails = {
           type: eventName,
           date: formattedDate,
           time: formattedTime,
-          duration,
+          duration: effectiveDuration,
           price
         };
 
@@ -393,7 +394,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           serviceType: serviceType || eventName,
           date: formattedDate,
           time: formattedTime,
-          duration,
+          duration: effectiveDuration,
           price,
           meetLink
         });

@@ -151,9 +151,12 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
 
     // Notificar a los alumnos con entrenamiento activo
     try {
-      const dayOfWeek = startDate.getDay();
-      const hour = startDate.getHours();
-      const minute = startDate.getMinutes();
+      // Obtener día y hora en la zona horaria configurada para evitar desfases
+      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+      const localInTz = new Date(startDate.toLocaleString('en-US', { timeZone: tz }));
+      const dayOfWeek = localInTz.getDay();
+      const hour = localInTz.getHours();
+      const minute = localInTz.getMinutes();
       await createTrainingScheduleNotification(
         trainingType,
         trainingName,
