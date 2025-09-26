@@ -87,12 +87,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
-          timeZone: 'America/Argentina/Buenos_Aires'
+          timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires'
         })
       });
 
              // ✅ NUEVO: Verificar disponibilidad según el tipo de reserva
-       const timezone = 'America/Argentina/Buenos_Aires';
+       const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
        let availableSlot = null;
        let advisoryDate = null;
        

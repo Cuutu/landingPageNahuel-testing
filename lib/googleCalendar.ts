@@ -207,7 +207,16 @@ function formatDateTimeInTz(date: Date, timezone: string): string {
     second: '2-digit',
     hour12: false
   }).format(date);
-  return `${datePart}T${timePart}`; // YYYY-MM-DDTHH:mm:ss (sin Z)
+  // Calcular offset horario (e.g., -03:00) en esa zona para esa fecha
+  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const local = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
+  const diffMinutes = Math.round((local.getTime() - utc.getTime()) / 60000);
+  const sign = diffMinutes >= 0 ? '+' : '-';
+  const abs = Math.abs(diffMinutes);
+  const offH = String(Math.floor(abs / 60)).padStart(2, '0');
+  const offM = String(abs % 60).padStart(2, '0');
+  const offset = `${sign}${offH}:${offM}`;
+  return `${datePart}T${timePart}${offset}`; // YYYY-MM-DDTHH:mm:ss±hh:mm
 }
 
 /**
@@ -317,21 +326,21 @@ export async function createAdvisoryEvent(
       advisoryName,
       startDate: startDate,
       durationMinutes,
-      timezone: 'America/Argentina/Buenos_Aires'
+      timezone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires'
     });
 
     const calendar = await getAdminCalendarClient();
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     
-    // CORREGIDO: Usar America/Argentina/Buenos_Aires y pasar dateTime local (sin Z)
-    const timezone = 'America/Argentina/Buenos_Aires';
+    // Usar timezone de entorno y pasar dateTime local (con offset)
+    const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
     
     console.log('🕒 Usando fechas locales con timezone:', {
       startLocal: formatDateTimeInTz(startDate, timezone),
       endLocal: formatDateTimeInTz(endDate, timezone),
       timezone: timezone
     });
-    
+
     // Crear ID único para evitar conflictos con eventos existentes
     const uniqueId = Date.now().toString();
     const formattedDate = new Intl.DateTimeFormat('es-AR', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(startDate);
@@ -399,20 +408,9 @@ export async function createAdvisoryEvent(
       status: error?.status,
       code: error?.code,
       errors: error?.errors,
-      response: error?.response?.data,
-      stack: error?.stack
+      response: error?.response?.data
     });
-    
-    // Retornar error estructurado en lugar de lanzar excepción
-    return {
-      success: false,
-      error: error?.message || 'Error desconocido al crear evento de asesoría',
-      details: {
-        status: error?.status,
-        code: error?.code,
-        errors: error?.errors
-      }
-    };
+    throw error;
   }
 }
 

@@ -97,8 +97,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Enviar emails de confirmación
     try {
-      const dateStr = start.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      const timeStr = start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+      const dateStr = start.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz });
+      const timeStr = start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: tz });
       await sendTrainingConfirmationEmail(user.email, user.name || user.email, {
         type: serviceType,
         date: dateStr,

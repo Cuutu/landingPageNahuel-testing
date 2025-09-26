@@ -99,8 +99,18 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
     const dd = base.getDate().toString().padStart(2, '0');
     const hh = (hour || 0).toString().padStart(2, '0');
     const mi = (minute || 0).toString().padStart(2, '0');
-    // Construir como local y que Calendar lo interprete con tz al crear
-    const startDate = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00`);
+
+    // Calcular offset de la TZ del entorno para esa fecha/hora
+    const anchorUtc = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00Z`);
+    const utc = new Date(anchorUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const local = new Date(anchorUtc.toLocaleString('en-US', { timeZone: tz }));
+    const diffMinutes = Math.round((local.getTime() - utc.getTime()) / 60000);
+    const sign = diffMinutes >= 0 ? '+' : '-';
+    const abs = Math.abs(diffMinutes);
+    const offH = String(Math.floor(abs / 60)).padStart(2, '0');
+    const offM = String(abs % 60).padStart(2, '0');
+    const offset = `${sign}${offH}:${offM}`;
+    const startDate = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00${offset}`);
 
     // Obtener configuración del entrenamiento (duración y nombre)
     const trainingDoc = await Training.findOne({ tipo: trainingType });
