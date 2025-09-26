@@ -21,97 +21,115 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     await dbConnect();
 
-    // Obtener datos del webhook
-    const { data } = req.body;
-    
-    if (!data || !data.id) {
+    // MP puede enviar distintos formatos dependiendo del topic
+    const { topic, type, data, id, resource } = (req.body || {}) as any;
+    const topicValue: string = (topic as string) || (type as string) || 'payment';
+
+    console.log('🔔 Webhook recibido:', {
+      topic: topicValue,
+      raw: req.body
+    });
+
+    // Resolver paymentId o merchantOrderId
+    let paymentId: string | null = null;
+    let merchantOrderId: string | null = null;
+
+    if (topicValue === 'payment') {
+      // Formatos posibles: { data: { id } } o { id }
+      paymentId = (data && (data.id || data[0]?.id)) || id || null;
+    } else if (topicValue === 'merchant_order') {
+      // Formatos posibles: resource URL o id directo
+      if (typeof resource === 'string' && resource.includes('/merchant_orders/')) {
+        merchantOrderId = resource.split('/').pop() || null;
+      } else if (resource) {
+        merchantOrderId = String(resource);
+      } else if (id) {
+        merchantOrderId = String(id);
+      }
+    }
+
+    if (!paymentId && !merchantOrderId) {
       console.log('⚠️ Webhook sin datos válidos:', req.body);
       return res.status(400).json({ error: 'Datos de webhook inválidos' });
     }
 
-    const paymentId = data.id;
-    console.log('🔔 Webhook recibido para pago:', paymentId);
+    // Si vino merchant_order, obtener los payments asociados para extraer external_reference
+    let paymentInfo: any = null;
 
-    // ✅ OPTIMIZADO: Obtener información del pago con timeout y reintentos
-    let paymentInfo = null;
-    let attempts = 0;
-    const maxAttempts = 3;  
-    
-    while (attempts < maxAttempts && !paymentInfo) { 
-      attempts++;
-      console.log(`🔄 Intento ${attempts}/${maxAttempts} para obtener información del pago`);
-      
+    if (merchantOrderId) {
       try {
-        // Usar Promise.race para timeout más agresivo
-        const paymentResult = await Promise.race([
-          getMercadoPagoPayment(paymentId.toString()),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout webhook')), 3000) // 3 segundos
-          )
-        ]) as any;
-        
-        if (paymentResult.success) {
-          paymentInfo = paymentResult.payment;
-          break;
+        const fetchResp = await fetch(`https://api.mercadolibre.com/merchant_orders/${merchantOrderId}`, {
+          headers: { Authorization: `Bearer ${process.env.MERCADOPAGO_ACCESS_TOKEN}` }
+        });
+        const mo = await fetchResp.json();
+        console.log('📦 Merchant Order:', {
+          id: mo.id,
+          preferenceId: mo.preference_id,
+          totalAmount: mo.total_amount,
+          paidAmount: mo.paid_amount,
+          payments: mo.payments?.map((p: any) => ({ id: p.id, status: p.status, status_detail: p.status_detail }))
+        });
+
+        // Tomar el primer payment (o el aprobado) si existe
+        const moPayment = (mo.payments || []).find((p: any) => p.status === 'approved') || mo.payments?.[0];
+        if (moPayment?.id) {
+          paymentId = String(moPayment.id);
         } else {
-          console.log(`⚠️ Intento ${attempts} falló:`, paymentResult.error);
-          if (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
-          }
+          // Si no hay payments aún, no procesamos
+          console.log('⏳ Merchant order sin payments asociados aún.');
+          return res.status(200).json({ success: true, message: 'Merchant order recibida (sin payments)' });
         }
-      } catch (error) {
-        console.log(`⚠️ Timeout en intento ${attempts}:`, error);
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Esperar 1 segundo
-        }
+      } catch (e) {
+        console.error('❌ Error consultando merchant_order:', e);
+        return res.status(500).json({ error: 'Error consultando merchant_order' });
       }
     }
-    
+
+    // En este punto debemos tener un paymentId válido
+    if (!paymentId) {
+      console.log('⚠️ No se resolvió paymentId a partir del webhook');
+      return res.status(400).json({ error: 'No se resolvió paymentId' });
+    }
+
+    // Obtener información del pago desde MP con pequeños reintentos
+    let attempts = 0;
+    const maxAttempts = 3;
+    while (!paymentInfo && attempts < maxAttempts) {
+      attempts++;
+      const result = await getMercadoPagoPayment(paymentId.toString());
+      if (result.success && result.payment) paymentInfo = result.payment;
+      if (!paymentInfo) await new Promise(r => setTimeout(r, 800));
+    }
+
     if (!paymentInfo) {
-      console.error('❌ No se pudo obtener información del pago después de 3 intentos');
+      console.error('❌ No se pudo obtener información del pago después de varios intentos');
       return res.status(500).json({ error: 'Error obteniendo información del pago' });
     }
-    
+
     console.log('📊 Información del pago:', {
       id: paymentInfo.id,
       status: paymentInfo.status,
+      status_detail: paymentInfo.status_detail,
       externalReference: paymentInfo.external_reference,
       amount: paymentInfo.transaction_amount,
       currency: paymentInfo.currency_id
     });
 
-    // Buscar el pago en nuestra base de datos
-    let payment = await Payment.findOne({ 
-      externalReference: paymentInfo.external_reference 
-    });
+    // Buscar/crear Payment por external_reference
+    let payment = await Payment.findOne({ externalReference: paymentInfo.external_reference });
 
     if (!payment) {
-      console.log('🆕 Creando nuevo registro de pago para:', paymentInfo.external_reference);
-      
-      // ✅ IMPORTANTE: Extraer servicio del external_reference
-      // Formato: subscription_TraderCall_userId_timestamp o training_SwingTrading_userId_timestamp
-      const externalRef = paymentInfo.external_reference;
-      let service = 'TraderCall'; // fallback
-      
-      if (externalRef) {
-        const refParts = externalRef.split('_');
-        if (refParts.length >= 2) {
-          service = refParts[1]; // TraderCall, SmartMoney, etc.
-        }
-      }
-      
-      console.log('🔍 Servicio extraído del external_reference:', {
-        externalRef,
-        extractedService: service
-      });
-      
-      // Crear nuevo registro de pago con los datos del webhook
+      // Crear registro si no existe (por si no se guardó en checkout)
       const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      
+      // Inferir servicio desde external_reference: tipo_servicio_userId_ts
+      const ref = paymentInfo.external_reference || '';
+      const parts = ref.split('_');
+      const inferredService = parts.length >= 2 ? parts[1] : 'TraderCall';
+
       payment = new Payment({
-        userId: null, // Se actualizará cuando procesemos el pago
+        userId: null,
         userEmail: paymentInfo.payer?.email || '',
-        service: service,
+        service: inferredService,
         amount: paymentInfo.transaction_amount,
         currency: paymentInfo.currency_id,
         status: paymentInfo.status,
@@ -122,82 +140,53 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         installments: paymentInfo.installments || 1,
         transactionDate: new Date(),
         expiryDate,
-        metadata: {
-          createdFromWebhook: true,
-          originalStatus: paymentInfo.status
-        }
+        metadata: { createdFromWebhook: true }
       });
-      
       await payment.save();
+      console.log('🆕 Payment creado desde webhook para external_reference:', payment.externalReference);
     }
 
-    // ✅ IMPORTANTE: Asegurar que el servicio esté correctamente extraído
-    if (!payment.service || payment.service === 'TraderCall') {
-      const externalRef = paymentInfo.external_reference;
-      if (externalRef) {
-        const refParts = externalRef.split('_');
-        if (refParts.length >= 2) {
-          payment.service = refParts[1]; // TraderCall, SmartMoney, etc.
-          console.log('✅ Servicio actualizado desde external_reference:', payment.service);
-        }
-      }
-    }
-
-    // Actualizar información del pago
+    // Actualizar campos del Payment
     payment.mercadopagoPaymentId = paymentInfo.id;
+    payment.status = paymentInfo.status;
     payment.paymentMethodId = paymentInfo.payment_method_id || '';
     payment.paymentTypeId = paymentInfo.payment_type_id || '';
     payment.installments = paymentInfo.installments || 1;
-    payment.status = paymentInfo.status;
     payment.transactionDate = new Date();
-    payment.updatedAt = new Date();
-    
-    // Si el pago no tiene userId, intentar encontrarlo por email
+
+    // Asignar userId si falta
     if (!payment.userId && payment.userEmail) {
       const user = await User.findOne({ email: payment.userEmail });
-      if (user) {
-        payment.userId = user._id;
-        console.log('✅ Usuario encontrado y asignado:', user.email);
-      }
+      if (user) payment.userId = user._id;
     }
 
     await payment.save();
 
-    // Procesar según el estado del pago
+    // Procesamiento por estado
     if (isPaymentSuccessful(paymentInfo)) {
-      console.log('✅ Pago exitoso, procesando suscripción...');
+      console.log('✅ Pago aprobado. Procesando efectos…');
       await processSuccessfulPayment(payment, paymentInfo);
     } else if (isPaymentRejected(paymentInfo)) {
-      console.log('❌ Pago rechazado:', paymentInfo.status_detail);
+      console.log('❌ Pago rechazado');
       await processRejectedPayment(payment, paymentInfo);
     } else if (isPaymentPending(paymentInfo)) {
-      console.log('⏳ Pago pendiente:', paymentInfo.status_detail);
-      // No hacer nada, esperar confirmación
+      console.log('⏳ Pago pendiente');
+      // Sin acciones; se actualizará cuando cambie el estado
     }
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'Webhook procesado correctamente' 
-    });
+    return res.status(200).json({ success: true });
 
   } catch (error) {
     console.error('❌ Error procesando webhook:', error);
-    
-    // Log estructurado del error
+
     PaymentErrorHandler.logPaymentError(
       'webhook_processing',
       'UNKNOWN_ERROR',
-      { 
-        webhookData: req.body,
-        userAgent: req.headers['user-agent'],
-        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress
-      },
+      { webhookData: req.body },
       error
     );
-    
-    return res.status(500).json({ 
-      error: 'Error interno del servidor' 
-    });
+
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
 }
 
