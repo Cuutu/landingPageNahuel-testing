@@ -162,11 +162,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 1rem;
 }
 
 .videoContainer {
   width: 100%;
-  max-width: 500px;
+  max-width: 640px;
   background: #111;
   border-radius: 16px;
   overflow: hidden;
@@ -178,6 +179,7 @@
   width: 100%;
   aspect-ratio: 16/9;
   background: #000;
+  height: auto;
 }
 
 .videoPlaceholder {
@@ -712,6 +714,10 @@
   
   .videoContainer {
     max-width: 100%;
+  }
+
+  .videoPlayer {
+    aspect-ratio: 16/9;
   }
 }
 

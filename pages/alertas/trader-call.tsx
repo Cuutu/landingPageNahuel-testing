@@ -8,6 +8,7 @@ import { authOptions } from '../../lib/googleAuth';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import VideoPlayerMux from '@/components/VideoPlayerMux';
+import YouTubePlayer from '@/components/YouTubePlayer';
 
 import Carousel from '@/components/Carousel';
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
@@ -103,6 +104,13 @@ interface TraderCallPageProps {
   historicalAlerts: HistoricalAlert[];
   alertExamples: AlertExample[];
   faqs: FAQ[];
+  traderHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  };
 }
 
 // Vista No Suscripto
@@ -110,12 +118,20 @@ const NonSubscriberView: React.FC<{
   metrics: any, 
   historicalAlerts: HistoricalAlert[], 
   alertExamples: AlertExample[], 
-  faqs: FAQ[] 
+  faqs: FAQ[],
+  traderHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  }
 }> = ({ 
   metrics, 
   historicalAlerts,
   alertExamples,
-  faqs
+  faqs,
+  traderHeroVideo
 }) => {
   const { data: session } = useSession();
   const { pricing, loading: pricingLoading } = usePricing();
@@ -246,11 +262,27 @@ const NonSubscriberView: React.FC<{
             </div>
             <div className={styles.heroVideo}>
               <div className={styles.videoContainer}>
-                <VideoPlayerMux 
-                  playbackId="sample-trader-call-video" 
-                  autoplay={true}
-                  className={styles.video}
-                />
+                {traderHeroVideo?.youtubeId ? (
+                  <YouTubePlayer
+                    videoId={traderHeroVideo.youtubeId}
+                    title={traderHeroVideo.title || 'Trader Call - Video'}
+                    autoplay={!!traderHeroVideo.autoplay}
+                    muted={!!traderHeroVideo.muted}
+                    loop={!!traderHeroVideo.loop}
+                    controls={true}
+                    className={styles.video}
+                  />
+                ) : (
+                  <YouTubePlayer
+                    videoId="dQw4w9WgXcQ"
+                    title="Trader Call - Video"
+                    autoplay={false}
+                    muted={true}
+                    loop={false}
+                    controls={true}
+                    className={styles.video}
+                  />
+                )}
               </div>
             </div>
           </motion.div>
@@ -3796,7 +3828,8 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
   metrics, 
   historicalAlerts,
   alertExamples,
-  faqs
+  faqs,
+  traderHeroVideo
 }) => {
   return (
     <>
@@ -3817,6 +3850,7 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
             historicalAlerts={historicalAlerts}
             alertExamples={alertExamples}
             faqs={faqs}
+            traderHeroVideo={traderHeroVideo}
           />
         )}
       </main>
@@ -4146,13 +4180,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
   ];
 
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  // Cargar configuración de sitio para obtener el video del hero
+  const siteConfigRes = await fetch(`${baseUrl}/api/site-config`);
+  const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
+  const traderHeroVideo = siteConfig?.alertsVideos?.traderCall?.heroVideo || null;
+
   return {
     props: {
       isSubscribed,
       metrics,
       historicalAlerts,
       alertExamples,
-      faqs
+      faqs,
+      traderHeroVideo
     }
   };
 };

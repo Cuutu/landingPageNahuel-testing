@@ -8,6 +8,7 @@ import { authOptions } from '../../lib/googleAuth';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import VideoPlayerMux from '@/components/VideoPlayerMux';
+import YouTubePlayer from '@/components/YouTubePlayer';
 
 import Carousel from '@/components/Carousel';
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
@@ -103,6 +104,13 @@ interface TraderCallPageProps {
   historicalAlerts: HistoricalAlert[];
   alertExamples: AlertExample[];
   faqs: FAQ[];
+  smartHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  };
 }
 
 // Vista No Suscripto
@@ -110,12 +118,20 @@ const NonSubscriberView: React.FC<{
   metrics: any, 
   historicalAlerts: HistoricalAlert[], 
   alertExamples: AlertExample[], 
-  faqs: FAQ[] 
+  faqs: FAQ[],
+  smartHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  }
 }> = ({ 
   metrics, 
   historicalAlerts,
   alertExamples,
-  faqs
+  faqs,
+  smartHeroVideo
 }) => {
   const { data: session } = useSession();
   const { pricing, loading: pricingLoading } = usePricing();
@@ -208,7 +224,7 @@ const NonSubscriberView: React.FC<{
           >
             <div className={styles.heroText}>
               <h1 className={styles.heroTitle}>
-                Trader Call
+                Smart Money
               </h1>
               <p className={styles.heroDescription}>
                 Servicio de alertas de compra y venta con estrategia de corto plazo, informes detallados y seguimiento activo, para que puedas invertir en CEDEARs y acciones de forma simple y estratégica. Ideal para quienes buscan grandes rendimientos.
@@ -236,7 +252,7 @@ const NonSubscriberView: React.FC<{
                     {pricingLoading ? (
                       'Cargando precio...'
                     ) : pricing ? (
-                      `$${pricing.alertas.traderCall.monthly} ARS/mes`
+                      `$${pricing.alertas.smartMoney.monthly} ARS/mes`
                     ) : (
                       '$15000 ARS/mes'
                     )}
@@ -246,11 +262,27 @@ const NonSubscriberView: React.FC<{
             </div>
             <div className={styles.heroVideo}>
               <div className={styles.videoContainer}>
-                <VideoPlayerMux 
-                  playbackId="sample-trader-call-video" 
-                  autoplay={true}
-                  className={styles.video}
-                />
+                {smartHeroVideo?.youtubeId ? (
+                  <YouTubePlayer
+                    videoId={smartHeroVideo.youtubeId}
+                    title={smartHeroVideo.title || 'Smart Money - Video'}
+                    autoplay={!!smartHeroVideo.autoplay}
+                    muted={!!smartHeroVideo.muted}
+                    loop={!!smartHeroVideo.loop}
+                    controls={true}
+                    className={styles.video}
+                  />
+                ) : (
+                  <YouTubePlayer
+                    videoId="dQw4w9WgXcQ"
+                    title="Smart Money - Video"
+                    autoplay={false}
+                    muted={true}
+                    loop={false}
+                    controls={true}
+                    className={styles.video}
+                  />
+                )}
               </div>
             </div>
           </motion.div>
@@ -3796,7 +3828,8 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
   metrics, 
   historicalAlerts,
   alertExamples,
-  faqs
+  faqs,
+  smartHeroVideo
 }) => {
   return (
     <>
@@ -3817,6 +3850,7 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
             historicalAlerts={historicalAlerts}
             alertExamples={alertExamples}
             faqs={faqs}
+            smartHeroVideo={smartHeroVideo}
           />
         )}
       </main>
@@ -4146,13 +4180,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
   ];
 
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const siteConfigRes = await fetch(`${baseUrl}/api/site-config`);
+  const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
+  const smartHeroVideo = siteConfig?.alertsVideos?.smartMoney?.heroVideo || null;
+
   return {
     props: {
       isSubscribed,
       metrics,
       historicalAlerts,
       alertExamples,
-      faqs
+      faqs,
+      smartHeroVideo
     }
   };
 };
