@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import TrainingDate from '@/models/TrainingDate';
 import Training from '@/models/Training';
 import { createTrainingEvent } from '@/lib/googleCalendar';
+import { createTrainingScheduleNotification } from '@/lib/trainingNotifications';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -125,6 +126,26 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
       // No fallemos la creación de la fecha si Calendar falla
     }
 
+    // Notificar a los alumnos con entrenamiento activo
+    try {
+      const dayOfWeek = startDate.getDay();
+      const hour = startDate.getHours();
+      const minute = startDate.getMinutes();
+      await createTrainingScheduleNotification(
+        trainingType,
+        trainingName,
+        {
+          dayOfWeek,
+          hour,
+          minute,
+          duration: durationMinutes,
+          price: trainingDoc?.precio || 0
+        }
+      );
+    } catch (e) {
+      console.error('⚠️ Error notificando nuevo TrainingDate:', e);
+    }
+
     // Devolver la fecha (posiblemente ya actualizada con meetLink)
     const saved = await TrainingDate.findById(newTrainingDate._id);
 
@@ -230,7 +251,27 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, trainingType
         }
       }
     } catch (calendarError) {
-      console.error('⚠️ Error sincronizando con Google Calendar:', calendarError);
+      console.error('⚠️ Error al sincronizar con Google Calendar:', calendarError);
+    }
+
+    // Notificar actualización de horario a los alumnos
+    try {
+      const dayOfWeek = startDate.getDay();
+      const hour = startDate.getHours();
+      const minute = startDate.getMinutes();
+      await createTrainingScheduleNotification(
+        trainingType,
+        trainingName,
+        {
+          dayOfWeek,
+          hour,
+          minute,
+          duration: durationMinutes,
+          price: trainingDoc?.precio || 0
+        }
+      );
+    } catch (e) {
+      console.error('⚠️ Error notificando actualización de TrainingDate:', e);
     }
 
     // Devolver entidad actualizada

@@ -109,6 +109,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     usuario.entrenamientos.push(nuevoEntrenamiento);
+    if (usuario.role !== 'admin' && usuario.role !== 'suscriptor') {
+      usuario.role = 'suscriptor';
+    }
 
     // Actualizar información adicional del usuario si se proporcionó
     if (datosValidados.telefono && !usuario.phone) {

@@ -313,6 +313,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       };
 
       user.entrenamientos.push(nuevoEntrenamiento);
+      // Asegurar rol de acceso
+      if (user.role !== 'admin' && user.role !== 'suscriptor') {
+        user.role = 'suscriptor';
+      }
       await user.save();
 
       console.log('✅ Entrenamiento activado:', {

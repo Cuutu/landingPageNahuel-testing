@@ -159,6 +159,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       };
 
       user.entrenamientos.push(nuevoEntrenamiento);
+      if (user.role !== 'admin' && user.role !== 'suscriptor') {
+        user.role = 'suscriptor';
+      }
       await user.save();
       logger.info('IMMEDIATE training activated', { module: 'payments', step: 'training', user: user.email, service });
     } else if (isBooking) {

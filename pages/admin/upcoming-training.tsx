@@ -53,7 +53,7 @@ export default function UpcomingTrainingPage() {
     try {
       setLoading(true);
       setError(null);
-      const params = new URLSearchParams({ days: String(days), status });
+      const params = new URLSearchParams({ days: String(days), status, type: 'training', serviceType: 'SwingTrading' });
       const res = await fetch(`/api/admin/upcoming-sessions?${params.toString()}`);
       const data: ApiResponse = await res.json();
       if (!res.ok) throw new Error((data as any).error || 'Error');
@@ -66,7 +66,7 @@ export default function UpcomingTrainingPage() {
     }
   };
 
-  useEffect(() => { fetchSessions(); }, []);
+  useEffect(() => { fetchSessions(); }, [days, status]);
 
   const exportCsv = () => {
     const rows = [
@@ -115,10 +115,12 @@ export default function UpcomingTrainingPage() {
           </div>
         </div>
 
-        <div className={styles.filters} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+        <div className={styles.filters} style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16, flexWrap: 'wrap' }}>
           <Filter size={16} />
-          <label>Días: <input type="number" min={1} max={90} value={days} onChange={e => setDays(parseInt(e.target.value) || 30)} className={styles.input} style={{ width: 80 }} /></label>
-          <label>Estado: 
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>Días:
+            <input type="number" min={1} max={90} value={days} onChange={e => setDays(parseInt(e.target.value) || 30)} className={styles.input} style={{ width: 100 }} />
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8 }}>Estado:
             <select value={status} onChange={e => setStatus(e.target.value as any)} className={styles.input}>
               <option value="all">Todos</option>
               <option value="confirmed">Confirmados</option>
@@ -131,8 +133,8 @@ export default function UpcomingTrainingPage() {
         {/* Acciones administrativas */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
           {/* Agendar manualmente */}
-          <div className={styles.card} style={{ padding: 12 }}>
-            <h3>Agendar manualmente</h3>
+          <div className={styles.card} style={{ padding: 16 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Agendar manualmente</h3>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget as HTMLFormElement;
@@ -151,15 +153,17 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <input name="amail" className={styles.input} placeholder="Email" required />
-              <input name="astart" type="datetime-local" className={styles.input} required />
-              <input name="adur" type="number" className={styles.input} placeholder="Duración (min)" defaultValue={180} />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                <input name="amail" className={styles.input} placeholder="Email" required />
+                <input name="astart" type="datetime-local" className={styles.input} required />
+                <input name="adur" type="number" className={styles.input} placeholder="Duración (min)" defaultValue={180} />
+              </div>
               <button className={styles.actionButton} type="submit">Agendar</button>
             </form>
           </div>
           {/* Eliminar agenda */}
-          <div className={styles.card} style={{ padding: 12 }}>
-            <h3>Eliminar usuario agendado</h3>
+          <div className={styles.card} style={{ padding: 16 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Eliminar usuario agendado</h3>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget as HTMLFormElement;
@@ -178,15 +182,17 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <input name="rbid" className={styles.input} placeholder="Booking ID (opcional)" />
-              <input name="rmail" className={styles.input} placeholder="Email (si no Booking ID)" />
-              <input name="rstart" type="datetime-local" className={styles.input} placeholder="Fecha (si no Booking ID)" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                <input name="rbid" className={styles.input} placeholder="Booking ID (opcional)" />
+                <input name="rmail" className={styles.input} placeholder="Email (si no Booking ID)" />
+                <input name="rstart" type="datetime-local" className={styles.input} placeholder="Fecha (si no Booking ID)" />
+              </div>
               <button className={styles.actionButton} type="submit">Eliminar</button>
             </form>
           </div>
           {/* Migrar fecha */}
-          <div className={styles.card} style={{ padding: 12 }}>
-            <h3>Migrar clase a otra fecha</h3>
+          <div className={styles.card} style={{ padding: 16 }}>
+            <h3 style={{ marginTop: 0, marginBottom: 12 }}>Migrar clase a otra fecha</h3>
             <form onSubmit={async (e) => {
               e.preventDefault();
               const form = e.currentTarget as HTMLFormElement;
@@ -205,9 +211,11 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <input name="mfrom" type="datetime-local" className={styles.input} required />
-              <input name="mto" type="datetime-local" className={styles.input} required />
-              <label style={{ display: 'flex', gap: 6, alignItems: 'center' }}><input type="checkbox" name="mkeep" /> Conservar Meet</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                <input name="mfrom" type="datetime-local" className={styles.input} required />
+                <input name="mto" type="datetime-local" className={styles.input} required />
+              </div>
+              <label style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12 }}><input type="checkbox" name="mkeep" /> Conservar Meet</label>
               <button className={styles.actionButton} type="submit">Migrar</button>
             </form>
           </div>

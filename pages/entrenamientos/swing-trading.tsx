@@ -516,6 +516,36 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   };
 
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
+
+  const handleReserve = async () => {
+    if (!selectedDateId) {
+      toast.error('Seleccioná una fecha para reservar');
+      return;
+    }
+    const td = trainingDates.find(d => d.id === selectedDateId) || trainingDates.find((d: any) => d._id === selectedDateId) as any;
+    if (!td) {
+      toast.error('Fecha no encontrada');
+      return;
+    }
+    try {
+      const [hh, mm] = (td.time || '00:00').split(':').map((n: string) => parseInt(n, 10));
+      const start = new Date(td.date);
+      start.setHours(hh || 0, mm || 0, 0, 0);
+      const res = await fetch('/api/entrenamientos/reservar-sesion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: start.toISOString(), duration: (training?.duracion || 3) * 60, serviceType: 'SwingTrading' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo reservar');
+      toast.success('Reserva confirmada');
+      // refrescar próxima reunión
+      await checkEnrollmentStatus();
+    } catch (e: any) {
+      toast.error(e.message || 'Error al reservar');
+    }
+  };
 
   const handleEnroll = async () => {
     if (!session) {
@@ -1273,18 +1303,38 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               <p className={styles.ctaDescription}>
                 Únete a nuestra comunidad y comienza construir tu libertad financiera
               </p>
-              <button 
-                onClick={handleEnroll}
-                className={styles.ctaButton}
-                disabled={checkingEnrollment}
-              >
-                {checkingEnrollment 
-                  ? 'Verificando...' 
-                  : isEnrolled 
-                    ? 'Entrar a la Reunión' 
-                    : 'Inscribirme ahora >'
-                }
-              </button>
+              {!isEnrolled && (
+                <button 
+                  onClick={handleEnroll}
+                  className={styles.ctaButton}
+                  disabled={checkingEnrollment}
+                >
+                  {checkingEnrollment ? 'Verificando...' : 'Inscribirme ahora >'}
+                </button>
+              )}
+              {isEnrolled && (
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    className={styles.input}
+                    value={selectedDateId || ''}
+                    onChange={e => setSelectedDateId(e.target.value || null)}
+                  >
+                    <option value="">Seleccioná una fecha</option>
+                    {trainingDates
+                      .filter(d => d.isActive && d.date > new Date())
+                      .sort((a, b) => a.date.getTime() - b.date.getTime())
+                      .map((d: any) => (
+                        <option key={d.id || d._id} value={d.id || d._id}>
+                          {new Date(d.date).toLocaleDateString('es-ES')} {d.time}
+                        </option>
+                      ))}
+                  </select>
+                  <button className={styles.ctaButton} onClick={handleReserve}>Reservar mi lugar</button>
+                  {nextMeetingLink && (
+                    <a className={styles.ctaButton} href={nextMeetingLink} target="_blank" rel="noreferrer">Entrar a la Reunión</a>
+                  )}
+                </div>
+              )}
             </motion.div>
           </div>
         </section>
