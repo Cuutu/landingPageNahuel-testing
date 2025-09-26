@@ -154,7 +154,7 @@ async function createGoogleMeetForEvent(
       conferenceData: response.data.conferenceData
     });
 
-    const meetLink = response.data.conferenceData?.entryPoints?.[0]?.uri;
+    const meetLink = response.data.conferenceData?.entryPoints?.[0]?.uri || (response.data as any).hangoutLink;
     
     if (meetLink) {
       console.log('✅ Google Meet creado exitosamente:', meetLink);
@@ -442,6 +442,36 @@ export async function updateEventWithGoogleMeet(
 
   } catch (error) {
     console.error('❌ Error al actualizar evento con Google Meet:', error);
+    return false;
+  }
+} 
+
+/**
+ * Agrega un asistente a un evento existente (para que reciba invitación y recordatorios)
+ */
+export async function addAttendeeToEvent(eventId: string, attendeeEmail: string): Promise<boolean> {
+  try {
+    const calendar = await getAdminCalendarClient();
+    const calendarId = await getCorrectCalendarId(calendar);
+
+    const current = await calendar.events.get({ calendarId, eventId });
+    const attendees = current.data.attendees || [];
+    if (attendees.find((a: any) => a.email?.toLowerCase() === attendeeEmail.toLowerCase())) {
+      return true;
+    }
+
+    attendees.push({ email: attendeeEmail });
+
+    await calendar.events.patch({
+      calendarId,
+      eventId,
+      requestBody: { attendees },
+      sendUpdates: 'all'
+    });
+
+    return true;
+  } catch (e) {
+    console.error('❌ Error agregando asistente al evento:', e);
     return false;
   }
 } 

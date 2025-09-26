@@ -5,6 +5,8 @@ import { authOptions } from '@/lib/googleAuth';
 import User from '@/models/User';
 import Booking from '@/models/Booking';
 import { sendTrainingConfirmationEmail, sendAdminNotificationEmail } from '@/lib/emailNotifications';
+import TrainingDate from '@/models/TrainingDate';
+import { addAttendeeToEvent } from '@/lib/googleCalendar';
 
 /**
  * POST /api/entrenamientos/reservar-sesion
@@ -41,6 +43,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Validar conflicto horario existente para este usuario
     const start = new Date(startDate);
     const end = new Date(start.getTime() + duration * 60000);
+    let meetLink: string | undefined;
+    let googleEventId: string | undefined;
+
+    // Intentar buscar un TrainingDate coincidente para asociar Meet y agregar asistente
+    try {
+      const closeDate = await TrainingDate.findOne({
+        trainingType: serviceType,
+        date: { $gte: new Date(start.getTime() - 60 * 60 * 1000), $lte: new Date(start.getTime() + 60 * 60 * 1000) }
+      });
+      if (closeDate) {
+        meetLink = closeDate.meetLink;
+        googleEventId = closeDate.googleEventId;
+        if (googleEventId) {
+          await addAttendeeToEvent(googleEventId, user.email);
+        }
+      }
+    } catch (e) {
+      console.error('⚠️ Error vinculando TrainingDate/Meet:', e);
+    }
+
     const overlapping = await Booking.findOne({
       userId: user._id.toString(),
       startDate: { $lt: end },
@@ -64,7 +86,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       status: 'confirmed',
       price: 0,
       paymentStatus: 'paid',
-      notes: 'Reserva de sesión por alumno con entrenamiento activo'
+      notes: 'Reserva de sesión por alumno con entrenamiento activo',
+      meetingLink: meetLink
     });
 
     await booking.save();
@@ -78,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         date: dateStr,
         time: timeStr,
         duration,
-        meetLink: booking.meetingLink
+        meetLink: meetLink
       });
 
       await sendAdminNotificationEmail({
@@ -89,7 +112,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         date: dateStr,
         time: timeStr,
         duration,
-        meetLink: booking.meetingLink
+        meetLink: meetLink
       });
     } catch (e) {
       console.error('⚠️ Error enviando emails de confirmación de reserva:', e);

@@ -315,7 +315,7 @@ function createTrainingWelcomeEmailTemplate(
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://nahuellozano.com'}/entrenamientos/${trainingType.toLowerCase()}/lecciones" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://nahuellozano.com'}/entrenamientos/swing-trading" 
            style="background: linear-gradient(135deg, #8B0000 0%, #A52A2A 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
           🎓 Comenzar Entrenamiento
         </a>
