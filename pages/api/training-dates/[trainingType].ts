@@ -40,10 +40,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // GET /api/training-dates/[trainingType] - Obtener fechas de entrenamiento
 async function handleGet(req: NextApiRequest, res: NextApiResponse, trainingType: string) {
   try {
-    const trainingDates = await TrainingDate.find({
-      trainingType,
-      isActive: true
-    }).sort({ date: 1 });
+    const now = new Date();
+    // Desactivar en BD las fechas pasadas (best-effort)
+    await TrainingDate.updateMany({ trainingType, isActive: true, date: { $lt: now } }, { $set: { isActive: false, updatedAt: new Date() } });
+
+    // Devolver solo futuras
+    const trainingDates = await TrainingDate.find({ trainingType, isActive: true, date: { $gte: now } }).sort({ date: 1 });
 
     return res.status(200).json({
       success: true,

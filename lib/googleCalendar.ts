@@ -193,6 +193,23 @@ async function createGoogleMeetForEvent(
   }
 }
 
+function formatDateTimeInTz(date: Date, timezone: string): string {
+  const datePart = new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat('en-GB', {
+    timeZone: timezone,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).format(date);
+  return `${datePart}T${timePart}`; // YYYY-MM-DDTHH:mm:ss (sin Z)
+}
+
 /**
  * Crea un evento en el calendario del administrador para un entrenamiento
  */
@@ -208,28 +225,28 @@ export async function createTrainingEvent(
     const calendar = await getAdminCalendarClient();
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     
-    // CORREGIDO: Usar fechas UTC directamente (ya vienen ajustadas del frontend)
+    // CORREGIDO: Usar timezone objetivo y pasar dateTime en esa zona (sin Z)
     const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
     
-    console.log('🕒 Usando fechas UTC directamente (entrenamiento):', {
-      startDateUTC: startDate.toISOString(),
-      endDateUTC: endDate.toISOString(),
-      timezone: timezone
+    console.log('🕒 Usando fecha local en timezone objetivo (entrenamiento):', {
+      startLocal: formatDateTimeInTz(startDate, timezone),
+      endLocal: formatDateTimeInTz(endDate, timezone),
+      timezone
     });
     
     // Crear ID único para evitar conflictos con eventos existentes
     const uniqueId = Date.now().toString();
-    const formattedDate = startDate.toLocaleDateString('es-ES', { timeZone: timezone });
+    const formattedDate = new Intl.DateTimeFormat('es-AR', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(startDate);
 
     const event = {
       summary: `${trainingName} - ${userEmail} - ${formattedDate} (${uniqueId})`,
       description: `Entrenamiento de trading reservado por: ${userEmail}\n\nTipo: ${trainingName}\nDuración: ${durationMinutes} minutos\n\nID único: ${uniqueId}\n\nLink de reunión: [Se generará automáticamente]`,
       start: {
-        dateTime: startDate.toISOString(),
+        dateTime: formatDateTimeInTz(startDate, timezone),
         timeZone: timezone,
       },
       end: {
-        dateTime: endDate.toISOString(),
+        dateTime: formatDateTimeInTz(endDate, timezone),
         timeZone: timezone,
       },
       attendees: [
@@ -298,7 +315,7 @@ export async function createAdvisoryEvent(
     console.log('📋 Datos del evento:', {
       userEmail,
       advisoryName,
-      startDate: startDate.toISOString(),
+      startDate: startDate,
       durationMinutes,
       timezone: 'America/Argentina/Buenos_Aires'
     });
@@ -306,33 +323,29 @@ export async function createAdvisoryEvent(
     const calendar = await getAdminCalendarClient();
     const endDate = new Date(startDate.getTime() + durationMinutes * 60000);
     
-    // CORREGIDO: Usar America/Argentina/Buenos_Aires para mostrar hora local correctamente
+    // CORREGIDO: Usar America/Argentina/Buenos_Aires y pasar dateTime local (sin Z)
     const timezone = 'America/Argentina/Buenos_Aires';
     
-    console.log('🕒 Usando fechas UTC con timezone local:', {
-      startDateUTC: startDate.toISOString(),
-      endDateUTC: endDate.toISOString(),
+    console.log('🕒 Usando fechas locales con timezone:', {
+      startLocal: formatDateTimeInTz(startDate, timezone),
+      endLocal: formatDateTimeInTz(endDate, timezone),
       timezone: timezone
     });
     
     // Crear ID único para evitar conflictos con eventos existentes
     const uniqueId = Date.now().toString();
-    const formattedDate = startDate.toLocaleDateString('es-ES', { timeZone: timezone });
-    const formattedTime = startDate.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      timeZone: timezone
-    });
+    const formattedDate = new Intl.DateTimeFormat('es-AR', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(startDate);
+    const formattedTime = new Intl.DateTimeFormat('es-AR', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false }).format(startDate);
 
     const event = {
       summary: `${advisoryName} - ${userEmail} - ${formattedDate} ${formattedTime} (${uniqueId})`,
       description: `Asesoría financiera reservada por: ${userEmail}\n\nTipo: ${advisoryName}\nDuración: ${durationMinutes} minutos\n\nFecha: ${formattedDate} a las ${formattedTime}\nID único: ${uniqueId}\n\nLink de reunión: [Se generará automáticamente]`,
       start: {
-        dateTime: startDate.toISOString(),
+        dateTime: formatDateTimeInTz(startDate, timezone),
         timeZone: timezone,
       },
       end: {
-        dateTime: endDate.toISOString(),
+        dateTime: formatDateTimeInTz(endDate, timezone),
         timeZone: timezone,
       },
       attendees: [
