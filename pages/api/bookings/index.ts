@@ -70,7 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const { type, serviceType, startDate, duration, price, notes } = validationResult.data;
       const startDateTime = new Date(startDate);
-      const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+      const effectiveDuration = type === 'training' ? 120 : duration;
+      const endDateTime = new Date(startDateTime.getTime() + effectiveDuration * 60000);
 
       console.log('🔍 Datos de la nueva reserva:', {
         userEmail,
@@ -241,7 +242,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         serviceType,
         startDate: startDateTime,
         endDate: endDateTime,
-        duration,
+        duration: effectiveDuration,
         price,
         notes,
         status: 'confirmed', // Por ahora confirmamos automáticamente
@@ -276,7 +277,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           if (type === 'training') {
             console.log('🏋️ Creando evento de entrenamiento con Google Meet...');
-            meetData = await createTrainingEvent(userEmail, eventName, startDateTime, duration);
+            meetData = await createTrainingEvent(userEmail, eventName, startDateTime, effectiveDuration);
           } else {
             console.log('💼 Creando evento de asesoría con Google Meet...');
             meetData = await createAdvisoryEvent(userEmail, eventName, startDateTime, duration);

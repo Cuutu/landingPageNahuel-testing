@@ -217,7 +217,7 @@ export async function createTrainingEvent(
   userEmail: string,
   trainingName: string,
   startDate: Date,
-  durationMinutes: number = 180
+  durationMinutes: number = 120
 ): Promise<GoogleMeetData> {
   try {
     console.log('📅 Creando evento de entrenamiento en calendario del admin');

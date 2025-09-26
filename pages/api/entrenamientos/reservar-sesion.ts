@@ -42,7 +42,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Validar conflicto horario existente para este usuario
     const start = new Date(startDate);
-    const end = new Date(start.getTime() + duration * 60000);
+    const effectiveDuration = 120; // minutos
+    const end = new Date(start.getTime() + effectiveDuration * 60000);
     let meetLink: string | undefined;
     let googleEventId: string | undefined;
 
@@ -84,7 +85,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       serviceType,
       startDate: start,
       endDate: end,
-      duration,
+      duration: effectiveDuration,
       status: 'confirmed',
       price: 0,
       paymentStatus: 'paid',
@@ -102,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type: serviceType,
         date: dateStr,
         time: timeStr,
-        duration,
+        duration: effectiveDuration,
         meetLink: meetLink
       });
 
@@ -113,7 +114,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         serviceType,
         date: dateStr,
         time: timeStr,
-        duration,
+        duration: effectiveDuration,
         meetLink: meetLink
       });
     } catch (e) {

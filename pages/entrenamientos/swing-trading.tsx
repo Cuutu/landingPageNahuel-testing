@@ -163,6 +163,52 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   const [nextTrainingDate, setNextTrainingDate] = useState<TrainingDate | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
+  // Estados de reserva y creación de fechas
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
+  const [showReserveModal, setShowReserveModal] = useState(false);
+  const [reserveTarget, setReserveTarget] = useState<TrainingDate | null>(null);
+  const [showCreateDateModal, setShowCreateDateModal] = useState(false);
+  const [newDateDraft, setNewDateDraft] = useState<{ date: Date | null; time: string; title: string }>({ date: null, time: '13:00', title: '' });
+
+  // Modal de reserva
+  const openReserveModal = () => {
+    if (!selectedDateId) {
+      toast.error('Seleccioná una fecha para reservar');
+      return;
+    }
+    const td = trainingDates.find(d => d.id === selectedDateId) || (trainingDates as any).find((d: any) => d._id === selectedDateId);
+    if (!td) {
+      toast.error('Fecha no encontrada');
+      return;
+    }
+    setReserveTarget(td as any);
+    setShowReserveModal(true);
+  };
+
+  const confirmReserve = async () => {
+    if (!reserveTarget) return;
+    try {
+      const [hh, mm] = (reserveTarget.time || '00:00').split(':').map((n: string) => parseInt(n, 10));
+      const start = new Date(reserveTarget.date);
+      start.setHours(hh || 0, mm || 0, 0, 0);
+      const res = await fetch('/api/entrenamientos/reservar-sesion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startDate: start.toISOString(), duration: 120, serviceType: 'SwingTrading' })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'No se pudo reservar');
+      toast.success('Reserva confirmada');
+      setShowReserveModal(false);
+      await checkEnrollmentStatus();
+    } catch (e: any) {
+      toast.error(e.message || 'Error al reservar');
+    }
+  };
+
+  const handleReserve = () => openReserveModal();
+
   // Estados para el carrusel de testimonios
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const carouselTestimonials = [
@@ -502,49 +548,11 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     }
   };
 
-  // Función para manejar selección de fechas en el calendario
+  // Reemplazar prompts por modal único para admin
   const handleCalendarDateSelect = (selectedDate: Date, existingEvents: any[]) => {
     if (!isAdmin) return;
-
-    // Mostrar modal o form para agregar nueva fecha
-    const time = prompt('Ingrese la hora (formato HH:MM):', '13:00');
-    const title = prompt('Ingrese el título de la clase:', `Clase ${trainingDates.length + 1}`);
-    
-    if (time && title) {
-      handleAddTrainingDate(selectedDate, time, title);
-    }
-  };
-
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [selectedDateId, setSelectedDateId] = useState<string | null>(null);
-
-  const handleReserve = async () => {
-    if (!selectedDateId) {
-      toast.error('Seleccioná una fecha para reservar');
-      return;
-    }
-    const td = trainingDates.find(d => d.id === selectedDateId) || trainingDates.find((d: any) => d._id === selectedDateId) as any;
-    if (!td) {
-      toast.error('Fecha no encontrada');
-      return;
-    }
-    try {
-      const [hh, mm] = (td.time || '00:00').split(':').map((n: string) => parseInt(n, 10));
-      const start = new Date(td.date);
-      start.setHours(hh || 0, mm || 0, 0, 0);
-      const res = await fetch('/api/entrenamientos/reservar-sesion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: start.toISOString(), duration: (training?.duracion || 3) * 60, serviceType: 'SwingTrading' })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'No se pudo reservar');
-      toast.success('Reserva confirmada');
-      // refrescar próxima reunión
-      await checkEnrollmentStatus();
-    } catch (e: any) {
-      toast.error(e.message || 'Error al reservar');
-    }
+    setNewDateDraft({ date: selectedDate, time: '13:00', title: `Clase ${trainingDates.length + 1}` });
+    setShowCreateDateModal(true);
   };
 
   const handleEnroll = async () => {
@@ -1368,6 +1376,65 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       </main>
 
       <Footer />
+
+      {/* Modal confirmación reserva */}
+      {showReserveModal && reserveTarget && (
+        <div className={styles.modalOverlay} onClick={() => setShowReserveModal(false)}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Confirmar reserva</h3>
+              <button className={styles.closeButton} onClick={() => setShowReserveModal(false)}>×</button>
+            </div>
+            <div className={styles.enrollForm}>
+              <p>
+                Vas a reservar tu lugar para el {new Date(reserveTarget.date).toLocaleDateString('es-ES')} a las {reserveTarget.time} hs.
+              </p>
+              <p>Duración: 120 minutos.</p>
+              <div className={styles.formActions}>
+                <button className={styles.cancelButton} onClick={() => setShowReserveModal(false)}>Cancelar</button>
+                <button className={styles.submitButton} onClick={confirmReserve}>Confirmar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal creación de fecha (admin) */}
+      {showCreateDateModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowCreateDateModal(false)}>
+          <div className={styles.modalContainer} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Nueva fecha de entrenamiento</h3>
+              <button className={styles.closeButton} onClick={() => setShowCreateDateModal(false)}>×</button>
+            </div>
+            <div className={styles.enrollForm}>
+              <div className={styles.formGroup}>
+                <label>Fecha</label>
+                <input type="date" value={newDateDraft.date ? new Date(newDateDraft.date).toISOString().slice(0,10) : ''} onChange={e => setNewDateDraft(d => ({ ...d, date: e.target.value ? new Date(e.target.value) : null }))} />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Hora (HH:MM)</label>
+                <input type="time" value={newDateDraft.time} onChange={e => setNewDateDraft(d => ({ ...d, time: e.target.value }))} />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Título</label>
+                <input type="text" value={newDateDraft.title} onChange={e => setNewDateDraft(d => ({ ...d, title: e.target.value }))} />
+              </div>
+              <div className={styles.formActions}>
+                <button className={styles.cancelButton} onClick={() => setShowCreateDateModal(false)}>Cancelar</button>
+                <button className={styles.submitButton} onClick={async () => {
+                  if (!newDateDraft.date || !newDateDraft.time || !newDateDraft.title) {
+                    toast.error('Completá fecha, hora y título');
+                    return;
+                  }
+                  await handleAddTrainingDate(newDateDraft.date, newDateDraft.time, newDateDraft.title);
+                  setShowCreateDateModal(false);
+                }}>Crear</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

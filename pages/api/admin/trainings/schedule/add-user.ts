@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 
-    const { email, startDate, duration = 180, serviceType = 'SwingTrading' } = req.body || {};
+    const { email, startDate, duration = 120, serviceType = 'SwingTrading' } = req.body || {};
 
     if (!email || !startDate) {
       return res.status(400).json({ error: 'email y startDate son requeridos' });
