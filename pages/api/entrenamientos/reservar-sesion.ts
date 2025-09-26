@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import User from '@/models/User';
 import Booking from '@/models/Booking';
+import { sendTrainingConfirmationEmail, sendAdminNotificationEmail } from '@/lib/emailNotifications';
 
 /**
  * POST /api/entrenamientos/reservar-sesion
@@ -37,10 +38,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(403).json({ error: 'No tenés acceso activo al entrenamiento' });
     }
 
-    // Crear booking de entrenamiento confirmado sin cobro
+    // Validar conflicto horario existente para este usuario
     const start = new Date(startDate);
     const end = new Date(start.getTime() + duration * 60000);
+    const overlapping = await Booking.findOne({
+      userId: user._id.toString(),
+      startDate: { $lt: end },
+      endDate: { $gt: start },
+      status: { $ne: 'cancelled' }
+    });
+    if (overlapping) {
+      return res.status(409).json({ error: 'Ya tenés una reserva que se superpone con ese horario' });
+    }
 
+    // Crear booking de entrenamiento confirmado sin cobro
     const booking = new Booking({
       userId: user._id.toString(),
       userEmail: user.email,
@@ -57,6 +68,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     await booking.save();
+
+    // Enviar emails de confirmación
+    try {
+      const dateStr = start.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      const timeStr = start.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      await sendTrainingConfirmationEmail(user.email, user.name || user.email, {
+        type: serviceType,
+        date: dateStr,
+        time: timeStr,
+        duration,
+        meetLink: booking.meetingLink
+      });
+
+      await sendAdminNotificationEmail({
+        userEmail: user.email,
+        userName: user.name || user.email,
+        type: 'training',
+        serviceType,
+        date: dateStr,
+        time: timeStr,
+        duration,
+        meetLink: booking.meetingLink
+      });
+    } catch (e) {
+      console.error('⚠️ Error enviando emails de confirmación de reserva:', e);
+    }
 
     return res.status(200).json({ success: true, booking });
   } catch (error) {

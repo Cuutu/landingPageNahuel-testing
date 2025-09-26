@@ -326,10 +326,17 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         transactionId: paymentInfo.id
       });
 
-      // Notificación de confirmación al usuario y admins
+      // Notificación de confirmación al usuario y admins (idempotente)
       try {
-        const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
-        await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, amount);
+        if (!payment.metadata) payment.metadata = {} as any;
+        if (!payment.metadata.trainingEnrollmentNotificationSent) {
+          const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
+          await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, amount);
+          payment.metadata.trainingEnrollmentNotificationSent = true;
+          await payment.save();
+        } else {
+          console.log('ℹ️ Notificación de inscripción ya enviada previamente (webhook).');
+        }
       } catch (e) {
         console.error('⚠️ Error enviando notificación de inscripción:', e);
       }

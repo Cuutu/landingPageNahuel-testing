@@ -167,8 +167,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       logger.info('IMMEDIATE training activated', { module: 'payments', step: 'training', user: user.email, service });
 
       try {
-        const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
-        await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, payment.amount);
+        if (!payment.metadata) payment.metadata = {} as any;
+        if (!payment.metadata.trainingEnrollmentNotificationSent) {
+          const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
+          await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, payment.amount);
+          payment.metadata.trainingEnrollmentNotificationSent = true;
+          await payment.save();
+        } else {
+          logger.info('IMMEDIATE training enrollment notify skipped (already sent)', { module: 'payments' });
+        }
       } catch (e) {
         logger.error('IMMEDIATE training enrollment notify error', { module: 'payments', step: 'notify', error: (e as Error).message });
       }
