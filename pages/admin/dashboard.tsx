@@ -157,7 +157,8 @@ const useDashboardSections = () => {
         { label: 'Horarios Asesorías', href: '/admin/asesorias-horarios', icon: <Clock size={16} /> },
         { label: 'Fechas Asesorías', href: '/admin/asesorias-fechas', icon: <Calendar size={16} /> },
         { label: 'Horarios Entrenamientos', href: '/admin/entrenamientos-fechas', icon: <Calendar size={16} /> },
-        { label: 'Enviar Link de Reunión', href: '/admin/horarios', icon: <Settings size={16} /> }
+        { label: 'Enviar Link de Reunión', href: '/admin/horarios', icon: <Settings size={16} /> },
+        { label: 'Próximas Sesiones Swing', href: '/admin/upcoming-training', icon: <Calendar size={16} /> }
       ]
     },
     {
