@@ -11,13 +11,13 @@ export async function middleware(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET 
   });
   
-  // Si hay usuario logueado, verificar pagos pendientes en rutas específicas
-  if (token?.email && shouldCheckPendingPayments(pathname)) {
+  // ❌ DESHABILITADO: No procesar pagos automáticamente desde middleware
+  // Esto causaba que se otorgara acceso sin verificar pagos reales
+  if (false && token?.email && shouldCheckPendingPayments(pathname)) {
     console.log('🔄 [MIDDLEWARE] Verificando pagos pendientes para:', token.email);
     
     try {
-      // Llamar al endpoint de procesamiento automático de forma asíncrona
-      // No esperamos la respuesta para no bloquear la navegación
+      // ❌ DESHABILITADO - Solo verificar pagos cuando se solicite explícitamente
       fetch(`${request.nextUrl.origin}/api/auto-process-user-payments`, {
         method: 'POST',
         headers: {

@@ -55,14 +55,14 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
 
         console.log(`🔄 Verificando pago: ${payment._id}`);
 
-        // ✅ OPTIMIZADO: Procesamiento más agresivo para reducir tiempo de espera
+        // ❌ DESHABILITADO: No auto-procesar pagos sin verificación real
         const paymentAge = Date.now() - payment.createdAt.getTime();
-        const shouldAutoProcess = paymentAge > 30 * 1000; // 30 segundos en lugar de 3 minutos
+        const shouldAutoProcess = false; // ❌ DESHABILITADO - Solo verificar con MercadoPago
         
         let approvedPayment = null;
 
         if (shouldAutoProcess) {
-          // Procesar automáticamente sin consultar MercadoPago
+          // ❌ ESTE CÓDIGO YA NO SE EJECUTA - Solo para referencia
           console.log(`🚀 Auto-procesando pago después de ${Math.round(paymentAge / 1000)} segundos: ${payment._id}`);
           approvedPayment = {
             id: `auto_processed_${Date.now()}`,
