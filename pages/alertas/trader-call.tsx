@@ -187,22 +187,82 @@ const NonSubscriberView: React.FC<{
 
   const exampleImages = [
     {
-      src: '/alerts/trader-call-example-1.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis AAPL',
-      title: 'Alerta AAPL - Entrada Perfecta',
-      description: 'Señal de compra en Apple con +15% de ganancia en 3 días'
+      src: '/logos/ALERTACOMPRAEDN.png',
+      alt: 'Ejemplo de alerta de compra EDN',
+      title: 'Alerta de Compra EDN',
+      description: 'Señal de compra en Edenor con análisis técnico detallado'
     },
     {
-      src: '/alerts/trader-call-example-2.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis TSLA',
-      title: 'Alerta TSLA - Stop Loss Activado',
-      description: 'Protección de capital con stop loss inteligente'
+      src: '/logos/ALERTACOMPRAETHA.png',
+      alt: 'Ejemplo de alerta de compra ETHE',
+      title: 'Alerta de Compra ETHE',
+      description: 'Señal de compra en Ethereum con fundamentos sólidos'
     },
     {
-      src: '/alerts/trader-call-example-3.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis SPY',
-      title: 'Alerta SPY - Take Profit',
-      description: 'Maximización de ganancias con take profit automático'
+      src: '/logos/ALERTACOMPRASATL.png',
+      alt: 'Ejemplo de alerta de compra SATL',
+      title: 'Alerta de Compra SATL',
+      description: 'Señal de compra en Satellogic con potencial alcista'
+    },
+    {
+      src: '/logos/ALERTACOMPRASPOT.png',
+      alt: 'Ejemplo de alerta de compra SPOT',
+      title: 'Alerta de Compra SPOT',
+      description: 'Señal de compra en Spotify con análisis fundamental'
+    },
+    {
+      src: '/logos/ALERTAVENTAPARCIALEDN.png',
+      alt: 'Ejemplo de alerta de venta parcial EDN',
+      title: 'Alerta de Venta Parcial EDN',
+      description: 'Toma de ganancias parcial en Edenor para proteger capital'
+    },
+    {
+      src: '/logos/ALERTAVENTAPARCIALETHA.png',
+      alt: 'Ejemplo de alerta de venta parcial ETHE',
+      title: 'Alerta de Venta Parcial ETHE',
+      description: 'Toma de ganancias parcial en Ethereum con stop loss dinámico'
+    },
+    {
+      src: '/logos/ALERTAVENTAPARCIALSATL.png',
+      alt: 'Ejemplo de alerta de venta parcial SATL',
+      title: 'Alerta de Venta Parcial SATL',
+      description: 'Toma de ganancias parcial en Satellogic manteniendo posición'
+    },
+    {
+      src: '/logos/ALERTAVENTAPARCIALSPOT.png',
+      alt: 'Ejemplo de alerta de venta parcial SPOT',
+      title: 'Alerta de Venta Parcial SPOT',
+      description: 'Toma de ganancias parcial en Spotify con análisis técnico'
+    },
+    {
+      src: '/logos/ALERTAVENTATOTALEDN.png',
+      alt: 'Ejemplo de alerta de venta total EDN',
+      title: 'Alerta de Venta Total EDN',
+      description: 'Cierre completo de posición en Edenor con máxima ganancia'
+    },
+    {
+      src: '/logos/ALERTAVENTATOTALETHA.png',
+      alt: 'Ejemplo de alerta de venta total ETHE',
+      title: 'Alerta de Venta Total ETHE',
+      description: 'Cierre completo de posición en Ethereum con take profit'
+    },
+    {
+      src: '/logos/ALERTAVENTATOTALSATL.png',
+      alt: 'Ejemplo de alerta de venta total SATL',
+      title: 'Alerta de Venta Total SATL',
+      description: 'Cierre completo de posición en Satellogic con análisis fundamental'
+    },
+    {
+      src: '/logos/ALERTAVENTATOTALSPOT.png',
+      alt: 'Ejemplo de alerta de venta total SPOT',
+      title: 'Alerta de Venta Total SPOT',
+      description: 'Cierre completo de posición en Spotify con máxima rentabilidad'
+    },
+    {
+      src: '/logos/alertashistoricas.png',
+      alt: 'Ejemplo de alertas históricas',
+      title: 'Alertas Históricas',
+      description: 'Resumen de alertas históricas con rendimientos comprobados'
     }
   ];
 

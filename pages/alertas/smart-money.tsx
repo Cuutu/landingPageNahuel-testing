@@ -187,22 +187,28 @@ const NonSubscriberView: React.FC<{
 
   const exampleImages = [
     {
-      src: '/alerts/trader-call-example-1.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis AAPL',
-      title: 'Alerta AAPL - Entrada Perfecta',
-      description: 'Señal de compra en Apple con +15% de ganancia en 3 días'
+      src: '/logos/ALERTA SM COMPRA.png',
+      alt: 'Ejemplo de alerta Smart Money - Compra',
+      title: 'Alerta Smart Money - Compra',
+      description: 'Señal de compra siguiendo el dinero inteligente con análisis institucional'
     },
     {
-      src: '/alerts/trader-call-example-2.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis TSLA',
-      title: 'Alerta TSLA - Stop Loss Activado',
-      description: 'Protección de capital con stop loss inteligente'
+      src: '/logos/ALERTA SM VENTA PARCIAL.png',
+      alt: 'Ejemplo de alerta Smart Money - Venta Parcial',
+      title: 'Alerta Smart Money - Venta Parcial',
+      description: 'Toma de ganancias parcial siguiendo movimientos institucionales'
     },
     {
-      src: '/alerts/trader-call-example-3.jpg',
-      alt: 'Ejemplo de alerta Trader Call - Análisis SPY',
-      title: 'Alerta SPY - Take Profit',
-      description: 'Maximización de ganancias con take profit automático'
+      src: '/logos/ALERTA SM VENTA PARCIAL 2.png',
+      alt: 'Ejemplo de alerta Smart Money - Venta Parcial 2',
+      title: 'Alerta Smart Money - Venta Parcial 2',
+      description: 'Segunda toma de ganancias parcial con análisis de flujo institucional'
+    },
+    {
+      src: '/logos/ALERTA SM VENTA TOTAL.png',
+      alt: 'Ejemplo de alerta Smart Money - Venta Total',
+      title: 'Alerta Smart Money - Venta Total',
+      description: 'Cierre completo de posición siguiendo salida del dinero inteligente'
     }
   ];
 
