@@ -41,37 +41,48 @@ export default function PaymentSuccess() {
   const verifyPayment = async (reference: string) => {
     try {
       setError(null);
-      const response = await fetch(`/api/payments/mercadopago/verify?reference=${reference}`);
+      
+      // ✅ PASO 1: Verificar con MercadoPago ANTES de mostrar "PAGO EXITOSO"
+      console.log('🔍 Verificando pago real con MercadoPago...');
+      
+      const response = await fetch('/api/payments/process-immediate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalReference: reference })
+      });
+      
       const data = await response.json();
       
-      if (data.success) {
-        setPaymentDetails(data);
-
-        // Procesamiento inmediato para crear Booking/Calendar/emails
-        if (data.status === 'approved') {
-          try {
-            const processResponse = await fetch('/api/payments/process-immediate', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ externalReference: reference, paymentId: data.paymentId })
-            });
-            
-            if (processResponse.ok) {
-              setProcessingComplete(true);
-            } else {
-              console.warn('Procesamiento inmediato falló, pero el pago es válido');
-            }
-          } catch (e) {
-            console.error('Error en process-immediate:', e);
-            // No es crítico, el pago ya está aprobado
-          }
-        }
+      if (response.ok && data.success) {
+        // ✅ SOLO mostrar "PAGO EXITOSO" si MercadoPago confirma que es real
+        console.log('✅ Pago verificado con MercadoPago - Asignando rango al usuario');
+        
+        setPaymentDetails({
+          success: true,
+          status: 'approved',
+          paymentId: data.payment?.mercadopagoPaymentId || 'verified',
+          amount: data.payment?.amount || 0,
+          currency: data.payment?.currency || 'ARS',
+          service: data.payment?.service || 'Servicio',
+          externalReference: reference,
+          message: 'Pago verificado exitosamente',
+          transactionDate: new Date().toISOString(),
+          paymentMethod: 'MercadoPago'
+        });
+        
+        setProcessingComplete(true);
+        
+        // ✅ El rango ya fue asignado en process-immediate
+        console.log('✅ Usuario ya tiene acceso al servicio');
+        
       } else {
-        setError(data.error || 'Error verificando el pago');
+        // ❌ NO mostrar "PAGO EXITOSO" si no está verificado
+        console.error('❌ Pago no verificado:', data.error);
+        setError(data.error || 'El pago no ha sido verificado. Por favor, completa el proceso de pago.');
       }
     } catch (error) {
-      console.error('Error verificando pago:', error);
-      setError('Error de conexión. Por favor, verifica tu conexión a internet.');
+      console.error('❌ Error verificando pago:', error);
+      setError('Error de conexión verificando el pago. Por favor, intenta nuevamente.');
     } finally {
       setLoading(false);
     }
