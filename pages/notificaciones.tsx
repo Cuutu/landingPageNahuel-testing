@@ -55,6 +55,7 @@ export default function NotificacionesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('todos');
   const [currentPage, setCurrentPage] = useState(1);
+  const [generatingNotifications, setGeneratingNotifications] = useState(false);
 
   // Obtener notificaciones
   const fetchNotifications = async (page: number = 1) => {
@@ -115,6 +116,34 @@ export default function NotificacionesPage() {
   const handleNextPage = () => {
     if (pagination.hasMore) {
       setCurrentPage(currentPage + 1);
+    }
+  };
+
+  // Función para generar notificaciones reales
+  const generateRealNotifications = async () => {
+    try {
+      setGeneratingNotifications(true);
+      const response = await fetch('/api/notifications/generate-real', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        alert(`✅ Se generaron ${data.notifications.length} notificaciones reales basadas en tus datos`);
+        // Recargar notificaciones
+        fetchNotifications(currentPage);
+      } else {
+        const error = await response.json();
+        alert(`❌ Error: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error generando notificaciones:', error);
+      alert('❌ Error generando notificaciones');
+    } finally {
+      setGeneratingNotifications(false);
     }
   };
 
@@ -220,6 +249,25 @@ export default function NotificacionesPage() {
                   <option value="promocion">Promociones</option>
                 </select>
               </div>
+
+              {/* Generate Real Notifications Button */}
+              <button
+                onClick={generateRealNotifications}
+                disabled={generatingNotifications}
+                className={styles.generateButton}
+              >
+                {generatingNotifications ? (
+                  <>
+                    <div className={styles.spinner}></div>
+                    Generando...
+                  </>
+                ) : (
+                  <>
+                    <Bell size={20} />
+                    Generar Notificaciones Reales
+                  </>
+                )}
+              </button>
             </div>
 
             {/* Notifications List */}
