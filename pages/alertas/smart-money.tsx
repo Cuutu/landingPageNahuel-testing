@@ -45,7 +45,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import styles from '@/styles/TraderCall.module.css';
+import styles from '@/styles/SmartMoney.module.css';
 import { useRouter } from 'next/router';
 import { calculateDaysRemaining, calculateDaysSinceSubscription } from '../../utils/dateUtils';
 import SPY500Indicator from '@/components/SPY500Indicator';
@@ -72,7 +72,7 @@ interface FAQ {
   id: string;
   question: string;
   answer: string;
-  category: 'trader-call' | 'smart-money' | 'general';
+  category: 'smart-money' | 'trader-call' | 'general';
   order: number;
   visible: boolean;
 }
@@ -93,7 +93,7 @@ interface HistoricalAlert {
   profitPercentage: string;
 }
 
-interface TraderCallPageProps {
+interface SmartMoneyPageProps {
   isSubscribed: boolean;
   metrics: {
     performance: string;
@@ -150,7 +150,7 @@ const NonSubscriberView: React.FC<{
     
     try {
       // Obtener el precio dinámico del sistema
-      const subscriptionPrice = pricing?.alertas?.traderCall?.monthly || 15000;
+      const subscriptionPrice = pricing?.alertas?.smartMoney?.monthly || 22000;
       
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',
@@ -158,7 +158,7 @@ const NonSubscriberView: React.FC<{
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          service: 'TraderCall',
+          service: 'SmartMoney',
           amount: subscriptionPrice,
           currency: 'ARS',
           type: 'subscription'
@@ -379,7 +379,7 @@ const NonSubscriberView: React.FC<{
           >
             <FAQAccordion 
               faqs={faqs}
-              category="trader-call"
+              category="smart-money"
               maxItems={10}
             />
           </motion.div>
@@ -800,8 +800,8 @@ const SubscriberView: React.FC = () => {
   const loadInformes = async (page: number = 1) => {
     setLoadingInformes(true);
     try {
-      // Filtrar solo informes de Trader Call con paginación
-      const response = await fetch(`/api/reports?page=${page}&limit=${informesPerPage}&featured=false&category=trader-call`, {
+      // Filtrar solo informes de Smart Money con paginación
+      const response = await fetch(`/api/reports?page=${page}&limit=${informesPerPage}&featured=false&category=smart-money`, {
         method: 'GET',
         credentials: 'same-origin',
       });
@@ -812,7 +812,7 @@ const SubscriberView: React.FC = () => {
         setTotalPages(data.data?.pagination?.totalPages || 1);
         setTotalInformes(data.data?.pagination?.total || 0);
         setCurrentPage(page);
-        console.log('Informes Trader Call cargados:', data.data?.reports?.length || 0, 'Página:', page);
+        console.log('Informes Smart Money cargados:', data.data?.reports?.length || 0, 'Página:', page);
       } else {
         console.error('Error al cargar informes:', response.status);
       }
@@ -880,7 +880,7 @@ const SubscriberView: React.FC = () => {
         },
         body: JSON.stringify({
           ...formData, 
-          category: 'trader-call' // Asignar categoría Trader Call
+          category: 'smart-money' // Asignar categoría Smart Money
         }),
       });
 
@@ -888,7 +888,7 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Informe Trader Call creado exitosamente:', result);
+        console.log('✅ Informe Smart Money creado exitosamente:', result);
         const newReport = result.data.report;
         setInformes(prev => [newReport, ...prev]);
         setShowCreateReportModal(false);
@@ -1002,7 +1002,7 @@ const SubscriberView: React.FC = () => {
     
     const loadLiquidity = async () => {
       try {
-        const res = await fetch('/api/liquidity/public?pool=TraderCall');
+        const res = await fetch('/api/liquidity/public?pool=SmartMoney');
         if (res.ok && isMounted) {
           const json = await res.json();
           const map: Record<string, any> = {};
@@ -1127,7 +1127,7 @@ const SubscriberView: React.FC = () => {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          tipo: 'TraderCall',
+          tipo: 'SmartMoney',
           symbol: newAlert.symbol.toUpperCase(),
           action: newAlert.action,
           entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : undefined, // Solo para alertas de precio específico
@@ -1150,7 +1150,7 @@ const SubscriberView: React.FC = () => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Alerta Trader Call creada:', result.alert);
+        console.log('✅ Alerta Smart Money creada:', result.alert);
         
         // Recargar alertas y limpiar formulario
         await loadAlerts();
@@ -1172,7 +1172,7 @@ const SubscriberView: React.FC = () => {
         setAdditionalImages([]);
         setShowCreateAlert(false);
         
-        alert('¡Alerta de Trader Call creada exitosamente!');
+        alert('¡Alerta de Smart Money creada exitosamente!');
       } else {
         const error = await response.json();
         console.error('❌ Error del servidor:', error);
@@ -3580,7 +3580,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   const [formData, setFormData] = useState({
     title: '',
     type: 'text',
-    category: 'trader-call',
+    category: 'smart-money',
     content: '',
     isFeature: false,
     publishedAt: new Date().toISOString().split('T')[0],
@@ -3656,7 +3656,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.createReportModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Crear Nuevo Informe Trader Call</h2>
+          <h2>Crear Nuevo Informe Smart Money</h2>
           <button 
             className={styles.closeModal}
             onClick={onClose}
@@ -3678,7 +3678,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Título del informe Trader Call"
+                placeholder="Título del informe Smart Money"
                 required
                 disabled={loading}
               />
@@ -3829,7 +3829,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   );
 };
 
-const TraderCallPage: React.FC<TraderCallPageProps> = ({ 
+const SmartMoneyPage: React.FC<SmartMoneyPageProps> = ({ 
   isSubscribed, 
   metrics, 
   historicalAlerts,
@@ -3952,9 +3952,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const siteConfig = await SiteConfig.findOne({}).lean();
     
     if (siteConfig) {
-      alertExamples = (siteConfig as any).alertExamples?.traderCall || [];
+      alertExamples = (siteConfig as any).alertExamples?.smartMoney || [];
       faqs = (siteConfig as any).faqs?.filter((faq: any) => 
-        faq.visible && (faq.category === 'trader-call' || faq.category === 'general')
+        faq.visible && (faq.category === 'smart-money' || faq.category === 'general')
       ) || [];
     }
   } catch (error) {
@@ -4256,4 +4256,4 @@ const YouTubeAutoCarousel: React.FC = () => {
   );
 };
 
-export default TraderCallPage; 
+export default SmartMoneyPage; 
