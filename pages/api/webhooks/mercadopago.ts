@@ -50,7 +50,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!paymentId && !merchantOrderId) {
-      console.log('⚠️ Webhook sin datos válidos:', req.body);
+      console.log('⚠️ Webhook sin datos válidos:', { 
+        body: req.body, 
+        topic: topicValue,
+        hasData: !!data,
+        hasId: !!id,
+        hasResource: !!resource
+      });
+      
+      // Si es un webhook duplicado o malformado, devolver 200 para evitar reintentos
+      if (req.body && (req.body.resource || req.body.id)) {
+        console.log('🔄 Webhook duplicado o malformado, devolviendo 200 para evitar reintentos');
+        return res.status(200).json({ success: true, message: 'Webhook duplicado procesado' });
+      }
+      
       return res.status(400).json({ error: 'Datos de webhook inválidos' });
     }
 
@@ -145,6 +158,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
       await payment.save();
       console.log('🆕 Payment creado desde webhook para external_reference:', payment.externalReference);
+    }
+
+    // Evitar procesar el mismo pago múltiples veces
+    if (payment.status === 'approved' && payment.mercadopagoPaymentId === paymentInfo.id) {
+      console.log('✅ Pago ya procesado anteriormente:', paymentInfo.id);
+      return res.status(200).json({ success: true, message: 'Pago ya procesado' });
     }
 
     // Actualizar campos del Payment

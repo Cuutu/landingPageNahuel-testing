@@ -49,11 +49,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     logger.info('IMMEDIATE start', { module: 'payments', step: 'start', user: session.user.email, reference: externalReference });
 
-    // Buscar el pago pendiente
+    // Buscar el pago (incluyendo ya procesados por webhook)
     const payment = await Payment.findOne({
       userEmail: session.user.email,
       externalReference: externalReference,
-      status: { $in: ['pending', 'in_process'] }
+      status: { $in: ['pending', 'in_process', 'approved'] }
     });
 
     if (!payment) {
@@ -61,6 +61,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({
         success: false,
         error: 'Pago no encontrado'
+      });
+    }
+
+    // Si el pago ya fue procesado por webhook, devolver éxito
+    if (payment.status === 'approved') {
+      logger.info('IMMEDIATE payment already processed by webhook', { module: 'payments', step: 'already_processed', paymentId: payment._id.toString() });
+      return res.status(200).json({
+        success: true,
+        message: 'Pago ya procesado por webhook',
+        payment: {
+          id: payment._id,
+          status: payment.status,
+          service: payment.service,
+          amount: payment.amount,
+          currency: payment.currency,
+          mercadopagoPaymentId: payment.mercadopagoPaymentId,
+          alreadyProcessed: true
+        }
       });
     }
 
