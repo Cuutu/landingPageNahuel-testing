@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   // ❌ DESHABILITADO: No procesar pagos automáticamente desde middleware
   // Esto causaba que se otorgara acceso sin verificar pagos reales
   if (false && token?.email && shouldCheckPendingPayments(pathname)) {
-    console.log('🔄 [MIDDLEWARE] Verificando pagos pendientes para:', token.email);
+    console.log('🔄 [MIDDLEWARE] Verificando pagos pendientes para:', token?.email);
     
     try {
       // ❌ DESHABILITADO - Solo verificar pagos cuando se solicite explícitamente
@@ -24,7 +24,7 @@ export async function middleware(request: NextRequest) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.NEXTAUTH_SECRET}`,
         },
-        body: JSON.stringify({ userEmail: token.email })
+        body: JSON.stringify({ userEmail: token?.email })
       }).catch(error => {
         console.error('Error en procesamiento automático:', error);
       });
