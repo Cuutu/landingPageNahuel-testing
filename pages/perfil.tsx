@@ -27,6 +27,135 @@ import Footer from '@/components/Footer';
 import UserSubscriptions from '@/components/UserSubscriptions';
 import styles from '@/styles/Perfil.module.css';
 
+// Componente para mostrar notificaciones reales
+const NotificationsSection = () => {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        
+        // Primero intentar generar notificaciones automáticamente
+        try {
+          await fetch('/api/notifications/auto-generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (autoGenError) {
+          console.log('Auto-generación de notificaciones no disponible:', autoGenError);
+        }
+        
+        // Luego obtener las notificaciones
+        const response = await fetch('/api/notifications/get?limit=10');
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications || []);
+        }
+      } catch (error) {
+        console.error('Error cargando notificaciones:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Hace menos de 1 hora';
+    if (diffInHours < 24) return `Hace ${diffInHours} hora${diffInHours > 1 ? 's' : ''}`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `Hace ${diffInDays} día${diffInDays > 1 ? 's' : ''}`;
+    
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) return `Hace ${diffInWeeks} semana${diffInWeeks > 1 ? 's' : ''}`;
+    
+    return 'Hace más de 1 mes';
+  };
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'pago': return <DollarSign size={16} />;
+      case 'advertencia': return <AlertTriangle size={16} />;
+      case 'novedad': return <Bell size={16} />;
+      case 'bienvenida': return <CheckCircle size={16} />;
+      default: return <Bell size={16} />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <motion.div
+        className={styles.sectionContent}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className={styles.sectionHeader}>
+          <h2>Central de Notificaciones</h2>
+        </div>
+        <div className={styles.loadingSpinner}>
+          <div className={styles.spinner} />
+          <p>Cargando notificaciones...</p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      className={styles.sectionContent}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <div className={styles.sectionHeader}>
+        <h2>Central de Notificaciones</h2>
+      </div>
+      
+      <div className={styles.notificationsContainer}>
+        {notifications.length === 0 ? (
+          <div className={styles.emptyNotifications}>
+            <Bell size={48} />
+            <h3>Sin notificaciones</h3>
+            <p>No tienes notificaciones nuevas por el momento.</p>
+          </div>
+        ) : (
+          <div className={styles.notificationCard}>
+            <div className={styles.cardHeader}>
+              <Bell size={24} />
+              <h3>Notificaciones Reales</h3>
+            </div>
+            <div className={styles.notificationsList}>
+              {notifications.map((notification, index) => (
+                <div key={notification.id || index} className={styles.notificationItem}>
+                  <div className={styles.notificationIcon}>
+                    {getNotificationIcon(notification.type)}
+                  </div>
+                  <div className={styles.notificationContent}>
+                    <h4>{notification.title}</h4>
+                    <p>{notification.message}</p>
+                    <span className={styles.notificationTime}>
+                      {formatTimeAgo(notification.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 // Interfaz para los datos del perfil
 interface UserProfile {
   email: string;
@@ -465,76 +594,7 @@ export default function PerfilPage() {
 
               {/* Notificaciones */}
               {activeSection === 3 && (
-                <motion.div
-                  className={styles.sectionContent}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <div className={styles.sectionHeader}>
-                    <h2>Central de Notificaciones</h2>
-                  </div>
-                  
-                  <div className={styles.notificationsContainer}>
-                    <div className={styles.notificationCard}>
-                      <div className={styles.cardHeader}>
-                        <Bell size={24} />
-                        <h3>Notificaciones de Pago</h3>
-                      </div>
-                      <div className={styles.notificationsList}>
-                        <div className={styles.notificationItem}>
-                          <div className={styles.notificationIcon}>
-                            <DollarSign size={16} />
-                          </div>
-                          <div className={styles.notificationContent}>
-                            <h4>Pago procesado exitosamente</h4>
-                            <p>Tu suscripción a Smart Money ha sido renovada</p>
-                            <span className={styles.notificationTime}>Hace 2 días</span>
-                          </div>
-                        </div>
-                        <div className={styles.notificationItem}>
-                          <div className={styles.notificationIcon}>
-                            <Calendar size={16} />
-                          </div>
-                          <div className={styles.notificationContent}>
-                            <h4>Próximo cobro programado</h4>
-                            <p>Tu suscripción se renovará el 15 de mayo</p>
-                            <span className={styles.notificationTime}>Hace 1 semana</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className={styles.notificationCard}>
-                      <div className={styles.cardHeader}>
-                        <TrendingUp size={24} />
-                        <h3>Novedades y Actualizaciones</h3>
-                      </div>
-                      <div className={styles.notificationsList}>
-                        <div className={styles.notificationItem}>
-                          <div className={styles.notificationIcon}>
-                            <Bell size={16} />
-                          </div>
-                          <div className={styles.notificationContent}>
-                            <h4>Nuevo contenido disponible</h4>
-                            <p>Se ha publicado un nuevo análisis en Smart Money</p>
-                            <span className={styles.notificationTime}>Hace 3 horas</span>
-                          </div>
-                        </div>
-                        <div className={styles.notificationItem}>
-                          <div className={styles.notificationIcon}>
-                            <GraduationCap size={16} />
-                          </div>
-                          <div className={styles.notificationContent}>
-                            <h4>Nuevo entrenamiento disponible</h4>
-                            <p>Advanced Trading: Módulo 5 ya está disponible</p>
-                            <span className={styles.notificationTime}>Hace 1 día</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                <NotificationsSection />
               )}
             </div>
           </motion.div>

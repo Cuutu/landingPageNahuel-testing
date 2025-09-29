@@ -185,6 +185,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const isTraining = ['SwingTrading', 'DowJones'].includes(service);
     const isBooking = externalReference.startsWith('booking_');
 
+    // ✅ Generar notificación automática del pago exitoso
+    try {
+      const notificationResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/notifications/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXTAUTH_SECRET}`,
+        },
+        body: JSON.stringify({
+          title: `💳 Pago procesado exitosamente`,
+          message: `Tu suscripción a ${service} ha sido renovada por $${payment.amount} ${payment.currency}`,
+          type: 'pago',
+          priority: 'alta',
+          targetUsers: 'todos',
+          icon: '💳',
+          actionUrl: '/perfil',
+          actionText: 'Ver Detalles',
+          isActive: true,
+          createdBy: 'sistema',
+          isAutomatic: true,
+          metadata: {
+            paymentId: payment._id,
+            service: payment.service,
+            amount: payment.amount,
+            currency: payment.currency,
+            transactionDate: payment.transactionDate,
+            automatic: true
+          }
+        })
+      });
+      
+      if (notificationResponse.ok) {
+        logger.info('IMMEDIATE notification created', { module: 'payments', step: 'notification_created', paymentId: payment._id.toString() });
+      }
+    } catch (notificationError) {
+      logger.warn('IMMEDIATE notification error', { module: 'payments', step: 'notification_error', error: notificationError instanceof Error ? notificationError.message : 'Unknown error' });
+    }
+
     if (isSubscription) {
       // Procesar suscripción inmediatamente
       await user.renewSubscription(
