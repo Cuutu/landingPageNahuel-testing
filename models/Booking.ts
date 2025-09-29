@@ -17,6 +17,9 @@ export interface IBooking extends Document {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  // ✅ Flags de recordatorio por email
+  reminder24hSent?: boolean;
+  reminder1hSent?: boolean;
 }
 
 const BookingSchema: Schema = new Schema({
@@ -84,6 +87,17 @@ const BookingSchema: Schema = new Schema({
   notes: {
     type: String,
     maxlength: 500
+  },
+  // ✅ Nuevos flags para evitar duplicidad de recordatorios
+  reminder24hSent: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  reminder1hSent: {
+    type: Boolean,
+    default: false,
+    index: true
   }
 }, {
   timestamps: true
