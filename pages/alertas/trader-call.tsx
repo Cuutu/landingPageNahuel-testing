@@ -4230,7 +4230,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       {
         id: 'faq-2',
         question: '¿Como funcionan las alertas de trading?',
-        answer: 'EL MECANISMO DE LAS ALERTAS FUNCIONA A TRAVÉS DE UN CANAL PRIVADO DE TELEGRAM DONDE, LES COMENTO MI MIRADA DEL MERCADO MEDIANTE UN INFORME DIARIO Y QUÉ SEÑALES DE COMPRA O VENTA TENEMOS CADA DÍA. ESTE INFORME SE PUBLICA ENTRE LAS 18 Y LAS 22 HS DE CADA HÁBIL BURSÁTIL, DESPUÉS DEL CIERRE DEL MERCADO. ESTO SE DEBE A QUE EL ANÁLISIS TÉCNICO DEBE REALIZARSE CON EL MERCADO CERRADO, PARA TENER UNA MAYOR PRECISIÓN Y FIABILIDAD. ES POR ESTO QUE LAS OPERACIONES A MERCADO DE LOS SUSCRIPTORES QUE QUIERAN OPERAR BAJO ESTA ESTRATEGIA DEBERÁN PASARSE AL DÍA HÁBIL BURSÁTIL SIGUIENTE, EN CUALQUIER HORARIO. CABE DESTACAR QUE, NO HAY ALERTAS DE COMPRA O VENTA TODOS LOS DÍAS, YA QUE, EL MERCADO PUEDE NO ARROJAR NINGUNA SEÑAL MEDIANTE MI MÉTODO DE TRADING.\n\nEl análisis y las alertas de trading son sobre el activo que cotiza en usa, en dólares. pero esto no presenta ningun inconveniente en realizar operaciones en cedears contra pesos y en argentina. ESTO PERMITE QUE PUEDAS INGRESAR EN CADA ALERTA CON MENOR CANTIDAD DE DINERO Y EN PESOS, YA QUE LOS CEDEARS COTIZAN TANTO EN PESOS COMO EN DÓLARES Y TIENEN UN RATIO DE CONVERSIÓN QUE FACILITA EL ACCESO A INVERSORES CON MENOR CAPITAL INICIAL. de hecho, el servicio contempla LA INVERSIÓN EN CEDEARS Y EN PESOS COMO la preferible YA QUE SUELE HABER MUCHO MÁS VOLUMEN DE OPERACIONES EN EL MERCADO LOCAL EN ESA MONEDA.\n\nTODOS LOS DÍAS SE HACE UN REPASO DEL ESTADO ACTUAL DE TODAS LAS ALERTAS ACTIVADAS MEDIANTE UN INFORME DE MERCADO. LAS ALERTAS ESTÁN RIGUROSAMENTE ANALIZADAS BAJO MI MÉTODO DE TRADING Y TIENEN COMO HORIZONTE UNA DURACIÓN DESDE UN PAR DE DÍAS HASTA 3 MESES.\n\nCADA ALERTA DE COMPRA TIENE ASIGNADO UN NIVEL DE RIESGO PROPIO, QUE CONTEMPLA TANTO EL RIESGO DEL CONTEXTO GENERAL DE MERCADO, COMO DEL RIESGO PARTICULAR DE CADA ACTIVO.\n\nESTE SERVICIO NO TIENE VÍNCULO ALGUNO CON BROKERS DE BOLSA ARGENTINOS O INTERNACIONALES, POR LO QUE DICHA ESTRATEGIA PUEDE SER APLICADA POR LOS INVERSORES EN CUALQUIER CUENTA DE INVERSIONES, INDEPENDIENTEMENTE DEL BROKER O INTERMEDIARIO QUE UTILICE.',
+        answer: 'El mecanismo de las alertas funciona a través de la página web, donde se publica un informe diario con mi mirada del mercado y las señales de compra o venta detectadas cada día.\n\nEste informe se publica entre las 18 y las 22 hs de cada día hábil bursátil, una vez cerrado el mercado. Esto se debe a que el análisis técnico debe realizarse con el mercado cerrado, para lograr mayor precisión y fiabilidad. Por esta razón, las operaciones de los suscriptores que deseen operar bajo esta estrategia deberán ejecutarse al día hábil bursátil siguiente, en cualquier horario. Cabe destacar que no todos los días se generan alertas de compra o venta, ya que el mercado puede no arrojar ninguna señal bajo mi método de trading. \n\nEl análisis y las alertas de trading son sobre activos que cotizan en USA, en dólares. Sin embargo, esto no presenta inconvenientes para realizar operaciones en CEDEARs contra pesos en Argentina. Esto permite ingresar en cada alerta con menor cantidad de dinero y en pesos, ya que los CEDEARs cotizan tanto en pesos como en dólares y cuentan con un ratio de conversión que facilita el acceso a inversores con menor capital inicial. De hecho, el servicio contempla la inversión en CEDEARs y en pesos como la opción preferible, ya que suele haber mucho más volumen de operaciones en el mercado local en esa moneda.\n\nTodos los días se hace un repaso del estado actual de todas las alertas activadas mediante un informe de mercado. Las alertas están rigurosamente analizadas bajo mi método de trading y tienen como horizonte una duración que puede ir desde unos pocos días hasta 3 meses.\n\nCada alerta de compra tiene asignado un nivel de riesgo propio, que contempla tanto el riesgo del contexto general de mercado como el riesgo particular de cada activo.\n\nEste servicio no tiene vínculo alguno con brokers de bolsa argentinos o internacionales, por lo que la estrategia puede aplicarse en cualquier cuenta de inversiones, independientemente del broker o intermediario utilizado.',
         category: 'trader-call' as const,
         order: 2,
         visible: true
@@ -4238,15 +4238,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       {
         id: 'faq-3',
         question: '¿Las alertas tienen vencimiento?',
-        answer: 'Si, tanto las alertas de compra como de venta tienen 24 horas de vencimiento. Esto se debe a que el análisis realizado del activo y del contexto en general cambia día a día, siguiendo el desarrollo del mercado. EN CADA INFORME DETALLAMOS A QUÉ ACTIVOS, DE LOS QUE YA TUVIERON ALERTAS DE COMPRA CON FECHAS ANTERIORES, SE PUEDE INGRESAR AL DÍA SIGUIENTE EN EL CASO QUE HUBIERA ALGUNO.',
+        answer: 'Sí, tanto las alertas de compra como de venta tienen 24 horas de vencimiento. Esto se debe a que el análisis realizado del activo y del contexto en general cambia día a día, siguiendo el desarrollo del mercado. En cada informe detallamos a qué activos, de los que ya tuvieron alertas de compra con fechas anteriores, se puede ingresar al día siguiente en caso de que hubiera alguno.',
         category: 'trader-call' as const,
         order: 3,
         visible: true
       },
       {
         id: 'faq-4',
-        question: '¿CUÁNTO DINERO HAY QUE INVERTIR?',
-        answer: 'NO HAY UN MÍNIMO DE DINERO CON EL QUE TENGAS QUE COMENZAR, PERO UNA SUMA RECOMENDABLE SERÍA EL EQUIVALENTE A u$D 1.000.-',
+        question: '¿Cuánto dinero hay que invertir?',
+        answer: 'No hay un mínimo de dinero con el que tengas que empezar, pero una suma recomendable sería el equivalente a U$D 1.000.',
         category: 'trader-call' as const,
         order: 4,
         visible: true
@@ -4261,8 +4261,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
       {
         id: 'faq-6',
-        question: '¿SEGUÍs con dudas?',
-        answer: 'Escribime un correo ELECTRÓNICO a la siguiente casilla para resolver las dudas que te puedan surgir: lozanonahuel@gmail.com',
+        question: '¿Seguís con dudas?',
+        answer: 'Escribime un correo electrónico a la siguiente casilla para resolver las dudas que te puedan surgir: lozanonahuel@gmail.com',
         category: 'trader-call' as const,
         order: 6,
         visible: true
