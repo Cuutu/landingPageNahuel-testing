@@ -73,28 +73,93 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // ✅ PROCESAMIENTO INMEDIATO: Asumir que el pago es exitoso si el usuario regresó
-    logger.info('IMMEDIATE mark approved', { module: 'payments', step: 'mark_approved', paymentId: payment._id.toString() });
+    // ✅ VERIFICACIÓN REAL: Verificar con MercadoPago antes de aprobar
+    logger.info('IMMEDIATE verify payment', { module: 'payments', step: 'verify_payment', paymentId: payment._id.toString() });
 
-    // Actualizar el pago
+    // Verificar el estado real del pago con MercadoPago
+    let mercadopagoStatus = 'pending';
+    let mercadopagoPaymentId = paymentId;
+
+    if (paymentId) {
+      try {
+        // Importar MercadoPago SDK dinámicamente
+        const { MercadoPagoConfig, Payment } = await import('mercadopago');
+        
+        const client = new MercadoPagoConfig({
+          accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
+          options: { timeout: 5000 }
+        });
+
+        const paymentApi = new Payment(client);
+        
+        // Obtener el estado real del pago desde MercadoPago
+        const mercadopagoPayment = await paymentApi.get({ id: paymentId });
+        
+        mercadopagoStatus = mercadopagoPayment.status || 'pending';
+        mercadopagoPaymentId = mercadopagoPayment.id?.toString() || paymentId;
+        
+        logger.info('IMMEDIATE mercadopago status', { 
+          module: 'payments', 
+          step: 'mercadopago_check', 
+          paymentId, 
+          status: mercadopagoStatus,
+          mercadopagoPaymentId 
+        });
+
+      } catch (mercadopagoError) {
+        logger.error('IMMEDIATE mercadopago error', { 
+          module: 'payments', 
+          step: 'mercadopago_error', 
+          error: mercadopagoError instanceof Error ? mercadopagoError.message : 'Unknown error',
+          paymentId 
+        });
+        
+        // Si hay error con MercadoPago, no aprobar el pago
+        return res.status(400).json({
+          success: false,
+          error: 'No se pudo verificar el estado del pago con MercadoPago. Por favor, intenta nuevamente.',
+          shouldRetry: true
+        });
+      }
+    }
+
+    // Solo aprobar si el estado de MercadoPago es 'approved'
+    if (mercadopagoStatus !== 'approved') {
+      logger.warn('IMMEDIATE payment not approved', { 
+        module: 'payments', 
+        step: 'not_approved', 
+        paymentId, 
+        status: mercadopagoStatus 
+      });
+      
+      return res.status(400).json({
+        success: false,
+        error: `El pago no ha sido aprobado. Estado actual: ${mercadopagoStatus}. Por favor, completa el pago o intenta nuevamente.`,
+        status: mercadopagoStatus,
+        shouldRetry: mercadopagoStatus === 'pending' || mercadopagoStatus === 'in_process'
+      });
+    }
+
+    // Actualizar el pago con el estado verificado
     payment.status = 'approved';
-    payment.mercadopagoPaymentId = paymentId || `immediate_${Date.now()}`;
-    payment.paymentMethodId = 'immediate_processing';
-    payment.paymentTypeId = 'immediate_processing';
+    payment.mercadopagoPaymentId = mercadopagoPaymentId;
+    payment.paymentMethodId = 'verified_mercadopago';
+    payment.paymentTypeId = 'verified_mercadopago';
     payment.installments = 1;
     payment.transactionDate = new Date();
     payment.updatedAt = new Date();
     
-    // Agregar metadata de procesamiento inmediato
+    // Agregar metadata de verificación
     if (!payment.metadata) {
       payment.metadata = {};
     }
-    payment.metadata.processedImmediately = true;
-    payment.metadata.immediateProcessingDate = new Date();
-    payment.metadata.processedOnReturn = true;
+    payment.metadata.verifiedWithMercadoPago = true;
+    payment.metadata.verificationDate = new Date();
+    payment.metadata.mercadopagoStatus = mercadopagoStatus;
+    payment.metadata.mercadopagoPaymentId = mercadopagoPaymentId;
 
     await payment.save();
-    logger.info('IMMEDIATE payment saved', { module: 'payments', step: 'payment_saved', paymentId: payment._id.toString(), status: payment.status });
+    logger.info('IMMEDIATE payment verified and saved', { module: 'payments', step: 'payment_saved', paymentId: payment._id.toString(), status: payment.status, mercadopagoStatus });
 
     // Procesar según servicio
     const service = payment.service;
