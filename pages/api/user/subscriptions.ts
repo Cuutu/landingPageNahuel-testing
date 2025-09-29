@@ -89,6 +89,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // ✅ IMPORTANTE: Verificar también en activeSubscriptions (MercadoPago)
+    if (user.activeSubscriptions && user.activeSubscriptions.length > 0) {
+      for (const activeSub of user.activeSubscriptions) {
+        if (activeSub.isActive) {
+          // Verificar si la suscripción no ha expirado
+          const isExpired = activeSub.expiryDate && new Date(activeSub.expiryDate) < now;
+          
+          if (!isExpired) {
+            // Verificar si ya no existe en activeSubscriptions
+            const alreadyExists = activeSubscriptions.some(sub => sub.service === activeSub.service);
+            
+            if (!alreadyExists) {
+              activeSubscriptions.push({
+                service: activeSub.service,
+                status: 'active' as const,
+                startDate: activeSub.startDate,
+                expiryDate: activeSub.expiryDate,
+                amount: activeSub.amount || 0,
+                currency: activeSub.currency || 'ARS',
+                paymentMethod: 'MercadoPago',
+                transactionId: activeSub.mercadopagoPaymentId || 'mp-subscription'
+              });
+            }
+          }
+        }
+      }
+    }
+
     // Procesar historial de pagos
     const paymentHistory = payments.map(payment => ({
       id: payment._id.toString(),
