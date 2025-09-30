@@ -115,7 +115,7 @@ export async function sendAdvisoryReminderEmail(params: {
         <div style="font-weight:700; color:#854d0e;">Link de reunión</div>
         <p style="margin:8px 0 0; color:#854d0e;">Recibirás el link por email antes de la sesión.</p>
       </div>
-    `}
+`}
     <p style="margin-top:16px;">Si necesitas reprogramar o cancelar, por favor avísanos con 24 horas de anticipación.</p>
   `;
 
@@ -131,6 +131,72 @@ export async function sendAdvisoryReminderEmail(params: {
   await sendEmail({
     to: userEmail,
     subject: `⏰ Recordatorio ${reminderType === '24h' ? '24h' : '1h'} - ${serviceType}`,
+    html
+  });
+  console.log(`✅ Recordatorio (${reminderType}) enviado a ${userEmail}`);
+}
+
+/**
+ * Envía email de recordatorio para entrenamiento al usuario
+ */
+export async function sendTrainingReminderEmail(params: {
+  userEmail: string;
+  userName: string;
+  trainingName: string;
+  startDate: Date;
+  durationMinutes: number;
+  meetLink?: string;
+  reminderType: '24h' | '1h';
+}): Promise<void> {
+  const { userEmail, userName, trainingName, startDate, durationMinutes, meetLink, reminderType } = params;
+  console.log(`📧 Enviando recordatorio (${reminderType}) de entrenamiento a:`, userEmail);
+
+  const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+  const formattedDate = startDate.toLocaleDateString('es-ES', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: tz
+  });
+  const formattedTime = startDate.toLocaleTimeString('es-ES', {
+    hour: '2-digit', minute: '2-digit', timeZone: tz
+  });
+
+  const content = `
+    <div style="text-align:center; margin-bottom:20px;">
+      <div style="display:inline-block; background:#e0f2fe; color:#0369a1; padding:8px 16px; border-radius:9999px; font-weight:700; font-size:12px;">Recordatorio ${reminderType === '24h' ? '24 horas' : '1 hora'}</div>
+    </div>
+    <p>Hola <strong>${userName}</strong>,</p>
+    <p>Te recordamos tu <strong>clase de ${trainingName}</strong> programada para:</p>
+    <ul>
+      <li><strong>Fecha:</strong> ${formattedDate}</li>
+      <li><strong>Hora:</strong> ${formattedTime}</li>
+      <li><strong>Duración:</strong> ${durationMinutes} minutos</li>
+    </ul>
+    ${meetLink ? `
+      <div style="background:#DCFCE7; border-left:4px solid #22c55e; padding:16px; border-radius:8px; margin:16px 0;">
+        <div style="font-weight:700; color:#166534; margin-bottom:8px;">Link de reunión</div>
+        <a href="${meetLink}" target="_blank" style="display:inline-block; background:#16a34a; color:white; padding:10px 16px; border-radius:8px; text-decoration:none; font-weight:600;">Unirme a la reunión</a>
+        <p style="margin:8px 0 0; color:#166534; font-size:12px;">El link estará activo 5 minutos antes.</p>
+      </div>
+    ` : `
+      <div style="background:#FEF9C3; border-left:4px solid #EAB308; padding:16px; border-radius:8px; margin:16px 0;">
+        <div style="font-weight:700; color:#854d0e;">Link de reunión</div>
+        <p style="margin:8px 0 0; color:#854d0e;">Recibirás el link por email antes de la clase.</p>
+      </div>
+`}
+    <p style="margin-top:16px;">Si necesitas reprogramar o cancelar, por favor avísanos con 24 horas de anticipación.</p>
+  `;
+
+  const html = createNotificationEmailTemplate({
+    title: '⏰ Recordatorio de Entrenamiento',
+    content,
+    notificationType: 'info',
+    urgency: reminderType === '1h' ? 'high' : 'normal',
+    buttonText: 'Ver Mis Entrenamientos',
+    buttonUrl: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil`
+  });
+
+  await sendEmail({
+    to: userEmail,
+    subject: `⏰ Recordatorio ${reminderType === '24h' ? '24h' : '1h'} - ${trainingName}`,
     html
   });
   console.log(`✅ Recordatorio (${reminderType}) enviado a ${userEmail}`);
