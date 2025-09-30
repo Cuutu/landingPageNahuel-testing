@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { createBookingPreference } from '@/lib/mercadopago';
 import { z } from 'zod';
+import AdvisoryDate from '@/models/AdvisoryDate';
 
 // Schema de validación para reservas
 const bookingCheckoutSchema = z.object({
@@ -19,7 +20,8 @@ const bookingCheckoutSchema = z.object({
     price: z.number(),
     notes: z.string(),
     userEmail: z.string(),
-    userName: z.string()
+    userName: z.string(),
+    advisoryDateId: z.string().optional()
   })
 });
 
@@ -63,6 +65,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // 🔒 HOLD ATÓMICO DEL TURNO (solo para asesorías con advisoryDateId)
+    let heldAdvisory: any = null;
+    if (reservationData.type === 'advisory' && reservationData.serviceType === 'ConsultorioFinanciero') {
+      const now = new Date();
+      const holdUntil = new Date(now.getTime() + 15 * 60 * 1000);
+
+      if (reservationData.advisoryDateId) {
+        heldAdvisory = await AdvisoryDate.findOneAndUpdate(
+          {
+            _id: reservationData.advisoryDateId,
+            advisoryType: 'ConsultorioFinanciero',
+            isActive: true,
+            $or: [
+              { isBooked: false },
+              { isBooked: true, confirmedBooking: false, tempReservationExpiresAt: { $lte: now } }
+            ]
+          },
+          {
+            $set: {
+              isBooked: true,
+              tempReservationTimestamp: now,
+              tempReservationExpiresAt: holdUntil
+            }
+          },
+          { new: true }
+        );
+
+        if (!heldAdvisory) {
+          return res.status(409).json({
+            success: false,
+            error: 'La fecha seleccionada ya no está disponible',
+          });
+        }
+      } else {
+        console.warn('⚠️ advisoryDateId no enviado en reservationData. Se continuará sin hold atómico.');
+      }
+    }
+
     // Crear URLs de retorno
     const rawBase = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const baseUrl = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
@@ -90,7 +130,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       transactionDate: new Date(),
       expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       metadata: {
-        reservationData: reservationData,
+        reservationData: {
+          ...reservationData,
+          advisoryDateId: reservationData.advisoryDateId || heldAdvisory?._id?.toString()
+        },
         createdFromCheckout: true
       }
     });
@@ -100,7 +143,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('✅ Datos de reserva guardados temporalmente:', {
       paymentId: tempPayment._id,
       externalReference: externalReference,
-      reservationData: reservationData
+      reservationData: tempPayment.metadata?.reservationData
     });
 
     // Crear preferencia de reserva
@@ -109,7 +152,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       amount,
       currency,
       externalReference,
-      reservationData,
+      reservationData: tempPayment.metadata?.reservationData,
       successUrl,
       failureUrl,
       pendingUrl
@@ -142,7 +185,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       amount,
       currency,
       externalReference: externalReference,
-      reservationData
+      reservationData: tempPayment.metadata?.reservationData
     });
 
     return res.status(200).json({
@@ -152,7 +195,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       serviceType,
       amount,
       currency,
-      reservationData,
+      reservationData: tempPayment.metadata?.reservationData,
       message: 'Checkout de reserva creado exitosamente'
     });
 

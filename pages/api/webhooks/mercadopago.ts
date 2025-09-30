@@ -431,40 +431,70 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           try {
             // Importar el modelo AdvisoryDate
             const { default: AdvisoryDate } = await import('@/models/AdvisoryDate');
-            
-            // Buscar la fecha de asesoría que coincida con la fecha de inicio
-            const advisoryDate = await AdvisoryDate.findOne({
-              advisoryType: 'ConsultorioFinanciero',
-              date: {
-                $gte: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()),
-                $lt: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1)
-              },
-              time: `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, '0')}`
-            });
-            
+
+            // Intentar confirmar usando advisoryDateId desde metadata si está disponible (atómico)
+            const advisoryDateIdFromMeta: string | undefined = payment.metadata?.reservationData?.advisoryDateId;
+            let advisoryDate = null as any;
+            const now = new Date();
+
+            if (advisoryDateIdFromMeta) {
+              advisoryDate = await AdvisoryDate.findOneAndUpdate(
+                {
+                  _id: advisoryDateIdFromMeta,
+                  advisoryType: 'ConsultorioFinanciero',
+                  isActive: true,
+                  $or: [
+                    { isBooked: false },
+                    { isBooked: true, confirmedBooking: false }
+                  ]
+                },
+                {
+                  $set: {
+                    isBooked: true,
+                    confirmedBooking: true,
+                    tempReservationTimestamp: undefined,
+                    tempReservationExpiresAt: undefined
+                  }
+                },
+                { new: true }
+              );
+            }
+
+            // Fallback: si no hay ID o no se pudo actualizar, buscar por fecha/hora
+            if (!advisoryDate) {
+              advisoryDate = await AdvisoryDate.findOne({
+                advisoryType: 'ConsultorioFinanciero',
+                date: {
+                  $gte: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()),
+                  $lt: new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1)
+                },
+                time: `${startDate.getHours()}:${String(startDate.getMinutes()).padStart(2, '0')}`
+              });
+
+              if (advisoryDate) {
+                advisoryDate.isBooked = true;
+                advisoryDate.confirmedBooking = true;
+                advisoryDate.tempReservationTimestamp = undefined;
+                advisoryDate.tempReservationExpiresAt = undefined;
+                await advisoryDate.save();
+              }
+            }
+
             if (advisoryDate) {
               // Reconstruir la fecha/hora exacta desde AdvisoryDate en zona America/Montevideo
               const year = advisoryDate.date.getUTCFullYear();
               const month = advisoryDate.date.getUTCMonth();
               const day = advisoryDate.date.getUTCDate();
               const [hh, mm] = (advisoryDate.time || '10:00').split(':').map((v: string) => parseInt(v, 10));
-              // Uruguay (America/Montevideo) UTC-3 (sin DST). Convertimos hora local -> UTC sumando 3h
               const fixedStartUtc = new Date(Date.UTC(year, month, day, hh + 3, mm || 0, 0, 0));
               const fixedEndUtc = new Date(fixedStartUtc.getTime() + Math.round((endDate.getTime() - startDate.getTime())));
-              
-              // Sobrescribir las fechas calculadas previamente para asegurar el día correcto
+
+              // Sobrescribir fechas en la reserva
               startDate = fixedStartUtc;
               endDate = fixedEndUtc;
-              
-              // Confirmar la reserva sólo al aprobarse el pago
-              advisoryDate.isBooked = true;
-              advisoryDate.confirmedBooking = true;
-              advisoryDate.tempReservationTimestamp = undefined;
-              advisoryDate.tempReservationExpiresAt = undefined;
-              await advisoryDate.save();
+
               console.log('✅ Fecha de asesoría confirmada por pago:', advisoryDate._id);
-              
-              // Actualizar la reserva con la fecha corregida
+
               try {
                 await Booking.findByIdAndUpdate(newBooking._id, {
                   startDate: startDate,

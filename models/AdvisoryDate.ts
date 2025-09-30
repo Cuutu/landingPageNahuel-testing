@@ -70,6 +70,6 @@ const AdvisoryDateSchema: Schema = new Schema({
 AdvisoryDateSchema.index({ advisoryType: 1, date: 1 });
 AdvisoryDateSchema.index({ advisoryType: 1, isActive: 1 });
 AdvisoryDateSchema.index({ advisoryType: 1, isBooked: 1 });
-AdvisoryDateSchema.index({ date: 1, time: 1 }, { unique: true });
+AdvisoryDateSchema.index({ advisoryType: 1, date: 1, time: 1 }, { unique: true });
 
 export default mongoose.models.AdvisoryDate || mongoose.model<IAdvisoryDate>('AdvisoryDate', AdvisoryDateSchema);

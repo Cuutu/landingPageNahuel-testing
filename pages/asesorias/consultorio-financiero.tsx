@@ -458,7 +458,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
             price: bookingPrice,
             notes: `Reserva desde página de Consultorio Financiero - ${selectedDate} a las ${selectedTime}`,
             userEmail: session.user?.email,
-            userName: session.user?.name || 'Usuario'
+            userName: session.user?.name || 'Usuario',
+            advisoryDateId: advisorySelected?._id
           }
         }),
       });
