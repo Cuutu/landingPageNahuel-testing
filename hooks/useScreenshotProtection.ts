@@ -52,14 +52,14 @@ export const useScreenshotProtection = () => {
 
     // Detectar teclas de screenshot
     const handleKeyDown = (event: KeyboardEvent) => {
-      // PrintScreen
-      if (event.key === 'PrintScreen') {
+      // PrintScreen / ImpPnt (tecla principal de screenshot)
+      if (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen') {
         activateProtection('printscreen_key');
         return;
       }
 
-      // Alt + PrintScreen
-      if (event.altKey && event.key === 'PrintScreen') {
+      // Alt + PrintScreen / Alt + ImpPnt
+      if (event.altKey && (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen')) {
         activateProtection('alt_printscreen');
         return;
       }
@@ -73,6 +73,12 @@ export const useScreenshotProtection = () => {
       // F12 (herramientas de desarrollador)
       if (event.key === 'F12') {
         activateProtection('f12_devtools');
+        return;
+      }
+
+      // F13 (alternativa a PrintScreen en algunos teclados)
+      if (event.key === 'F13') {
+        activateProtection('f13_screenshot');
         return;
       }
 

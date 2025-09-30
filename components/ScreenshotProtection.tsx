@@ -32,16 +32,23 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
 
     // Método 1: Detectar teclas de screenshot
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Detectar combinaciones comunes de screenshot
+      // Detectar tecla ImpPnt / PrintScreen (tecla principal)
+      if (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen') {
+        detectScreenshotAttempt();
+        return;
+      }
+      
+      // Detectar Alt + PrintScreen / Alt + ImpPnt
+      if (event.altKey && (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen')) {
+        detectScreenshotAttempt();
+        return;
+      }
+      
+      // Detectar combinaciones con teclas modificadoras
       if (
         (event.ctrlKey || event.metaKey) && 
         (event.key === 'PrintScreen' || event.key === 'F12' || event.key === 'F13')
       ) {
-        detectScreenshotAttempt();
-      }
-      
-      // Detectar Alt + PrintScreen
-      if (event.altKey && event.key === 'PrintScreen') {
         detectScreenshotAttempt();
       }
     };

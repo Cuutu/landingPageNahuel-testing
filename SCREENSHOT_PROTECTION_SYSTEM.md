@@ -32,10 +32,11 @@ Sistema implementado para proteger información sensible (precios de entrada, pr
 ## Métodos de Detección
 
 ### 1. Detección de Teclas
-- **PrintScreen**: Tecla principal de screenshot
-- **Alt + PrintScreen**: Screenshot de ventana activa
+- **ImpPnt/PrintScreen**: Tecla principal de screenshot (arriba del Insert)
+- **Alt + ImpPnt**: Screenshot de ventana activa
 - **Ctrl/Cmd + Shift + S**: Screenshot en algunos sistemas
 - **F12**: Herramientas de desarrollador
+- **F13**: Alternativa a PrintScreen en algunos teclados
 - **Ctrl/Cmd + Shift + I**: Inspector de elementos
 - **Ctrl/Cmd + U**: Ver código fuente
 
@@ -122,11 +123,12 @@ Sistema implementado para proteger información sensible (precios de entrada, pr
 ## Testing
 
 ### Métodos de Prueba
-1. **PrintScreen**: Presionar tecla PrintScreen
-2. **Alt + PrintScreen**: Combinación de teclas
+1. **ImpPnt**: Presionar tecla ImpPnt (arriba del Insert)
+2. **Alt + ImpPnt**: Combinación Alt + ImpPnt
 3. **F12**: Abrir herramientas de desarrollador
-4. **Selección**: Seleccionar texto largo
-5. **Menú contextual**: Click derecho en precios
+4. **F13**: Tecla F13 (alternativa a PrintScreen)
+5. **Selección**: Seleccionar texto largo
+6. **Menú contextual**: Click derecho en precios
 
 ### Verificación
 - Contenido debe desenfocarse
