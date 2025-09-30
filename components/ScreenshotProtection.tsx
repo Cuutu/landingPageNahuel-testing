@@ -39,16 +39,40 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
 
     // Método 1: Detectar teclas de screenshot
     const handleKeyDown = (event: KeyboardEvent) => {
-      console.log('🔍 Key pressed:', event.key, 'Code:', event.code, 'Alt:', event.altKey, 'Ctrl:', event.ctrlKey);
+      console.log('🔍 Key pressed:', event.key, 'Code:', event.code, 'Alt:', event.altKey, 'Ctrl:', event.ctrlKey, 'KeyCode:', event.keyCode, 'Which:', event.which);
       
-      // Detectar tecla ImpPnt / PrintScreen (tecla principal)
-      if (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen') {
+      // Detectar tecla ImpPnt / PrintScreen (tecla principal) - MÚLTIPLES VARIACIONES
+      if (
+        event.key === 'PrintScreen' || 
+        event.key === 'Print' || 
+        event.code === 'PrintScreen' ||
+        event.code === 'Print' ||
+        event.key === 'F13' ||
+        event.key === 'F14' ||
+        event.key === 'F15' ||
+        event.keyCode === 44 || // Código ASCII de PrintScreen
+        event.which === 44 ||
+        event.key === 'Snapshot' ||
+        event.key === 'ScreenShot' ||
+        event.key === 'PrtSc' ||
+        event.key === 'PrtScn' ||
+        event.key === 'PrtScrn'
+      ) {
+        console.log('🎯 PrintScreen detected!');
         detectScreenshotAttempt('printscreen_key');
         return;
       }
       
       // Detectar Alt + PrintScreen / Alt + ImpPnt
-      if (event.altKey && (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen')) {
+      if (event.altKey && (
+        event.key === 'PrintScreen' || 
+        event.key === 'Print' || 
+        event.code === 'PrintScreen' ||
+        event.code === 'Print' ||
+        event.key === 'F13' ||
+        event.keyCode === 44
+      )) {
+        console.log('🎯 Alt + PrintScreen detected!');
         detectScreenshotAttempt('alt_printscreen');
         return;
       }
@@ -58,6 +82,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
         (event.ctrlKey || event.metaKey) && 
         (event.key === 'PrintScreen' || event.key === 'F12' || event.key === 'F13')
       ) {
+        console.log('🎯 Modifier + PrintScreen detected!');
         detectScreenshotAttempt('modifier_screenshot');
       }
     };
@@ -104,8 +129,34 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
       handleDevTools();
     };
 
+    // Método adicional: Detectar cualquier tecla que pueda ser PrintScreen
+    const handleAnyKey = (event: KeyboardEvent) => {
+      // Log detallado para debugging
+      console.log('🔍 ANY KEY:', {
+        key: event.key,
+        code: event.code,
+        keyCode: event.keyCode,
+        which: event.which,
+        type: event.type,
+        altKey: event.altKey,
+        ctrlKey: event.ctrlKey,
+        shiftKey: event.shiftKey,
+        metaKey: event.metaKey
+      });
+      
+      // Detectar por código de tecla (más confiable)
+      if (event.keyCode === 44 || event.which === 44) {
+        console.log('🎯 PrintScreen detected by keyCode!');
+        detectScreenshotAttempt('printscreen_keycode');
+        return;
+      }
+    };
+
     // Agregar event listeners
     document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keyup', handleKeyDown); // También escuchar keyup
+    document.addEventListener('keypress', handleKeyDown); // También escuchar keypress
+    document.addEventListener('keydown', handleAnyKey); // Listener adicional
     document.addEventListener('visibilitychange', handleVisibilityChange);
     document.addEventListener('focus', handleFocusChange);
     document.addEventListener('blur', handleFocusChange);
@@ -120,6 +171,9 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
     // Cleanup
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('keyup', handleKeyDown);
+      document.removeEventListener('keypress', handleKeyDown);
+      document.removeEventListener('keydown', handleAnyKey);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       document.removeEventListener('focus', handleFocusChange);
       document.removeEventListener('blur', handleFocusChange);
