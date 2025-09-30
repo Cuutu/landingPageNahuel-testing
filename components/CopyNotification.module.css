@@ -1,0 +1,157 @@
+/* Contenedor de notificación */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  max-width: 400px;
+  min-width: 300px;
+}
+
+/* Contenido de la notificación */
+.notificationContent {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  border: 1px solid #3b82f6;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(10px);
+}
+
+/* Icono de la notificación */
+.notificationIcon {
+  color: #10b981;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(16, 185, 129, 0.1);
+  border-radius: 50%;
+  border: 2px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Texto de la notificación */
+.notificationText {
+  flex: 1;
+  color: white;
+}
+
+.notificationTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: #10b981;
+}
+
+.notificationSubtitle {
+  font-size: 14px;
+  color: #cbd5e1;
+  line-height: 1.4;
+}
+
+.notificationSubtitle strong {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+/* Botón de cerrar */
+.notificationClose {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notificationClose:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    min-width: auto;
+  }
+  
+  .notificationContent {
+    padding: 12px 16px;
+  }
+  
+  .notificationTitle {
+    font-size: 15px;
+  }
+  
+  .notificationSubtitle {
+    font-size: 13px;
+  }
+}
+
+/* Efectos de hover para mejor UX */
+.notificationContent:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+}
+
+/* Indicador de progreso (opcional) */
+.notification::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: 0 0 12px 12px;
+  animation: progress 3s linear forwards;
+}
+
+@keyframes progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}

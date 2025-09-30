@@ -6,6 +6,8 @@ import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackgroundVideo from '@/components/BackgroundVideo';
+import CopyNotification from '@/components/CopyNotification';
+import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { motion } from 'framer-motion';
 import { 
   ExternalLink,
@@ -18,7 +20,8 @@ import {
   BarChart3,
   Activity,
   Play,
-  Download
+  Download,
+  Copy
 } from 'lucide-react';
 import styles from '@/styles/Recursos.module.css';
 import YouTubePlayer from '@/components/YouTubePlayer';
@@ -78,6 +81,76 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
   listasActivos,
   siteConfig
 }) => {
+  const { copyToClipboard, hideNotification, isNotificationVisible, notificationItemName } = useCopyToClipboard();
+
+  // Datos de las herramientas de TradingView
+  const tradingViewTools = [
+    {
+      id: 'wall-street',
+      name: 'Lista de Seguimiento Wall Street',
+      type: 'watchlist',
+      url: 'https://www.tradingview.com/symbols/NYSE-SPY/',
+      image: '/logos/swst.png'
+    },
+    {
+      id: 'merval',
+      name: 'Lista de Seguimiento Merval',
+      type: 'watchlist',
+      url: 'https://www.tradingview.com/symbols/BCBA-IMV/',
+      image: '/logos/swsm.png'
+    },
+    {
+      id: 'dolar-ccl',
+      name: 'Fórmula Dólar CCL',
+      type: 'formula',
+      formula: 'BCBA:KO*5/NYSE:KO',
+      image: '/logos/fdccl.png'
+    },
+    {
+      id: 'acciones-ccl',
+      name: 'Fórmula Acciones en CCL',
+      type: 'formula',
+      formula: 'BCBA:ALUA/(BCBA:KO*5/NYSE:KO)',
+      image: '/logos/faccl.png'
+    },
+    {
+      id: 'merval-ccl',
+      name: 'Fórmula Merval en CCL',
+      type: 'formula',
+      formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)',
+      image: '/logos/fmccl.png'
+    },
+    {
+      id: 'indices-wall-street',
+      name: 'Fórmula Promedio Índices Wall Street',
+      type: 'formula',
+      formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)/SP:SPX',
+      image: '/logos/fpiws.png'
+    },
+    {
+      id: 'merval-vs-sp500',
+      name: 'Fórmula Comparación Merval vs S&P500',
+      type: 'formula',
+      formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)/SP:SPX',
+      image: '/logos/fcms500.png'
+    },
+    {
+      id: 'nasdaq-vs-dow',
+      name: 'Fórmula Comparación Nasdaq vs Dow Jones',
+      type: 'formula',
+      formula: 'NASDAQ:NDX/TVC:DJI',
+      image: '/logos/fcndj.png'
+    }
+  ];
+
+  const handleToolClick = (tool: any) => {
+    if (tool.type === 'formula' && tool.formula) {
+      copyToClipboard(tool.formula, tool.name);
+    } else if (tool.type === 'watchlist' && tool.url) {
+      copyToClipboard(tool.url, tool.name);
+    }
+  };
+
   return (
     <>
       <Head>
@@ -87,6 +160,13 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       </Head>
 
       <Navbar />
+      
+      {/* Notificación de copia */}
+      <CopyNotification
+        isVisible={isNotificationVisible}
+        itemName={notificationItemName}
+        onClose={hideNotification}
+      />
 
       <main className={styles.main}>
         {/* Hero Section con Video de Fondo */}
@@ -192,64 +272,33 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
               Para utilizarlas debe copiarlas y pegarlas al momento de añadir un nuevo símbolo en la plataforma de TradingView
             </motion.p>
             
-                         <div className={styles.cardsGridLarge}>
-               <a href="https://www.tradingview.com/symbols/NYSE-SPY/" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/swst.png" className={styles.cardImage} alt="Lista de Seguimiento Wall Street" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Lista de Seguimiento<br/>Wall Street</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/symbols/BCBA-IMV/" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/swsm.png" className={styles.cardImage} alt="Lista de Seguimiento Merval" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Lista de Seguimiento<br/>Merval</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=BCBA%3AKO*5%2FNYSE%3AKO" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/fdccl.png" className={styles.cardImage} alt="Fórmula Dólar CCL" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula<br/>Dólar CCL</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=BCBA%3AALUA%2F(BCBA%3AKO*5%2FNYSE%3AKO)" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/faccl.png" className={styles.cardImage} alt="Fórmula Acciones en CCL" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula<br/>Acciones en CCL</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=BCBA%3AIMV%2F(BCBA%3AKO*5%2FNYSE%3AKO)" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/fmccl.png" className={styles.cardImage} alt="Fórmula Merval en CCL" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula<br/>Merval en CCL</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=BCBA%3AIMV%2F(BCBA%3AKO*5%2FNYSE%3AKO)%2FSP%3ASPX" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/fpiws.png" className={styles.cardImage} alt="Fórmula Promedio Índices Wall Street" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula Promedio<br/>Índices Wall Street</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=BCBA%3AIMV%2F(BCBA%3AKO*5%2FNYSE%3AKO)%2FSP%3ASPX" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/fcms500.png" className={styles.cardImage} alt="Fórmula Comparación Merval vs S&P500" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula Comparación<br/>Merval vs S&amp;P500</div>
-                 </div>
-               </a>
-               <a href="https://www.tradingview.com/chart/?symbol=NASDAQ%3ANDX%2FTVC%3ADJI" target="_blank" rel="noopener noreferrer" className={styles.card} style={{background: 'none', textDecoration: 'none'}}>
-                 <img src="/logos/fcndj.png" className={styles.cardImage} alt="Fórmula Comparación Nasdaq vs Dow Jones" />
-                 <div className={styles.cardOverlay}></div>
-                 <div className={styles.cardContent}>
-                   <div className={styles.cardTitle}>Fórmula Comparación<br/>Nasdaq vs Dow Jones</div> 
-                 </div>
-               </a>
-             </div>
+            <div className={styles.cardsGridLarge}>
+              {tradingViewTools.map((tool) => (
+                <motion.button
+                  key={tool.id}
+                  onClick={() => handleToolClick(tool)}
+                  className={styles.card}
+                  style={{background: 'none', textDecoration: 'none', border: 'none', cursor: 'pointer'}}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <img src={tool.image} className={styles.cardImage} alt={tool.name} />
+                  <div className={styles.cardOverlay}></div>
+                  <div className={styles.cardContent}>
+                    <div className={styles.cardTitle}>
+                      {tool.name.split(' ').slice(0, 2).join(' ')}
+                      <br/>
+                      {tool.name.split(' ').slice(2).join(' ')}
+                    </div>
+                    <div className={styles.copyIndicator}>
+                      <Copy size={16} />
+                      <span>Click para copiar</span>
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
           </div>
         </section>
 
