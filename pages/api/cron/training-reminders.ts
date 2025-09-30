@@ -10,7 +10,10 @@ import { processTrainingReminders } from '@/lib/bookingReminders';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     if (req.method !== 'POST' && req.method !== 'GET') {
-      return res.status(405).json({ success: false, error: 'Método no permitido' });
+      return res.status(405).json({ 
+        success: false, 
+        message: 'ERROR - Método no permitido. Use GET.' 
+      });
     }
 
     // Seguridad: solo verificar User-Agent para CRON jobs externos
@@ -33,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!isManualTest && !isAllowedUserAgent) {
       return res.status(403).json({ 
         success: false, 
-        error: 'Acceso denegado. Solo CRON jobs autorizados.' 
+        message: 'ERROR - Acceso denegado. Solo CRON jobs autorizados.' 
       });
     }
 
@@ -45,13 +48,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('✅ Recordatorios procesados:', result);
 
+    // Simplificar respuesta para CRON-JOB.ORG
+    const totalReminders = (result.reminders24hSent || 0) + (result.reminders1hSent || 0);
+    
     return res.status(200).json({
       success: true,
-      executionTimeMs: ms,
-      ...result
+      message: `OK - ${totalReminders} recordatorios enviados`,
+      processed: totalReminders
     });
   } catch (error: any) {
     console.error('❌ Error en training-reminders:', error?.message || error);
-    return res.status(500).json({ success: false, error: error?.message || 'Error interno' });
+    return res.status(500).json({ 
+      success: false, 
+      message: 'ERROR - Error interno del servidor' 
+    });
   }
 } 

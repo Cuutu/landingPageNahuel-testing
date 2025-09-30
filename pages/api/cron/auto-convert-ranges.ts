@@ -6,15 +6,7 @@ import User from '@/models/User';
 interface AutoConvertCronResponse {
   success: boolean;
   message: string;
-  conversion?: {
-    processed: number;
-    details: Array<{
-      symbol: string;
-      oldRange: string;
-      newPrice: number;
-    }>;
-  };
-  timestamp: string;
+  processed?: number;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
@@ -22,8 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   if (req.method !== 'GET') {
     return res.status(405).json({
       success: false,
-      message: 'Método no permitido. Use GET para cronjobs.',
-      timestamp: new Date().toISOString()
+      message: 'ERROR - Método no permitido. Use GET.'
     });
   }
 
@@ -58,12 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       console.log(`⚠️ CRON: No hay alertas de rango para convertir`);
       return res.status(200).json({
         success: true,
-        message: 'No hay alertas de rango para convertir',
-        conversion: {
-          processed: 0,
-          details: []
-        },
-        timestamp: new Date().toISOString()
+        message: 'OK - No hay alertas para convertir',
+        processed: 0
       });
     }
 
@@ -136,20 +123,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     return res.status(200).json({
       success: true,
-      message: `Conversión automática completada: ${conversionDetails.length} alertas procesadas`,
-      conversion: {
-        processed: conversionDetails.length,
-        details: conversionDetails
-      },
-      timestamp: new Date().toISOString()
+      message: `OK - ${conversionDetails.length} alertas convertidas`,
+      processed: conversionDetails.length
     });
 
   } catch (error) {
     console.error('❌ CRON: Error en conversión automática:', error);
     return res.status(500).json({ 
       success: false,
-      message: 'Error interno del servidor',
-      timestamp: new Date().toISOString()
+      message: 'ERROR - Error interno del servidor'
     });
   }
 }
