@@ -406,6 +406,23 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       loop: false
     };
 
+    // Obtener precio dinámico desde /api/pricing
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    let swingPriceStr = '$75000 ARS';
+    try {
+      const pricingRes = await fetch(`${baseUrl}/api/pricing`);
+      if (pricingRes.ok) {
+        const pricingData = await pricingRes.json();
+        const priceVal = pricingData?.data?.entrenamientos?.swingTrading?.price;
+        const currency = pricingData?.data?.currency || 'ARS';
+        if (typeof priceVal === 'number' && priceVal > 0) {
+          swingPriceStr = `$${priceVal} ${currency}`;
+        }
+      }
+    } catch (e) {
+      // ignorar, mantener fallback
+    }
+
     const trainings = [
       {
         id: 'trading-fundamentals',
@@ -417,7 +434,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         lessons: 85,
         students: 850,
         rating: 4.8,
-        price: '$75000 ARS',
+        price: swingPriceStr,
         features: [
           'Análisis técnico y fundamental',
           'Gestión de riesgo avanzada',

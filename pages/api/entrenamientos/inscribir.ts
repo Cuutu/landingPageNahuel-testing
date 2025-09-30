@@ -5,6 +5,7 @@ import connectDB from '@/lib/mongodb';
 import User, { IUser } from '@/models/User';
 import { z } from 'zod';
 import { createTrainingEnrollmentNotification } from '@/lib/trainingNotifications';
+import Training from '@/models/Training'; // Added import for Training model
 
 // Schema de validación para inscripción
 const inscripcionSchema = z.object({
@@ -79,13 +80,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Determinar precio según el tipo de entrenamiento
-    const precios = {
-      SwingTrading: 497,
-      DowJones: 897
-    };
-
-    const precio = datosValidados.precio || precios[datosValidados.tipo];
+    // Determinar precio desde la base de datos del entrenamiento
+    const trainingForPrice = await Training.findOne({ tipo: datosValidados.tipo });
+    const precio = datosValidados.precio || trainingForPrice?.precio || 0;
 
     // Simular proceso de pago exitoso
     const transactionId = `SIM_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

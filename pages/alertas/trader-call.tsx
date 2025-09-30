@@ -312,7 +312,7 @@ const NonSubscriberView: React.FC<{
                     {pricingLoading ? (
                       'Cargando precio...'
                     ) : pricing ? (
-                      `$${pricing.alertas.traderCall.monthly} ARS/mes`
+                      `$${pricing.alertas.traderCall.monthly} ${pricing.currency}/mes`
                     ) : (
                       '$15000 ARS/mes'
                     )}

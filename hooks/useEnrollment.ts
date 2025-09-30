@@ -78,6 +78,23 @@ export const useEnrollment = (session: Session | null, trainingType: string) => 
     setIsProcessingPayment(true);
     
     try {
+      // Obtener precio dinámico desde /api/pricing
+      const pricingRes = await fetch('/api/pricing');
+      let dynamicAmount = 0;
+      let dynamicCurrency: string = 'ARS';
+      if (pricingRes.ok) {
+        const pricingData = await pricingRes.json();
+        const p = pricingData?.data;
+        if (p) {
+          dynamicCurrency = p.currency || 'ARS';
+          if (trainingType === 'SwingTrading') {
+            dynamicAmount = p.entrenamientos?.swingTrading?.price || 0;
+          } else if (trainingType === 'DowJones') {
+            dynamicAmount = p.entrenamientos?.advanced?.price || 0;
+          }
+        }
+      }
+
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',
         headers: {
@@ -87,8 +104,8 @@ export const useEnrollment = (session: Session | null, trainingType: string) => 
         body: JSON.stringify({
           type: 'training',
           service: trainingType,
-          amount: trainingType === 'SwingTrading' ? 497 : 897,
-          currency: 'USD'
+          amount: dynamicAmount,
+          currency: dynamicCurrency
         }),
       });
 

@@ -40,7 +40,7 @@ const CTASection: React.FC<CTASectionProps> = ({
             estas estrategias exitosamente.
           </p>
           <div className={styles.ctaPrice}>
-            <span className={styles.ctaPriceAmount}>${training.precio} USD</span>
+            <span className={styles.ctaPriceAmount}>${training.precio} ARS</span>
             <span className={styles.ctaPriceDescription}>
               Programa completo • Acceso de por vida • Certificación incluida
             </span>

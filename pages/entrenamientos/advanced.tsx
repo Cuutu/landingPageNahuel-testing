@@ -202,7 +202,7 @@ const AdvancedTradingStrategiesPage: React.FC<AdvancedTradingPageProps> = ({
         body: JSON.stringify({
           type: 'training',
           service: 'DowJones',
-          amount: 897,
+          amount: training.precio,
           currency: 'ARS'
         }),
       });
@@ -352,7 +352,7 @@ const AdvancedTradingStrategiesPage: React.FC<AdvancedTradingPageProps> = ({
                           ? 'Verificando...' 
                           : isEnrolled 
                             ? 'Ir a las Lecciones' 
-                            : 'Inscribirme Ahora - $100000 ARS'
+                            : `Inscribirme Ahora - $${training.precio} ARS`
                         }
                       </>
                     )}

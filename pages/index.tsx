@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 import Carousel from '@/components/Carousel';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import { usePopupFrequency } from '@/hooks/usePopupFrequency';
+import { usePricing } from '@/hooks/usePricing';
 import styles from '@/styles/Home.module.css';
 
 interface Training {
@@ -220,6 +221,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   console.log('📚 cursos visible:', siteConfig?.cursos?.visible);
   console.log('🎓 entrenamientos:', entrenamientos);
   
+  const { pricing, loading: pricingLoading } = usePricing();
+
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
@@ -837,7 +840,12 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                       
                       {session ? (
                         <button 
-                          onClick={() => handleMercadoPagoCheckout('training', 'SwingTrading', 50000, 'ARS')}
+                          onClick={() => handleMercadoPagoCheckout(
+                            'training',
+                            'SwingTrading',
+                            (pricing?.entrenamientos?.swingTrading?.price || 0),
+                            pricing?.currency || 'ARS'
+                          )}
                           className={styles.servicioButton}
                           disabled={isProcessingPayment}
                         >
@@ -847,7 +855,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                               Procesando...
                             </>
                           ) : (
-                            'Inscribirse - $50000 ARS'
+                            pricing ? `Inscribirse - $${pricing.entrenamientos.swingTrading.price} ${pricing.currency}` : 'Inscribirse'
                           )}
                         </button>
                       ) : (
