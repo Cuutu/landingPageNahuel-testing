@@ -51,6 +51,7 @@ import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
 import ScreenshotProtection from '@/components/ScreenshotProtection';
+import { toast } from 'react-hot-toast';
 
 interface AlertExample {
   id: string;
@@ -149,8 +150,13 @@ const NonSubscriberView: React.FC<{
     setIsProcessing(true);
     
     try {
-      // Obtener el precio dinámico del sistema
-      const subscriptionPrice = pricing?.alertas?.smartMoney?.monthly || 22000;
+      // Obtener el precio dinámico del sistema (requerido)
+      const subscriptionPrice = pricing?.alertas?.smartMoney?.monthly;
+      if (!subscriptionPrice) {
+        toast.error('No se pudo obtener el precio. Intenta nuevamente en unos segundos.');
+        setIsProcessing(false);
+        return;
+      }
       
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',

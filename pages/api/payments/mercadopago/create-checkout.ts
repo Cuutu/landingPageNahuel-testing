@@ -9,6 +9,8 @@ import {
   createSubscriptionPreference, 
   createTrainingPreference 
 } from '@/lib/mercadopago';
+import Pricing from '@/models/Pricing';
+import Training from '@/models/Training';
 import { z } from 'zod';
 
 // Schema de validación
@@ -48,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Validar datos de entrada
     const validatedData = checkoutSchema.parse(req.body);
-    const { service, amount, currency, type } = validatedData;
+    const { service, currency, type } = validatedData;
 
     // Buscar usuario
     const user = await User.findOne({ email: session.user.email });
@@ -81,6 +83,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           error: `Ya tienes acceso al entrenamiento ${service}` 
         });
       }
+    }
+
+    // Obtener monto dinámico desde BD
+    let amount = 0;
+    if (type === 'subscription') {
+      const pricing = await Pricing.findOne().sort({ createdAt: -1 });
+      if (!pricing) {
+        return res.status(500).json({ success: false, error: 'No hay configuración de precios' });
+      }
+      if (service === 'TraderCall') amount = pricing.alertas?.traderCall?.monthly || 0;
+      else if (service === 'SmartMoney') amount = pricing.alertas?.smartMoney?.monthly || 0;
+      else return res.status(400).json({ success: false, error: 'Servicio de suscripción inválido' });
+    } else if (type === 'training') {
+      const training = await Training.findOne({ tipo: service });
+      if (!training) return res.status(400).json({ success: false, error: 'Entrenamiento inválido' });
+      amount = training.precio || 0;
+    }
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ success: false, error: 'Monto inválido para el servicio seleccionado' });
     }
 
     // Crear URLs de retorno
