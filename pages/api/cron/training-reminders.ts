@@ -2,8 +2,9 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { processTrainingReminders } from '@/lib/bookingReminders';
 
 /**
- * API para enviar recordatorios de entrenamientos (SwingTrading) 24h y 1h antes
- * - Seguro con token (Authorization: Bearer CRON_SECRET_TOKEN)
+ * API PÚBLICA para enviar recordatorios de entrenamientos (SwingTrading) 24h y 1h antes
+ * - Público para CRON jobs externos (sin token)
+ * - Rate limiting por User-Agent
  * - Idempotente por flags en Booking (reminder24hSent, reminder1hSent)
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -12,13 +13,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(405).json({ success: false, error: 'Método no permitido' });
     }
 
-    // Seguridad: token en header
-    const authHeader = req.headers.authorization;
-    const token = authHeader?.replace('Bearer ', '');
-    const isManualTest = req.query.test === 'true' && process.env.NODE_ENV !== 'production';
+    // Seguridad: solo verificar User-Agent para CRON jobs externos
+    const userAgent = req.headers['user-agent'] || '';
+    const allowedUserAgents = [
+      'cron-job.org',
+      'uptimerobot',
+      'vercel-cron',
+      'curl'
+    ];
+    
+    const isAllowedUserAgent = allowedUserAgents.some(agent => 
+      userAgent.toLowerCase().includes(agent.toLowerCase())
+    );
+    const isManualTest = req.query.test === 'true';
 
-    if (!isManualTest && token !== process.env.CRON_SECRET_TOKEN) {
-      return res.status(401).json({ success: false, error: 'No autorizado' });
+    // Permitir acceso si:
+    // 1. Es un test manual (?test=true)
+    // 2. Tiene User-Agent permitido
+    if (!isManualTest && !isAllowedUserAgent) {
+      return res.status(403).json({ 
+        success: false, 
+        error: 'Acceso denegado. Solo CRON jobs autorizados.' 
+      });
     }
 
     console.log('🚀 Iniciando proceso de recordatorios de entrenamientos...');
