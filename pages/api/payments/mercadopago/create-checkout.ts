@@ -96,9 +96,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       else if (service === 'SmartMoney') amount = pricing.alertas?.smartMoney?.monthly || 0;
       else return res.status(400).json({ success: false, error: 'Servicio de suscripción inválido' });
     } else if (type === 'training') {
+      // Preferir Pricing para entrenamientos
+      const pricing = await Pricing.findOne().sort({ createdAt: -1 });
       const training = await Training.findOne({ tipo: service });
-      if (!training) return res.status(400).json({ success: false, error: 'Entrenamiento inválido' });
-      amount = training.precio || 0;
+      if (!training && !pricing) return res.status(400).json({ success: false, error: 'Entrenamiento inválido' });
+
+      let pricingAmount = 0;
+      if (pricing) {
+        if (service === 'SwingTrading') {
+          pricingAmount = pricing.entrenamientos?.swingTrading?.price || 0;
+        } else if (service === 'DowJones') {
+          // Intentar mapear a advanced si corresponde
+          pricingAmount = pricing.entrenamientos?.advanced?.price || pricing.entrenamientos?.dayTrading?.price || 0;
+        }
+      }
+
+      amount = pricingAmount || training?.precio || 0;
     }
     if (!amount || amount <= 0) {
       return res.status(400).json({ success: false, error: 'Monto inválido para el servicio seleccionado' });
