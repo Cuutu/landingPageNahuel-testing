@@ -16,31 +16,40 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
 }) => {
   const [isProtected, setIsProtected] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const protectionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Detectar intentos de screenshot usando múltiples métodos
+  const detectScreenshotAttempt = (reason: string = 'unknown') => {
+    console.log('🛡️ Screenshot protection activated:', reason);
+    setIsProtected(true);
+    
+    // Limpiar timeout anterior si existe
+    if (protectionTimeoutRef.current) {
+      clearTimeout(protectionTimeoutRef.current);
+    }
+    
+    // Mostrar protección por 3 segundos
+    protectionTimeoutRef.current = setTimeout(() => {
+      setIsProtected(false);
+      console.log('🛡️ Screenshot protection deactivated');
+    }, 3000);
+  };
 
   useEffect(() => {
-    let protectionTimeout: NodeJS.Timeout;
-
-    // Detectar intentos de screenshot usando múltiples métodos
-    const detectScreenshotAttempt = () => {
-      setIsProtected(true);
-      
-      // Mostrar protección por 3 segundos
-      protectionTimeout = setTimeout(() => {
-        setIsProtected(false);
-      }, 3000);
-    };
 
     // Método 1: Detectar teclas de screenshot
     const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('🔍 Key pressed:', event.key, 'Code:', event.code, 'Alt:', event.altKey, 'Ctrl:', event.ctrlKey);
+      
       // Detectar tecla ImpPnt / PrintScreen (tecla principal)
       if (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen') {
-        detectScreenshotAttempt();
+        detectScreenshotAttempt('printscreen_key');
         return;
       }
       
       // Detectar Alt + PrintScreen / Alt + ImpPnt
       if (event.altKey && (event.key === 'PrintScreen' || event.key === 'Print' || event.code === 'PrintScreen')) {
-        detectScreenshotAttempt();
+        detectScreenshotAttempt('alt_printscreen');
         return;
       }
       
@@ -49,7 +58,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
         (event.ctrlKey || event.metaKey) && 
         (event.key === 'PrintScreen' || event.key === 'F12' || event.key === 'F13')
       ) {
-        detectScreenshotAttempt();
+        detectScreenshotAttempt('modifier_screenshot');
       }
     };
 
@@ -117,7 +126,9 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
       document.removeEventListener('selectionchange', handleSelection);
       window.removeEventListener('resize', handleResize);
       clearInterval(devToolsInterval);
-      clearTimeout(protectionTimeout);
+      if (protectionTimeoutRef.current) {
+        clearTimeout(protectionTimeoutRef.current);
+      }
       clearTimeout(focusTimeout);
     };
   }, []);
@@ -127,6 +138,28 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
       ref={containerRef}
       className={`${styles.screenshotProtection} ${className} ${isProtected ? styles.protected : ''}`}
     >
+      {/* Botón de prueba para verificar que funciona */}
+      {process.env.NODE_ENV === 'development' && (
+        <button 
+          onClick={() => detectScreenshotAttempt('test_button')}
+          style={{
+            position: 'fixed',
+            top: '10px',
+            right: '10px',
+            zIndex: 9999,
+            background: '#ff6b6b',
+            color: 'white',
+            border: 'none',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            cursor: 'pointer',
+            fontSize: '12px'
+          }}
+        >
+          🧪 Test Protection
+        </button>
+      )}
+      
       {children}
       {isProtected && (
         <div className={styles.protectionOverlay}>
