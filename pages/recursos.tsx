@@ -145,9 +145,11 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
 
   const handleToolClick = (tool: any) => {
     if (tool.type === 'formula' && tool.formula) {
+      // Para fórmulas: copiar al portapapeles
       copyToClipboard(tool.formula, tool.name);
     } else if (tool.type === 'watchlist' && tool.url) {
-      copyToClipboard(tool.url, tool.name);
+      // Para listas de seguimiento: abrir enlace en nueva pestaña
+      window.open(tool.url, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -291,10 +293,12 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                       <br/>
                       {tool.name.split(' ').slice(2).join(' ')}
                     </div>
-                    <div className={styles.copyIndicator}>
-                      <Copy size={16} />
-                      <span>Click para copiar</span>
-                    </div>
+                    {tool.type === 'formula' && (
+                      <div className={styles.copyIndicator}>
+                        <Copy size={16} />
+                        <span>Click para copiar</span>
+                      </div>
+                    )}
                   </div>
                 </motion.button>
               ))}

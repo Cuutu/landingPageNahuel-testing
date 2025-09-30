@@ -35,13 +35,13 @@ Sistema implementado en la página de Recursos que permite copiar automáticamen
 ## Funcionalidad Implementada
 
 ### Herramientas de TradingView
-Las siguientes herramientas están disponibles para copia:
+Las siguientes herramientas están disponibles:
 
-#### Listas de Seguimiento:
-1. **Lista de Seguimiento Wall Street** - URL de TradingView
-2. **Lista de Seguimiento Merval** - URL de TradingView
+#### Listas de Seguimiento (Abrir enlace):
+1. **Lista de Seguimiento Wall Street** - Abre TradingView en nueva pestaña
+2. **Lista de Seguimiento Merval** - Abre TradingView en nueva pestaña
 
-#### Fórmulas:
+#### Fórmulas (Copiar al portapapeles):
 1. **Fórmula Dólar CCL** - `BCBA:KO*5/NYSE:KO`
 2. **Fórmula Acciones en CCL** - `BCBA:ALUA/(BCBA:KO*5/NYSE:KO)`
 3. **Fórmula Merval en CCL** - `BCBA:IMV/(BCBA:KO*5/NYSE:KO)`
@@ -52,15 +52,22 @@ Las siguientes herramientas están disponibles para copia:
 ## Comportamiento
 
 ### Al hacer click en una tarjeta:
-1. **Copia automática** del contenido (fórmula o URL) al portapapeles
+
+#### Para Fórmulas:
+1. **Copia automática** de la fórmula al portapapeles
 2. **Notificación visual** aparece en la esquina superior derecha
 3. **Mensaje personalizado** muestra qué se copió
 4. **Auto-cierre** después de 3 segundos
 5. **Animaciones suaves** para mejor UX
 
+#### Para Listas de Seguimiento:
+1. **Abre enlace** de TradingView en nueva pestaña
+2. **Navegación directa** a la lista de seguimiento
+3. **Sin notificación** (no es necesario)
+
 ### Indicadores visuales:
-- **Icono de copia** en cada tarjeta
-- **Texto "Click para copiar"** 
+- **Solo fórmulas** muestran "Click para copiar" con icono
+- **Listas de seguimiento** sin indicador (comportamiento natural)
 - **Efectos hover** que destacan la interactividad
 - **Animaciones de escala** al hacer click
 
@@ -84,9 +91,11 @@ const tradingViewTools = [
 ```typescript
 const handleToolClick = (tool: any) => {
   if (tool.type === 'formula' && tool.formula) {
+    // Para fórmulas: copiar al portapapeles
     copyToClipboard(tool.formula, tool.name);
   } else if (tool.type === 'watchlist' && tool.url) {
-    copyToClipboard(tool.url, tool.name);
+    // Para listas de seguimiento: abrir enlace en nueva pestaña
+    window.open(tool.url, '_blank', 'noopener,noreferrer');
   }
 };
 ```
