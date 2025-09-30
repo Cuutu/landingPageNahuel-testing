@@ -51,6 +51,7 @@ import { calculateDaysRemaining, calculateDaysSinceSubscription } from '../../ut
 import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
+import ScreenshotProtection from '@/components/ScreenshotProtection';
 
 interface AlertExample {
   id: string;
@@ -2099,7 +2100,7 @@ const SubscriberView: React.FC = () => {
             {/* Lista de alertas en seguimiento */}
             <div className={styles.alertsList}>
               {alertasEnSeguimiento.map((alert) => (
-                <div key={alert.id} className={styles.alertCard}>
+                <div key={alert.id} className={`${styles.alertCard} alertCard`}>
                   <div className={styles.alertHeader}>
                     <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
                     <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
@@ -2360,7 +2361,7 @@ const SubscriberView: React.FC = () => {
           </div>
         ) : (
           alertasVigentes.map((alert) => (
-            <div key={alert.id} className={styles.alertCard}>
+            <div key={alert.id} className={`${styles.alertCard} alertCard`}>
               <div className={styles.alertHeader}>
                 <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
                 <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
@@ -2371,7 +2372,7 @@ const SubscriberView: React.FC = () => {
               <div className={styles.alertDetails}>
                 <div className={styles.alertDetail}>
                   <span>Precio Entrada:</span>
-                  <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
+                  <strong className={`sensitivePrice ${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
                     {alert.entryPrice}
                     {alert.entryPrice?.includes(' / ') && (
                       <span className={styles.rangeIndicator}>RANGO</span>
@@ -2380,15 +2381,15 @@ const SubscriberView: React.FC = () => {
                 </div>
                 <div className={styles.alertDetail}>
                   <span>Precio Actual:</span>
-                  <strong>{alert.currentPrice}</strong>
+                  <strong className="sensitivePrice">{alert.currentPrice}</strong>
                 </div>
                 <div className={styles.alertDetail}>
                   <span>Stop Loss:</span>
-                  <strong>{alert.stopLoss}</strong>
+                  <strong className="sensitivePrice">{alert.stopLoss}</strong>
                 </div>
                 <div className={styles.alertDetail}>
                   <span>Take Profit:</span>
-                  <strong>{alert.takeProfit}</strong>
+                  <strong className="sensitivePrice">{alert.takeProfit}</strong>
                 </div>
                 <div className={styles.alertDetail}>
                   <span>P&L:</span>
@@ -3903,7 +3904,9 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
       
       <main className={styles.main}>
         {isSubscribed ? (
-          <SubscriberView />
+          <ScreenshotProtection>
+            <SubscriberView />
+          </ScreenshotProtection>
         ) : (
           <NonSubscriberView 
             metrics={metrics} 
