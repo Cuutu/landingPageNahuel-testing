@@ -1597,41 +1597,46 @@ const SubscriberView: React.FC = () => {
     // Paleta de colores dinámicos para cada alerta
     const colorPalette = [
       '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
-      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+      '#EC4899', '#06B6D4', '#F97316', '#6366F1',
       '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
     ];
 
-    // Preparar datos para el gráfico de torta 3D - Solo alertas activas
-    const chartData = alerts.map((alert, index) => {
-      const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
-      const liquidity = liquidityMap?.[alert.symbol];
-      const allocated = Number(liquidity?.allocatedAmount || 0);
+    // Construir base desde las asignaciones de liquidez activas
+    const activeDistributions = Object.values(liquidityMap || {})
+      .filter((d: any) => d && d.allocatedAmount > 0);
+
+    // Mapear distribuciones a segmentos (solo símbolos con liquidez asignada)
+    const chartData = activeDistributions.map((d: any, index: number) => {
+      const symbol = d.symbol;
+      const allocated = Number(d.allocatedAmount || 0);
+      const alert = (realAlerts || []).find((a: any) => a.symbol === symbol);
+      const profitValue = alert ? parseFloat(String(alert.profit || '0').toString().replace(/[+%]/g, '')) : 0;
       return {
-        id: alert.id,
-        symbol: alert.symbol,
+        id: d.alertId || symbol,
+        symbol,
         profit: profitValue,
-        status: alert.status,
-        entryPrice: alert.entryPrice,
-        currentPrice: alert.currentPrice,
-        stopLoss: alert.stopLoss,
-        takeProfit: alert.takeProfit,
-        action: alert.action,
-        date: alert.date,
-        analysis: alert.analysis,
+        status: 'ACTIVE',
+        entryPrice: d.entryPrice,
+        currentPrice: d.currentPrice,
+        stopLoss: alert?.stopLoss ?? 0,
+        takeProfit: alert?.takeProfit ?? 0,
+        action: alert?.action ?? 'BUY',
+        date: alert?.date ?? '',
+        analysis: alert?.analysis ?? '',
         allocatedAmount: allocated,
-        // Color único para cada alerta
         color: colorPalette[index % colorPalette.length],
-        // Color más oscuro para efecto 3D
         darkColor: colorPalette[index % colorPalette.length] + '80'
       };
     });
 
     // Calcular el tamaño de cada segmento basado en la liquidez asignada
-    const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
+    const totalAllocated = chartData.reduce((sum, seg) => sum + Math.abs(seg.allocatedAmount || 0), 0);
+    // Si hay totalLiquidity (>0) usarlo como base; si no, usar totalAllocated.
     const totalBase = (liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalAllocated;
+
     let cumulativeAngle = 0;
-    const chartSegments = chartData.map((alert) => {
-      const segmentBase = Math.abs(alert.allocatedAmount || 0);
+    const chartSegments = chartData.map((seg) => {
+      const segmentBase = Math.abs(seg.allocatedAmount || 0);
       const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
       const angle = (segmentBase / (totalBase || 1)) * 360;
       const startAngle = cumulativeAngle;
@@ -1639,7 +1644,7 @@ const SubscriberView: React.FC = () => {
       cumulativeAngle = endAngle;
 
       return {
-        ...alert,
+        ...seg,
         size,
         startAngle,
         endAngle,
@@ -1647,7 +1652,7 @@ const SubscriberView: React.FC = () => {
       };
     });
 
-    // Agregar segmento de liquidez disponible
+    // Agregar segmento de liquidez disponible para completar 100%
     const available = Math.max((totalBase || 0) - totalAllocated, 0);
     if (available > 0) {
       const liqStart = cumulativeAngle;
@@ -1674,6 +1679,7 @@ const SubscriberView: React.FC = () => {
       } as any);
     }
 
+    // Si no hay distribuciones ni totalLiquidity, no hay segmentos
     return chartSegments;
   };
 
@@ -1848,7 +1854,7 @@ const SubscriberView: React.FC = () => {
             </div>
           </div>
           <div className={styles.dashboardChartContainer}>
-            {alertasActivas.length > 0 ? (
+            {chartSegments.length > 0 ? (
               <>
                 <div className={styles.dashboardChartLayout}>
                   {renderPieChart(chartSegments)}
