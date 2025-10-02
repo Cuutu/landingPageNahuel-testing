@@ -1739,7 +1739,7 @@ const SubscriberView: React.FC = () => {
                 fill="#ffffff"
                 filter="url(#shadow3D)"
               >
-                {segment.symbol}
+                {`${segment.symbol} ${Math.round(segment.size)}%`}
               </text>
             )}
           </g>
@@ -2218,7 +2218,12 @@ const SubscriberView: React.FC = () => {
         if (abs >= 1_000) return `$${(n/1_000).toFixed(1)}k`;
         return `$${n.toFixed(2)}`;
       };
-      if (liqEl) liqEl.textContent = formatMoneyShort(Number(liq?.allocatedAmount ?? 0));
+      if (liqEl) {
+        const total = Number(liquidityTotal || 0);
+        const amt = Number(liq?.allocatedAmount ?? 0);
+        const pct = total > 0 ? `${Math.round((amt / total) * 100)}%` : '';
+        liqEl.textContent = `${formatMoneyShort(amt)}${pct ? ` (${pct})` : ''}`;
+      };
       if (sharesEl) sharesEl.textContent = `${Number(liq?.shares ?? 0)}`;
       if (realizedEl) realizedEl.textContent = formatMoneyShort(Number(liq?.realizedProfitLoss ?? 0));
 
