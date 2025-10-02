@@ -1739,7 +1739,7 @@ const SubscriberView: React.FC = () => {
                 fill="#ffffff"
                 filter="url(#shadow3D)"
               >
-                {`${segment.symbol} ${Math.round(segment.size)}%`}
+                {segment.symbol}
               </text>
             )}
           </g>
