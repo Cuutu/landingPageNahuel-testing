@@ -667,11 +667,6 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                   {/* Formulario de Datos dentro del panel de horarios */}
                   <div className={styles.formularioSection}>
                 <h3 className={styles.formularioTitle}>Introduzca los detalles</h3>
-                {session?.user && (
-                  <p className={styles.googleDataInfo}>
-                    ✓ Tus datos de Google han sido cargados automáticamente. Solo necesitas completar tu número de WhatsApp.
-                  </p>
-                )}
                 
                 <form className={styles.formulario}>
                   <div className={styles.formGrid}>
