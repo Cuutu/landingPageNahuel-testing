@@ -112,7 +112,7 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
           {hasEvents && (
             <div className={styles.availabilityIndicator}>
               <span className={styles.availabilityText}>
-                {dayEvents.length} horario{dayEvents.length > 1 ? 's' : ''} disponible{dayEvents.length > 1 ? 's' : ''}
+                {dayEvents.length} disponible{dayEvents.length > 1 ? 's' : ''}
               </span>
             </div>
           )}

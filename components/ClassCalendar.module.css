@@ -168,12 +168,16 @@
   left: 0.25rem;
   right: 0.25rem;
   background: linear-gradient(135deg, #8B0000 0%, #A52A2A 100%);
-  border-radius: 4px;
-  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   z-index: 1;
+  min-height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .availabilityIndicator:hover {
@@ -185,12 +189,10 @@
 .availabilityText {
   color: #FFFFFF;
   font-weight: 600;
-  font-size: 0.6rem;
-  line-height: 1;
+  font-size: 0.65rem;
+  line-height: 1.1;
   display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: center;
 }
 
 /* Responsive */

@@ -663,12 +663,10 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                       )}
                     </div>
                   )}
-                </div>
-              </div>
-
-              {/* Formulario de Datos debajo del grid */}
-              <div className={styles.formularioSection}>
-                <h3 className={styles.formularioTitle}>Completar Datos</h3>
+                  
+                  {/* Formulario de Datos dentro del panel de horarios */}
+                  <div className={styles.formularioSection}>
+                <h3 className={styles.formularioTitle}>Introduzca los detalles</h3>
                 {session?.user && (
                   <p className={styles.googleDataInfo}>
                     ✓ Tus datos de Google han sido cargados automáticamente. Solo necesitas completar tu número de WhatsApp.
@@ -793,6 +791,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                     </div>
                   )}
                 </form>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
