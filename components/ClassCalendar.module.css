@@ -101,13 +101,17 @@
 
 /* Calendar Days */
 .calendarDay {
-  min-height: 80px;
+  height: 80px;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding: 0.5rem;
   position: relative;
   background: rgba(255, 255, 255, 0.02);
   transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  overflow: hidden;
 }
 
 .calendarDay:nth-child(7n) {
@@ -128,7 +132,7 @@
 }
 
 .emptyDay {
-  min-height: 80px;
+  height: 80px;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.1);
@@ -159,11 +163,12 @@
 .availabilityIndicator {
   background: linear-gradient(135deg, #8B0000 0%, #A52A2A 100%);
   border-radius: 6px;
-  padding: 0.4rem 0.6rem;
-  margin-top: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  margin-top: 0.25rem;
   text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .availabilityIndicator:hover {
@@ -175,8 +180,8 @@
 .availabilityText {
   color: #FFFFFF;
   font-weight: 600;
-  font-size: 0.7rem;
-  line-height: 1.2;
+  font-size: 0.65rem;
+  line-height: 1.1;
   display: block;
 }
 
@@ -209,7 +214,7 @@
   }
 
   .calendarDay {
-    min-height: 60px;
+    height: 60px;
     padding: 0.25rem;
   }
 
@@ -239,7 +244,7 @@
   }
 
   .calendarDay {
-    min-height: 50px;
+    height: 50px;
   }
 
   .monthNavigation {
