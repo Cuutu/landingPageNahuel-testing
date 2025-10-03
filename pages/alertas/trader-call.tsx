@@ -2448,7 +2448,8 @@ const SubscriberView: React.FC = () => {
                   <div key={informe.id || informe._id} className={styles.informeCard}>
                     <div className={styles.informeHeader}>
                       <h3>{informe.title}</h3>
-                      <div className={styles.informeMeta}>
+                      {/* Información del informe en lista - OCULTA */}
+                      <div className={styles.informeMeta} style={{ display: 'none' }}>
                         <span className={styles.informeDate}>
                           📅 {reportDate.toLocaleDateString('es-ES', {
                             year: 'numeric',
