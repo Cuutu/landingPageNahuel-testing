@@ -73,7 +73,8 @@ interface ReportViewProps {
 
 const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }) => {
   const router = useRouter();
-  const [currentImageIndex, setCurrentImageIndex] = useState(-1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentArticleIndex, setCurrentArticleIndex] = useState(0);
   const [showArticlesList, setShowArticlesList] = useState(false);
@@ -138,6 +139,46 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setCurrentArticleIndex(index);
     setShowArticlesList(false);
   };
+
+  // Funciones para navegación de imágenes
+  const handleImageClick = (index: number) => {
+    setCurrentImageIndex(index);
+    setShowImageModal(true);
+  };
+
+  const closeImageModal = () => {
+    setShowImageModal(false);
+  };
+
+  const nextImage = () => {
+    if (report.images && report.images.length > 0 && currentImageIndex < report.images.length - 1) {
+      setCurrentImageIndex(currentImageIndex + 1);
+    }
+  };
+
+  const prevImage = () => {
+    if (report.images && report.images.length > 0 && currentImageIndex > 0) {
+      setCurrentImageIndex(currentImageIndex - 1);
+    }
+  };
+
+  // Navegación con teclado
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!showImageModal) return;
+      
+      if (e.key === 'ArrowLeft') {
+        prevImage();
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+      } else if (e.key === 'Escape') {
+        closeImageModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [showImageModal, currentImageIndex, report.images]);
 
   return (
     <>
@@ -305,7 +346,8 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
               {/* Sidebar con información adicional */}
               <aside className={styles.sidebar}>
-                <div className={styles.sidebarCard}>
+                {/* Información del informe - OCULTA */}
+                <div className={styles.sidebarCard} style={{ display: 'none' }}>
                   <h3>Información del Informe</h3>
                   <div className={styles.infoItem}>
                     <strong>Tipo:</strong> {report.type}
@@ -356,7 +398,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                         <div 
                           key={index}
                           className={styles.galleryItem}
-                          onClick={() => setCurrentImageIndex(index)}
+                          onClick={() => handleImageClick(index)}
                         >
                           <img 
                             src={image.thumbnailUrl || image.url}
@@ -375,24 +417,61 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
             </div>
           </motion.section>
 
-          {/* Modal para imágenes */}
-          {report.images && report.images.length > 0 && (
+          {/* Modal para imágenes mejorado */}
+          {report.images && report.images.length > 0 && showImageModal && (
             <div 
               className={styles.imageModal}
-              style={{ display: currentImageIndex >= 0 ? 'flex' : 'none' }}
-              onClick={() => setCurrentImageIndex(-1)}
+              onClick={closeImageModal}
             >
-              <div className={styles.modalContent}>
-                <img 
-                  src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
-                  alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
-                  className={styles.modalImage}
-                />
-                {report.images[currentImageIndex]?.caption && (
-                  <p className={styles.modalCaption}>
-                    {report.images[currentImageIndex].caption}
-                  </p>
-                )}
+              <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                <button 
+                  className={styles.closeImageModal} 
+                  onClick={closeImageModal}
+                  aria-label="Cerrar modal de imagen"
+                >
+                  ×
+                </button>
+                
+                <div className={styles.imageModalContent}>
+                  {report.images.length > 1 && (
+                    <button 
+                      className={styles.imageNavButton} 
+                      onClick={prevImage}
+                      disabled={currentImageIndex === 0}
+                      aria-label="Imagen anterior"
+                    >
+                      ‹
+                    </button>
+                  )}
+                  
+                  <img 
+                    src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
+                    alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
+                    className={styles.modalImage}
+                  />
+                  
+                  {report.images.length > 1 && (
+                    <button 
+                      className={styles.imageNavButton} 
+                      onClick={nextImage}
+                      disabled={currentImageIndex === report.images.length - 1}
+                      aria-label="Imagen siguiente"
+                    >
+                      ›
+                    </button>
+                  )}
+                </div>
+                
+                <div className={styles.imageModalInfo}>
+                  <span className={styles.imageCounter}>
+                    {currentImageIndex + 1} de {report.images.length}
+                  </span>
+                  {report.images[currentImageIndex]?.caption && (
+                    <p className={styles.modalCaption}>
+                      {report.images[currentImageIndex].caption}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
