@@ -3519,7 +3519,7 @@ const ReportViewModal = ({ report, onClose }: {
       </div>
 
       {/* Modal para imágenes */}
-      {showImageModal && report.images && (
+      {showImageModal && report.images && report.images.length > 0 && (
         <div className={styles.imageModalOverlay} onClick={closeImageModal}>
           <div className={styles.imageModal} onClick={(e) => e.stopPropagation()}>
             <button 
@@ -3530,28 +3530,32 @@ const ReportViewModal = ({ report, onClose }: {
               ×
             </button>
             <div className={styles.imageModalContent}>
-              <button 
-                className={styles.imageNavButton} 
-                onClick={prevImage}
-                disabled={currentImageIndex === 0}
-                aria-label="Imagen anterior"
-              >
-                ‹
-              </button>
+              {report.images.length > 1 && (
+                <button 
+                  className={styles.imageNavButton} 
+                  onClick={prevImage}
+                  disabled={currentImageIndex === 0}
+                  aria-label="Imagen anterior"
+                >
+                  ‹
+                </button>
+              )}
               <img 
                 src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
                 alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
                 className={styles.modalImage}
                 loading="lazy"
               />
-              <button 
-                className={styles.imageNavButton} 
-                onClick={nextImage}
-                disabled={currentImageIndex === report.images.length - 1}
-                aria-label="Imagen siguiente"
-              >
-                ›
-              </button>
+              {report.images.length > 1 && (
+                <button 
+                  className={styles.imageNavButton} 
+                  onClick={nextImage}
+                  disabled={currentImageIndex === report.images.length - 1}
+                  aria-label="Imagen siguiente"
+                >
+                  ›
+                </button>
+              )}
             </div>
             <div className={styles.imageModalInfo}>
               <span className={styles.imageCounter}>
