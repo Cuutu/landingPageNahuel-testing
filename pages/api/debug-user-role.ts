@@ -5,91 +5,59 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Método no permitido' });
+  }
+
   try {
+    await dbConnect();
+
     const session = await getServerSession(req, res, authOptions);
     
     if (!session?.user?.email) {
-      return res.status(401).json({ message: 'No autorizado' });
+      return res.status(401).json({ error: 'No hay sesión activa' });
     }
 
-    await dbConnect();
-    let user = await User.findOne({ email: session.user.email });
+    // Obtener datos de la sesión
+    const sessionData = {
+      email: session.user.email,
+      name: session.user.name,
+      role: session.user.role,
+      id: session.user.id
+    };
 
-    if (req.method === 'GET') {
-      // Ver información del usuario
-      return res.status(200).json({
-        debug: true,
-        session: {
-          email: session.user.email,
-          name: session.user.name,
-          image: session.user.image
-        },
-        user: user ? {
-          _id: user._id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-          roleType: typeof user.role,
-          suscripciones: user.suscripciones,
-          subscriptions: user.subscriptions,
-          createdAt: user.createdAt,
-          lastLogin: user.lastLogin
-        } : null,
-        message: user ? 'Usuario encontrado' : 'Usuario NO encontrado en BD'
-      });
-    }
+    // Obtener datos de la base de datos
+    const dbUser = await User.findOne({ email: session.user.email });
+    
+    const dbData = dbUser ? {
+      email: dbUser.email,
+      name: dbUser.name,
+      role: dbUser.role,
+      id: dbUser._id,
+      updatedAt: dbUser.updatedAt
+    } : null;
 
-    if (req.method === 'POST') {
-      const { action, newRole } = req.body;
+    // Verificar si hay discrepancia
+    const hasDiscrepancy = sessionData.role !== dbData?.role;
 
-      if (!user) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-
-      if (action === 'makeAdmin') {
-        // Cambiar rol a admin
-        user.role = 'admin';
-        await user.save();
-        
-        return res.status(200).json({
-          success: true,
-          message: 'Usuario actualizado a admin',
-          user: {
-            _id: user._id,
-            email: user.email,
-            role: user.role,
-            roleType: typeof user.role
-          }
-        });
-      }
-
-      if (action === 'setRole' && newRole) {
-        // Cambiar a rol específico
-        user.role = newRole;
-        await user.save();
-        
-        return res.status(200).json({
-          success: true,
-          message: `Usuario actualizado a ${newRole}`,
-          user: {
-            _id: user._id,
-            email: user.email,
-            role: user.role,
-            roleType: typeof user.role
-          }
-        });
-      }
-
-      return res.status(400).json({ message: 'Acción no válida' });
-    }
-
-    return res.status(405).json({ message: 'Método no permitido' });
+    return res.status(200).json({
+      success: true,
+      session: sessionData,
+      database: dbData,
+      hasDiscrepancy,
+      message: hasDiscrepancy 
+        ? '⚠️ Hay discrepancia entre sesión y base de datos' 
+        : '✅ Sesión y base de datos coinciden',
+      recommendations: hasDiscrepancy ? [
+        '1. Cierra el navegador completamente',
+        '2. Borra las cookies del sitio',
+        '3. Haz login nuevamente',
+        '4. O visita: /api/auth/signout y luego /api/auth/signin'
+      ] : []
+    });
 
   } catch (error) {
-    console.error('❌ Error en debug-user-role:', error);
-    return res.status(500).json({ 
-      message: 'Error interno del servidor',
-      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
-    });
+    console.error('Error en debug-user-role:', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
-} 
+}
