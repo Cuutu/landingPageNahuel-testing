@@ -3403,6 +3403,24 @@ const ReportViewModal = ({ report, onClose }: {
     }
   };
 
+  // Navegación con teclado
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!showImageModal) return;
+      
+      if (e.key === 'ArrowLeft') {
+        prevImage();
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+      } else if (e.key === 'Escape') {
+        closeImageModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [showImageModal, currentImageIndex, report.images]);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('es-ES', {
       year: 'numeric',
