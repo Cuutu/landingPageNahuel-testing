@@ -3665,10 +3665,8 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.createReportForm}>
-          {/* Sección de información básica - OCULTA */}
-          <div className={styles.formSection} style={{ display: 'none' }}>
-            <h3>📋 Información Básica del Informe</h3>
-            
+          {/* Campos del formulario - VISIBLES */}
+          <div className={styles.formSection}>
             <div className={styles.formGroup}>
               <label htmlFor="title">Título *</label>
               <input
@@ -3719,8 +3717,6 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
               </div>
             </div>
 
-
-
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label htmlFor="publishedAt">Fecha de Publicación</label>
@@ -3732,12 +3728,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                   disabled={loading}
                 />
               </div>
-
-              
             </div>
-
-
-            
 
             <div className={styles.formGroup}>
               <label htmlFor="content">Contenido Principal del Informe *</label>
