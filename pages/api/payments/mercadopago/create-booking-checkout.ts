@@ -65,10 +65,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // 🧹 LIMPIEZA AUTOMÁTICA: Limpiar reservas temporales expiradas antes del hold
+    const now = new Date();
+    const cleanupResult = await AdvisoryDate.updateMany(
+      {
+        advisoryType: 'ConsultorioFinanciero',
+        isActive: true,
+        isBooked: true,
+        confirmedBooking: false,
+        tempReservationExpiresAt: { $lte: now }
+      },
+      {
+        $set: {
+          isBooked: false,
+          tempReservationTimestamp: undefined,
+          tempReservationExpiresAt: undefined
+        }
+      }
+    );
+
+    if (cleanupResult.modifiedCount > 0) {
+      console.log(`🧹 Limpieza automática en checkout: ${cleanupResult.modifiedCount} reservas temporales liberadas`);
+    }
+
     // 🔒 HOLD ATÓMICO DEL TURNO (solo para asesorías con advisoryDateId)
     let heldAdvisory: any = null;
     if (reservationData.type === 'advisory' && reservationData.serviceType === 'ConsultorioFinanciero') {
-      const now = new Date();
       const holdUntil = new Date(now.getTime() + 15 * 60 * 1000);
 
       if (reservationData.advisoryDateId) {

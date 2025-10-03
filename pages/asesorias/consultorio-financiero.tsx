@@ -58,6 +58,9 @@ interface AdvisoryDate {
   description?: string;
   isActive: boolean;
   isBooked: boolean;
+  tempReservationTimestamp?: string;
+  tempReservationExpiresAt?: string;
+  confirmedBooking?: boolean;
   createdBy: string;
   createdAt: string;
 }
@@ -248,15 +251,23 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       if (data.success && data.dates) {
         const now = new Date();
         const dates = data.dates
-          .filter((d: AdvisoryDate) => !d.isBooked)
           .filter((d: AdvisoryDate) => {
-            // Filtrado defensivo en cliente: excluir pasados
+            // Filtrado defensivo en cliente: excluir pasados y reservadas
             const day = new Date(d.date);
             const [h, m] = (d.time || '00:00').split(':').map((n: string) => parseInt(n, 10));
             const slotUtc = new Date(Date.UTC(
               day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate(), h + 3, m, 0, 0
             ));
-            return slotUtc.getTime() > now.getTime();
+            
+            // Verificar que no esté reservada y que sea futura
+            const isNotBooked = !d.isBooked;
+            const isFuture = slotUtc.getTime() > now.getTime();
+            
+            // Verificar que no tenga reserva temporal activa
+            const hasActiveTempReservation = d.tempReservationExpiresAt && 
+              new Date(d.tempReservationExpiresAt).getTime() > now.getTime();
+            
+            return isNotBooked && isFuture && !hasActiveTempReservation;
           })
           .map((date: AdvisoryDate) => ({
           ...date,
@@ -269,7 +280,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
           date: d.date,
           title: d.title,
           time: d.time,
-          isBooked: d.isBooked
+          isBooked: d.isBooked,
+          hasTempReservation: !!d.tempReservationExpiresAt
         })));
         setAdvisoryDates(dates);
       } else {
@@ -472,6 +484,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
         // Limpiar selección inmediatamente (la reserva real se hace en el webhook al aprobar pago)
         setSelectedDate('');
         setSelectedTime('');
+        
+        // Refrescar las fechas disponibles para que desaparezca la fecha seleccionada
+        setTimeout(() => {
+          loadAdvisoryDates();
+        }, 1000);
         
         // Redirigir a MercadoPago
         window.location.href = data.checkoutUrl;

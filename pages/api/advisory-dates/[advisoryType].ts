@@ -40,15 +40,48 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, advisoryType
     const onlyAvailable = req.query.available === 'true';
     const futureOnly = req.query.futureOnly !== 'false';
     const query: any = { advisoryType, isActive: true };
+    
     if (onlyAvailable) {
-      query.isBooked = false;
+      const now = new Date();
+      // Excluir fechas que están reservadas O que tienen reservas temporales activas
+      query.$and = [
+        { isBooked: false },
+        {
+          $or: [
+            { tempReservationExpiresAt: { $exists: false } },
+            { tempReservationExpiresAt: { $lte: now } }
+          ]
+        }
+      ];
+    }
+
+    // Limpiar reservas temporales expiradas antes de obtener las fechas
+    const now = new Date();
+    const cleanupResult = await AdvisoryDate.updateMany(
+      {
+        advisoryType,
+        isActive: true,
+        isBooked: true,
+        confirmedBooking: false,
+        tempReservationExpiresAt: { $lte: now }
+      },
+      {
+        $set: {
+          isBooked: false,
+          tempReservationTimestamp: undefined,
+          tempReservationExpiresAt: undefined
+        }
+      }
+    );
+
+    if (cleanupResult.modifiedCount > 0) {
+      console.log(`🧹 Limpieza automática: ${cleanupResult.modifiedCount} reservas temporales liberadas`);
     }
 
     let advisoryDates = await AdvisoryDate.find(query).sort({ date: 1 });
 
     // Excluir slots que ya hayan pasado (fecha anterior o misma fecha con hora menor)
     if (futureOnly) {
-      const now = new Date();
 
       advisoryDates = advisoryDates.filter((slot: any) => {
         const slotDate = new Date(slot.date);
