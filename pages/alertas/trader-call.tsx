@@ -2214,9 +2214,9 @@ const SubscriberView: React.FC = () => {
         pnl.textContent = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
       }
+      // Ocultar elementos adicionales del tooltip - solo mostrar Entrada, Actual y P&L
       if (status) {
-        status.textContent = segment.status === 'ACTIVE' ? '🟢 ACTIVA' : '🔴 CERRADA';
-        status.className = `${styles.tooltipStatus} ${segment.status === 'ACTIVE' ? styles.activeStatus : styles.closedStatus}`;
+        status.style.display = 'none';
       }
       const formatMoneyShort = (n: number) => {
         const abs = Math.abs(n);
@@ -2224,14 +2224,9 @@ const SubscriberView: React.FC = () => {
         if (abs >= 1_000) return `$${(n/1_000).toFixed(1)}k`;
         return `$${n.toFixed(2)}`;
       };
-      if (liqEl) {
-        const total = Number(liquidityTotal || 0);
-        const amt = Number(liq?.allocatedAmount ?? 0);
-        const pct = total > 0 ? `${Math.round((amt / total) * 100)}%` : '';
-        liqEl.textContent = `${formatMoneyShort(amt)}${pct ? ` (${pct})` : ''}`;
-      };
-      if (sharesEl) sharesEl.textContent = `${Number(liq?.shares ?? 0)}`;
-      if (realizedEl) realizedEl.textContent = formatMoneyShort(Number(liq?.realizedProfitLoss ?? 0));
+      if (liqEl) liqEl.style.display = 'none';
+      if (sharesEl) sharesEl.style.display = 'none';
+      if (realizedEl) realizedEl.style.display = 'none';
 
       // Posicionamiento anclado al segmento
       const tooltipWidth = 260; // coincide con CSS
@@ -2281,7 +2276,7 @@ const SubscriberView: React.FC = () => {
         <div className={styles.vigentesHeader}>
           <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
           <p className={styles.sectionDescription}>
-            Alertas disponibles para compra ahora - seleccionadas manualmente
+            Alertas disponibles para comprar ahora
           </p>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
@@ -3706,8 +3701,8 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.createReportForm}>
-          {/* Sección de información básica */}
-          <div className={styles.formSection}>
+          {/* Sección de información básica - OCULTA */}
+          <div className={styles.formSection} style={{ display: 'none' }}>
             <h3>📋 Información Básica del Informe</h3>
             
             <div className={styles.formGroup}>
