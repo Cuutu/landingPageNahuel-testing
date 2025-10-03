@@ -3324,7 +3324,7 @@ const ReportViewModal = ({ report, onClose }: {
   report: any;
   onClose: () => void;
 }) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(-1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -3338,13 +3338,13 @@ const ReportViewModal = ({ report, onClose }: {
   };
 
   const nextImage = () => {
-    if (report.images && currentImageIndex < report.images.length - 1) {
+    if (report.images && report.images.length > 0 && currentImageIndex < report.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
     }
   };
 
   const prevImage = () => {
-    if (currentImageIndex > 0) {
+    if (report.images && report.images.length > 0 && currentImageIndex > 0) {
       setCurrentImageIndex(currentImageIndex - 1);
     }
   };
@@ -3415,7 +3415,8 @@ const ReportViewModal = ({ report, onClose }: {
           <div className={styles.modalHeader}>
             <div className={styles.modalTitle}>
               <h2>{report.title}</h2>
-              <div className={styles.reportMeta}>
+              {/* Información del informe - OCULTA */}
+              <div className={styles.reportMeta} style={{ display: 'none' }}>
                 <span className={styles.reportDate}>
                   📅 {formatDate(report.publishedAt || report.createdAt)}
                 </span>
@@ -3680,7 +3681,8 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
               />
             </div>
 
-            <div className={styles.formGroup}>
+            {/* Campo Tipo - OCULTO */}
+            <div className={styles.formGroup} style={{ display: 'none' }}>
               <label htmlFor="type">Tipo</label>
               <input
                 id="type"
