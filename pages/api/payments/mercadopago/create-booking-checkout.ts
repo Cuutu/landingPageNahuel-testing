@@ -88,40 +88,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`🧹 Limpieza automática en checkout: ${cleanupResult.modifiedCount} reservas temporales liberadas`);
     }
 
-    // 🔒 HOLD ATÓMICO DEL TURNO (solo para asesorías con advisoryDateId)
-    let heldAdvisory: any = null;
+    // 🔍 VERIFICAR DISPONIBILIDAD SIN HACER HOLD (solo verificar que esté disponible)
+    let advisoryDate: any = null;
     if (reservationData.type === 'advisory' && reservationData.serviceType === 'ConsultorioFinanciero') {
-      const holdUntil = new Date(now.getTime() + 15 * 60 * 1000);
-
       if (reservationData.advisoryDateId) {
-        heldAdvisory = await AdvisoryDate.findOneAndUpdate(
-          {
-            _id: reservationData.advisoryDateId,
-            advisoryType: 'ConsultorioFinanciero',
-            isActive: true,
-            $or: [
-              { isBooked: false },
-              { isBooked: true, confirmedBooking: false, tempReservationExpiresAt: { $lte: now } }
-            ]
-          },
-          {
-            $set: {
-              isBooked: true,
-              tempReservationTimestamp: now,
-              tempReservationExpiresAt: holdUntil
-            }
-          },
-          { new: true }
-        );
+        // Solo verificar que esté disponible, sin reservar
+        advisoryDate = await AdvisoryDate.findOne({
+          _id: reservationData.advisoryDateId,
+          advisoryType: 'ConsultorioFinanciero',
+          isActive: true,
+          isBooked: false
+        });
 
-        if (!heldAdvisory) {
+        if (!advisoryDate) {
           return res.status(409).json({
             success: false,
             error: 'La fecha seleccionada ya no está disponible',
           });
         }
+        
+        console.log('✅ Fecha verificada como disponible:', advisoryDate._id);
       } else {
-        console.warn('⚠️ advisoryDateId no enviado en reservationData. Se continuará sin hold atómico.');
+        console.warn('⚠️ advisoryDateId no enviado en reservationData.');
       }
     }
 
@@ -154,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       metadata: {
         reservationData: {
           ...reservationData,
-          advisoryDateId: reservationData.advisoryDateId || heldAdvisory?._id?.toString()
+          advisoryDateId: reservationData.advisoryDateId || advisoryDate?._id?.toString()
         },
         createdFromCheckout: true
       }

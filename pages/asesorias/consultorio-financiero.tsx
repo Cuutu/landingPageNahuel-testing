@@ -485,10 +485,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
         setSelectedDate('');
         setSelectedTime('');
         
-        // Refrescar las fechas disponibles para que desaparezca la fecha seleccionada
-        setTimeout(() => {
-          loadAdvisoryDates();
-        }, 1000);
+        // NO refrescar las fechas aquí - la fecha debe seguir disponible hasta que el pago sea exitoso
+        // La fecha solo desaparecerá cuando el webhook confirme el pago exitoso
         
         // Redirigir a MercadoPago
         window.location.href = data.checkoutUrl;
