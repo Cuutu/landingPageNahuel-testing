@@ -668,7 +668,12 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
 
               {/* Formulario de Datos debajo del grid */}
               <div className={styles.formularioSection}>
-                <h3 className={styles.formularioTitle}>Introduzca los detalles</h3>
+                <h3 className={styles.formularioTitle}>Completar Datos</h3>
+                {session?.user && (
+                  <p className={styles.googleDataInfo}>
+                    ✓ Tus datos de Google han sido cargados automáticamente. Solo necesitas completar tu número de WhatsApp.
+                  </p>
+                )}
                 
                 <form className={styles.formulario}>
                   <div className={styles.formGrid}>
@@ -680,10 +685,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         type="text"
                         id="nombre"
                         name="nombre"
-                        className={styles.formInput}
+                        className={`${styles.formInput} ${session?.user?.name ? styles.readOnlyInput : ''}`}
                         defaultValue={session?.user?.name?.split(' ')[0] || ''}
                         placeholder="Tu nombre"
                         required
+                        readOnly={!!session?.user?.name}
                       />
                     </div>
                     
@@ -695,10 +701,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         type="text"
                         id="apellido"
                         name="apellido"
-                        className={styles.formInput}
+                        className={`${styles.formInput} ${session?.user?.name ? styles.readOnlyInput : ''}`}
                         defaultValue={session?.user?.name?.split(' ').slice(1).join(' ') || ''}
                         placeholder="Tu apellido"
                         required
+                        readOnly={!!session?.user?.name}
                       />
                     </div>
                     
@@ -710,11 +717,17 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         type="email"
                         id="email"
                         name="email"
-                        className={styles.formInput}
+                        className={`${styles.formInput} ${session?.user?.email ? styles.readOnlyInput : ''}`}
                         defaultValue={session?.user?.email || ''}
                         placeholder="Tu email"
                         required
+                        readOnly={!!session?.user?.email}
                       />
+                      {session?.user?.email && (
+                        <small className={styles.googleDataNote}>
+                          ✓ Datos obtenidos de tu cuenta de Google
+                        </small>
+                      )}
                     </div>
                     
                     <div className={styles.formGroup}>
