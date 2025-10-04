@@ -101,6 +101,30 @@ interface RoadmapModule {
   activo: boolean;
 }
 
+interface MonthlyTraining {
+  _id: string;
+  title: string;
+  description: string;
+  month: number;
+  year: number;
+  price: number;
+  maxStudents: number;
+  status: string;
+  classes: Array<{
+    _id: string;
+    date: string;
+    startTime: string;
+    title: string;
+    status: string;
+  }>;
+  students: Array<{
+    userId: string;
+    email: string;
+    paymentStatus: string;
+    enrolledAt: string;
+  }>;
+}
+
 interface TrainingDate {
   id: string;
   date: Date;
@@ -157,6 +181,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     minutes: 0
   });
   const [startDateText, setStartDateText] = useState('11 de octubre a las 13 hs');
+  const [monthlyTrainings, setMonthlyTrainings] = useState<MonthlyTraining[]>([]);
   
   // Estados para gestión de fechas de entrenamiento
   const [trainingDates, setTrainingDates] = useState<TrainingDate[]>([]);
@@ -254,7 +279,56 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   const [nextMeetingLink, setNextMeetingLink] = useState<string | null>(null);
   const [nextMeetingStart, setNextMeetingStart] = useState<Date | null>(null);
 
-  // Función para calcular el countdown basado en la fecha de inicio
+  // Función para cargar entrenamientos mensuales
+  const loadMonthlyTrainings = async () => {
+    try {
+      const response = await fetch('/api/monthly-trainings');
+      const data = await response.json();
+      
+      if (data.success) {
+        setMonthlyTrainings(data.data);
+      }
+    } catch (error) {
+      console.error('Error cargando entrenamientos mensuales:', error);
+    }
+  };
+
+  // Función para calcular el countdown basado en la próxima clase de entrenamientos mensuales
+  const calculateCountdownFromTrainings = () => {
+    if (monthlyTrainings.length === 0) return { days: 0, hours: 0, minutes: 0 };
+
+    // Encontrar la próxima clase de todos los entrenamientos
+    let nextClass = null;
+    const now = new Date();
+
+    for (const training of monthlyTrainings) {
+      for (const classItem of training.classes) {
+        const classDate = new Date(classItem.date);
+        if (classDate > now && classItem.status === 'scheduled') {
+          if (!nextClass || classDate < nextClass.date) {
+            nextClass = {
+              date: classDate,
+              title: classItem.title,
+              training: training.title
+            };
+          }
+        }
+      }
+    }
+
+    if (nextClass) {
+      const timeDiff = nextClass.date.getTime() - now.getTime();
+      const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+      return { days, hours, minutes };
+    } else {
+      return { days: 0, hours: 0, minutes: 0 };
+    }
+  };
+
+  // Función para calcular el countdown basado en la fecha de inicio (fallback)
   const calculateCountdown = (startDate: Date, startTime: string) => {
     const now = new Date();
     const [startHours, startMinutes] = startTime.split(':').map(Number);
@@ -295,6 +369,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   // Cargar fechas de entrenamiento y verificar admin
   useEffect(() => {
     loadTrainingDates();
+    loadMonthlyTrainings(); // Cargar entrenamientos mensuales
     
     // Verificar si el usuario es admin
     if (session?.user?.email) {
@@ -302,21 +377,58 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     }
   }, [session]);
 
-  // Countdown timer dinámico basado en la próxima fecha de entrenamiento
+  // Countdown timer dinámico basado en entrenamientos mensuales
   useEffect(() => {
     const updateCountdown = () => {
-      if (nextTrainingDate) {
+      // Priorizar entrenamientos mensuales
+      if (monthlyTrainings.length > 0) {
+        const newCountdown = calculateCountdownFromTrainings();
+        setCountdown(newCountdown);
+        
+        // Encontrar la próxima clase para mostrar la fecha
+        let nextClass = null;
+        const now = new Date();
+
+        for (const training of monthlyTrainings) {
+          for (const classItem of training.classes) {
+            const classDate = new Date(classItem.date);
+            if (classDate > now && classItem.status === 'scheduled') {
+              if (!nextClass || classDate < nextClass.date) {
+                nextClass = {
+                  date: classDate,
+                  title: classItem.title,
+                  training: training.title
+                };
+              }
+            }
+          }
+        }
+
+        if (nextClass) {
+          const formattedDate = nextClass.date.toLocaleDateString('es-ES', {
+            day: 'numeric',
+            month: 'long'
+          });
+          const formattedTime = nextClass.date.toLocaleTimeString('es-ES', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+          setStartDateText(`${formattedDate} a las ${formattedTime} hs`);
+        } else {
+          setStartDateText('Próximamente - Fechas por confirmar');
+        }
+      } else if (nextTrainingDate) {
+        // Fallback a fechas de entrenamiento tradicionales
         const newCountdown = calculateCountdown(nextTrainingDate.date, nextTrainingDate.time);
         setCountdown(newCountdown);
         
-        // Actualizar texto de fecha de inicio
         const formattedDate = nextTrainingDate.date.toLocaleDateString('es-ES', {
           day: 'numeric',
           month: 'long'
         });
         setStartDateText(`${formattedDate} a las ${nextTrainingDate.time} hs`);
       } else {
-        // Fallback si no hay próxima fecha
+        // Fallback final
         const defaultDate = new Date('2024-10-11T13:00:00.000Z');
         const defaultTime = '13:00';
         const newCountdown = calculateCountdown(defaultDate, defaultTime);
@@ -332,7 +444,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     const timer = setInterval(updateCountdown, 60000);
 
     return () => clearInterval(timer);
-  }, [nextTrainingDate]);
+  }, [monthlyTrainings, nextTrainingDate]);
 
   // Efecto para actualizar la próxima fecha cuando pasa el tiempo
   useEffect(() => {
