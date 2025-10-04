@@ -3,6 +3,17 @@ import { getServerSession } from 'next-auth';
 import authOptions from '../auth/[...nextauth]';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import { z } from 'zod';
+import dbConnect from '../../../lib/mongodb';
+
+// Wrapper para timeout de operaciones de base de datos
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('Database operation timeout')), timeoutMs)
+    )
+  ]);
+};
 
 // Validación para consultas
 const querySchema = z.object({
@@ -18,6 +29,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Conectar a la base de datos
+    await dbConnect();
+    
     // Verificar autenticación
     const session = await getServerSession(req, res, authOptions);
     if (!(session as any)?.user?.email) {
@@ -61,9 +75,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       query.endDate = { $lt: now };
     }
 
-    // Obtener suscripciones
-    const subscriptions = await MonthlyTrainingSubscription.find(query)
-      .sort({ subscriptionYear: -1, subscriptionMonth: -1, createdAt: -1 });
+    // Obtener suscripciones con timeout
+    const subscriptions = await withTimeout(
+      MonthlyTrainingSubscription.find(query)
+        .sort({ subscriptionYear: -1, subscriptionMonth: -1, createdAt: -1 })
+    );
 
     // Formatear respuesta
     const formattedSubscriptions = subscriptions.map(sub => ({

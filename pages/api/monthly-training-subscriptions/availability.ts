@@ -1,6 +1,17 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import { z } from 'zod';
+import dbConnect from '../../../lib/mongodb';
+
+// Wrapper para timeout de operaciones de base de datos
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('Database operation timeout')), timeoutMs)
+    )
+  ]);
+};
 
 // Validación de entrada
 const availabilitySchema = z.object({
@@ -16,6 +27,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Conectar a la base de datos
+    await dbConnect();
+    
     // Validar query parameters
     const validationResult = availabilitySchema.safeParse(req.query);
     if (!validationResult.success) {
@@ -48,21 +62,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Obtener disponibilidad para cada mes
+    // Obtener disponibilidad para cada mes con timeout
     const availabilityData = await Promise.all(
       monthsToCheck.map(async ({ month: checkMonth, year: checkYear }) => {
-        const availability = await (MonthlyTrainingSubscription as any).checkAvailability(
-          trainingType,
-          checkYear,
-          checkMonth,
-          maxSubscribers
+        const availability = await withTimeout(
+          (MonthlyTrainingSubscription as any).checkAvailability(
+            trainingType,
+            checkYear,
+            checkMonth,
+            maxSubscribers
+          )
         );
         
         return {
           month: checkMonth,
           year: checkYear,
           monthName: new Date(checkYear, checkMonth - 1).toLocaleString('es-ES', { month: 'long' }),
-          ...availability
+          ...(availability || { available: false, currentSubscribers: 0, maxSubscribers, remainingSlots: 0 })
         };
       })
     );

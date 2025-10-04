@@ -28,20 +28,22 @@ async function dbConnect() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      maxPoolSize: 10,
-      // Timeouts muy conservadores para evitar errores
-      serverSelectionTimeoutMS: 60000, // 60 segundos
-      socketTimeoutMS: 60000, // 60 segundos  
-      connectTimeoutMS: 60000, // 60 segundos
+      maxPoolSize: 5, // Reducido para Vercel
+      // Timeouts más agresivos para Vercel
+      serverSelectionTimeoutMS: 10000, // 10 segundos
+      socketTimeoutMS: 10000, // 10 segundos  
+      connectTimeoutMS: 10000, // 10 segundos
       // Configuraciones adicionales para estabilidad
-      maxIdleTimeMS: 30000,
-      heartbeatFrequencyMS: 30000,
+      maxIdleTimeMS: 10000,
+      heartbeatFrequencyMS: 10000,
       // Configuración para retry de conexión
       retryWrites: true,
       retryReads: true,
       // Configuraciones específicas para Atlas
       ssl: true,
       authSource: 'admin',
+      // Configuraciones para Vercel
+      bufferMaxEntries: 0, // Deshabilitar buffering
     };
 
     console.log('🔗 Creando nueva conexión a MongoDB...');

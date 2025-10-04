@@ -3,6 +3,17 @@ import { getServerSession } from 'next-auth';
 import authOptions from '../auth/[...nextauth]';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import { z } from 'zod';
+import dbConnect from '../../../lib/mongodb';
+
+// Wrapper para timeout de operaciones de base de datos
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 8000): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) => 
+      setTimeout(() => reject(new Error('Database operation timeout')), timeoutMs)
+    )
+  ]);
+};
 
 // Validación de entrada
 const verifyAccessSchema = z.object({
@@ -17,6 +28,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Conectar a la base de datos
+    await dbConnect();
+    
     // Verificar autenticación
     const session = await getServerSession(req, res, authOptions);
     if (!(session as any)?.user?.email) {
@@ -39,16 +53,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const checkMonth = month || (now.getMonth() + 1);
     const checkYear = year || now.getFullYear();
 
-    // Buscar suscripción activa para el mes/año especificado
-    const activeSubscription = await MonthlyTrainingSubscription.findOne({
-      userId: (session as any).user.id,
-      trainingType,
-      subscriptionMonth: checkMonth,
-      subscriptionYear: checkYear,
-      isActive: true,
-      paymentStatus: 'completed',
-      accessGranted: true
-    });
+    // Buscar suscripción activa para el mes/año especificado con timeout
+    const activeSubscription = await withTimeout(
+      MonthlyTrainingSubscription.findOne({
+        userId: (session as any).user.id,
+        trainingType,
+        subscriptionMonth: checkMonth,
+        subscriptionYear: checkYear,
+        isActive: true,
+        paymentStatus: 'completed',
+        accessGranted: true
+      })
+    );
 
     if (!activeSubscription) {
       return res.status(200).json({
