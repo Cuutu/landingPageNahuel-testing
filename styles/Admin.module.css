@@ -415,7 +415,20 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   color: white;
+  width: 100%;
+  height: 40px;
+  color-scheme: dark;
 }
+
+.input::placeholder { color: rgba(255,255,255,0.6); }
+
+:global(.Admin_input__placeholder) { color: rgba(255,255,255,0.6); }
+
+/* Mejorar ícono del selector de fecha/hora en modo oscuro */
+.input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.8; }
+
+.formGrid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.formGrid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
 
 .header {
   display: flex;
@@ -431,6 +444,8 @@
 .spinner {
   animation: spin 1s linear infinite;
 }
+
+.tableWrapper { width: 100%; overflow-x: auto; border-radius: var(--border-radius); }
 
 @keyframes spin {
   from {

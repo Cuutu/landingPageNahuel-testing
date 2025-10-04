@@ -180,7 +180,7 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <div className={styles.formGrid3}>
                 <input name="amail" className={styles.input} placeholder="Email" required />
                 <input name="astart" type="datetime-local" className={styles.input} required />
                 <input name="adur" type="number" className={styles.input} placeholder="Duración (min)" defaultValue={180} />
@@ -209,7 +209,7 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+              <div className={styles.formGrid3}>
                 <input name="rbid" className={styles.input} placeholder="Booking ID (opcional)" />
                 <input name="rmail" className={styles.input} placeholder="Email (si no Booking ID)" />
                 <input name="rstart" type="datetime-local" className={styles.input} placeholder="Fecha (si no Booking ID)" />
@@ -238,7 +238,7 @@ export default function UpcomingTrainingPage() {
                 form.reset();
               } catch (err: any) { alert(err.message || 'Error'); }
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+              <div className={styles.formGrid2}>
                 <input name="mfrom" type="datetime-local" className={styles.input} required />
                 <input name="mto" type="datetime-local" className={styles.input} required />
               </div>
