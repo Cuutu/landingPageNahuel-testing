@@ -13,14 +13,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await dbConnect();
 
   try {
-    const { upcoming, year, month } = req.query;
+    const { upcoming, year, month, id } = req.query;
     const session = await getServerSession(req, res, authOptions);
 
     let filter: any = {};
 
-    // Filtrar por año y mes si se especifica
-    if (year) filter.year = parseInt(year as string);
-    if (month) filter.month = parseInt(month as string);
+    // Si se especifica un ID, buscar ese entrenamiento específico
+    if (id) {
+      filter._id = id;
+    } else {
+      // Filtrar por año y mes si se especifica
+      if (year) filter.year = parseInt(year as string);
+      if (month) filter.month = parseInt(month as string);
+    }
 
     // Si se pide solo próximos entrenamientos, incluir solo abiertos o llenos
     if (upcoming === 'true') {
