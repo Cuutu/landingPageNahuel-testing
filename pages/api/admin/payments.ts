@@ -34,8 +34,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log('✅ [PAYMENTS] Acceso de admin confirmado:', session.user.email);
 
-    // Obtener todos los pagos
-    const payments = await Payment.find({})
+    // Obtener solo pagos aprobados (completados)
+    const payments = await Payment.find({ status: 'approved' })
       .populate('userId', 'name email phone cuit')
       .sort({ userEmail: 1, transactionDate: -1 })
       .limit(5000); // límite alto para exportaciones
