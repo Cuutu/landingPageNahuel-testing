@@ -101,6 +101,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Actualizar estado del entrenamiento si está lleno
         if (training.students.length >= training.maxStudents) {
           training.status = 'full';
+          console.log('🔴 Entrenamiento AGOTADO - Cupos llenos:', {
+            trainingId,
+            currentStudents: training.students.length,
+            maxStudents: training.maxStudents
+          });
         }
 
         await training.save();
@@ -109,7 +114,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           trainingId,
           studentName: user.name,
           studentEmail: user.email,
-          paymentId: paymentInfo.id
+          paymentId: paymentInfo.id,
+          currentStudents: training.students.length,
+          maxStudents: training.maxStudents,
+          newStatus: training.status
         });
 
         // TODO: Enviar email de confirmación

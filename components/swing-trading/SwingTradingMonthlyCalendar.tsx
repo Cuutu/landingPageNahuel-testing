@@ -154,7 +154,7 @@ export default function SwingTradingCalendar() {
     const statusConfig = {
       draft: { color: '#6b7280', text: 'Borrador', icon: AlertCircle },
       open: { color: '#10b981', text: 'Abierto', icon: CheckCircle },
-      full: { color: '#f59e0b', text: 'Lleno', icon: Users },
+      full: { color: '#ef4444', text: 'AGOTADO', icon: Users },
       'in-progress': { color: '#3b82f6', text: 'En Progreso', icon: Clock },
       completed: { color: '#059669', text: 'Completado', icon: CheckCircle },
       cancelled: { color: '#ef4444', text: 'Cancelado', icon: AlertCircle }

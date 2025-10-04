@@ -79,7 +79,9 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
       availableSpots: training.maxStudents - training.students.length,
       totalClasses: training.classes.length,
       completedClasses: training.classes.filter((c: any) => c.status === 'completed').length,
-      monthName: getMonthName(training.month)
+      monthName: getMonthName(training.month),
+      canEnroll: training.status === 'open' && training.students.length < training.maxStudents,
+      isEnrolled: false // Se calculará en el frontend basado en el usuario logueado
     }));
 
     return res.status(200).json({
