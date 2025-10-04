@@ -409,7 +409,24 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   const testimoniosPerGroup = 3;
   const totalTestimonialGroups = Math.ceil(testimoniosUnificados.length / testimoniosPerGroup);
 
-  // Datos de elementos destacados unificados
+  // Helper para formatear precios desde Pricing
+  const formatPrice = (amount?: number, currency?: string, suffix?: string) => {
+    if (!amount || amount <= 0) return 'Consultar';
+    const formatted = amount.toLocaleString('es-AR');
+    return `$${formatted} ${currency || 'ARS'}${suffix ? ` ${suffix}` : ''}`;
+  };
+
+  const traderCallPriceStr = pricing?.alertas?.traderCall?.monthly
+    ? formatPrice(pricing.alertas.traderCall.monthly, pricing.currency, '/mes')
+    : '$15.000/mes';
+  const swingPriceStr = pricing?.entrenamientos?.swingTrading?.price
+    ? formatPrice(pricing.entrenamientos.swingTrading.price, pricing.currency)
+    : '$279.000';
+  const consultorioPriceStr = pricing?.asesorias?.consultorioFinanciero?.price
+    ? formatPrice(pricing.asesorias.consultorioFinanciero.price, pricing.currency, '/sesión')
+    : '$30.000/sesión';
+
+  // Datos de elementos destacados unificados (sin Pack AT ni Medias Móviles)
   const destacadosItems = [
     {
       id: 'trader-call',
@@ -418,7 +435,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
       tag: 'Alertas',
       tagClass: 'tagAlertas',
       rating: '4,7',
-      precio: '$15.000/mes',
+      precio: traderCallPriceStr,
       href: '/alertas/trader-call',
       external: false,
       separator: false,
@@ -431,7 +448,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
       tag: 'Entrenamientos',
       tagClass: 'tagEntrenamientos',
       rating: '4,8',
-      precio: '$279.000',
+      precio: swingPriceStr,
       href: '/entrenamientos/swing-trading',
       external: false,
       separator: false,
@@ -444,37 +461,10 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
       tag: 'Asesorías',
       tagClass: 'tagAsesorias',
       rating: '4,5',
-      precio: '$30.000/sesión',
+      precio: consultorioPriceStr,
       href: '/asesorias/consultorio-financiero',
       external: false,
       separator: true,
-      rocketIcon: false
-    },
-    {
-      id: 'pack-analisis-tecnico',
-      titulo: 'Pack Análisis Técnico',
-      descripcion: 'Pack de 5 cursos online donde aprenderás análisis técnico desde cero. Chartismo, indicadores y las mejores plataformas de trading. Todo con un 10% de descuento',
-      tag: 'Mentoring',
-      tagClass: 'tagMentoring',
-      rating: '4,9',
-      precio: '$180.000',
-      descuento: '10% OFF',
-      href: 'https://plataformacursos.lozanonahuel.com/cursos/packs',
-      external: true,
-      separator: true,
-      rocketIcon: true
-    },
-    {
-      id: 'medias-moviles',
-      titulo: 'Medias Móviles Automáticas',
-      descripcion: 'Indicador que ajusta automáticamente los parámetros de medias móviles según la temporalidad del gráfico, optimizando el análisis técnico en cada marco temporal',
-      tag: 'Recursos',
-      tagClass: 'tagRecursos',
-      rating: '4,5',
-      precio: '$15.000',
-      href: '#',
-      external: false,
-      separator: false,
       rocketIcon: false
     },
     {
@@ -485,7 +475,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
       tagClass: 'tagRecursos',
       rating: '4,9',
       precio: 'Gratis',
-      href: '#',
+      href: '/recursos#recursos-lista',
       external: false,
       separator: false,
       rocketIcon: false
@@ -796,7 +786,12 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                       
                       {session ? (
                         <button 
-                          onClick={() => handleMercadoPagoCheckout('subscription', 'TraderCall', 15000, 'ARS')}
+                          onClick={() => handleMercadoPagoCheckout(
+                            'subscription',
+                            'TraderCall',
+                            (pricing?.alertas?.traderCall?.monthly || 0),
+                            pricing?.currency || 'ARS'
+                          )}
                           className={styles.servicioButton}
                           disabled={isProcessingPayment}
                         >
@@ -806,7 +801,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                               Procesando...
                             </>
                           ) : (
-                            'Suscribirse - $15,000 ARS'
+                            pricing ? `Suscribirse - $${pricing.alertas.traderCall.monthly} ${pricing.currency}` : 'Suscribirse'
                           )}
                         </button>
                       ) : (
@@ -1197,7 +1192,6 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                       <div className={styles.destacadoUnificadoFooter}>
                         <div className={styles.destacadoUnificadoPrecio}>
                           {item.precio}
-                          {item.descuento && <span className={styles.descuento}>{item.descuento}</span>}
                         </div>
                         {item.external ? (
                           <a 
@@ -1359,7 +1353,12 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
               <div className={styles.ctaInvestmentActions}>
                 {session ? (
                   <button 
-                    onClick={() => handleMercadoPagoCheckout('subscription', 'TraderCall', 15000, 'ARS')}
+                    onClick={() => handleMercadoPagoCheckout(
+                      'subscription',
+                      'TraderCall',
+                      (pricing?.alertas?.traderCall?.monthly || 0),
+                      pricing?.currency || 'ARS'
+                    )}
                     className={styles.ctaInvestmentButtonPrimary}
                     disabled={isProcessingPayment}
                   >
@@ -1369,7 +1368,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                         Procesando...
                       </>
                     ) : (
-                      'Suscribirse a Alertas - $15,000 ARS'
+                      pricing ? `Suscribirse a Alertas - $${pricing.alertas.traderCall.monthly} ${pricing.currency}` : 'Suscribirse a Alertas'
                     )}
                   </button>
                 ) : (
