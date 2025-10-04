@@ -1078,7 +1078,15 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                             </div>
                             <div className={styles.stat}>
                               <Clock size={16} />
-                              {(roadmap as any).metadatos?.totalSemanas ?? 0} semanas
+                              {(() => {
+                                const totalSemanas = roadmap.modulos.reduce((acc: number, modulo: any) => {
+                                  const str = String(modulo.duracion || '').toLowerCase();
+                                  const match = str.match(/(\d+)\s*semana/);
+                                  const semanas = match ? parseInt(match[1], 10) : 0;
+                                  return acc + (isNaN(semanas) ? 0 : semanas);
+                                }, 0);
+                                return totalSemanas;
+                              })()} semanas
                             </div>
                           </div>
                         </div>
