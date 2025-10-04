@@ -3020,7 +3020,8 @@ const SubscriberView: React.FC = () => {
               </div>
             </div>
 
-            <div className={styles.inputGroup}>
+            {/* Campo Acción - OCULTO - Siempre BUY */}
+            <div className={styles.inputGroup} style={{ display: 'none' }}>
               <label>Acción</label>
               <select
                 value={newAlert.action}
