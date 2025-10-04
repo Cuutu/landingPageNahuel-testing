@@ -57,8 +57,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Verificar cupos disponibles
-    if (training.students.length >= training.maxStudents) {
+    // Verificar cupos disponibles (solo contar estudiantes con pago completado)
+    const paidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+    if (paidStudents.length >= training.maxStudents) {
       return res.status(400).json({ error: 'No hay cupos disponibles' });
     }
 
@@ -83,13 +84,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     training.students.push(newStudent);
 
-    // Actualizar estado del entrenamiento si se llenó
-    if (training.students.length >= training.maxStudents) {
+    // Actualizar estado del entrenamiento si se llenó (solo contar estudiantes con pago completado)
+    const updatedPaidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+    if (updatedPaidStudents.length >= training.maxStudents) {
       training.status = 'full';
       console.log('🔴 Entrenamiento AGOTADO - Verificación de pago:', {
         trainingId,
         paymentRange: training.paymentRange,
-        currentStudents: training.students.length,
+        currentPaidStudents: updatedPaidStudents.length,
         maxStudents: training.maxStudents
       });
     }
@@ -101,7 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentRange: training.paymentRange,
       userEmail: session.user.email,
       paymentId,
-      currentStudents: training.students.length,
+      currentPaidStudents: updatedPaidStudents.length,
       maxStudents: training.maxStudents
     });
 
@@ -114,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           month: training.month,
           year: training.year,
           paymentRange: training.paymentRange,
-          currentStudents: training.students.length,
+          currentStudents: updatedPaidStudents.length,
           maxStudents: training.maxStudents,
           status: training.status
         },

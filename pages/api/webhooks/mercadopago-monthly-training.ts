@@ -98,12 +98,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         training.students.push(newStudent);
 
-        // Actualizar estado del entrenamiento si está lleno
-        if (training.students.length >= training.maxStudents) {
+        // Actualizar estado del entrenamiento si está lleno (solo contar estudiantes con pago completado)
+        const updatedPaidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+        if (updatedPaidStudents.length >= training.maxStudents) {
           training.status = 'full';
           console.log('🔴 Entrenamiento AGOTADO - Cupos llenos:', {
             trainingId,
-            currentStudents: training.students.length,
+            currentPaidStudents: updatedPaidStudents.length,
             maxStudents: training.maxStudents
           });
         }
@@ -115,7 +116,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           studentName: user.name,
           studentEmail: user.email,
           paymentId: paymentInfo.id,
-          currentStudents: training.students.length,
+          currentPaidStudents: updatedPaidStudents.length,
           maxStudents: training.maxStudents,
           newStatus: training.status
         });

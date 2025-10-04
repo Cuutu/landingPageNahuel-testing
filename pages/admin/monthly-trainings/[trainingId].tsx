@@ -66,6 +66,7 @@ interface MonthlyTraining {
   availableSpots: number;
   totalClasses: number;
   completedClasses: number;
+  paidStudentsCount: number;
   createdAt: string;
   createdBy: string;
 }
@@ -310,7 +311,7 @@ export default function MonthlyTrainingDetail() {
               <Users size={24} />
             </div>
             <div className={styles.statContent}>
-              <span className={styles.statValue}>{training.students.length}/{training.maxStudents}</span>
+              <span className={styles.statValue}>{training.paidStudentsCount || 0}/{training.maxStudents}</span>
               <span className={styles.statLabel}>Estudiantes</span>
             </div>
           </div>

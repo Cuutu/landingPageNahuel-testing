@@ -67,8 +67,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Este entrenamiento no está disponible para inscripciones' });
     }
 
-    // Verificar cupos disponibles
-    if (training.students.length >= training.maxStudents) {
+    // Verificar cupos disponibles (solo contar estudiantes con pago completado)
+    const paidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+    if (paidStudents.length >= training.maxStudents) {
       return res.status(400).json({ error: 'No hay cupos disponibles' });
     }
 
@@ -102,12 +103,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     training.students.push(newStudent);
 
-    // Actualizar estado del entrenamiento si se llenó
-    if (training.students.length >= training.maxStudents) {
+    // Actualizar estado del entrenamiento si se llenó (solo contar estudiantes con pago completado)
+    const updatedPaidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+    if (updatedPaidStudents.length >= training.maxStudents) {
       training.status = 'full';
       console.log('🔴 Entrenamiento AGOTADO desde página de éxito:', {
         trainingId,
-        currentStudents: training.students.length,
+        currentPaidStudents: updatedPaidStudents.length,
         maxStudents: training.maxStudents
       });
     }
