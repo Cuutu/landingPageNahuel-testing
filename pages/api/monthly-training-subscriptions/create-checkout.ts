@@ -133,17 +133,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Crear suscripción en la base de datos (pendiente)
     console.log('💾 Creando suscripción en la base de datos...');
-    const monthlySubscription = new MonthlyTrainingSubscription({
+    
+    // Debug: Verificar datos de la sesión
+    console.log('🔍 Session user data:', {
+      id: (session as any).user?.id,
+      email: (session as any).user?.email,
+      name: (session as any).user?.name
+    });
+    
+    // Calcular fechas de inicio y fin del mes
+    const startDate = new Date(subscriptionYear, subscriptionMonth - 1, 1);
+    const endDate = new Date(subscriptionYear, subscriptionMonth, 0, 23, 59, 59, 999);
+    
+    console.log('📅 Fechas calculadas:', { startDate, endDate });
+    
+    const subscriptionData = {
       userId: (session as any).user.id,
       userEmail: (session as any).user.email,
       userName: (session as any).user.name || (session as any).user.email,
       trainingType,
       subscriptionMonth,
       subscriptionYear,
+      startDate,
+      endDate,
       paymentId,
       paymentAmount: amount,
       paymentStatus: 'pending'
-    });
+    };
+    
+    console.log('📝 Datos de suscripción:', subscriptionData);
+    
+    const monthlySubscription = new MonthlyTrainingSubscription(subscriptionData);
 
     await monthlySubscription.save();
     console.log('✅ Suscripción creada con ID:', monthlySubscription._id);
