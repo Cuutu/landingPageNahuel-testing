@@ -36,15 +36,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Obtener todos los pagos
     const payments = await Payment.find({})
-      .populate('userId', 'name email')
-      .sort({ transactionDate: -1 })
-      .limit(1000); // Limitar a 1000 pagos para evitar sobrecarga
+      .populate('userId', 'name email phone cuit')
+      .sort({ userEmail: 1, transactionDate: -1 })
+      .limit(5000); // límite alto para exportaciones
 
     // Procesar pagos para el frontend
     const processedPayments = payments.map(payment => ({
       id: payment._id.toString(),
       userEmail: payment.userEmail,
-      userName: payment.userId?.name || 'Usuario',
+      userName: (payment as any).userId?.name || 'Usuario',
+      userPhone: (payment as any).userId?.phone || '',
+      userCuit: (payment as any).userId?.cuit || (payment as any).userId?.cuil || '',
       service: payment.service,
       amount: payment.amount,
       currency: payment.currency,
@@ -52,7 +54,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       transactionDate: payment.transactionDate,
       expiryDate: payment.expiryDate,
       paymentMethod: 'MercadoPago',
-      mercadopagoPaymentId: payment.mercadopagoPaymentId
+      mercadopagoPaymentId: payment.mercadopagoPaymentId,
+      reason: payment.metadata?.reason || payment.metadata?.type || payment.service
     }));
 
     return res.status(200).json({

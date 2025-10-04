@@ -911,6 +911,21 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
               })}
             </div>
 
+            {/* Nueva tarjeta: Pagos registrados y exportación */}
+            <div className={styles.sectionCard}>
+              <div className={styles.sectionHeader}>
+                <div className={styles.sectionIcon}>
+                  <DollarSign size={28} />
+                </div>
+                <div className={styles.sectionInfo}>
+                  <h3 className={styles.sectionTitle}>Pagos registrados</h3>
+                  <p className={styles.sectionDescription}>Listado de pagos ordenados por email. Exporta a Excel.</p>
+                </div>
+              </div>
+
+              <PaymentsList />
+            </div>
+
             {/* Sección de herramientas de administración */}
             <div className={`${styles.adminTools} ${styles.hiddenSection}`}>
               <h2 className={styles.toolsTitle}>Herramientas de Sistema</h2>
@@ -1528,6 +1543,104 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
       <Footer />
     </>
+  );
+}
+
+// Sub-componente: lista y exportación de pagos
+function PaymentsList() {
+  const [loading, setLoading] = useState(false);
+  const [payments, setPayments] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch('/api/admin/payments');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error al cargar pagos');
+      const sorted = (data.payments || []).sort((a: any, b: any) => a.userEmail.localeCompare(b.userEmail));
+      setPayments(sorted);
+    } catch (e: any) {
+      setError(e.message || 'Error de conexión');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchPayments(); }, []);
+
+  const exportCsv = () => {
+    const headers = ['Nombre', 'Teléfono', 'CUIT/CUIL', 'Email', 'Pago', 'Moneda', 'Estado', 'Motivo', 'Fecha', 'ID MP'];
+    const rows = payments.map(p => [
+      p.userName || '',
+      p.userPhone || '',
+      p.userCuit || '',
+      p.userEmail || '',
+      String(p.amount || ''),
+      p.currency || 'ARS',
+      p.status || '',
+      p.reason || p.service || '',
+      p.transactionDate ? new Date(p.transactionDate).toLocaleString('es-AR') : '',
+      p.mercadopagoPaymentId || ''
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pagos_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+        <button className={styles.actionButton} onClick={fetchPayments} disabled={loading}>
+          <RefreshCw size={16} /> {loading ? 'Actualizando...' : 'Actualizar'}
+        </button>
+        <button className={styles.actionButton} onClick={exportCsv} disabled={loading || payments.length === 0}>
+          <Download size={16} /> Exportar Excel
+        </button>
+        <span style={{ color: '#9CA3AF' }}>{payments.length} pagos</span>
+      </div>
+      {error && <div className={styles.error}>{error}</div>}
+      <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+          <thead className={styles.tableHeader}>
+            <tr>
+              <th>Email</th>
+              <th>Nombre</th>
+              <th>Teléfono</th>
+              <th>CUIT/CUIL</th>
+              <th>Monto</th>
+              <th>Estado</th>
+              <th>Motivo</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map((p: any) => (
+              <tr key={p.id} className={styles.tableRow}>
+                <td className={styles.tableCell}>{p.userEmail}</td>
+                <td className={styles.tableCell}>{p.userName}</td>
+                <td className={styles.tableCell}>{p.userPhone || '-'}</td>
+                <td className={styles.tableCell}>{p.userCuit || '-'}</td>
+                <td className={styles.tableCell}>{p.currency} ${p.amount?.toLocaleString('es-AR')}</td>
+                <td className={styles.tableCell}>{p.status}</td>
+                <td className={styles.tableCell}>{p.reason || p.service}</td>
+                <td className={styles.tableCell}>{new Date(p.transactionDate).toLocaleString('es-AR')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {loading && <p style={{ marginTop: 12 }}>Cargando…</p>}
+        {!loading && payments.length === 0 && <p style={{ marginTop: 12 }}>No hay pagos.</p>}
+      </div>
+    </div>
   );
 }
 
