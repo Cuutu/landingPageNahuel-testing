@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
 import Booking from '@/models/Booking';
+import MonthlyTrainingSubscription from '@/models/MonthlyTrainingSubscription';
 import { getMercadoPagoPayment, isPaymentSuccessful, isPaymentPending, isPaymentRejected } from '@/lib/mercadopago';
 import { PaymentErrorHandler } from '@/lib/paymentErrorHandler';
 import { createTrainingEnrollmentNotification } from '@/lib/trainingNotifications';
@@ -261,6 +262,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     const isSubscription = ['TraderCall', 'SmartMoney', 'CashFlow'].includes(service);
     const isTraining = ['SwingTrading', 'DowJones'].includes(service);
     const isBooking = externalRef && externalRef.startsWith('booking_');
+    const isMonthlyTrainingSubscription = externalRef && externalRef.startsWith('MTS_');
 
     if (isSubscription) {
       // Procesar suscripción
@@ -358,6 +360,72 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         }
       } catch (e) {
         console.error('⚠️ Error enviando notificación de inscripción:', e);
+      }
+
+    } else if (isMonthlyTrainingSubscription) {
+      // Procesar suscripción mensual
+      console.log('✅ Procesando pago de suscripción mensual...');
+      
+      try {
+        // Buscar la suscripción mensual por external_reference
+        const monthlySubscription = await MonthlyTrainingSubscription.findOne({
+          paymentId: externalRef
+        });
+        
+        if (!monthlySubscription) {
+          console.error('❌ Suscripción mensual no encontrada para external_reference:', externalRef);
+          return;
+        }
+        
+        console.log('📋 Suscripción mensual encontrada:', {
+          id: monthlySubscription._id,
+          userEmail: monthlySubscription.userEmail,
+          trainingType: monthlySubscription.trainingType,
+          subscriptionMonth: monthlySubscription.subscriptionMonth,
+          subscriptionYear: monthlySubscription.subscriptionYear,
+          paymentStatus: monthlySubscription.paymentStatus
+        });
+        
+        // Actualizar estado del pago
+        monthlySubscription.paymentStatus = 'completed';
+        monthlySubscription.isActive = true;
+        monthlySubscription.accessGranted = true;
+        monthlySubscription.updatedAt = new Date();
+        
+        await monthlySubscription.save();
+        
+        console.log('✅ Suscripción mensual activada:', {
+          subscriptionId: monthlySubscription._id,
+          user: monthlySubscription.userEmail,
+          trainingType: monthlySubscription.trainingType,
+          month: monthlySubscription.subscriptionMonth,
+          year: monthlySubscription.subscriptionYear
+        });
+        
+        // Actualizar también el registro de Payment para consistencia
+        payment.status = 'approved';
+        await payment.save();
+        
+        // TODO: Enviar email de confirmación (opcional)
+        // try {
+        //   const { sendMonthlyTrainingConfirmationEmail } = await import('@/lib/emailNotifications');
+        //   await sendMonthlyTrainingConfirmationEmail({
+        //     userEmail: monthlySubscription.userEmail,
+        //     userName: monthlySubscription.userName,
+        //     trainingType: monthlySubscription.trainingType,
+        //     subscriptionMonth: monthlySubscription.subscriptionMonth,
+        //     subscriptionYear: monthlySubscription.subscriptionYear,
+        //     startDate: monthlySubscription.startDate,
+        //     endDate: monthlySubscription.endDate
+        //   });
+        //   console.log('✅ Email de confirmación de suscripción mensual enviado');
+        // } catch (emailError) {
+        //   console.error('⚠️ Error enviando email de confirmación de suscripción mensual:', emailError);
+        //   // No es crítico
+        // }
+        
+      } catch (monthlyError) {
+        console.error('❌ Error procesando suscripción mensual:', monthlyError);
       }
 
     } else if (isBooking) {
