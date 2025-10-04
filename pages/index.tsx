@@ -653,8 +653,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Nueva Sección: Aprende a invertir desde cero */}
-        <section className={styles.learningSection}>
+        {/* Nueva Sección: Aprende a invertir desde cero - OCULTA */}
+        <section className={styles.learningSection} style={{ display: 'none' }}>
           <div className="container">
             <motion.div
               className={styles.learningContent}
@@ -1377,11 +1377,13 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                   </button>
                 )}
                 
+                {/* Botón Mentoring - OCULTO */}
                 <a 
                   href="https://plataformacursos.lozanonahuel.com/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={styles.ctaInvestmentButtonSecondary}
+                  style={{ display: 'none' }}
                 >
                   Ir a Mentoring 🚀
                 </a>

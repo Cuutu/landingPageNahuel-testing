@@ -294,6 +294,13 @@ interface SiteConfigDocument extends Document {
     order: number;
     visible: boolean;
   }>;
+  features: {
+    mentoring: {
+      enabled: boolean;
+      updatedAt?: Date;
+      updatedBy?: string;
+    };
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -576,7 +583,14 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     category: { type: String, enum: ['trader-call', 'smart-money', 'general'], required: true },
     order: { type: Number, default: 0 },
     visible: { type: Boolean, default: true }
-  }]
+  }],
+  features: {
+    mentoring: {
+      enabled: { type: Boolean, default: false },
+      updatedAt: { type: Date, default: Date.now },
+      updatedBy: { type: String, default: 'system' }
+    }
+  }
 }, {
   timestamps: true,
   collection: 'siteconfig'

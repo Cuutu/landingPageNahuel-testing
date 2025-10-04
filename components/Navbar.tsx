@@ -158,13 +158,14 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
             />
           </Link>
 
-          {/* Logo Mentoring - Posicionado después del logo principal */}
+          {/* Logo Mentoring - Posicionado después del logo principal - OCULTO */}
           <a 
             href="https://plataformacursos.lozanonahuel.com/"
             target="_blank"
             rel="noopener noreferrer"
             className={styles.mentoringLogo}
             title="Ir a Plataforma de Mentoring"
+            style={{ display: 'none' }}
           >
             <img 
               src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
@@ -380,8 +381,8 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
         {isMenuOpen && (
           <div className={styles.mobileMenu}>
             <div className={styles.mobileMenuContent}>
-              {/* Mobile Mentoring Logo */}
-              <div className={styles.mobileNavItem}>
+              {/* Mobile Mentoring Logo - OCULTO */}
+              <div className={styles.mobileNavItem} style={{ display: 'none' }}>
                 <a 
                   href="https://plataformacursos.lozanonahuel.com/"
                   target="_blank"

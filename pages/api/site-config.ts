@@ -144,7 +144,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             smartMoney: [],
             cashFlow: []
           },
-          faqs: []
+          faqs: [],
+          features: {
+            mentoring: {
+              enabled: false,
+              updatedAt: new Date(),
+              updatedBy: 'system'
+            }
+          }
         });
         await config.save();
         console.log('✅ [SITE-CONFIG] Configuración por defecto creada');

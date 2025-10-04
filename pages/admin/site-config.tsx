@@ -43,6 +43,14 @@ interface SiteConfig {
     swingTrading: number;
     dowJones: number;
   };
+  // Configuración de features
+  features: {
+    mentoring: {
+      enabled: boolean;
+      updatedAt?: Date;
+      updatedBy?: string;
+    };
+  };
 }
 
 interface AdminSiteConfigProps {
@@ -262,6 +270,72 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
 
 
 
+
+            {/* Configuración de Features */}
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <Settings size={24} />
+                <h2>Gestión de Features</h2>
+              </div>
+              
+              <div className={styles.featuresGrid}>
+                <div className={styles.featureCard}>
+                  <div className={styles.featureHeader}>
+                    <div className={styles.featureInfo}>
+                      <h3>Mentoring</h3>
+                      <p>Plataforma de cursos y mentoring. Incluye logos en navbar y secciones en la landing page.</p>
+                    </div>
+                    <div className={`${styles.featureStatus} ${config.features?.mentoring?.enabled ? styles.enabled : styles.disabled}`}>
+                      {config.features?.mentoring?.enabled ? (
+                        <>
+                          <Eye size={16} />
+                          Activo
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff size={16} />
+                          Inactivo
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className={styles.featureControls}>
+                    <label className={styles.toggleSwitch}>
+                      <input
+                        type="checkbox"
+                        checked={config.features?.mentoring?.enabled || false}
+                        onChange={(e) => setConfig({
+                          ...config,
+                          features: {
+                            ...config.features,
+                            mentoring: {
+                              ...config.features?.mentoring,
+                              enabled: e.target.checked,
+                              updatedAt: new Date(),
+                              updatedBy: session?.user?.email || 'admin'
+                            }
+                          }
+                        })}
+                      />
+                      <span className={styles.slider}></span>
+                    </label>
+                    <span className={styles.toggleLabel}>
+                      {config.features?.mentoring?.enabled ? 'Desactivar' : 'Activar'}
+                    </span>
+                  </div>
+
+                  {config.features?.mentoring?.updatedAt && (
+                    <div className={styles.featureMeta}>
+                      <small>
+                        Última actualización: {new Date(config.features.mentoring.updatedAt).toLocaleString('es-AR')} 
+                        {config.features.mentoring.updatedBy && ` por ${config.features.mentoring.updatedBy}`}
+                      </small>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
             {/* Configuración de Estadísticas */}
             <div className={styles.section}>
