@@ -7,7 +7,7 @@ import User from '../../../../models/User';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN!,
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
