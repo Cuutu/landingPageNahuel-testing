@@ -55,17 +55,18 @@ export default function SwingTradingCalendar() {
   const { data: session } = useSession();
   const [trainings, setTrainings] = useState<MonthlyTraining[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [enrolling, setEnrolling] = useState<string | null>(null);
 
   useEffect(() => {
     loadTrainings();
-  }, [currentYear, session]);
+  }, [currentMonth, currentYear, session]);
 
   const loadTrainings = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`/api/monthly-trainings?year=${currentYear}`);
+      const response = await fetch(`/api/monthly-trainings?year=${currentYear}&month=${currentMonth}`);
       const data = await response.json();
       
       if (data.success) {
@@ -112,6 +113,28 @@ export default function SwingTradingCalendar() {
     }
   };
 
+  const navigateToPreviousMonth = () => {
+    if (currentMonth === 1) {
+      setCurrentMonth(12);
+      setCurrentYear(prev => prev - 1);
+    } else {
+      setCurrentMonth(prev => prev - 1);
+    }
+  };
+
+  const navigateToNextMonth = () => {
+    if (currentMonth === 12) {
+      setCurrentMonth(1);
+      setCurrentYear(prev => prev + 1);
+    } else {
+      setCurrentMonth(prev => prev + 1);
+    }
+  };
+
+  const getCurrentMonthName = () => {
+    return MONTHS[currentMonth - 1];
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { color: '#6b7280', text: 'Borrador', icon: AlertCircle },
@@ -136,18 +159,6 @@ export default function SwingTradingCalendar() {
     );
   };
 
-  const getTrainingsByMonth = () => {
-    const monthlyTrainings: { [key: number]: MonthlyTraining } = {};
-    
-    trainings.forEach(training => {
-      monthlyTrainings[training.month] = training;
-    });
-    
-    return monthlyTrainings;
-  };
-
-  const monthlyTrainings = getTrainingsByMonth();
-
   if (loading) {
     return (
       <div className={styles.loading}>
@@ -166,145 +177,143 @@ export default function SwingTradingCalendar() {
           <p>Inscríbete a nuestros entrenamientos mensuales de Swing Trading</p>
         </div>
         
-        <div className={styles.yearSelector}>
+        <div className={styles.monthNavigation}>
           <button 
-            onClick={() => setCurrentYear(prev => prev - 1)}
-            className={styles.yearButton}
+            onClick={navigateToPreviousMonth}
+            className={styles.navButton}
+            aria-label="Mes anterior"
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={24} />
           </button>
-          <span className={styles.currentYear}>{currentYear}</span>
+          
+          <div className={styles.currentMonthDisplay}>
+            <span className={styles.monthName}>{getCurrentMonthName()}</span>
+            <span className={styles.yearName}>{currentYear}</span>
+          </div>
+          
           <button 
-            onClick={() => setCurrentYear(prev => prev + 1)}
-            className={styles.yearButton}
+            onClick={navigateToNextMonth}
+            className={styles.navButton}
+            aria-label="Mes siguiente"
           >
-            <ChevronRight size={20} />
+            <ChevronRight size={24} />
           </button>
         </div>
       </div>
 
-      {/* Grid de Meses */}
-      <div className={styles.monthsGrid}>
-        {MONTHS.map((monthName, index) => {
-          const monthNumber = index + 1;
-          const training = monthlyTrainings[monthNumber];
-          
-          return (
-            <div key={monthNumber} className={styles.monthCard}>
-              <div className={styles.monthHeader}>
-                <div className={styles.monthInfo}>
-                  <h3>{monthName}</h3>
-                  <span className={styles.monthYear}>{currentYear}</span>
+      {/* Entrenamiento del Mes Actual */}
+      <div className={styles.monthContainer}>
+        {trainings.length > 0 ? (
+          trainings.map((training) => (
+            <div key={training._id} className={styles.trainingCard}>
+              <div className={styles.trainingHeader}>
+                <div className={styles.trainingTitle}>
+                  <h3>{training.title}</h3>
+                  <span className={styles.monthYear}>
+                    {training.monthName} {training.year}
+                  </span>
                 </div>
                 
-                {training && getStatusBadge(training.status)}
+                {getStatusBadge(training.status)}
               </div>
 
-              {training ? (
-                <div className={styles.trainingContent}>
-                  <h4 className={styles.trainingTitle}>{training.title}</h4>
-                  <p className={styles.trainingDescription}>{training.description}</p>
-                  
-                  <div className={styles.trainingStats}>
-                    <div className={styles.stat}>
-                      <DollarSign size={16} />
-                      <span>${training.price}</span>
-                    </div>
-                    <div className={styles.stat}>
-                      <Users size={16} />
-                      <span>{training.maxStudents - training.availableSpots}/{training.maxStudents}</span>
-                    </div>
-                    <div className={styles.stat}>
-                      <Calendar size={16} />
-                      <span>{training.totalClasses} clases</span>
-                    </div>
-                  </div>
+              <p className={styles.trainingDescription}>{training.description}</p>
+              
+              <div className={styles.trainingStats}>
+                <div className={styles.stat}>
+                  <DollarSign size={16} />
+                  <span>${training.price}</span>
+                </div>
+                <div className={styles.stat}>
+                  <Users size={16} />
+                  <span>{training.maxStudents - training.availableSpots}/{training.maxStudents}</span>
+                </div>
+                <div className={styles.stat}>
+                  <Calendar size={16} />
+                  <span>{training.totalClasses} clases</span>
+                </div>
+              </div>
 
-                  {/* Clases del mes */}
-                  <div className={styles.classesList}>
-                    <h5>Clases programadas:</h5>
-                    {training.classes.slice(0, 3).map((classItem, classIndex) => (
-                      <div key={classIndex} className={styles.classItem}>
-                        <div className={styles.classDate}>
-                          {new Date(classItem.date).toLocaleDateString('es-AR', { 
-                            day: '2-digit', 
-                            month: 'short' 
-                          })}
-                        </div>
-                        <div className={styles.classInfo}>
-                          <span className={styles.classTitle}>{classItem.title}</span>
-                          <span className={styles.classTime}>
-                            {classItem.startTime} - {classItem.endTime}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {training.classes.length > 3 && (
-                      <div className={styles.moreClasses}>
-                        +{training.classes.length - 3} clases más
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Fechas de inscripción */}
-                  <div className={styles.registrationDates}>
-                    <div className={styles.registrationDate}>
-                      <span className={styles.dateLabel}>Inscripciones:</span>
-                      <span className={styles.dateRange}>
-                        {new Date(training.registrationOpenDate).toLocaleDateString('es-AR')} - {' '}
-                        {new Date(training.registrationCloseDate).toLocaleDateString('es-AR')}
+              {/* Clases del mes */}
+              <div className={styles.classesList}>
+                <h4>Clases programadas:</h4>
+                {training.classes.map((classItem, classIndex) => (
+                  <div key={classIndex} className={styles.classItem}>
+                    <div className={styles.classDate}>
+                      {new Date(classItem.date).toLocaleDateString('es-AR', { 
+                        day: '2-digit', 
+                        month: 'short' 
+                      })}
+                    </div>
+                    <div className={styles.classInfo}>
+                      <span className={styles.classTitle}>{classItem.title}</span>
+                      <span className={styles.classTime}>
+                        {classItem.startTime} - {classItem.endTime}
                       </span>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  {/* Botón de acción */}
-                  <div className={styles.trainingActions}>
-                    {training.isEnrolled ? (
-                      <div className={styles.enrolledBadge}>
-                        <CheckCircle size={16} />
-                        <span>Ya inscripto</span>
-                      </div>
-                    ) : training.canEnroll ? (
-                      <button
-                        onClick={() => handleEnroll(training._id)}
-                        disabled={enrolling === training._id}
-                        className={styles.enrollButton}
-                      >
-                        <CreditCard size={16} />
-                        {enrolling === training._id ? 'Procesando...' : `Inscribirse - $${training.price}`}
-                      </button>
-                    ) : (
-                      <div className={styles.unavailableBadge}>
-                        {!training.registrationOpen && !training.registrationClosed && (
-                          <span>Inscripciones próximamente</span>
-                        )}
-                        {training.registrationClosed && (
-                          <span>Inscripciones cerradas</span>
-                        )}
-                        {training.status === 'full' && (
-                          <span>Sin cupos disponibles</span>
-                        )}
-                        {training.status === 'completed' && (
-                          <span>Entrenamiento finalizado</span>
-                        )}
-                        {training.status === 'cancelled' && (
-                          <span>Entrenamiento cancelado</span>
-                        )}
-                      </div>
+              {/* Fechas de inscripción */}
+              <div className={styles.registrationDates}>
+                <div className={styles.registrationDate}>
+                  <span className={styles.dateLabel}>Inscripciones:</span>
+                  <span className={styles.dateRange}>
+                    {new Date(training.registrationOpenDate).toLocaleDateString('es-AR')} - {' '}
+                    {new Date(training.registrationCloseDate).toLocaleDateString('es-AR')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Botón de acción */}
+              <div className={styles.trainingActions}>
+                {training.isEnrolled ? (
+                  <div className={styles.enrolledBadge}>
+                    <CheckCircle size={16} />
+                    <span>Ya inscripto</span>
+                  </div>
+                ) : training.canEnroll ? (
+                  <button
+                    onClick={() => handleEnroll(training._id)}
+                    disabled={enrolling === training._id}
+                    className={styles.enrollButton}
+                  >
+                    <CreditCard size={16} />
+                    {enrolling === training._id ? 'Procesando...' : `Inscribirse - $${training.price}`}
+                  </button>
+                ) : (
+                  <div className={styles.unavailableBadge}>
+                    {!training.registrationOpen && !training.registrationClosed && (
+                      <span>Inscripciones próximamente</span>
+                    )}
+                    {training.registrationClosed && (
+                      <span>Inscripciones cerradas</span>
+                    )}
+                    {training.status === 'full' && (
+                      <span>Sin cupos disponibles</span>
+                    )}
+                    {training.status === 'completed' && (
+                      <span>Entrenamiento finalizado</span>
+                    )}
+                    {training.status === 'cancelled' && (
+                      <span>Entrenamiento cancelado</span>
                     )}
                   </div>
-                </div>
-              ) : (
-                <div className={styles.noTraining}>
-                  <Calendar size={48} />
-                  <h4>No hay entrenamiento</h4>
-                  <p>No hay entrenamientos programados para este mes</p>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-          );
-        })}
+          ))
+        ) : (
+          <div className={styles.noTraining}>
+            <Calendar size={64} />
+            <h3>No hay entrenamiento disponible</h3>
+            <p>No hay entrenamientos programados para {getCurrentMonthName()} {currentYear}</p>
+            <div className={styles.navigationHint}>
+              <p>Usa las flechas para navegar entre meses</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Información adicional */}

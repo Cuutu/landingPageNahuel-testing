@@ -58,69 +58,86 @@
   font-size: 1.1rem;
 }
 
-.yearSelector {
+.monthNavigation {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.5rem;
   background: rgba(30, 41, 59, 0.8);
   border: 2px solid rgba(139, 92, 246, 0.3);
   border-radius: 16px;
-  padding: 0.75rem 1.5rem;
+  padding: 1rem 1.5rem;
 }
 
-.yearButton {
+.navButton {
   background: rgba(139, 92, 246, 0.1);
   border: 1px solid rgba(139, 92, 246, 0.3);
   color: #8b5cf6;
-  padding: 0.5rem;
-  border-radius: 8px;
+  padding: 0.75rem;
+  border-radius: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  width: 48px;
+  height: 48px;
 }
 
-.yearButton:hover {
+.navButton:hover {
   background: rgba(139, 92, 246, 0.2);
   border-color: rgba(139, 92, 246, 0.5);
+  transform: scale(1.05);
 }
 
-.currentYear {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #ffffff;
-  min-width: 80px;
+.currentMonthDisplay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 150px;
   text-align: center;
 }
 
-/* ===== GRID DE MESES ===== */
-.monthsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
+.monthName {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+}
+
+.yearName {
+  font-size: 1rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+/* ===== CONTENEDOR DEL MES ACTUAL ===== */
+.monthContainer {
+  display: flex;
+  justify-content: center;
   margin-bottom: 3rem;
 }
 
-.monthCard {
+.trainingCard {
   background: rgba(30, 41, 59, 0.8);
   border: 2px solid rgba(139, 92, 246, 0.2);
   border-radius: 20px;
-  padding: 1.5rem;
+  padding: 2rem;
   transition: all 0.3s ease;
   backdrop-filter: blur(10px);
-  min-height: 500px;
+  max-width: 800px;
+  width: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.monthCard:hover {
+.trainingCard:hover {
   transform: translateY(-5px);
   border-color: rgba(139, 92, 246, 0.4);
   box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
 }
 
-.monthHeader {
+.trainingHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -129,16 +146,17 @@
   border-bottom: 1px solid rgba(139, 92, 246, 0.2);
 }
 
-.monthInfo h3 {
-  font-size: 1.5rem;
+.trainingTitle h3 {
+  font-size: 1.8rem;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
 }
 
 .monthYear {
   color: #94a3b8;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -155,36 +173,19 @@
   letter-spacing: 0.5px;
 }
 
-/* ===== CONTENIDO DEL ENTRENAMIENTO ===== */
-.trainingContent {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.trainingTitle {
-  font-size: 1.3rem;
-  font-weight: 600;
-  color: #ffffff;
-  margin-bottom: 0.75rem;
-  line-height: 1.3;
-}
-
 .trainingDescription {
   color: #cbd5e1;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+  font-size: 1.1rem;
 }
 
 .trainingStats {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .stat {
@@ -192,10 +193,10 @@
   align-items: center;
   gap: 0.5rem;
   background: rgba(139, 92, 246, 0.1);
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
   border-radius: 12px;
   color: #8b5cf6;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
@@ -205,37 +206,51 @@
 
 /* ===== LISTA DE CLASES ===== */
 .classesList {
-  margin-bottom: 1.5rem;
-  flex: 1;
+  margin-bottom: 2rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid rgba(139, 92, 246, 0.1);
 }
 
-.classesList h5 {
-  font-size: 1rem;
+.classesList h4 {
+  font-size: 1.2rem;
   font-weight: 600;
   color: #ffffff;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
 }
 
 .classItem {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  background: rgba(15, 23, 42, 0.5);
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(30, 41, 59, 0.6);
   border-radius: 12px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   border: 1px solid rgba(139, 92, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.classItem:last-child {
+  margin-bottom: 0;
+}
+
+.classItem:hover {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(139, 92, 246, 0.2);
 }
 
 .classDate {
   background: linear-gradient(135deg, #8b5cf6, #06b6d4);
   color: white;
-  padding: 0.5rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  padding: 0.75rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 600;
   text-align: center;
-  min-width: 50px;
+  min-width: 60px;
   text-transform: uppercase;
 }
 
@@ -248,44 +263,34 @@
 
 .classTitle {
   color: #ffffff;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .classTime {
   color: #94a3b8;
-  font-size: 0.8rem;
-}
-
-.moreClasses {
-  text-align: center;
-  color: #8b5cf6;
-  font-size: 0.85rem;
-  font-weight: 500;
-  padding: 0.5rem;
-  background: rgba(139, 92, 246, 0.1);
-  border-radius: 8px;
-  margin-top: 0.5rem;
+  font-size: 0.9rem;
 }
 
 /* ===== FECHAS DE INSCRIPCIÓN ===== */
 .registrationDates {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem;
   background: rgba(6, 182, 212, 0.1);
   border: 1px solid rgba(6, 182, 212, 0.2);
-  border-radius: 12px;
+  border-radius: 16px;
 }
 
 .registrationDate {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  text-align: center;
 }
 
 .dateLabel {
   color: #06b6d4;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -293,35 +298,37 @@
 
 .dateRange {
   color: #ffffff;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
 /* ===== ACCIONES DEL ENTRENAMIENTO ===== */
 .trainingActions {
   margin-top: auto;
+  text-align: center;
 }
 
 .enrollButton {
   width: 100%;
+  max-width: 400px;
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.75rem;
   transition: all 0.3s ease;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .enrollButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
 }
 
 .enrollButton:disabled {
@@ -332,57 +339,76 @@
 
 .enrolledBadge {
   width: 100%;
+  max-width: 400px;
   background: rgba(16, 185, 129, 0.2);
   border: 2px solid rgba(16, 185, 129, 0.3);
   color: #10b981;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 600;
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-size: 1rem;
+  gap: 0.75rem;
+  font-size: 1.1rem;
+  margin: 0 auto;
 }
 
 .unavailableBadge {
   width: 100%;
+  max-width: 400px;
   background: rgba(100, 116, 139, 0.2);
   border: 2px solid rgba(100, 116, 139, 0.3);
   color: #64748b;
-  padding: 1rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 500;
+  padding: 1.25rem 2rem;
+  border-radius: 16px;
+  font-weight: 600;
   text-align: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  margin: 0 auto;
 }
 
 /* ===== SIN ENTRENAMIENTO ===== */
 .noTraining {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  background: rgba(30, 41, 59, 0.8);
+  border: 2px dashed rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  padding: 4rem 2rem;
   text-align: center;
-  padding: 2rem;
   color: #94a3b8;
+  max-width: 600px;
+  width: 100%;
 }
 
 .noTraining svg {
   color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+
+.noTraining h3 {
+  font-size: 1.5rem;
+  color: #ffffff;
   margin-bottom: 1rem;
 }
 
-.noTraining h4 {
-  font-size: 1.2rem;
-  color: #ffffff;
-  margin-bottom: 0.5rem;
+.noTraining p {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin-bottom: 1.5rem;
 }
 
-.noTraining p {
-  font-size: 0.9rem;
-  line-height: 1.5;
+.navigationHint {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.navigationHint p {
+  color: #8b5cf6;
+  font-weight: 500;
+  margin: 0;
 }
 
 /* ===== SECCIÓN DE INFORMACIÓN ===== */

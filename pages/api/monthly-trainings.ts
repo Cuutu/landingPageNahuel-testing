@@ -16,16 +16,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { upcoming, year, month } = req.query;
     const session = await getServerSession(req, res, authOptions);
 
-    let filter: any = {
-      status: { $in: ['open', 'full'] } // Solo entrenamientos abiertos o llenos
-    };
+    let filter: any = {};
 
     // Filtrar por año y mes si se especifica
     if (year) filter.year = parseInt(year as string);
     if (month) filter.month = parseInt(month as string);
 
-    // Si se pide solo próximos entrenamientos
+    // Si se pide solo próximos entrenamientos, incluir solo abiertos o llenos
     if (upcoming === 'true') {
+      filter.status = { $in: ['open', 'full'] };
       const now = new Date();
       const currentMonth = now.getMonth() + 1;
       const currentYear = now.getFullYear();
@@ -38,6 +37,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           registrationCloseDate: { $gt: now }
         }
       ];
+    } else {
+      // Para navegación de meses, mostrar todos los entrenamientos (incluso draft para admins)
+      if (!session || session.user.role !== 'admin') {
+        filter.status = { $in: ['open', 'full', 'in-progress', 'completed'] };
+      }
     }
 
     const trainings = await MonthlyTraining.find(filter)
