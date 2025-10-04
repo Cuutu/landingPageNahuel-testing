@@ -205,14 +205,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           liquidity.distributions[distributionIndex].allocatedAmount = newAllocatedAmount;
           liquidity.distributions[distributionIndex].shares = sharesRemaining;
           
+          // Actualizar la liquidez total disponible PRIMERO
+          liquidity.totalLiquidity += liquidityReleased;
+          
+          // ✅ RECALCULAR EL PORCENTAJE basándose en la nueva liquidez total
+          const newPercentage = liquidity.totalLiquidity > 0 
+            ? (newAllocatedAmount / liquidity.totalLiquidity) * 100 
+            : 0;
+          
+          liquidity.distributions[distributionIndex].percentage = Math.round(newPercentage * 100) / 100; // Redondear a 2 decimales
+          
+          console.log(`📊 Porcentaje recalculado: ${liquidity.distributions[distributionIndex].percentage}%`);
+          console.log(`🔢 Cálculo: $${newAllocatedAmount} ÷ $${liquidity.totalLiquidity} × 100 = ${newPercentage.toFixed(2)}%`);
+          
           // Si se cerró completamente, marcar como cerrada
           if (sharesRemaining <= 0) {
             liquidity.distributions[distributionIndex].status = 'CLOSED';
             liquidity.distributions[distributionIndex].closedAt = new Date();
           }
-          
-          // Actualizar la liquidez total disponible
-          liquidity.totalLiquidity += liquidityReleased;
           
           // Guardar cambios directamente en la base de datos
           await liquidity.save();

@@ -986,7 +986,9 @@ const SubscriberView: React.FC = () => {
   // ✅ OPTIMIZADO: Cargar liquidez una sola vez y cachear
   const loadLiquidity = async () => {
     try {
-      const res = await fetch('/api/liquidity?pool=SmartMoney');
+      // Agregar timestamp para evitar cache del browser
+      const timestamp = new Date().getTime();
+      const res = await fetch(`/api/liquidity?pool=SmartMoney&_t=${timestamp}`);
       if (res.ok) {
         const json = await res.json();
         const map: Record<string, any> = {};
@@ -1439,7 +1441,11 @@ const SubscriberView: React.FC = () => {
         
         // Recargar datos
         await loadAlerts();
-        await loadLiquidity();
+        
+        // ✅ FORZAR RECARGA DE LIQUIDEZ con delay para asegurar actualización
+        setTimeout(async () => {
+          await loadLiquidity();
+        }, 500); // Esperar 500ms para que la DB se actualice
         
         // Cerrar modal
         setShowPartialSaleModal(false);
