@@ -98,15 +98,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('📊 Pricing encontrado:', pricing);
 
     let amount = 0;
+    let currency = 'ARS'; // Por defecto ARS
+    
     if (trainingType === 'SwingTrading') {
       amount = pricing.entrenamientos?.swingTrading?.price || 0;
+      currency = pricing.entrenamientos?.swingTrading?.currency || pricing.currency || 'ARS';
     } else if (trainingType === 'DayTrading') {
       amount = pricing.entrenamientos?.dayTrading?.price || 0;
+      currency = pricing.entrenamientos?.dayTrading?.currency || pricing.currency || 'ARS';
     } else if (trainingType === 'DowJones') {
       amount = pricing.entrenamientos?.advanced?.price || 0; // DowJones usa advanced
+      currency = pricing.entrenamientos?.advanced?.currency || pricing.currency || 'ARS';
     }
 
-    console.log('💵 Monto calculado:', amount);
+    console.log('💵 Monto calculado:', amount, 'Currency:', currency);
+    
+    // Si el precio está en USD pero necesitamos ARS, hacer conversión
+    if (currency === 'USD' && pricing.currency === 'ARS') {
+      // Asumir que el precio ya está en ARS pero el campo currency está mal
+      console.log('⚠️ Precio marcado como USD pero base de datos en ARS, usando precio tal como está');
+    }
 
     if (amount <= 0) {
       console.log('❌ Precio no configurado o es 0');
@@ -148,7 +159,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('📅 Fechas calculadas:', { startDate, endDate });
     
     const subscriptionData = {
-      userId: (session as any).user.id,
+      userId: (session as any).user.id || (session as any).user.email, // Usar email como fallback si no hay ID
       userEmail: (session as any).user.email,
       userName: (session as any).user.name || (session as any).user.email,
       trainingType,

@@ -56,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Buscar suscripción activa para el mes/año especificado con timeout
     const activeSubscription = await withTimeout(
       MonthlyTrainingSubscription.findOne({
-        userId: (session as any).user.id,
+        userId: (session as any).user.id || (session as any).user.email, // Usar email como fallback
         trainingType,
         subscriptionMonth: checkMonth,
         subscriptionYear: checkYear,

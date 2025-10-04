@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Construir query
     const query: any = {
-      userId: (session as any).user.id
+      userId: (session as any).user.id || (session as any).user.email // Usar email como fallback
     };
 
     if (trainingType) {
