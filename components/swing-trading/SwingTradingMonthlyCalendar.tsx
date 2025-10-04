@@ -45,6 +45,20 @@ const MONTHS = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
+// Helper function to format date for Argentina timezone (UTC-3)
+function formatArgentinaDate(dateString: string): string {
+  const date = new Date(dateString);
+  
+  // Adjust for Argentina timezone (UTC-3)
+  // Since the date is stored in UTC, we need to subtract 3 hours to get Argentina time
+  const argentinaDate = new Date(date.getTime() - (3 * 60 * 60 * 1000));
+  
+  return argentinaDate.toLocaleDateString('es-AR', { 
+    day: '2-digit', 
+    month: 'short' 
+  });
+}
+
 export default function SwingTradingCalendar() {
   const { data: session } = useSession();
   const [trainings, setTrainings] = useState<MonthlyTraining[]>([]);
@@ -234,10 +248,7 @@ export default function SwingTradingCalendar() {
                 {training.classes.map((classItem, classIndex) => (
                   <div key={classIndex} className={styles.classItem}>
                     <div className={styles.classDate}>
-                      {new Date(classItem.date).toLocaleDateString('es-AR', { 
-                        day: '2-digit', 
-                        month: 'short' 
-                      })}
+                      {formatArgentinaDate(classItem.date)}
                     </div>
                     <div className={styles.classInfo}>
                       <span className={styles.classTitle}>{classItem.title}</span>

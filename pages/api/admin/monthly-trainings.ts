@@ -5,6 +5,22 @@ import dbConnect from '../../../lib/mongodb';
 import MonthlyTraining from '../../../models/MonthlyTraining';
 import User from '../../../models/User';
 
+// Helper function to create date in Argentina timezone (UTC-3)
+function createArgentinaDate(dateString: string): Date {
+  // Parse the date string (YYYY-MM-DD) and create date in Argentina timezone
+  const [year, month, day] = dateString.split('-').map(Number);
+  
+  // Create date in Argentina timezone (UTC-3)
+  // We need to add 3 hours to compensate for UTC-3
+  const argentinaDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+  
+  // Adjust for Argentina timezone (UTC-3)
+  // Argentina is UTC-3, so we need to add 3 hours to get the correct UTC time
+  const utcDate = new Date(argentinaDate.getTime() + (3 * 60 * 60 * 1000));
+  
+  return utcDate;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
 
@@ -113,7 +129,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       classes: classes.map((cls: any, index: number) => ({
         ...cls,
         _id: undefined, // Dejar que MongoDB genere el ID
-        date: new Date(cls.date), // Convertir string a Date correctamente
+        date: createArgentinaDate(cls.date), // Convertir string a Date en zona horaria Argentina (UTC-3)
         status: 'scheduled'
       })),
       students: [],
@@ -167,7 +183,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
     if (updateData.classes) {
       updateData.classes = updateData.classes.map((cls: any) => ({
         ...cls,
-        date: new Date(cls.date) // Convertir string a Date correctamente
+        date: createArgentinaDate(cls.date) // Convertir string a Date en zona horaria Argentina (UTC-3)
       }));
     }
 

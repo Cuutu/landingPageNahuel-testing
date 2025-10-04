@@ -405,11 +405,14 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
         }
 
         if (nextClass) {
-          const formattedDate = nextClass.date.toLocaleDateString('es-ES', {
+          // Adjust for Argentina timezone (UTC-3)
+          const argentinaDate = new Date(nextClass.date.getTime() - (3 * 60 * 60 * 1000));
+          
+          const formattedDate = argentinaDate.toLocaleDateString('es-ES', {
             day: 'numeric',
             month: 'long'
           });
-          const formattedTime = nextClass.date.toLocaleTimeString('es-ES', {
+          const formattedTime = argentinaDate.toLocaleTimeString('es-ES', {
             hour: '2-digit',
             minute: '2-digit'
           });
