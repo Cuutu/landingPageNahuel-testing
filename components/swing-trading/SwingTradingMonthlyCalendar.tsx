@@ -1,0 +1,335 @@
+import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
+import { 
+  Calendar,
+  Users,
+  DollarSign,
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  User,
+  CreditCard,
+  CheckCircle,
+  AlertCircle
+} from 'lucide-react';
+import styles from '../../styles/SwingTradingCalendar.module.css';
+
+interface TrainingClass {
+  _id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  title: string;
+  description?: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+}
+
+interface MonthlyTraining {
+  _id: string;
+  title: string;
+  description: string;
+  month: number;
+  year: number;
+  monthName: string;
+  price: number;
+  maxStudents: number;
+  classes: TrainingClass[];
+  status: 'draft' | 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
+  registrationOpenDate: string;
+  registrationCloseDate: string;
+  availableSpots: number;
+  totalClasses: number;
+  completedClasses: number;
+  canEnroll: boolean;
+  isEnrolled: boolean;
+  registrationOpen: boolean;
+  registrationClosed: boolean;
+}
+
+const MONTHS = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
+export default function SwingTradingCalendar() {
+  const { data: session } = useSession();
+  const [trainings, setTrainings] = useState<MonthlyTraining[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [enrolling, setEnrolling] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadTrainings();
+  }, [currentYear, session]);
+
+  const loadTrainings = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/monthly-trainings?year=${currentYear}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        setTrainings(data.data);
+      }
+    } catch (error) {
+      console.error('Error cargando entrenamientos:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEnroll = async (trainingId: string) => {
+    if (!session) {
+      alert('Debes iniciar sesión para inscribirte');
+      return;
+    }
+
+    setEnrolling(trainingId);
+    
+    try {
+      // Crear checkout de MercadoPago
+      const response = await fetch('/api/payments/mercadopago/create-monthly-training-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trainingId })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Redirigir a MercadoPago
+        window.location.href = process.env.NODE_ENV === 'production' 
+          ? data.initPoint 
+          : data.sandboxInitPoint;
+      } else {
+        alert(`Error: ${data.error}`);
+      }
+    } catch (error) {
+      console.error('Error creando checkout:', error);
+      alert('Error procesando el pago. Inténtalo nuevamente.');
+    } finally {
+      setEnrolling(null);
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusConfig = {
+      draft: { color: '#6b7280', text: 'Borrador', icon: AlertCircle },
+      open: { color: '#10b981', text: 'Abierto', icon: CheckCircle },
+      full: { color: '#f59e0b', text: 'Lleno', icon: Users },
+      'in-progress': { color: '#3b82f6', text: 'En Progreso', icon: Clock },
+      completed: { color: '#059669', text: 'Completado', icon: CheckCircle },
+      cancelled: { color: '#ef4444', text: 'Cancelado', icon: AlertCircle }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig];
+    const IconComponent = config.icon;
+
+    return (
+      <div 
+        className={styles.statusBadge}
+        style={{ backgroundColor: config.color }}
+      >
+        <IconComponent size={14} />
+        <span>{config.text}</span>
+      </div>
+    );
+  };
+
+  const getTrainingsByMonth = () => {
+    const monthlyTrainings: { [key: number]: MonthlyTraining } = {};
+    
+    trainings.forEach(training => {
+      monthlyTrainings[training.month] = training;
+    });
+    
+    return monthlyTrainings;
+  };
+
+  const monthlyTrainings = getTrainingsByMonth();
+
+  if (loading) {
+    return (
+      <div className={styles.loading}>
+        <div className={styles.loadingSpinner}></div>
+        <p>Cargando entrenamientos...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.headerContent}>
+          <h2>Swing Trading - Entrenamientos Mensuales</h2>
+          <p>Inscríbete a nuestros entrenamientos mensuales de Swing Trading</p>
+        </div>
+        
+        <div className={styles.yearSelector}>
+          <button 
+            onClick={() => setCurrentYear(prev => prev - 1)}
+            className={styles.yearButton}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <span className={styles.currentYear}>{currentYear}</span>
+          <button 
+            onClick={() => setCurrentYear(prev => prev + 1)}
+            className={styles.yearButton}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+      </div>
+
+      {/* Grid de Meses */}
+      <div className={styles.monthsGrid}>
+        {MONTHS.map((monthName, index) => {
+          const monthNumber = index + 1;
+          const training = monthlyTrainings[monthNumber];
+          
+          return (
+            <div key={monthNumber} className={styles.monthCard}>
+              <div className={styles.monthHeader}>
+                <div className={styles.monthInfo}>
+                  <h3>{monthName}</h3>
+                  <span className={styles.monthYear}>{currentYear}</span>
+                </div>
+                
+                {training && getStatusBadge(training.status)}
+              </div>
+
+              {training ? (
+                <div className={styles.trainingContent}>
+                  <h4 className={styles.trainingTitle}>{training.title}</h4>
+                  <p className={styles.trainingDescription}>{training.description}</p>
+                  
+                  <div className={styles.trainingStats}>
+                    <div className={styles.stat}>
+                      <DollarSign size={16} />
+                      <span>${training.price}</span>
+                    </div>
+                    <div className={styles.stat}>
+                      <Users size={16} />
+                      <span>{training.maxStudents - training.availableSpots}/{training.maxStudents}</span>
+                    </div>
+                    <div className={styles.stat}>
+                      <Calendar size={16} />
+                      <span>{training.totalClasses} clases</span>
+                    </div>
+                  </div>
+
+                  {/* Clases del mes */}
+                  <div className={styles.classesList}>
+                    <h5>Clases programadas:</h5>
+                    {training.classes.slice(0, 3).map((classItem, classIndex) => (
+                      <div key={classIndex} className={styles.classItem}>
+                        <div className={styles.classDate}>
+                          {new Date(classItem.date).toLocaleDateString('es-AR', { 
+                            day: '2-digit', 
+                            month: 'short' 
+                          })}
+                        </div>
+                        <div className={styles.classInfo}>
+                          <span className={styles.classTitle}>{classItem.title}</span>
+                          <span className={styles.classTime}>
+                            {classItem.startTime} - {classItem.endTime}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {training.classes.length > 3 && (
+                      <div className={styles.moreClasses}>
+                        +{training.classes.length - 3} clases más
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Fechas de inscripción */}
+                  <div className={styles.registrationDates}>
+                    <div className={styles.registrationDate}>
+                      <span className={styles.dateLabel}>Inscripciones:</span>
+                      <span className={styles.dateRange}>
+                        {new Date(training.registrationOpenDate).toLocaleDateString('es-AR')} - {' '}
+                        {new Date(training.registrationCloseDate).toLocaleDateString('es-AR')}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Botón de acción */}
+                  <div className={styles.trainingActions}>
+                    {training.isEnrolled ? (
+                      <div className={styles.enrolledBadge}>
+                        <CheckCircle size={16} />
+                        <span>Ya inscripto</span>
+                      </div>
+                    ) : training.canEnroll ? (
+                      <button
+                        onClick={() => handleEnroll(training._id)}
+                        disabled={enrolling === training._id}
+                        className={styles.enrollButton}
+                      >
+                        <CreditCard size={16} />
+                        {enrolling === training._id ? 'Procesando...' : `Inscribirse - $${training.price}`}
+                      </button>
+                    ) : (
+                      <div className={styles.unavailableBadge}>
+                        {!training.registrationOpen && !training.registrationClosed && (
+                          <span>Inscripciones próximamente</span>
+                        )}
+                        {training.registrationClosed && (
+                          <span>Inscripciones cerradas</span>
+                        )}
+                        {training.status === 'full' && (
+                          <span>Sin cupos disponibles</span>
+                        )}
+                        {training.status === 'completed' && (
+                          <span>Entrenamiento finalizado</span>
+                        )}
+                        {training.status === 'cancelled' && (
+                          <span>Entrenamiento cancelado</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className={styles.noTraining}>
+                  <Calendar size={48} />
+                  <h4>No hay entrenamiento</h4>
+                  <p>No hay entrenamientos programados para este mes</p>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Información adicional */}
+      <div className={styles.infoSection}>
+        <div className={styles.infoCard}>
+          <h3>¿Cómo funcionan los entrenamientos mensuales?</h3>
+          <ul>
+            <li>Cada mes ofrecemos un entrenamiento completo de Swing Trading</li>
+            <li>Incluye múltiples clases en vivo durante el mes</li>
+            <li>Máximo 10 participantes por entrenamiento para atención personalizada</li>
+            <li>Material de apoyo y seguimiento personalizado</li>
+            <li>Acceso a grabaciones de las clases</li>
+          </ul>
+        </div>
+
+        <div className={styles.infoCard}>
+          <h3>Proceso de inscripción</h3>
+          <ul>
+            <li>Selecciona el mes de tu interés</li>
+            <li>Realiza el pago a través de MercadoPago</li>
+            <li>Recibirás confirmación y acceso al grupo privado</li>
+            <li>Las clases se realizan según el cronograma publicado</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -9,7 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Carousel from '@/components/Carousel';
 import TrainingRoadmap from '@/components/TrainingRoadmap';
-import ClassCalendar from '@/components/ClassCalendar';
+import SwingTradingMonthlyCalendar from '@/components/swing-trading/SwingTradingMonthlyCalendar';
 import SwingTradingFAQ from '@/components/SwingTradingFAQ';
 import BackgroundVideo from '@/components/BackgroundVideo';
 import { motion } from 'framer-motion';
@@ -1164,16 +1164,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <ClassCalendar
-                events={trainingDates.map(trainingDate => ({
-                  date: trainingDate.date,
-                  time: `${trainingDate.time}hs`,
-                  title: trainingDate.title,
-                  id: trainingDate.id
-                }))}
-                isAdmin={isAdmin}
-                onDateSelect={handleCalendarDateSelect}
-              />
+              <SwingTradingMonthlyCalendar />
             </motion.div>
           </div>
         </section>

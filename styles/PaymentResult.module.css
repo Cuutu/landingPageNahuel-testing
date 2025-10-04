@@ -1,0 +1,735 @@
+/* ===== CONTAINER PRINCIPAL ===== */
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(139,92,246,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.3;
+}
+
+/* ===== LOADING Y ESTADOS ===== */
+.loadingCard, .errorCard {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  padding: 3rem;
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 92, 246, 0.3);
+  border-top: 3px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.backButton {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  margin-top: 1rem;
+}
+
+.backButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+}
+
+/* ===== TARJETAS DE RESULTADO ===== */
+.successCard, .failureCard, .pendingCard {
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  padding: 3rem;
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+  color: #ffffff;
+}
+
+.successCard {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.failureCard {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.pendingCard {
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* ===== ICONOS ===== */
+.successIcon, .failureIcon, .pendingIcon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  color: white;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.successIcon {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.failureIcon {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.pendingIcon {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* ===== TÍTULOS Y MENSAJES ===== */
+.successCard h1, .failureCard h1, .pendingCard h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.successMessage, .failureMessage, .pendingMessage {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* ===== INFORMACIÓN DEL ENTRENAMIENTO ===== */
+.trainingInfo {
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.trainingInfo h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1rem;
+}
+
+.trainingDetails {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #8b5cf6;
+  font-weight: 600;
+}
+
+.detail svg {
+  color: #8b5cf6;
+}
+
+/* ===== INFORMACIÓN DE PAGO ===== */
+.paymentInfo {
+  background: rgba(6, 182, 212, 0.1);
+  border: 2px solid rgba(6, 182, 212, 0.2);
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.paymentInfo h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #06b6d4;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.paymentDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.paymentDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+}
+
+.paymentDetail:last-child {
+  border-bottom: none;
+}
+
+.label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.value {
+  color: #ffffff;
+  font-weight: 600;
+  font-family: monospace;
+}
+
+/* ===== PRÓXIMOS PASOS ===== */
+.nextSteps {
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid rgba(16, 185, 129, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.nextSteps h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #10b981;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.stepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.stepNumber {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.stepContent h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 0.5rem;
+}
+
+.stepContent p {
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+/* ===== CRONOGRAMA DE CLASES ===== */
+.classesPreview {
+  background: rgba(30, 41, 59, 0.8);
+  border: 2px solid rgba(139, 92, 246, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.classesPreview h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.classesList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.classItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.1);
+}
+
+.classDate {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 50px;
+  text-transform: uppercase;
+}
+
+.classInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.classTitle {
+  color: #ffffff;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.classTime {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.moreClasses {
+  text-align: center;
+  color: #8b5cf6;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 1rem;
+  background: rgba(139, 92, 246, 0.1);
+  border-radius: 12px;
+  margin-top: 0.5rem;
+}
+
+/* ===== RAZONES DE FALLO ===== */
+.reasonsSection {
+  background: rgba(239, 68, 68, 0.1);
+  border: 2px solid rgba(239, 68, 68, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: left;
+}
+
+.reasonsSection h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.reasonsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.reasonsList li {
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.reasonsList li:before {
+  content: '•';
+  color: #ef4444;
+  font-weight: 700;
+  position: absolute;
+  left: 0;
+  font-size: 1.2rem;
+}
+
+/* ===== INFORMACIÓN PENDIENTE ===== */
+.pendingInfo, .infoCard {
+  background: rgba(245, 158, 11, 0.1);
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.infoCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+}
+
+.infoCard svg {
+  color: #f59e0b;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.infoContent h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+}
+
+.infoContent p {
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.timeframes {
+  background: rgba(245, 158, 11, 0.1);
+  border: 2px solid rgba(245, 158, 11, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.timeframes h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.timeframes ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.timeframes li {
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.timeframes li:before {
+  content: '⏱';
+  position: absolute;
+  left: 0;
+  font-size: 1rem;
+}
+
+/* ===== NOTIFICACIONES ===== */
+.notificationInfo {
+  background: rgba(6, 182, 212, 0.1);
+  border: 2px solid rgba(6, 182, 212, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.notificationInfo h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #06b6d4;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.notificationInfo p {
+  color: #cbd5e1;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.notificationList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notificationList li {
+  color: #cbd5e1;
+  margin-bottom: 0.75rem;
+  padding-left: 1.5rem;
+  position: relative;
+  line-height: 1.5;
+}
+
+.notificationList li:before {
+  content: '✉';
+  position: absolute;
+  left: 0;
+  font-size: 1rem;
+}
+
+/* ===== ACCIONES ===== */
+.actions {
+  display: flex;
+  gap: 1rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.primaryButton, .secondaryButton, .tertiaryButton, .retryButton, .checkButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  min-width: 150px;
+  justify-content: center;
+}
+
+.primaryButton {
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  color: white;
+}
+
+.primaryButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+}
+
+.secondaryButton {
+  background: rgba(100, 116, 139, 0.1);
+  border: 2px solid rgba(100, 116, 139, 0.3);
+  color: #64748b;
+}
+
+.secondaryButton:hover {
+  background: rgba(100, 116, 139, 0.2);
+  border-color: rgba(100, 116, 139, 0.5);
+}
+
+.tertiaryButton {
+  background: rgba(139, 92, 246, 0.1);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  color: #8b5cf6;
+}
+
+.tertiaryButton:hover {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.retryButton {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.retryButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+.retryButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.checkButton {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.checkButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+}
+
+.checkButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* ===== INFORMACIÓN DE SOPORTE ===== */
+.supportInfo {
+  background: rgba(6, 182, 212, 0.1);
+  border: 2px solid rgba(6, 182, 212, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  text-align: center;
+}
+
+.supportInfo h3 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #06b6d4;
+  margin-bottom: 1rem;
+}
+
+.supportInfo p {
+  color: #cbd5e1;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.supportInfo a {
+  color: #06b6d4;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.supportInfo a:hover {
+  text-decoration: underline;
+}
+
+.supportOptions, .supportButton {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.supportButton {
+  background: rgba(6, 182, 212, 0.1);
+  border: 2px solid rgba(6, 182, 212, 0.3);
+  color: #06b6d4;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.supportButton:hover {
+  background: rgba(6, 182, 212, 0.2);
+  border-color: rgba(6, 182, 212, 0.5);
+  transform: translateY(-1px);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .container {
+    padding: 1rem;
+  }
+  
+  .successCard, .failureCard, .pendingCard, .loadingCard, .errorCard {
+    padding: 2rem;
+    margin: 1rem;
+  }
+  
+  .successCard h1, .failureCard h1, .pendingCard h1 {
+    font-size: 2rem;
+  }
+  
+  .trainingDetails {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .primaryButton, .secondaryButton, .tertiaryButton, .retryButton, .checkButton {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .step {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .stepNumber {
+    align-self: center;
+  }
+  
+  .classItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .paymentDetail {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .successCard, .failureCard, .pendingCard, .loadingCard, .errorCard {
+    padding: 1.5rem;
+  }
+  
+  .successCard h1, .failureCard h1, .pendingCard h1 {
+    font-size: 1.5rem;
+  }
+  
+  .successIcon, .failureIcon, .pendingIcon {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .trainingInfo, .paymentInfo, .nextSteps, .classesPreview, .reasonsSection, .pendingInfo, .timeframes, .notificationInfo, .supportInfo {
+    padding: 1.5rem;
+  }
+}
