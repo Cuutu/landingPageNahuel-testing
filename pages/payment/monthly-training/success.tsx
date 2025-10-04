@@ -177,7 +177,8 @@ export default function MonthlyTrainingPaymentSuccess() {
                 <div className={styles.classDate}>
                   {new Date(classItem.date).toLocaleDateString('es-AR', {
                     day: '2-digit',
-                    month: 'short'
+                    month: '2-digit',
+                    year: 'numeric'
                   })}
                 </div>
                 <div className={styles.classInfo}>

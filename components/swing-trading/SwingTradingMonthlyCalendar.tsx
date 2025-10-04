@@ -49,13 +49,12 @@ const MONTHS = [
 function formatArgentinaDate(dateString: string): string {
   const date = new Date(dateString);
   
-  // Adjust for Argentina timezone (UTC-3)
-  // Since the date is stored in UTC, we need to subtract 3 hours to get Argentina time
-  const argentinaDate = new Date(date.getTime() - (3 * 60 * 60 * 1000));
-  
-  return argentinaDate.toLocaleDateString('es-AR', { 
+  // Format the date directly without timezone adjustment
+  // since dates are now stored correctly in UTC
+  return date.toLocaleDateString('es-AR', { 
     day: '2-digit', 
-    month: 'short' 
+    month: '2-digit',
+    year: 'numeric'
   });
 }
 
