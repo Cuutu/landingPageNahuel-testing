@@ -4,6 +4,7 @@ import { authOptions } from '../../../lib/googleAuth';
 import dbConnect from '../../../lib/mongodb';
 import Alert from '../../../models/Alert';
 import User from '../../../models/User';
+import Liquidity from '../../../models/Liquidity';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -20,8 +21,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Verificar si el usuario es admin directamente desde la base de datos
+  let user;
   try {
-    const user = await User.findOne({ email: session.user.email });
+    user = await User.findOne({ email: session.user.email });
     
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Acceso denegado - Se requieren permisos de administrador' });
@@ -89,15 +91,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let allocatedAmount = liquidityData.allocatedAmount || 0;
     let shares = liquidityData.shares || 0;
     
-    // Si no hay liquidez asignada, calcular basándose en un monto por defecto
+    // Si no hay liquidez asignada, buscar directamente en la base de datos
     if (allocatedAmount === 0 && shares === 0) {
-      // Buscar si hay liquidez asignada en el pool para esta alerta específica
       try {
-        const liquidityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity?pool=${tipo}`);
-        if (liquidityResponse.ok) {
-          const liquidityJson = await liquidityResponse.json();
-          // CORREGIDO: Buscar por alertId en lugar de symbol
-          const alertDistribution = liquidityJson.liquidity?.distributions?.find((d: any) => d.alertId.toString() === alertId.toString());
+        console.log(`🔍 Buscando liquidez para alerta ${alertId} (${alert.symbol}) en pool ${tipo}`);
+        
+        // Buscar directamente en la base de datos sin fetch interno
+        const liquidity = await Liquidity.findOne({ 
+          createdBy: user._id, 
+          pool: tipo 
+        });
+        
+        if (liquidity && liquidity.distributions) {
+          // Buscar la distribución específica para esta alerta
+          const alertDistribution = liquidity.distributions.find(
+            (d: any) => d.alertId.toString() === alertId.toString()
+          );
           
           if (alertDistribution) {
             allocatedAmount = alertDistribution.allocatedAmount || 0;
@@ -106,10 +115,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares} acciones`);
           } else {
             console.log(`⚠️ No se encontró distribución de liquidez para alerta ${alertId} (${alert.symbol})`);
+            console.log(`📋 Distribuciones disponibles:`, liquidity.distributions.map((d: any) => ({ alertId: d.alertId, symbol: d.symbol })));
           }
+        } else {
+          console.log(`⚠️ No se encontró documento de liquidez para usuario ${user._id} en pool ${tipo}`);
         }
       } catch (error) {
-        console.log('⚠️ No se pudo obtener liquidez del pool, usando valores por defecto');
+        console.log('⚠️ Error obteniendo liquidez de la base de datos:', error);
       }
       
       // Si aún no hay liquidez, usar un monto por defecto basado en el precio
@@ -168,49 +180,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await alert.save();
 
-    // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ
+    // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ DIRECTAMENTE
     try {
-      const liquidityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity?pool=${tipo}`);
-      if (liquidityResponse.ok) {
-        const liquidityJson = await liquidityResponse.json();
-        const liquidity = liquidityJson.liquidity;
+      console.log(`🔄 Actualizando sistema de liquidez para ${tipo}...`);
+      
+      // Buscar directamente en la base de datos
+      const liquidity = await Liquidity.findOne({ 
+        createdBy: user._id, 
+        pool: tipo 
+      });
+      
+      if (liquidity && liquidity.distributions) {
+        // Encontrar y actualizar la distribución correspondiente
+        const distributionIndex = liquidity.distributions.findIndex(
+          (d: any) => d.alertId.toString() === alertId.toString()
+        );
         
-        if (liquidity && liquidity.distributions) {
-          // Encontrar y actualizar la distribución correspondiente
-          const distributionIndex = liquidity.distributions.findIndex((d: any) => d.alertId.toString() === alertId.toString());
+        if (distributionIndex !== -1) {
+          console.log(`📝 Actualizando distribución en índice ${distributionIndex}`);
           
-          if (distributionIndex !== -1) {
-            // Actualizar la distribución existente
-            liquidity.distributions[distributionIndex].allocatedAmount = newAllocatedAmount;
-            liquidity.distributions[distributionIndex].shares = sharesRemaining;
-            
-            // Si se cerró completamente, marcar como cerrada
-            if (sharesRemaining <= 0) {
-              liquidity.distributions[distributionIndex].status = 'CLOSED';
-              liquidity.distributions[distributionIndex].closedAt = new Date();
-            }
-            
-            // Actualizar la liquidez total disponible
-            liquidity.totalLiquidity += liquidityReleased;
-            
-            // Guardar cambios en el sistema de liquidez
-            const updateResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                pool: tipo,
-                totalLiquidity: liquidity.totalLiquidity,
-                distributions: liquidity.distributions
-              })
-            });
-            
-            if (updateResponse.ok) {
-              console.log(`✅ Sistema de liquidez actualizado: +$${liquidityReleased.toFixed(2)} liberados`);
-            } else {
-              console.log('⚠️ Error actualizando sistema de liquidez');
-            }
+          // Actualizar la distribución existente
+          liquidity.distributions[distributionIndex].allocatedAmount = newAllocatedAmount;
+          liquidity.distributions[distributionIndex].shares = sharesRemaining;
+          
+          // Si se cerró completamente, marcar como cerrada
+          if (sharesRemaining <= 0) {
+            liquidity.distributions[distributionIndex].status = 'CLOSED';
+            liquidity.distributions[distributionIndex].closedAt = new Date();
           }
+          
+          // Actualizar la liquidez total disponible
+          liquidity.totalLiquidity += liquidityReleased;
+          
+          // Guardar cambios directamente en la base de datos
+          await liquidity.save();
+          
+          console.log(`✅ Sistema de liquidez actualizado: +$${liquidityReleased.toFixed(2)} liberados`);
+          console.log(`💰 Nueva liquidez total: $${liquidity.totalLiquidity.toFixed(2)}`);
+        } else {
+          console.log(`⚠️ No se encontró distribución para actualizar (alertId: ${alertId})`);
         }
+      } else {
+        console.log(`⚠️ No se encontró documento de liquidez para actualizar`);
       }
     } catch (error) {
       console.log('⚠️ Error sincronizando con sistema de liquidez:', error);
