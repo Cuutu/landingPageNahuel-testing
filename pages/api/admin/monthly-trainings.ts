@@ -74,15 +74,22 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
       .lean();
 
     // Agregar información útil
-    const trainingsWithInfo = trainings.map(training => ({
-      ...training,
-      availableSpots: training.maxStudents - training.students.length,
-      totalClasses: training.classes.length,
-      completedClasses: training.classes.filter((c: any) => c.status === 'completed').length,
-      monthName: getMonthName(training.month),
-      canEnroll: training.status === 'open' && training.students.length < training.maxStudents,
-      isEnrolled: false // Se calculará en el frontend basado en el usuario logueado
-    }));
+    const trainingsWithInfo = trainings.map(training => {
+      // Contar solo estudiantes con pago completado
+      const paidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+      
+      return {
+        ...training,
+        availableSpots: training.maxStudents - paidStudents.length,
+        totalClasses: training.classes.length,
+        completedClasses: training.classes.filter((c: any) => c.status === 'completed').length,
+        monthName: getMonthName(training.month),
+        canEnroll: training.status === 'open' && paidStudents.length < training.maxStudents,
+        isEnrolled: false, // Se calculará en el frontend basado en el usuario logueado
+        paidStudentsCount: paidStudents.length,
+        paymentRange: training.paymentRange
+      };
+    });
 
     return res.status(200).json({
       success: true,
@@ -135,6 +142,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       year,
       maxStudents,
       price,
+      paymentRange: `swing-trading-${year}-${month.toString().padStart(2, '0')}`, // Generar rango único
       classes: classes.map((cls: any, index: number) => ({
         ...cls,
         _id: undefined, // Dejar que MongoDB genere el ID

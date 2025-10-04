@@ -40,6 +40,9 @@ interface MonthlyTrainingDocument extends Document {
   maxStudents: number; // Máximo 10 estudiantes
   price: number; // Precio del pack mensual en pesos argentinos
   
+  // Rango de verificación para pagos exitosos
+  paymentRange?: string; // Ej: "swing-trading-2024-11"
+  
   // Clases del mes
   classes: TrainingClass[];
   
@@ -107,6 +110,9 @@ const monthlyTrainingSchema = new Schema<MonthlyTrainingDocument>({
   // Configuración
   maxStudents: { type: Number, required: true, default: 10 },
   price: { type: Number, required: true },
+  
+  // Rango de verificación para pagos exitosos
+  paymentRange: { type: String },
   
   // Clases y estudiantes
   classes: [trainingClassSchema],

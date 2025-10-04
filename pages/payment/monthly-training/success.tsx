@@ -60,25 +60,29 @@ export default function MonthlyTrainingPaymentSuccess() {
 
   const addUserToTraining = async () => {
     try {
-      console.log('🔔 Agregando usuario al entrenamiento:', {
+      console.log('🔔 Verificando pago y agregando usuario al entrenamiento:', {
         trainingId: training_id,
+        paymentId: payment_id,
         userEmail: session?.user?.email
       });
 
-      const response = await fetch('/api/monthly-trainings/enroll', {
+      const response = await fetch('/api/monthly-trainings/verify-payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trainingId: training_id,
-          paymentId: payment_id,
-          paymentStatus: 'completed'
+          paymentId: payment_id
         })
       });
 
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Usuario agregado exitosamente al entrenamiento');
+        console.log('✅ Usuario agregado exitosamente al entrenamiento:', {
+          paymentRange: data.data?.training?.paymentRange,
+          currentStudents: data.data?.training?.currentStudents,
+          maxStudents: data.data?.training?.maxStudents
+        });
         setUserAdded(true);
       } else {
         console.error('❌ Error agregando usuario:', data.error);

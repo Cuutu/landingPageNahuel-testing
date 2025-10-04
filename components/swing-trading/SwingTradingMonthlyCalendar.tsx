@@ -38,6 +38,8 @@ interface MonthlyTraining {
   completedClasses: number;
   canEnroll: boolean;
   isEnrolled: boolean;
+  paidStudentsCount?: number;
+  paymentRange?: string;
 }
 
 const MONTHS = [
@@ -241,7 +243,7 @@ export default function SwingTradingCalendar() {
                 </div>
                 <div className={styles.stat}>
                   <Users size={16} />
-                  <span>{training.maxStudents - training.availableSpots}/{training.maxStudents}</span>
+                  <span>{training.paidStudentsCount || (training.maxStudents - training.availableSpots)}/{training.maxStudents}</span>
                 </div>
                 <div className={styles.stat}>
                   <Calendar size={16} />
