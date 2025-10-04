@@ -2212,13 +2212,13 @@ const SubscriberView: React.FC = () => {
                       Cierre total
                     </button>
                     {userRole === 'admin' && (
-                      <Link
-                        href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}
+                      <button
                         className={styles.editButton}
-                        title="Cierre parcial (Liquidez)"
+                        onClick={() => handlePartialSale(alert)}
+                        title="Venta parcial (25% o 50%)"
                       >
-                        Cierre parcial
-                      </Link>
+                        💰 Venta Parcial
+                      </button>
                     )}
                   </div>
                 </div>
