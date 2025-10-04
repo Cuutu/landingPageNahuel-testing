@@ -46,19 +46,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'No hay cupos disponibles' });
     }
 
-    // Verificar que las inscripciones estén abiertas
-    const now = new Date();
-    const registrationOpen = new Date(training.registrationOpenDate);
-    const registrationClose = new Date(training.registrationCloseDate);
-
-    if (now < registrationOpen) {
-      return res.status(400).json({ error: 'Las inscripciones aún no han abierto' });
-    }
-
-    if (now > registrationClose) {
-      return res.status(400).json({ error: 'Las inscripciones han cerrado' });
-    }
-
     // Verificar que el usuario no esté ya inscrito
     const isAlreadyEnrolled = training.students.some(
       (student: any) => student.email === session.user.email
@@ -85,7 +72,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           description: `Swing Trading - ${training.monthName} ${training.year}`,
           quantity: 1,
           unit_price: training.price,
-          currency_id: 'USD'
+          currency_id: 'ARS'
         }
       ],
       payer: {
