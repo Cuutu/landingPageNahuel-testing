@@ -144,7 +144,7 @@ const TrainingRoadmap: React.FC<TrainingRoadmapProps> = ({
                   )}
 
                   {onModuleClick && (
-                    <div className={styles.actionSection}>
+                    <div className={styles.actionSection} style={{ display: 'none' }}>
                       <button 
                         className={styles.actionButton}
                         onClick={(e) => {
