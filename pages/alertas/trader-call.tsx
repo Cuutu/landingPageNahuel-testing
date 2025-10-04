@@ -528,6 +528,12 @@ const SubscriberView: React.FC = () => {
     availableForPurchase: false
   });
   const [editLoading, setEditLoading] = useState(false);
+  
+  // Estados para venta parcial
+  const [showPartialSaleModal, setShowPartialSaleModal] = useState(false);
+  const [partialSaleAlert, setPartialSaleAlert] = useState<any>(null);
+  const [partialSaleLoading, setPartialSaleLoading] = useState(false);
+  
   // Estados para imágenes del gráfico de TradingView
   const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
   const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
@@ -1026,34 +1032,28 @@ const SubscriberView: React.FC = () => {
   }, [realAlerts, lastPriceUpdate, updatePrices]);
 
   // ✅ OPTIMIZADO: Cargar liquidez una sola vez y cachear
-  React.useEffect(() => {
-    let isMounted = true;
-    
-    const loadLiquidity = async () => {
-      try {
-        const res = await fetch('/api/liquidity/public?pool=TraderCall');
-        if (res.ok && isMounted) {
-          const json = await res.json();
-          const map: Record<string, any> = {};
-          (json.data?.distributions || []).forEach((d: any) => {
-            map[d.symbol] = d;
-          });
-          setLiquidityMap(map);
-          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
-        }
-      } catch (e) {
-        console.log('Error cargando liquidez:', e);
+  const loadLiquidity = async () => {
+    try {
+      const res = await fetch('/api/liquidity/public?pool=TraderCall');
+      if (res.ok) {
+        const json = await res.json();
+        const map: Record<string, any> = {};
+        (json.data?.distributions || []).forEach((d: any) => {
+          map[d.symbol] = d;
+        });
+        setLiquidityMap(map);
+        setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
       }
-    };
+    } catch (e) {
+      console.log('Error cargando liquidez:', e);
+    }
+  };
 
+  React.useEffect(() => {
     // Solo cargar si no hay datos de liquidez cargados
     if (Object.keys(liquidityMap).length === 0) {
       loadLiquidity();
     }
-
-    return () => {
-      isMounted = false;
-    };
   }, [liquidityMap]);
 
   // Función para obtener precio individual de una acción (modal crear alerta)
@@ -1444,6 +1444,64 @@ const SubscriberView: React.FC = () => {
 
     // Mostrar el modal de edición
     setShowEditAlert(true);
+  };
+
+  // Función para abrir modal de venta parcial
+  const handlePartialSale = (alert: any) => {
+    console.log('💰 Iniciando venta parcial para:', alert);
+    setPartialSaleAlert(alert);
+    setShowPartialSaleModal(true);
+  };
+
+  // Función para ejecutar venta parcial
+  const executePartialSale = async (percentage: 25 | 50) => {
+    if (!partialSaleAlert) return;
+
+    try {
+      setPartialSaleLoading(true);
+      console.log(`💰 Ejecutando venta parcial de ${percentage}% para alerta:`, partialSaleAlert.id);
+
+      const response = await fetch('/api/admin/partial-sale', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          alertId: partialSaleAlert.id,
+          percentage: percentage,
+          currentPrice: partialSaleAlert.currentPrice,
+          tipo: 'TraderCall'
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Venta parcial ejecutada exitosamente:', result);
+        
+        // Mostrar mensaje de confirmación
+        alert(`✅ Venta parcial de ${percentage}% ejecutada exitosamente!\n\n` +
+              `💰 Liquidez liberada: $${result.liquidityReleased.toFixed(2)}\n` +
+              `📊 Posición restante: ${100 - percentage}%\n` +
+              `💵 Ganancia realizada: $${result.realizedProfit.toFixed(2)}`);
+        
+        // Recargar datos
+        await loadAlerts();
+        await loadLiquidity();
+        
+        // Cerrar modal
+        setShowPartialSaleModal(false);
+        setPartialSaleAlert(null);
+      } else {
+        console.error('❌ Error en venta parcial:', result);
+        alert(`❌ Error: ${result.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al ejecutar venta parcial:', error);
+      alert('❌ Error al ejecutar venta parcial. Verifica la consola para más detalles.');
+    } finally {
+      setPartialSaleLoading(false);
+    }
   };
 
   // Función para guardar los cambios de la alerta
@@ -2406,13 +2464,13 @@ const SubscriberView: React.FC = () => {
                   Cierre total
                 </button>
                 {userRole === 'admin' && (
-                  <Link
-                    href={`/admin/alertas-liquidez?alertId=${encodeURIComponent(alert.id)}&tipo=TraderCall`}
+                  <button
                     className={styles.editButton}
-                    title="Cierre parcial (Liquidez)"
+                    onClick={() => handlePartialSale(alert)}
+                    title="Venta parcial (25% o 50%)"
                   >
-                    Cierre parcial
-                  </Link>
+                    💰 Venta Parcial
+                  </button>
                 )}
               </div>
             </div>
@@ -3408,6 +3466,62 @@ const SubscriberView: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de venta parcial */}
+      {showPartialSaleModal && partialSaleAlert && (
+        <div className={styles.modalOverlay} onClick={() => setShowPartialSaleModal(false)}>
+          <div className={styles.partialSaleModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>💰 Venta Parcial - {partialSaleAlert.symbol}</h3>
+              <button 
+                className={styles.closeModal}
+                onClick={() => setShowPartialSaleModal(false)}
+                disabled={partialSaleLoading}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <div className={styles.alertInfo}>
+                <p><strong>Precio de entrada:</strong> {partialSaleAlert.entryPrice}</p>
+                <p><strong>Precio actual:</strong> {partialSaleAlert.currentPrice}</p>
+                <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit?.includes('+') ? styles.profit : styles.loss}>{partialSaleAlert.profit}</span></p>
+              </div>
+
+              <div className={styles.percentageOptions}>
+                <h4>Selecciona el porcentaje de venta:</h4>
+                <div className={styles.percentageButtons}>
+                  <button
+                    className={styles.percentageButton}
+                    onClick={() => executePartialSale(25)}
+                    disabled={partialSaleLoading}
+                  >
+                    <span className={styles.percentage}>25%</span>
+                    <span className={styles.description}>Venta parcial conservadora</span>
+                  </button>
+                  
+                  <button
+                    className={styles.percentageButton}
+                    onClick={() => executePartialSale(50)}
+                    disabled={partialSaleLoading}
+                  >
+                    <span className={styles.percentage}>50%</span>
+                    <span className={styles.description}>Venta parcial moderada</span>
+                  </button>
+                </div>
+              </div>
+
+              {partialSaleLoading && (
+                <div className={styles.loadingState}>
+                  <div className={styles.spinner}></div>
+                  <p>Procesando venta parcial...</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

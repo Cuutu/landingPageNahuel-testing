@@ -7520,6 +7520,141 @@
   margin-top: 1rem;
 }
 
+/* ===== MODAL DE VENTA PARCIAL ===== */
+.partialSaleModal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.alertInfo {
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.alertInfo p {
+  margin: 0.5rem 0;
+  color: var(--text-secondary);
+}
+
+.alertInfo strong {
+  color: var(--text-primary);
+}
+
+.percentageOptions {
+  margin-bottom: 1.5rem;
+}
+
+.percentageOptions h4 {
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.percentageButtons {
+  display: grid;
+  gap: 1rem;
+}
+
+.percentageButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(139, 92, 246, 0.3);
+  border-radius: var(--border-radius-lg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.percentageButton:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.3);
+}
+
+.percentageButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.percentage {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #8B5CF6;
+  text-shadow: 0 2px 4px rgba(139, 92, 246, 0.3);
+}
+
+.description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.loadingState .spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(139, 92, 246, 0.3);
+  border-top: 3px solid #8B5CF6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loadingState p {
+  color: var(--text-secondary);
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .partialSaleModal {
+    width: 95%;
+    margin: 1rem;
+  }
+  
+  .percentageButton {
+    padding: 1.25rem;
+  }
+  
+  .percentage {
+    font-size: 1.75rem;
+  }
+}
+
 /* ===== SELECTOR DE LIQUIDEZ ===== */
 .liquidityDescription {
   font-size: 0.9rem;
