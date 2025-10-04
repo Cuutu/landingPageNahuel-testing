@@ -113,6 +113,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       classes: classes.map((cls: any, index: number) => ({
         ...cls,
         _id: undefined, // Dejar que MongoDB genere el ID
+        date: new Date(cls.date), // Convertir string a Date correctamente
         status: 'scheduled'
       })),
       students: [],
@@ -160,6 +161,14 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
           error: 'No se pueden modificar ciertos campos cuando ya hay estudiantes inscritos' 
         });
       }
+    }
+
+    // Procesar fechas si se están actualizando las clases
+    if (updateData.classes) {
+      updateData.classes = updateData.classes.map((cls: any) => ({
+        ...cls,
+        date: new Date(cls.date) // Convertir string a Date correctamente
+      }));
     }
 
     const updatedTraining = await MonthlyTraining.findByIdAndUpdate(
