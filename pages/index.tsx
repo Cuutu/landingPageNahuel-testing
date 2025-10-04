@@ -12,6 +12,7 @@ import Carousel from '@/components/Carousel';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import { usePopupFrequency } from '@/hooks/usePopupFrequency';
 import { usePricing } from '@/hooks/usePricing';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 import styles from '@/styles/Home.module.css';
 
 interface Training {
@@ -222,6 +223,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   console.log('🎓 entrenamientos:', entrenamientos);
   
   const { pricing, loading: pricingLoading } = usePricing();
+  const { isFeatureEnabled } = useSiteConfig();
 
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -653,8 +655,9 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
           </div>
         </section>
 
-        {/* Nueva Sección: Aprende a invertir desde cero - OCULTA */}
-        <section className={styles.learningSection} style={{ display: 'none' }}>
+        {/* Nueva Sección: Aprende a invertir desde cero - Condicional */}
+        {isFeatureEnabled('mentoring') && (
+          <section className={styles.learningSection}>
           <div className="container">
             <motion.div
               className={styles.learningContent}
@@ -703,6 +706,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
             </motion.div>
           </div>
         </section>
+        )}
 
         {/* Nueva Sección: Estadísticas */}
         {(siteConfig?.statistics?.visible !== false) && (
@@ -1377,16 +1381,17 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                   </button>
                 )}
                 
-                {/* Botón Mentoring - OCULTO */}
-                <a 
-                  href="https://plataformacursos.lozanonahuel.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.ctaInvestmentButtonSecondary}
-                  style={{ display: 'none' }}
-                >
-                  Ir a Mentoring 🚀
-                </a>
+                {/* Botón Mentoring - Condicional */}
+                {isFeatureEnabled('mentoring') && (
+                  <a 
+                    href="https://plataformacursos.lozanonahuel.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.ctaInvestmentButtonSecondary}
+                  >
+                    Ir a Mentoring 🚀
+                  </a>
+                )}
               </div>
             </motion.div>
           </div>

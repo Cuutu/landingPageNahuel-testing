@@ -4,6 +4,7 @@ import { useSession, signIn, signOut } from 'next-auth/react';
 import { ChevronDown, Menu, X, User, LogOut, Settings, Bell, MessageCircle, DollarSign } from 'lucide-react';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import ContactForm from '@/components/ContactForm';
+import { useSiteConfig } from '@/hooks/useSiteConfig';
 import styles from '@/styles/Navbar.module.css';
 
 interface NavbarProps {
@@ -17,6 +18,7 @@ interface NavbarProps {
  */
 const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
   const { data: session, status } = useSession();
+  const { isFeatureEnabled } = useSiteConfig();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -158,21 +160,22 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
             />
           </Link>
 
-          {/* Logo Mentoring - Posicionado después del logo principal - OCULTO */}
-          <a 
-            href="https://plataformacursos.lozanonahuel.com/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.mentoringLogo}
-            title="Ir a Plataforma de Mentoring"
-            style={{ display: 'none' }}
-          >
-            <img 
-              src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
-              alt="Mentoring"
-              className={styles.mentoringImage}
-            />
-          </a>
+          {/* Logo Mentoring - Posicionado después del logo principal - Condicional */}
+          {isFeatureEnabled('mentoring') && (
+            <a 
+              href="https://plataformacursos.lozanonahuel.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.mentoringLogo}
+              title="Ir a Plataforma de Mentoring"
+            >
+              <img 
+                src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
+                alt="Mentoring"
+                className={styles.mentoringImage}
+              />
+            </a>
+          )}
 
           {/* Desktop Navigation */}
           <div className={styles.desktopNav}>
@@ -381,24 +384,26 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
         {isMenuOpen && (
           <div className={styles.mobileMenu}>
             <div className={styles.mobileMenuContent}>
-              {/* Mobile Mentoring Logo - OCULTO */}
-              <div className={styles.mobileNavItem} style={{ display: 'none' }}>
-                <a 
-                  href="https://plataformacursos.lozanonahuel.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={styles.mobileMentoringLogo}
-                  onClick={() => setIsMenuOpen(false)}
-                  title="Ir a Plataforma de Mentoring"
-                >
-                  <img 
-                    src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
-                    alt="Mentoring"
-                    className={styles.mobileMentoringImage}
-                  />
-                  <span>Mentoring</span>
-                </a>
-              </div>
+              {/* Mobile Mentoring Logo - Condicional */}
+              {isFeatureEnabled('mentoring') && (
+                <div className={styles.mobileNavItem}>
+                  <a 
+                    href="https://plataformacursos.lozanonahuel.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.mobileMentoringLogo}
+                    onClick={() => setIsMenuOpen(false)}
+                    title="Ir a Plataforma de Mentoring"
+                  >
+                    <img 
+                      src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
+                      alt="Mentoring"
+                      className={styles.mobileMentoringImage}
+                    />
+                    <span>Mentoring</span>
+                  </a>
+                </div>
+              )}
 
               {navItems.map((item) => (
                 <div key={item.label} className={styles.mobileNavItem}>
