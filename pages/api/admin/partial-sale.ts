@@ -91,18 +91,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Si no hay liquidez asignada, calcular basándose en un monto por defecto
     if (allocatedAmount === 0 && shares === 0) {
-      // Buscar si hay liquidez asignada en el pool para este símbolo
+      // Buscar si hay liquidez asignada en el pool para esta alerta específica
       try {
         const liquidityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity?pool=${tipo}`);
         if (liquidityResponse.ok) {
           const liquidityJson = await liquidityResponse.json();
-          const symbolDistribution = liquidityJson.liquidity?.distributions?.find((d: any) => d.symbol === alert.symbol);
+          // CORREGIDO: Buscar por alertId en lugar de symbol
+          const alertDistribution = liquidityJson.liquidity?.distributions?.find((d: any) => d.alertId.toString() === alertId.toString());
           
-          if (symbolDistribution) {
-            allocatedAmount = symbolDistribution.allocatedAmount || 0;
-            shares = symbolDistribution.shares || Math.floor(allocatedAmount / entryPrice);
+          if (alertDistribution) {
+            allocatedAmount = alertDistribution.allocatedAmount || 0;
+            shares = alertDistribution.shares || Math.floor(allocatedAmount / entryPrice);
             
-            console.log(`📊 Liquidez encontrada para ${alert.symbol}: $${allocatedAmount}, ${shares} acciones`);
+            console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares} acciones`);
+          } else {
+            console.log(`⚠️ No se encontró distribución de liquidez para alerta ${alertId} (${alert.symbol})`);
           }
         }
       } catch (error) {
@@ -164,6 +167,54 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     await alert.save();
+
+    // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ
+    try {
+      const liquidityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity?pool=${tipo}`);
+      if (liquidityResponse.ok) {
+        const liquidityJson = await liquidityResponse.json();
+        const liquidity = liquidityJson.liquidity;
+        
+        if (liquidity && liquidity.distributions) {
+          // Encontrar y actualizar la distribución correspondiente
+          const distributionIndex = liquidity.distributions.findIndex((d: any) => d.alertId.toString() === alertId.toString());
+          
+          if (distributionIndex !== -1) {
+            // Actualizar la distribución existente
+            liquidity.distributions[distributionIndex].allocatedAmount = newAllocatedAmount;
+            liquidity.distributions[distributionIndex].shares = sharesRemaining;
+            
+            // Si se cerró completamente, marcar como cerrada
+            if (sharesRemaining <= 0) {
+              liquidity.distributions[distributionIndex].status = 'CLOSED';
+              liquidity.distributions[distributionIndex].closedAt = new Date();
+            }
+            
+            // Actualizar la liquidez total disponible
+            liquidity.totalLiquidity += liquidityReleased;
+            
+            // Guardar cambios en el sistema de liquidez
+            const updateResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                pool: tipo,
+                totalLiquidity: liquidity.totalLiquidity,
+                distributions: liquidity.distributions
+              })
+            });
+            
+            if (updateResponse.ok) {
+              console.log(`✅ Sistema de liquidez actualizado: +$${liquidityReleased.toFixed(2)} liberados`);
+            } else {
+              console.log('⚠️ Error actualizando sistema de liquidez');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log('⚠️ Error sincronizando con sistema de liquidez:', error);
+    }
 
     console.log(`✅ Venta parcial de ${percentage}% ejecutada exitosamente`);
     console.log(`💰 Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
