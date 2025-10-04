@@ -223,7 +223,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
   console.log('📚 cursos visible:', siteConfig?.cursos?.visible);
   console.log('🎓 entrenamientos:', entrenamientos);
   
-  const { pricing, loading: pricingLoading } = usePricing();
+  const { pricing, loading: pricingLoading, formatPrice: uiFormatPrice } = usePricing();
   const resolvedPricing = pricing || initialPricing;
   const { isFeatureEnabled } = useSiteConfig();
 
@@ -411,22 +411,16 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
   const testimoniosPerGroup = 3;
   const totalTestimonialGroups = Math.ceil(testimoniosUnificados.length / testimoniosPerGroup);
 
-  // Helper para formatear precios desde Pricing
-  const formatPrice = (amount?: number, currency?: string, suffix?: string) => {
-    if (!amount || amount <= 0) return 'Consultar';
-    const formatted = amount.toLocaleString('es-AR');
-    return `$${formatted} ${currency || 'ARS'}${suffix ? ` ${suffix}` : ''}`;
-  };
-
+  // Formateo consistente con el resto del sitio
   const traderCallPriceStr = resolvedPricing?.alertas?.traderCall?.monthly
-    ? formatPrice(resolvedPricing.alertas.traderCall.monthly, resolvedPricing.currency, '/mes')
-    : '$15.000/mes';
+    ? `${uiFormatPrice(resolvedPricing.alertas.traderCall.monthly, resolvedPricing.currency)} /mes`
+    : '$15.000 ARS /mes';
   const swingPriceStr = resolvedPricing?.entrenamientos?.swingTrading?.price
-    ? formatPrice(resolvedPricing.entrenamientos.swingTrading.price, resolvedPricing.currency)
-    : '$279.000';
+    ? `${uiFormatPrice(resolvedPricing.entrenamientos.swingTrading.price, resolvedPricing.currency)}`
+    : '$279.000 ARS';
   const consultorioPriceStr = resolvedPricing?.asesorias?.consultorioFinanciero?.price
-    ? formatPrice(resolvedPricing.asesorias.consultorioFinanciero.price, resolvedPricing.currency, '/sesión')
-    : '$30.000/sesión';
+    ? `${uiFormatPrice(resolvedPricing.asesorias.consultorioFinanciero.price, resolvedPricing.currency)} /sesión`
+    : '$30.000 ARS /sesión';
 
   // Datos de elementos destacados unificados (sin Pack AT ni Medias Móviles)
   const destacadosItems = [
