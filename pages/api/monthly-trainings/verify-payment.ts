@@ -38,23 +38,64 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Entrenamiento no encontrado' });
     }
 
-    // Verificar que el usuario no esté ya inscrito
-    const existingStudent = training.students.find((s: any) => 
+    // Verificar si el usuario ya está inscrito
+    const existingStudentIndex = training.students.findIndex((s: any) => 
       s.userId === user._id.toString() || s.email === session.user.email
     );
     
-    if (existingStudent) {
-      return res.status(200).json({
-        success: true,
-        message: 'Usuario ya inscrito',
-        alreadyEnrolled: true,
-        training: {
-          title: training.title,
-          month: training.month,
-          year: training.year,
-          paymentRange: training.paymentRange
-        }
-      });
+    if (existingStudentIndex !== -1) {
+      const existingStudent = training.students[existingStudentIndex];
+      
+      // Si ya está inscrito con pago completado, devolver éxito
+      if (existingStudent.paymentStatus === 'completed') {
+        return res.status(200).json({
+          success: true,
+          message: 'Usuario ya inscrito con pago completado',
+          alreadyEnrolled: true,
+          training: {
+            title: training.title,
+            month: training.month,
+            year: training.year,
+            paymentRange: training.paymentRange,
+            currentStudents: training.students.filter((s: any) => s.paymentStatus === 'completed').length
+          }
+        });
+      }
+      
+      // Si está inscrito pero con pago pendiente, actualizar a completado
+      if (existingStudent.paymentStatus === 'pending') {
+        training.students[existingStudentIndex] = {
+          ...existingStudent,
+          paymentStatus: 'completed',
+          paymentId: paymentId || existingStudent.paymentId,
+          paidMonth: training.month,
+          paidYear: training.year
+        };
+        
+        await training.save();
+        
+        const updatedPaidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+        
+        console.log('✅ Pago actualizado a completado:', {
+          trainingId,
+          userEmail: session.user.email,
+          paymentId,
+          currentPaidStudents: updatedPaidStudents.length
+        });
+        
+        return res.status(200).json({
+          success: true,
+          message: 'Pago actualizado a completado',
+          training: {
+            title: training.title,
+            month: training.month,
+            year: training.year,
+            paymentRange: training.paymentRange,
+            currentStudents: updatedPaidStudents.length,
+            maxStudents: training.maxStudents
+          }
+        });
+      }
     }
 
     // Verificar cupos disponibles (solo contar estudiantes con pago completado)
