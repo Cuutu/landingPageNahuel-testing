@@ -23,9 +23,7 @@ interface TrainingClass {
   _id?: string;
   date: string;
   startTime: string;
-  endTime: string;
   title: string;
-  description?: string;
   status: 'scheduled' | 'completed' | 'cancelled';
 }
 
@@ -40,9 +38,7 @@ interface MonthlyTraining {
   price: number;
   classes: TrainingClass[];
   students: any[];
-  status: 'draft' | 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
-  registrationOpenDate: string;
-  registrationCloseDate: string;
+  status: 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
   availableSpots: number;
   totalClasses: number;
   completedClasses: number;
@@ -68,8 +64,6 @@ export default function MonthlyTrainingsAdmin() {
     year: new Date().getFullYear(),
     maxStudents: 10,
     price: 0,
-    registrationOpenDate: '',
-    registrationCloseDate: '',
     classes: [] as TrainingClass[]
   });
 
@@ -105,8 +99,6 @@ export default function MonthlyTrainingsAdmin() {
       year: selectedYear,
       maxStudents: 10,
       price: 0,
-      registrationOpenDate: '',
-      registrationCloseDate: '',
       classes: []
     });
     setEditingTraining(null);
@@ -121,8 +113,6 @@ export default function MonthlyTrainingsAdmin() {
       year: training.year,
       maxStudents: training.maxStudents,
       price: training.price,
-      registrationOpenDate: training.registrationOpenDate.split('T')[0],
-      registrationCloseDate: training.registrationCloseDate.split('T')[0],
       classes: training.classes
     });
     setEditingTraining(training);
@@ -193,9 +183,7 @@ export default function MonthlyTrainingsAdmin() {
     const newClass: TrainingClass = {
       date: '',
       startTime: '19:00',
-      endTime: '21:00',
       title: `Clase ${formData.classes.length + 1}`,
-      description: '',
       status: 'scheduled'
     };
     
@@ -348,7 +336,7 @@ export default function MonthlyTrainingsAdmin() {
                       
                       <div className={styles.infoItem}>
                         <DollarSign size={16} />
-                        <span>${training.price}</span>
+                        <span>ARS ${training.price.toLocaleString('es-AR')}</span>
                       </div>
                       
                       <div className={styles.infoItem}>
@@ -450,13 +438,14 @@ export default function MonthlyTrainingsAdmin() {
                   </div>
 
                   <div className={styles.formGroup}>
-                    <label>Precio (USD) *</label>
+                    <label>Precio (ARS) *</label>
                     <input
                       type="number"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                       min="0"
-                      step="0.01"
+                      step="100"
+                      placeholder="Ej: 15000"
                       required
                     />
                   </div>
@@ -483,28 +472,6 @@ export default function MonthlyTrainingsAdmin() {
                     rows={3}
                     required
                   />
-                </div>
-
-                <div className={styles.formGrid}>
-                  <div className={styles.formGroup}>
-                    <label>Fecha Apertura Inscripción *</label>
-                    <input
-                      type="date"
-                      value={formData.registrationOpenDate}
-                      onChange={(e) => setFormData({ ...formData, registrationOpenDate: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label>Fecha Cierre Inscripción *</label>
-                    <input
-                      type="date"
-                      value={formData.registrationCloseDate}
-                      onChange={(e) => setFormData({ ...formData, registrationCloseDate: e.target.value })}
-                      required
-                    />
-                  </div>
                 </div>
 
                 {/* Sección de Clases */}
@@ -565,26 +532,8 @@ export default function MonthlyTrainingsAdmin() {
                           />
                         </div>
 
-                        <div className={styles.formGroup}>
-                          <label>Hora Fin *</label>
-                          <input
-                            type="time"
-                            value={classItem.endTime}
-                            onChange={(e) => updateClass(index, 'endTime', e.target.value)}
-                            required
-                          />
-                        </div>
                       </div>
 
-                      <div className={styles.formGroup}>
-                        <label>Descripción</label>
-                        <textarea
-                          value={classItem.description || ''}
-                          onChange={(e) => updateClass(index, 'description', e.target.value)}
-                          placeholder="Descripción opcional de la clase..."
-                          rows={2}
-                        />
-                      </div>
                     </div>
                   ))}
 

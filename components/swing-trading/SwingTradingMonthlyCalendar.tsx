@@ -18,9 +18,7 @@ interface TrainingClass {
   _id: string;
   date: string;
   startTime: string;
-  endTime: string;
   title: string;
-  description?: string;
   status: 'scheduled' | 'completed' | 'cancelled';
 }
 
@@ -34,16 +32,12 @@ interface MonthlyTraining {
   price: number;
   maxStudents: number;
   classes: TrainingClass[];
-  status: 'draft' | 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
-  registrationOpenDate: string;
-  registrationCloseDate: string;
+  status: 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
   availableSpots: number;
   totalClasses: number;
   completedClasses: number;
   canEnroll: boolean;
   isEnrolled: boolean;
-  registrationOpen: boolean;
-  registrationClosed: boolean;
 }
 
 const MONTHS = [
@@ -222,7 +216,7 @@ export default function SwingTradingCalendar() {
               <div className={styles.trainingStats}>
                 <div className={styles.stat}>
                   <DollarSign size={16} />
-                  <span>${training.price}</span>
+                  <span>ARS ${training.price.toLocaleString('es-AR')}</span>
                 </div>
                 <div className={styles.stat}>
                   <Users size={16} />
@@ -248,22 +242,11 @@ export default function SwingTradingCalendar() {
                     <div className={styles.classInfo}>
                       <span className={styles.classTitle}>{classItem.title}</span>
                       <span className={styles.classTime}>
-                        {classItem.startTime} - {classItem.endTime}
+                        {classItem.startTime}
                       </span>
                     </div>
                   </div>
                 ))}
-              </div>
-
-              {/* Fechas de inscripción */}
-              <div className={styles.registrationDates}>
-                <div className={styles.registrationDate}>
-                  <span className={styles.dateLabel}>Inscripciones:</span>
-                  <span className={styles.dateRange}>
-                    {new Date(training.registrationOpenDate).toLocaleDateString('es-AR')} - {' '}
-                    {new Date(training.registrationCloseDate).toLocaleDateString('es-AR')}
-                  </span>
-                </div>
               </div>
 
               {/* Botón de acción */}
@@ -280,16 +263,10 @@ export default function SwingTradingCalendar() {
                     className={styles.enrollButton}
                   >
                     <CreditCard size={16} />
-                    {enrolling === training._id ? 'Procesando...' : `Inscribirse - $${training.price}`}
+                    {enrolling === training._id ? 'Procesando...' : `Inscribirse - ARS $${training.price.toLocaleString('es-AR')}`}
                   </button>
                 ) : (
                   <div className={styles.unavailableBadge}>
-                    {!training.registrationOpen && !training.registrationClosed && (
-                      <span>Inscripciones próximamente</span>
-                    )}
-                    {training.registrationClosed && (
-                      <span>Inscripciones cerradas</span>
-                    )}
                     {training.status === 'full' && (
                       <span>Sin cupos disponibles</span>
                     )}

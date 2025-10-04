@@ -4,9 +4,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 interface TrainingClass {
   date: Date; // Fecha específica de la clase
   startTime: string; // Hora de inicio (formato HH:MM)
-  endTime: string; // Hora de fin (formato HH:MM)
   title: string; // Título de la clase
-  description?: string; // Descripción opcional
   meetingLink?: string; // Link de Google Meet (se genera automáticamente)
   status: 'scheduled' | 'completed' | 'cancelled';
 }
@@ -40,7 +38,7 @@ interface MonthlyTrainingDocument extends Document {
   
   // Configuración
   maxStudents: number; // Máximo 10 estudiantes
-  price: number; // Precio del pack mensual
+  price: number; // Precio del pack mensual en pesos argentinos
   
   // Clases del mes
   classes: TrainingClass[];
@@ -49,11 +47,7 @@ interface MonthlyTrainingDocument extends Document {
   students: EnrolledStudent[];
   
   // Estado del entrenamiento
-  status: 'draft' | 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
-  
-  // Fechas importantes
-  registrationOpenDate: Date; // Cuándo se abre la inscripción
-  registrationCloseDate: Date; // Cuándo se cierra la inscripción
+  status: 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
   
   // Metadatos
   createdBy: string; // Email del admin que lo creó
@@ -64,9 +58,7 @@ interface MonthlyTrainingDocument extends Document {
 const trainingClassSchema = new Schema<TrainingClass>({
   date: { type: Date, required: true },
   startTime: { type: String, required: true }, // HH:MM
-  endTime: { type: String, required: true }, // HH:MM
   title: { type: String, required: true },
-  description: { type: String },
   meetingLink: { type: String },
   status: { 
     type: String, 
@@ -123,13 +115,9 @@ const monthlyTrainingSchema = new Schema<MonthlyTrainingDocument>({
   // Estado
   status: { 
     type: String, 
-    enum: ['draft', 'open', 'full', 'in-progress', 'completed', 'cancelled'], 
-    default: 'draft' 
+    enum: ['open', 'full', 'in-progress', 'completed', 'cancelled'], 
+    default: 'open' 
   },
-  
-  // Fechas importantes
-  registrationOpenDate: { type: Date, required: true },
-  registrationCloseDate: { type: Date, required: true },
   
   // Metadatos
   createdBy: { type: String, required: true }
@@ -142,7 +130,6 @@ monthlyTrainingSchema.index({ month: 1, year: 1 });
 monthlyTrainingSchema.index({ status: 1 });
 monthlyTrainingSchema.index({ 'students.userId': 1 });
 monthlyTrainingSchema.index({ 'students.email': 1 });
-monthlyTrainingSchema.index({ registrationOpenDate: 1, registrationCloseDate: 1 });
 
 // Índice único para evitar duplicados del mismo mes/año
 monthlyTrainingSchema.index({ month: 1, year: 1, type: 1 }, { unique: true });

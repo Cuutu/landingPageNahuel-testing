@@ -33,8 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         { year: { $gt: currentYear } },
         { 
           year: currentYear, 
-          month: { $gte: currentMonth },
-          registrationCloseDate: { $gt: now }
+          month: { $gte: currentMonth }
         }
       ];
     } else {
@@ -51,9 +50,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Agregar información pública útil
     const publicTrainings = trainings.map(training => {
-      const now = new Date();
-      const registrationOpen = new Date(training.registrationOpenDate) <= now;
-      const registrationClosed = new Date(training.registrationCloseDate) <= now;
       const availableSpots = training.maxStudents - training.students.length;
       
       // Verificar si el usuario actual está inscrito
@@ -74,19 +70,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         enrolledStudents: training.students.length,
         availableSpots,
         status: training.status,
-        registrationOpenDate: training.registrationOpenDate,
-        registrationCloseDate: training.registrationCloseDate,
-        registrationOpen,
-        registrationClosed,
-        canEnroll: registrationOpen && !registrationClosed && availableSpots > 0 && !isEnrolled,
+        canEnroll: availableSpots > 0 && !isEnrolled && training.status === 'open',
         isEnrolled,
         classes: training.classes.map((cls: any) => ({
           _id: cls._id,
           date: cls.date,
           startTime: cls.startTime,
-          endTime: cls.endTime,
           title: cls.title,
-          description: cls.description,
           status: cls.status
         })),
         totalClasses: training.classes.length,

@@ -79,13 +79,11 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       year,
       maxStudents = 10,
       price,
-      classes,
-      registrationOpenDate,
-      registrationCloseDate
+      classes
     } = req.body;
 
     // Validaciones básicas
-    if (!title || !description || !month || !year || !price || !classes || !registrationOpenDate || !registrationCloseDate) {
+    if (!title || !description || !month || !year || !price || !classes) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
@@ -118,9 +116,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
         status: 'scheduled'
       })),
       students: [],
-      status: 'draft',
-      registrationOpenDate: new Date(registrationOpenDate),
-      registrationCloseDate: new Date(registrationCloseDate),
+      status: 'open',
       createdBy: adminEmail
     });
 
