@@ -688,26 +688,60 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       return;
     }
     
-    // Iniciar proceso de pago con MercadoPago
     setIsProcessingPayment(true);
-    
     try {
+      // 1) Intentar usar entrenamientos mensuales (precio dinámico por DB)
+      const now = new Date();
+      const openTrainings = (monthlyTrainings || []).filter(t => t.status === 'open');
+      let targetTraining: MonthlyTraining | null = null;
+
+      if (openTrainings.length > 0) {
+        // Elegir el entrenamiento abierto con la clase futura más próxima
+        const ranked = openTrainings
+          .map(t => {
+            const nextClassDate = (t.classes || [])
+              .map(c => new Date(c.date))
+              .filter(d => d > now)
+              .sort((a, b) => a.getTime() - b.getTime())[0];
+            return { t, nextClassDate };
+          })
+          .sort((a, b) => {
+            const aTime = a.nextClassDate ? a.nextClassDate.getTime() : Number.POSITIVE_INFINITY;
+            const bTime = b.nextClassDate ? b.nextClassDate.getTime() : Number.POSITIVE_INFINITY;
+            return aTime - bTime;
+          });
+        targetTraining = (ranked[0] && ranked[0].t) || openTrainings[0];
+      }
+
+      if (targetTraining && (targetTraining as any)._id) {
+        const resp = await fetch('/api/payments/mercadopago/create-monthly-training-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trainingId: (targetTraining as any)._id })
+        });
+        const data = await resp.json();
+        if (resp.ok && (data.initPoint || data.sandboxInitPoint)) {
+          window.location.href = data.initPoint || data.sandboxInitPoint;
+          return;
+        } else {
+          // Si falla, continuar con el flujo estándar como respaldo
+          console.warn('Fallo checkout de monthly-training, usando precio estándar:', data);
+        }
+      }
+
+      // 2) Respaldo: crear checkout estándar (usa Pricing/Training desde el backend)
       const response = await fetch('/api/payments/mercadopago/create-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
         body: JSON.stringify({
           type: 'training',
           service: 'SwingTrading',
           amount: training.precio,
           currency: 'ARS'
-        }),
+        })
       });
-
       const data = await response.json();
-
       if (data.success && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
