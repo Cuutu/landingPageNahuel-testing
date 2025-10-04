@@ -115,13 +115,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Configurar MercadoPago
     console.log('🔧 Configurando MercadoPago...');
-    if (!process.env.MP_ACCESS_TOKEN) {
-      console.log('❌ MP_ACCESS_TOKEN no configurado');
+    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      console.log('❌ MERCADOPAGO_ACCESS_TOKEN no configurado');
       return res.status(500).json({ error: 'Configuración de MercadoPago no encontrada' });
     }
 
     const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN,
+      accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN,
       options: { timeout: 5000 }
     });
 
