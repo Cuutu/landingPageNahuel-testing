@@ -488,7 +488,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
       descripcion: 'Recibe señales precisas en tiempo real para maximizar tus inversiones',
       icono: <TrendingUp className={styles.serviceIcon} />,
       href: '/alertas',
-      precio: 'Desde $99/mes',
+      precio: resolvedPricing?.alertas?.traderCall?.monthly ? `${uiFormatPrice(resolvedPricing.alertas.traderCall.monthly, resolvedPricing.currency)} /mes` : '',
       external: false
     },
     {
@@ -496,7 +496,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
       descripcion: 'Aprende las estrategias más efectivas del mercado financiero',
       icono: <Users className={styles.serviceIcon} />,
       href: '/entrenamientos',
-      precio: 'Desde $299',
+      precio: resolvedPricing?.entrenamientos?.swingTrading?.price ? `${uiFormatPrice(resolvedPricing.entrenamientos.swingTrading.price, resolvedPricing.currency)}` : '',
       external: false
     },
     {
@@ -504,7 +504,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
       descripcion: 'Consultoría personalizada para optimizar tu portafolio',
       icono: <Shield className={styles.serviceIcon} />,
       href: '/asesorias',
-      precio: 'Desde $199/sesión',
+      precio: resolvedPricing?.asesorias?.consultorioFinanciero?.price ? `${uiFormatPrice(resolvedPricing.asesorias.consultorioFinanciero.price, resolvedPricing.currency)} /sesión` : '',
       external: false
     },
     {
