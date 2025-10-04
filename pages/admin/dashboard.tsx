@@ -257,6 +257,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
     titulo: '',
     descripcion: '',
     duracion: '',
+    weeks: 1 as number,
     lecciones: 1,
     dificultad: 'Básico' as 'Básico' | 'Intermedio' | 'Avanzado',
     prerequisito: undefined as string | undefined,
@@ -466,6 +467,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
       titulo: '',
       descripcion: '',
       duracion: '',
+      weeks: 1,
       lecciones: 1,
       dificultad: 'Básico',
       prerequisito: undefined,
@@ -555,7 +557,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
         descripcion: moduleFormData.descripcion,
         roadmapId: editingRoadmap._id,
         tipoEntrenamiento: editingRoadmap.tipoEntrenamiento,
-        duracion: moduleFormData.duracion,
+        duracion: `${moduleFormData.weeks || 1} semanas`,
         lecciones: moduleFormData.lecciones,
         temas: moduleFormData.temas.filter(tema => tema.titulo.trim()),
         dificultad: moduleFormData.dificultad,
@@ -606,6 +608,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
       titulo: module.nombre, // El módulo viene con 'nombre' pero el formulario usa 'titulo'
       descripcion: module.descripcion,
       duracion: module.duracion,
+      weeks: (() => { const m = String(module.duracion || '').toLowerCase().match(/(\d+)/); return m ? parseInt(m[1], 10) : 1; })(),
       lecciones: module.lecciones,
       dificultad: module.dificultad,
       prerequisito: module.prerequisito?._id || undefined,
@@ -1372,15 +1375,17 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
                         <div className={styles.formRow}>
                           <div className={styles.formGroup}>
-                            <label>Duración</label>
+                            <label>Semanas</label>
                             <input
-                              type="text"
-                              value={moduleFormData.duracion}
+                              type="number"
+                              min={1}
+                              value={moduleFormData.weeks}
                               onChange={(e) => setModuleFormData(prev => ({ 
                                 ...prev, 
-                                duracion: e.target.value 
+                                weeks: parseInt(e.target.value) || 1,
+                                duracion: `${parseInt(e.target.value) || 1} semanas`
                               }))}
-                              placeholder="Ej: 2 semanas"
+                              placeholder="2"
                             />
                           </div>
                           <div className={styles.formGroup}>
