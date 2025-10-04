@@ -110,11 +110,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           if (alertDistribution) {
             allocatedAmount = alertDistribution.allocatedAmount || 0;
-            // SIEMPRE calcular las acciones basándose en la liquidez asignada
-            shares = Math.floor(allocatedAmount / entryPrice);
+            // ✅ USAR ACCIONES CON DECIMALES para evitar pérdidas
+            shares = allocatedAmount / entryPrice; // Sin Math.floor()
             
-            console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares} acciones calculadas`);
-            console.log(`🔢 Cálculo: $${allocatedAmount} ÷ $${entryPrice} = ${shares} acciones`);
+            console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares.toFixed(4)} acciones calculadas`);
+            console.log(`🔢 Cálculo: $${allocatedAmount} ÷ $${entryPrice} = ${shares.toFixed(4)} acciones`);
           } else {
             console.log(`⚠️ No se encontró distribución de liquidez para alerta ${alertId} (${alert.symbol})`);
             console.log(`📋 Distribuciones disponibles:`, liquidity.distributions.map((d: any) => ({ alertId: d.alertId, symbol: d.symbol })));
@@ -129,8 +129,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Si aún no hay liquidez, usar un monto por defecto basado en el precio
       if (allocatedAmount === 0) {
         allocatedAmount = 1000; // $1000 por defecto
-        shares = Math.floor(allocatedAmount / entryPrice);
-        console.log(`💡 Usando liquidez por defecto: $${allocatedAmount}, ${shares} acciones`);
+        shares = allocatedAmount / entryPrice; // Sin Math.floor()
+        console.log(`💡 Usando liquidez por defecto: $${allocatedAmount}, ${shares.toFixed(4)} acciones`);
       }
     }
     
@@ -141,11 +141,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'No hay acciones suficientes para realizar venta parcial' });
     }
     
-    // Calcular valores de la venta parcial
-    const sharesToSell = Math.floor(shares * (percentage / 100));
+    // Calcular valores de la venta parcial CON DECIMALES
+    const sharesToSell = shares * (percentage / 100); // Sin Math.floor()
     const sharesRemaining = shares - sharesToSell;
     const liquidityReleased = sharesToSell * current;
     const realizedProfit = sharesToSell * profitPerShare;
+    
+    console.log(`💰 Venta parcial ${percentage}%:`);
+    console.log(`📊 Acciones totales: ${shares.toFixed(4)}`);
+    console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}%)`);
+    console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)} (${100-percentage}%)`);
+    console.log(`💵 Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
     
     // Actualizar la alerta con los nuevos valores
     const newAllocatedAmount = sharesRemaining * entryPrice;
