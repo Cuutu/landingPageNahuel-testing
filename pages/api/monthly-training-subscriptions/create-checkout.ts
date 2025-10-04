@@ -5,6 +5,7 @@ import { MercadoPagoConfig, Preference } from 'mercadopago';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import Pricing from '../../../models/Pricing';
 import { z } from 'zod';
+import dbConnect from '../../../lib/mongodb';
 
 // Validación de entrada
 const createCheckoutSchema = z.object({
@@ -19,15 +20,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('🔍 Monthly Training Checkout - Iniciando proceso');
+    console.log('📝 Request body:', req.body);
+    
+    // Conectar a la base de datos
+    await dbConnect();
+    console.log('✅ Conectado a la base de datos');
+    
     // Verificar autenticación
     const session = await getServerSession(req, res, authOptions);
+    console.log('👤 Session:', session ? 'Autenticado' : 'No autenticado');
+    
     if (!(session as any)?.user?.email) {
+      console.log('❌ No autorizado - sin sesión');
       return res.status(401).json({ error: 'No autorizado' });
     }
 
     // Validar datos de entrada
     const validationResult = createCheckoutSchema.safeParse(req.body);
     if (!validationResult.success) {
+      console.log('❌ Validación fallida:', validationResult.error.errors);
       return res.status(400).json({ 
         error: 'Datos inválidos', 
         details: validationResult.error.errors 
@@ -35,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const { trainingType, subscriptionMonth, subscriptionYear } = validationResult.data;
+    console.log('✅ Datos validados:', { trainingType, subscriptionMonth, subscriptionYear });
 
     // Verificar que el mes/año no sea en el pasado
     const now = new Date();
@@ -75,36 +88,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Obtener precio desde la base de datos
+    console.log('💰 Obteniendo precio desde la base de datos...');
     const pricing = await Pricing.findOne().sort({ createdAt: -1 });
     if (!pricing) {
+      console.log('❌ No se encontró pricing en la base de datos');
       return res.status(500).json({ error: 'No se pudo obtener el precio' });
     }
 
+    console.log('📊 Pricing encontrado:', pricing);
+
     let amount = 0;
     if (trainingType === 'SwingTrading') {
-      amount = pricing.entrenamientos?.swingTrading?.monthly || 0;
+      amount = pricing.entrenamientos?.swingTrading?.price || 0;
     } else if (trainingType === 'DayTrading') {
-      amount = pricing.entrenamientos?.dayTrading?.monthly || 0;
+      amount = pricing.entrenamientos?.dayTrading?.price || 0;
     } else if (trainingType === 'DowJones') {
-      amount = pricing.entrenamientos?.dowJones?.monthly || 0;
+      amount = pricing.entrenamientos?.advanced?.price || 0; // DowJones usa advanced
     }
 
+    console.log('💵 Monto calculado:', amount);
+
     if (amount <= 0) {
+      console.log('❌ Precio no configurado o es 0');
       return res.status(500).json({ error: 'Precio no configurado para este entrenamiento' });
     }
 
     // Configurar MercadoPago
+    console.log('🔧 Configurando MercadoPago...');
+    if (!process.env.MP_ACCESS_TOKEN) {
+      console.log('❌ MP_ACCESS_TOKEN no configurado');
+      return res.status(500).json({ error: 'Configuración de MercadoPago no encontrada' });
+    }
+
     const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN!,
+      accessToken: process.env.MP_ACCESS_TOKEN,
       options: { timeout: 5000 }
     });
 
     const preference = new Preference(client);
+    console.log('✅ MercadoPago configurado correctamente');
 
     // Generar ID único para el pago
     const paymentId = `MTS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Crear suscripción en la base de datos (pendiente)
+    console.log('💾 Creando suscripción en la base de datos...');
     const monthlySubscription = new MonthlyTrainingSubscription({
       userId: (session as any).user.id,
       userEmail: (session as any).user.email,
@@ -118,6 +146,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     await monthlySubscription.save();
+    console.log('✅ Suscripción creada con ID:', monthlySubscription._id);
 
     // Crear preferencia de MercadoPago
     const preferenceData = {
@@ -153,7 +182,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     };
 
+    console.log('🛒 Creando preferencia de MercadoPago...');
     const result = await preference.create({ body: preferenceData });
+    console.log('✅ Preferencia creada:', result.id);
 
     return res.status(200).json({
       success: true,
