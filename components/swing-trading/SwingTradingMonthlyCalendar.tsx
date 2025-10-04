@@ -311,8 +311,8 @@ export default function SwingTradingCalendar() {
         )}
       </div>
 
-      {/* Información adicional */}
-      <div className={styles.infoSection}>
+      {/* Información adicional - OCULTA */}
+      {/* <div className={styles.infoSection}>
         <div className={styles.infoCard}>
           <h3>¿Cómo funcionan los entrenamientos mensuales?</h3>
           <ul>
@@ -333,7 +333,7 @@ export default function SwingTradingCalendar() {
             <li>Las clases se realizan según el cronograma publicado</li>
           </ul>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }
