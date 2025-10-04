@@ -28,6 +28,7 @@ export default function MonthlyTrainingPaymentSuccess() {
   const [training, setTraining] = useState<TrainingInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userAdded, setUserAdded] = useState(false);
 
   useEffect(() => {
     if (training_id) {
@@ -42,6 +43,10 @@ export default function MonthlyTrainingPaymentSuccess() {
       
       if (data.success && data.data.length > 0) {
         setTraining(data.data[0]);
+        // Sumar usuario al entrenamiento solo si no se ha agregado antes
+        if (!userAdded && session?.user?.email) {
+          await addUserToTraining();
+        }
       } else {
         setError('No se pudo cargar la información del entrenamiento');
       }
@@ -50,6 +55,36 @@ export default function MonthlyTrainingPaymentSuccess() {
       setError('Error cargando la información del entrenamiento');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const addUserToTraining = async () => {
+    try {
+      console.log('🔔 Agregando usuario al entrenamiento:', {
+        trainingId: training_id,
+        userEmail: session?.user?.email
+      });
+
+      const response = await fetch('/api/monthly-trainings/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trainingId: training_id,
+          paymentId: payment_id,
+          paymentStatus: 'completed'
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('✅ Usuario agregado exitosamente al entrenamiento');
+        setUserAdded(true);
+      } else {
+        console.error('❌ Error agregando usuario:', data.error);
+      }
+    } catch (error) {
+      console.error('❌ Error agregando usuario al entrenamiento:', error);
     }
   };
 

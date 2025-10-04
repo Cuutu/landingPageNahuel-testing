@@ -23,7 +23,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const {
       trainingId,
       phone,
-      experienceLevel
+      experienceLevel,
+      paymentId,
+      paymentStatus
     } = req.body;
 
     if (!trainingId) {
@@ -85,14 +87,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       attended: false
     }));
 
-    // Agregar estudiante con estado de pago pendiente
+    // Agregar estudiante con estado de pago según el contexto
     const newStudent = {
       userId: user._id.toString(),
       name: user.name || session.user.name || 'Usuario',
       email: session.user.email,
       phone: phone || user.phone,
       enrolledAt: new Date(),
-      paymentStatus: 'pending', // Se actualizará cuando se complete el pago
+      paymentStatus: paymentStatus || 'pending', // 'completed' si viene de página de éxito
+      paymentId: paymentId || '', // ID del pago si está disponible
       experienceLevel: experienceLevel || 'principiante',
       attendance
     };
@@ -102,9 +105,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Actualizar estado del entrenamiento si se llenó
     if (training.students.length >= training.maxStudents) {
       training.status = 'full';
+      console.log('🔴 Entrenamiento AGOTADO desde página de éxito:', {
+        trainingId,
+        currentStudents: training.students.length,
+        maxStudents: training.maxStudents
+      });
     }
 
     await training.save();
+
+    // Log específico para página de éxito
+    if (paymentStatus === 'completed') {
+      console.log('✅ Usuario agregado desde página de éxito:', {
+        trainingId,
+        userEmail: session.user.email,
+        paymentId,
+        currentStudents: training.students.length,
+        maxStudents: training.maxStudents
+      });
+    }
 
     // Respuesta con información para proceder al pago
     return res.status(201).json({
