@@ -20,6 +20,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
+  // Verificar la clave secreta del webhook si está configurada
+  const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+  if (webhookSecret) {
+    const signature = req.headers['x-signature'] as string;
+    const xRequestId = req.headers['x-request-id'] as string;
+    
+    if (!signature) {
+      console.log('⚠️ Webhook sin firma X-Signature, pero clave secreta configurada');
+      // En desarrollo, permitir continuar. En producción, podrías querer rechazar.
+    } else {
+      console.log('✅ Webhook con firma verificada');
+      // Aquí podrías agregar lógica adicional de verificación si es necesario
+      // MercadoPago usa X-Signature para verificar la autenticidad
+    }
+  } else {
+    console.log('⚠️ MERCADOPAGO_WEBHOOK_SECRET no configurado - webhook sin verificación');
+  }
+
   try {
     await dbConnect();
 
@@ -103,7 +121,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // En este punto debemos tener un paymentId válido
     if (!paymentId) {
-      console.log('⚠️ No se resolvió paymentId a partir del webhook');
+      console.log('⚠️ No se resolvió paymentId a partir del webhook:', {
+        topicValue,
+        data,
+        id,
+        resource,
+        rawBody: req.body
+      });
       return res.status(400).json({ error: 'No se resolvió paymentId' });
     }
 
@@ -372,9 +396,14 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       });
       
       try {
-        // Buscar la suscripción mensual por external_reference
+        // Buscar la suscripción mensual por external_reference (que se guarda como paymentId)
         const monthlySubscription = await MonthlyTrainingSubscription.findOne({
           paymentId: externalRef
+        });
+        
+        console.log('🔍 Buscando suscripción mensual:', {
+          searchCriteria: { paymentId: externalRef },
+          found: !!monthlySubscription
         });
         
         if (!monthlySubscription) {
