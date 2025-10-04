@@ -20,11 +20,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    console.log('🔔 [VERIFY-PAYMENT] Iniciando verificación de pago:', req.body);
+    
     const { trainingId, paymentId } = req.body;
 
     if (!trainingId) {
+      console.log('❌ [VERIFY-PAYMENT] Error: ID de entrenamiento requerido');
       return res.status(400).json({ error: 'ID de entrenamiento requerido' });
     }
+
+    console.log('📋 [VERIFY-PAYMENT] Datos recibidos:', { trainingId, paymentId, userEmail: session.user.email });
 
     // Obtener información del usuario
     const user = await User.findOne({ email: session.user.email });
@@ -141,13 +146,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await training.save();
 
-    console.log('✅ Usuario agregado por verificación de pago:', {
+    console.log('✅ [VERIFY-PAYMENT] Usuario agregado por verificación de pago:', {
       trainingId,
       paymentRange: training.paymentRange,
       userEmail: session.user.email,
       paymentId,
       currentPaidStudents: updatedPaidStudents.length,
-      maxStudents: training.maxStudents
+      maxStudents: training.maxStudents,
+      paidMonth: training.month,
+      paidYear: training.year
     });
 
     return res.status(201).json({

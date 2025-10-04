@@ -38,20 +38,30 @@ export default function MonthlyTrainingPaymentSuccess() {
 
   const loadTrainingInfo = async () => {
     try {
+      console.log('🔄 Cargando información del entrenamiento:', { training_id, session: !!session });
+      
       const response = await fetch(`/api/monthly-trainings?id=${training_id}`);
       const data = await response.json();
       
+      console.log('📊 Respuesta del API:', { success: data.success, dataLength: data.data?.length });
+      
       if (data.success && data.data.length > 0) {
         setTraining(data.data[0]);
+        console.log('✅ Entrenamiento cargado:', data.data[0].title);
+        
         // Sumar usuario al entrenamiento solo si no se ha agregado antes
         if (!userAdded && session?.user?.email) {
+          console.log('🚀 Iniciando proceso de agregar usuario al entrenamiento...');
           await addUserToTraining();
+        } else {
+          console.log('⚠️ No se agregará usuario:', { userAdded, hasSession: !!session?.user?.email });
         }
       } else {
+        console.error('❌ Error en respuesta del API:', data);
         setError('No se pudo cargar la información del entrenamiento');
       }
     } catch (error) {
-      console.error('Error cargando entrenamiento:', error);
+      console.error('❌ Error cargando entrenamiento:', error);
       setError('Error cargando la información del entrenamiento');
     } finally {
       setLoading(false);
