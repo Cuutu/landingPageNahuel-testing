@@ -306,6 +306,33 @@
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Estados de acceso mensual */
+.accessStatus {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: center;
+}
+
+.accessBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #10b981;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.accessInfo {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .heroContent {

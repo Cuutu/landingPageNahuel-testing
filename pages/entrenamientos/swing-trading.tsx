@@ -12,6 +12,7 @@ import TrainingRoadmap from '@/components/TrainingRoadmap';
 import SwingTradingMonthlyCalendar from '@/components/swing-trading/SwingTradingMonthlyCalendar';
 import SwingTradingFAQ from '@/components/SwingTradingFAQ';
 import BackgroundVideo from '@/components/BackgroundVideo';
+import MonthlyTrainingSelector from '@/components/MonthlyTrainingSelector';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -278,6 +279,12 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   // Estados para gestión de meeting link de la próxima clase
   const [nextMeetingLink, setNextMeetingLink] = useState<string | null>(null);
   const [nextMeetingStart, setNextMeetingStart] = useState<Date | null>(null);
+  
+  // Estados para suscripción mensual
+  const [selectedMonth, setSelectedMonth] = useState<number | undefined>();
+  const [selectedYear, setSelectedYear] = useState<number | undefined>();
+  const [monthlyAccess, setMonthlyAccess] = useState<any>(null);
+  const [checkingMonthlyAccess, setCheckingMonthlyAccess] = useState(false);
 
   // Función para cargar entrenamientos mensuales
   const loadMonthlyTrainings = async () => {
@@ -291,6 +298,30 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     } catch (error) {
       console.error('Error cargando entrenamientos mensuales:', error);
     }
+  };
+
+  // Función para verificar acceso mensual
+  const checkMonthlyAccess = async () => {
+    if (!session?.user?.email) return;
+    
+    setCheckingMonthlyAccess(true);
+    try {
+      const response = await fetch('/api/monthly-training-subscriptions/verify-access?trainingType=SwingTrading');
+      if (response.ok) {
+        const data = await response.json();
+        setMonthlyAccess(data);
+      }
+    } catch (error) {
+      console.error('Error checking monthly access:', error);
+    } finally {
+      setCheckingMonthlyAccess(false);
+    }
+  };
+
+  // Función para manejar selección de mes
+  const handleMonthSelect = (month: number, year: number) => {
+    setSelectedMonth(month);
+    setSelectedYear(year);
   };
 
   // Función para calcular el countdown basado en la próxima clase de entrenamientos mensuales
@@ -370,6 +401,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   useEffect(() => {
     loadTrainingDates();
     loadMonthlyTrainings(); // Cargar entrenamientos mensuales
+    checkMonthlyAccess(); // Verificar acceso mensual
     
     // Verificar si el usuario es admin
     if (session?.user?.email) {
@@ -677,6 +709,12 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       return;
     }
     
+    // Verificar si ya tiene acceso mensual activo
+    if (monthlyAccess?.hasAccess) {
+      toast.success('Ya tienes acceso activo al entrenamiento mensual');
+      return;
+    }
+    
     if (isEnrolled) {
       // Si ya está inscrito y hay link de reunión, ir al Meet
       if (nextMeetingLink) {
@@ -688,62 +726,29 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
       return;
     }
     
+    // Verificar que se haya seleccionado un mes
+    if (!selectedMonth || !selectedYear) {
+      toast.error('Por favor selecciona un mes para tu suscripción');
+      return;
+    }
+    
     setIsProcessingPayment(true);
     try {
-      // 1) Intentar usar entrenamientos mensuales (precio dinámico por DB)
-      const now = new Date();
-      const openTrainings = (monthlyTrainings || []).filter(t => t.status === 'open');
-      let targetTraining: MonthlyTraining | null = null;
-
-      if (openTrainings.length > 0) {
-        // Elegir el entrenamiento abierto con la clase futura más próxima
-        const ranked = openTrainings
-          .map(t => {
-            const nextClassDate = (t.classes || [])
-              .map(c => new Date(c.date))
-              .filter(d => d > now)
-              .sort((a, b) => a.getTime() - b.getTime())[0];
-            return { t, nextClassDate };
-          })
-          .sort((a, b) => {
-            const aTime = a.nextClassDate ? a.nextClassDate.getTime() : Number.POSITIVE_INFINITY;
-            const bTime = b.nextClassDate ? b.nextClassDate.getTime() : Number.POSITIVE_INFINITY;
-            return aTime - bTime;
-          });
-        targetTraining = (ranked[0] && ranked[0].t) || openTrainings[0];
-      }
-
-      if (targetTraining && (targetTraining as any)._id) {
-        const resp = await fetch('/api/payments/mercadopago/create-monthly-training-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ trainingId: (targetTraining as any)._id })
-        });
-        const data = await resp.json();
-        if (resp.ok && (data.initPoint || data.sandboxInitPoint)) {
-          window.location.href = data.initPoint || data.sandboxInitPoint;
-          return;
-        } else {
-          // Si falla, continuar con el flujo estándar como respaldo
-          console.warn('Fallo checkout de monthly-training, usando precio estándar:', data);
-        }
-      }
-
-      // 2) Respaldo: crear checkout estándar (usa Pricing/Training desde el backend)
-      const response = await fetch('/api/payments/mercadopago/create-checkout', {
+      // Usar el nuevo sistema de suscripciones mensuales
+      const response = await fetch('/api/monthly-training-subscriptions/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
         body: JSON.stringify({
-          type: 'training',
-          service: 'SwingTrading',
-          amount: training.precio,
-          currency: 'ARS'
+          trainingType: 'SwingTrading',
+          subscriptionMonth: selectedMonth,
+          subscriptionYear: selectedYear
         })
       });
+      
       const data = await response.json();
-      if (data.success && data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
+      
+      if (data.success && (data.checkoutUrl || data.sandboxInitPoint)) {
+        window.location.href = data.checkoutUrl || data.sandboxInitPoint;
       } else {
         toast.error(data.error || 'Error al procesar el pago');
       }
@@ -887,19 +892,52 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                     <span className={styles.countdownLabel}>Minutos</span>
                   </div>
                 </div>
+                
+                {/* Selector de meses para suscripción mensual */}
+                {!monthlyAccess?.hasAccess && !isEnrolled && (
+                  <MonthlyTrainingSelector
+                    trainingType="SwingTrading"
+                    onMonthSelect={handleMonthSelect}
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    disabled={isProcessingPayment}
+                  />
+                )}
+                
+                {/* Mostrar estado de acceso mensual */}
+                {monthlyAccess?.hasAccess && (
+                  <div className={styles.accessStatus}>
+                    <div className={styles.accessBadge}>
+                      <CheckCircle size={20} />
+                      <span>Acceso Activo: {monthlyAccess.subscription?.monthName} {monthlyAccess.subscription?.subscriptionYear}</span>
+                    </div>
+                    <p className={styles.accessInfo}>
+                      Tienes acceso completo al entrenamiento durante {monthlyAccess.subscription?.daysRemaining} días más.
+                    </p>
+                  </div>
+                )}
+                
                 <button 
                   onClick={handleEnroll}
                   className={styles.enrollButton}
-                  disabled={checkingEnrollment || isProcessingPayment}
+                  disabled={checkingEnrollment || isProcessingPayment || (!selectedMonth && !monthlyAccess?.hasAccess && !isEnrolled)}
                 >
                   {isProcessingPayment ? (
                     <>
                       <Loader size={20} className={styles.spinner} />
                       Procesando...
                     </>
+                  ) : monthlyAccess?.hasAccess ? (
+                    <>
+                      Acceso Activo ✓
+                    </>
+                  ) : isEnrolled ? (
+                    <>
+                      Ver Clase &gt;
+                    </>
                   ) : (
                     <>
-                      Inscribirme Ahora &gt;
+                      Suscribirse al Mes &gt;
                     </>
                   )}
                 </button>
