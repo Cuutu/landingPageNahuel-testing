@@ -47,15 +47,23 @@ const MONTHS = [
 
 // Helper function to format date for Argentina timezone (UTC-3)
 function formatArgentinaDate(dateString: string): string {
+  console.log('🔍 formatArgentinaDate - Input dateString:', dateString);
+  
   const date = new Date(dateString);
+  console.log('🔍 Created date object:', date);
+  console.log('🔍 Date ISO string:', date.toISOString());
+  console.log('🔍 Date local string:', date.toLocaleDateString('es-AR'));
   
   // Format the date directly without timezone adjustment
   // since dates are now stored correctly in UTC
-  return date.toLocaleDateString('es-AR', { 
+  const formatted = date.toLocaleDateString('es-AR', { 
     day: '2-digit', 
     month: '2-digit',
     year: 'numeric'
   });
+  
+  console.log('🔍 Formatted result:', formatted);
+  return formatted;
 }
 
 export default function SwingTradingCalendar() {

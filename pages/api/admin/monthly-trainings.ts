@@ -7,14 +7,20 @@ import User from '../../../models/User';
 
 // Helper function to create date in Argentina timezone (UTC-3)
 function createArgentinaDate(dateString: string): Date {
+  console.log('🔍 createArgentinaDate - Input dateString:', dateString);
+  
   // Parse the date string (YYYY-MM-DD) and create date in Argentina timezone
   const [year, month, day] = dateString.split('-').map(Number);
+  console.log('🔍 Parsed date parts:', { year, month, day });
   
-  // Create date directly in UTC to avoid timezone conversion issues
-  // The date should represent the same day regardless of timezone
-  const utcDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  // Create date in local timezone to avoid UTC conversion issues
+  // This ensures the date represents the exact day selected
+  const localDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+  console.log('🔍 Created local date:', localDate);
+  console.log('🔍 Local date ISO string:', localDate.toISOString());
+  console.log('🔍 Local date local string:', localDate.toLocaleDateString('es-AR'));
   
-  return utcDate;
+  return localDate;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
