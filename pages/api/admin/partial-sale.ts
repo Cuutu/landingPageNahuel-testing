@@ -86,8 +86,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Obtener información de liquidez actual
     const liquidityData = alert.liquidityData || {};
-    const allocatedAmount = liquidityData.allocatedAmount || 0;
-    const shares = liquidityData.shares || Math.floor(allocatedAmount / entryPrice);
+    let allocatedAmount = liquidityData.allocatedAmount || 0;
+    let shares = liquidityData.shares || 0;
+    
+    // Si no hay liquidez asignada, calcular basándose en un monto por defecto
+    if (allocatedAmount === 0 && shares === 0) {
+      // Buscar si hay liquidez asignada en el pool para este símbolo
+      try {
+        const liquidityResponse = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/liquidity?pool=${tipo}`);
+        if (liquidityResponse.ok) {
+          const liquidityJson = await liquidityResponse.json();
+          const symbolDistribution = liquidityJson.liquidity?.distributions?.find((d: any) => d.symbol === alert.symbol);
+          
+          if (symbolDistribution) {
+            allocatedAmount = symbolDistribution.allocatedAmount || 0;
+            shares = symbolDistribution.shares || Math.floor(allocatedAmount / entryPrice);
+            
+            console.log(`📊 Liquidez encontrada para ${alert.symbol}: $${allocatedAmount}, ${shares} acciones`);
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ No se pudo obtener liquidez del pool, usando valores por defecto');
+      }
+      
+      // Si aún no hay liquidez, usar un monto por defecto basado en el precio
+      if (allocatedAmount === 0) {
+        allocatedAmount = 1000; // $1000 por defecto
+        shares = Math.floor(allocatedAmount / entryPrice);
+        console.log(`💡 Usando liquidez por defecto: $${allocatedAmount}, ${shares} acciones`);
+      }
+    }
+    
+    console.log(`📊 Liquidez para cálculo: $${allocatedAmount}, ${shares} acciones, precio entrada: $${entryPrice}`);
+    
+    // Validar que tenemos datos suficientes para el cálculo
+    if (shares === 0) {
+      return res.status(400).json({ error: 'No hay acciones suficientes para realizar venta parcial' });
+    }
     
     // Calcular valores de la venta parcial
     const sharesToSell = Math.floor(shares * (percentage / 100));
@@ -102,6 +137,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ...liquidityData,
       allocatedAmount: newAllocatedAmount,
       shares: sharesRemaining,
+      // Guardar el monto original para referencia
+      originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
+      originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
       partialSales: [
         ...(liquidityData.partialSales || []),
         {

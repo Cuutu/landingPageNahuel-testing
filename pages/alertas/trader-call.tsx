@@ -1034,15 +1034,15 @@ const SubscriberView: React.FC = () => {
   // ✅ OPTIMIZADO: Cargar liquidez una sola vez y cachear
   const loadLiquidity = async () => {
     try {
-      const res = await fetch('/api/liquidity/public?pool=TraderCall');
+      const res = await fetch('/api/liquidity?pool=TraderCall');
       if (res.ok) {
         const json = await res.json();
         const map: Record<string, any> = {};
-        (json.data?.distributions || []).forEach((d: any) => {
+        (json.liquidity?.distributions || []).forEach((d: any) => {
           map[d.symbol] = d;
         });
         setLiquidityMap(map);
-        setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
+        setLiquidityTotal(Number(json.liquidity?.totalLiquidity || 0));
       }
     } catch (e) {
       console.log('Error cargando liquidez:', e);
