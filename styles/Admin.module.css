@@ -422,8 +422,6 @@
 
 .input::placeholder { color: rgba(255,255,255,0.6); }
 
-:global(.Admin_input__placeholder) { color: rgba(255,255,255,0.6); }
-
 /* Mejorar ícono del selector de fecha/hora en modo oscuro */
 .input::-webkit-calendar-picker-indicator { filter: invert(1); opacity: 0.8; }
 
