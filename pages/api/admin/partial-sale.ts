@@ -56,8 +56,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Calcular los valores de la venta parcial
-    const entryPrice = parseFloat(alert.entryPrice.replace('$', ''));
-    const current = parseFloat(currentPrice.replace('$', ''));
+    // Manejar diferentes formatos de precio de entrada
+    let entryPrice: number;
+    if (typeof alert.entryPrice === 'string') {
+      entryPrice = parseFloat(alert.entryPrice.replace('$', ''));
+    } else if (typeof alert.entryPrice === 'number') {
+      entryPrice = alert.entryPrice;
+    } else {
+      return res.status(400).json({ error: 'Precio de entrada inválido' });
+    }
+
+    // Manejar precio actual
+    let current: number;
+    if (typeof currentPrice === 'string') {
+      current = parseFloat(currentPrice.replace('$', ''));
+    } else if (typeof currentPrice === 'number') {
+      current = currentPrice;
+    } else {
+      return res.status(400).json({ error: 'Precio actual inválido' });
+    }
+
+    // Validar que los precios son números válidos
+    if (isNaN(entryPrice) || isNaN(current)) {
+      return res.status(400).json({ error: 'Precios inválidos para el cálculo' });
+    }
     
     // Calcular ganancia/pérdida por acción
     const profitPerShare = current - entryPrice;
