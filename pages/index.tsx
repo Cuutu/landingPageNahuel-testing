@@ -124,6 +124,7 @@ interface HomeProps {
   siteConfig: SiteConfig;
   entrenamientos: Training[];
   courseCards: CourseCard[];
+  initialPricing?: any;
 }
 
 /**
@@ -215,7 +216,7 @@ const YouTubeAutoCarousel: React.FC = () => {
 /**
  * Página principal del sitio web de Nahuel Lozano
  */
-export default function Home({ session, siteConfig, entrenamientos, courseCards }: HomeProps) {
+export default function Home({ session, siteConfig, entrenamientos, courseCards, initialPricing }: HomeProps) {
   console.log('🏠 Renderizando página principal');
   console.log('🔧 siteConfig:', siteConfig);
   console.log('🎯 servicios visible:', siteConfig?.servicios?.visible);
@@ -223,6 +224,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
   console.log('🎓 entrenamientos:', entrenamientos);
   
   const { pricing, loading: pricingLoading } = usePricing();
+  const resolvedPricing = pricing || initialPricing;
   const { isFeatureEnabled } = useSiteConfig();
 
   const [email, setEmail] = useState('');
@@ -416,14 +418,14 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
     return `$${formatted} ${currency || 'ARS'}${suffix ? ` ${suffix}` : ''}`;
   };
 
-  const traderCallPriceStr = pricing?.alertas?.traderCall?.monthly
-    ? formatPrice(pricing.alertas.traderCall.monthly, pricing.currency, '/mes')
+  const traderCallPriceStr = resolvedPricing?.alertas?.traderCall?.monthly
+    ? formatPrice(resolvedPricing.alertas.traderCall.monthly, resolvedPricing.currency, '/mes')
     : '$15.000/mes';
-  const swingPriceStr = pricing?.entrenamientos?.swingTrading?.price
-    ? formatPrice(pricing.entrenamientos.swingTrading.price, pricing.currency)
+  const swingPriceStr = resolvedPricing?.entrenamientos?.swingTrading?.price
+    ? formatPrice(resolvedPricing.entrenamientos.swingTrading.price, resolvedPricing.currency)
     : '$279.000';
-  const consultorioPriceStr = pricing?.asesorias?.consultorioFinanciero?.price
-    ? formatPrice(pricing.asesorias.consultorioFinanciero.price, pricing.currency, '/sesión')
+  const consultorioPriceStr = resolvedPricing?.asesorias?.consultorioFinanciero?.price
+    ? formatPrice(resolvedPricing.asesorias.consultorioFinanciero.price, resolvedPricing.currency, '/sesión')
     : '$30.000/sesión';
 
   // Datos de elementos destacados unificados (sin Pack AT ni Medias Móviles)
@@ -789,8 +791,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                           onClick={() => handleMercadoPagoCheckout(
                             'subscription',
                             'TraderCall',
-                            (pricing?.alertas?.traderCall?.monthly || 0),
-                            pricing?.currency || 'ARS'
+                            (resolvedPricing?.alertas?.traderCall?.monthly || 0),
+                            resolvedPricing?.currency || 'ARS'
                           )}
                           className={styles.servicioButton}
                           disabled={isProcessingPayment}
@@ -801,7 +803,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                               Procesando...
                             </>
                           ) : (
-                            pricing ? `Suscribirse - $${pricing.alertas.traderCall.monthly} ${pricing.currency}` : 'Suscribirse'
+                            resolvedPricing ? `Suscribirse - $${resolvedPricing.alertas.traderCall.monthly} ${resolvedPricing.currency}` : 'Suscribirse'
                           )}
                         </button>
                       ) : (
@@ -1356,8 +1358,8 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                     onClick={() => handleMercadoPagoCheckout(
                       'subscription',
                       'TraderCall',
-                      (pricing?.alertas?.traderCall?.monthly || 0),
-                      pricing?.currency || 'ARS'
+                      (resolvedPricing?.alertas?.traderCall?.monthly || 0),
+                      resolvedPricing?.currency || 'ARS'
                     )}
                     className={styles.ctaInvestmentButtonPrimary}
                     disabled={isProcessingPayment}
@@ -1368,7 +1370,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards 
                         Procesando...
                       </>
                     ) : (
-                      pricing ? `Suscribirse a Alertas - $${pricing.alertas.traderCall.monthly} ${pricing.currency}` : 'Suscribirse a Alertas'
+                      resolvedPricing ? `Suscribirse a Alertas - $${resolvedPricing.alertas.traderCall.monthly} ${resolvedPricing.currency}` : 'Suscribirse a Alertas'
                     )}
                   </button>
                 ) : (
@@ -1542,6 +1544,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     let siteConfig = defaultSiteConfig;
     let entrenamientos = defaultEntrenamientos;
     let courseCards: CourseCard[] = [];
+    let initialPricing = null as any;
 
     // Intentar obtener datos reales solo si estamos en el servidor con URL válida
     if (process.env.NEXTAUTH_URL) {
@@ -1570,6 +1573,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             courseCards = courseCardsData;
           }
         }
+
+        // Obtener pricing para SSR como respaldo del hook
+        const pricingRes = await fetch(`${process.env.NEXTAUTH_URL}/api/pricing`);
+        if (pricingRes.ok) {
+          const pricingData = await pricingRes.json();
+          initialPricing = pricingData?.data || null;
+        }
       } catch (apiError) {
         console.log('⚠️ Error al obtener datos de APIs, usando valores por defecto:', apiError);
       }
@@ -1580,7 +1590,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         session: session || null,
         siteConfig,
         entrenamientos,
-        courseCards
+        courseCards,
+        initialPricing
       },
     };
   } catch (error) {
