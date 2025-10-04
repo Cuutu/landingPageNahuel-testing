@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 import { createAlertNotification } from '@/lib/notificationUtils';
 
 interface AlertRequest {
@@ -24,6 +25,9 @@ interface AlertRequest {
   precioMinimo?: number;
   precioMaximo?: number;
   horarioCierre?: string;
+  // ✅ NUEVO: Campos para liquidez
+  liquidityPercentage?: number;
+  liquidityAmount?: number;
   chartImage?: {
     public_id: string;
     url: string;
@@ -105,7 +109,9 @@ export default async function handler(
       precioMaximo,
       horarioCierre = '17:30',
       emailMessage,
-      emailImageUrl
+      emailImageUrl,
+      liquidityPercentage = 0,
+      liquidityAmount = 0
     }: AlertRequest & { emailMessage?: string; emailImageUrl?: string } = req.body;
 
     if (!symbol || !action || !stopLoss || !takeProfit) {
@@ -179,7 +185,94 @@ export default async function handler(
 
     console.log('Nueva alerta creada por usuario:', user.name || user.email, newAlert._id);
 
-    // 🔔 NUEVA FUNCIONALIDAD: Crear notificación automática
+    // ✅ NUEVO: Crear distribución de liquidez automáticamente si se asignó liquidez
+    if (liquidityPercentage > 0 && liquidityAmount > 0) {
+      try {
+        console.log(`💰 Asignando liquidez automáticamente: ${liquidityPercentage}% ($${liquidityAmount}) para ${symbol}`);
+        
+        // Determinar el pool según el tipo de alerta
+        const pool = tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+        
+        // Buscar o crear el documento de liquidez
+        let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        if (!liquidity) {
+          // Si no existe, crear uno con liquidez por defecto
+          liquidity = await Liquidity.create({
+            totalLiquidity: liquidityAmount * (100 / liquidityPercentage), // Calcular total basado en el porcentaje
+            availableLiquidity: 0, // Se calculará después
+            distributedLiquidity: liquidityAmount,
+            distributions: [],
+            totalProfitLoss: 0,
+            totalProfitLossPercentage: 0,
+            createdBy: user._id,
+            pool
+          });
+          console.log(`📊 Documento de liquidez creado para pool ${pool}: $${liquidity.totalLiquidity}`);
+        }
+
+        // Verificar si ya existe una distribución para esta alerta
+        const existingDistribution = liquidity.distributions.find(
+          (d: any) => d.alertId.toString() === newAlert._id.toString()
+        );
+
+        if (!existingDistribution) {
+          // Determinar el precio de entrada para el cálculo de acciones
+          const priceForShares = tipoAlerta === 'precio' ? 
+            (entryPrice || newAlert.currentPrice) : 
+            (precioMinimo || newAlert.currentPrice);
+
+          const shares = Math.floor(liquidityAmount / priceForShares);
+
+          // Crear nueva distribución
+          const newDistribution = {
+            alertId: newAlert._id,
+            symbol: symbol.toUpperCase(),
+            percentage: liquidityPercentage,
+            allocatedAmount: liquidityAmount,
+            entryPrice: priceForShares,
+            currentPrice: priceForShares, // Inicialmente igual al precio de entrada
+            shares: shares,
+            profitLoss: 0, // Inicialmente 0
+            profitLossPercentage: 0, // Inicialmente 0%
+            realizedProfitLoss: 0,
+            soldShares: 0,
+            isActive: true,
+            createdAt: new Date()
+          };
+
+          // Agregar la distribución
+          liquidity.distributions.push(newDistribution);
+
+          // Actualizar totales
+          liquidity.distributedLiquidity = liquidity.distributions
+            .filter((d: any) => d.isActive)
+            .reduce((sum: number, d: any) => sum + d.allocatedAmount, 0);
+          
+          liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
+
+          // Guardar cambios
+          await liquidity.save();
+
+          console.log(`✅ Distribución de liquidez creada automáticamente:`, {
+            alertId: newAlert._id.toString(),
+            symbol: symbol.toUpperCase(),
+            percentage: liquidityPercentage,
+            amount: liquidityAmount,
+            shares: shares,
+            pool: pool
+          });
+        } else {
+          console.log(`⚠️ Ya existe una distribución para la alerta ${newAlert._id}`);
+        }
+
+      } catch (liquidityError) {
+        console.error('❌ Error al crear distribución de liquidez automática:', liquidityError);
+        // No fallar la creación de la alerta si la distribución de liquidez falla
+        // Solo registrar el error
+      }
+    }
+
+    // 🔔 Crear notificación automática (email a suscriptores)
     try {
       await createAlertNotification(newAlert, {
         message: emailMessage,
