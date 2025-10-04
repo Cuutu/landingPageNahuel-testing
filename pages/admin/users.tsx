@@ -448,6 +448,13 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                 >
                   Volver al Dashboard
                 </Link>
+                <Link 
+                  href="/admin/monthly-trainings/users"
+                  className={`${styles.actionButton} ${styles.outline}`}
+                >
+                  <Calendar size={20} />
+                  Gestionar Entrenamientos
+                </Link>
                 <button 
                   onClick={exportUsers}
                   className={`${styles.actionButton} ${styles.outline}`}
