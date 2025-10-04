@@ -6,19 +6,24 @@ import MonthlyTraining from '../../../models/MonthlyTraining';
 import User from '../../../models/User';
 
 // Helper function to create date in Argentina timezone (UTC-3)
-function createArgentinaDate(dateString: string): Date {
-  console.log('🔍 createArgentinaDate - Input dateString:', dateString);
+function createArgentinaDate(dateString: string, timeString: string = '19:00'): Date {
+  console.log('🔍 createArgentinaDate - Input dateString:', dateString, 'timeString:', timeString);
   
   // Parse the date string (YYYY-MM-DD) and create date in Argentina timezone
   const [year, month, day] = dateString.split('-').map(Number);
   console.log('🔍 Parsed date parts:', { year, month, day });
   
-  // Create date in local timezone to avoid UTC conversion issues
-  // This ensures the date represents the exact day selected
-  const localDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-  console.log('🔍 Created local date:', localDate);
+  // Parse the time string (HH:MM)
+  const [hours, minutes] = timeString.split(':').map(Number);
+  console.log('🔍 Parsed time parts:', { hours, minutes });
+  
+  // Create date in local timezone with the specific time of the class
+  // This ensures the date represents the exact day and time selected
+  const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  console.log('🔍 Created local date with time:', localDate);
   console.log('🔍 Local date ISO string:', localDate.toISOString());
   console.log('🔍 Local date local string:', localDate.toLocaleDateString('es-AR'));
+  console.log('🔍 Local date local time:', localDate.toLocaleTimeString('es-AR'));
   
   return localDate;
 }
@@ -131,7 +136,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       classes: classes.map((cls: any, index: number) => ({
         ...cls,
         _id: undefined, // Dejar que MongoDB genere el ID
-        date: createArgentinaDate(cls.date), // Convertir string a Date en zona horaria Argentina (UTC-3)
+        date: createArgentinaDate(cls.date, cls.startTime), // Convertir string a Date con hora específica
         status: 'scheduled'
       })),
       students: [],
@@ -185,7 +190,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
     if (updateData.classes) {
       updateData.classes = updateData.classes.map((cls: any) => ({
         ...cls,
-        date: createArgentinaDate(cls.date) // Convertir string a Date en zona horaria Argentina (UTC-3)
+        date: createArgentinaDate(cls.date, cls.startTime) // Convertir string a Date con hora específica
       }));
     }
 
