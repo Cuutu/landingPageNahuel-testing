@@ -907,7 +907,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
               viewport={{ once: true }}
             >
               <div className={styles.empresasContent}>
-                <h2 className={styles.empresasTitle}>Empresas que confían en nosotros</h2>
+                <h2 className={styles.empresasTitle}>Empresas que confiaron en nosotros</h2>
                 
                 <div className={styles.empresasGrid}>
                   <motion.a
