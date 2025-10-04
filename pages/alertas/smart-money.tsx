@@ -1957,7 +1957,8 @@ const SubscriberView: React.FC = () => {
                 + Crear Nueva Alerta
               </button>
             )}
-            <div className={styles.filtersContainer}>
+            {/* Filtros - OCULTOS */}
+            <div className={styles.filtersContainer} style={{ display: 'none' }}>
               <input
                 type="text"
                 placeholder="Filtrar por símbolo..."
@@ -2009,8 +2010,8 @@ const SubscriberView: React.FC = () => {
           </div>
         ) : (
           <div className={styles.alertsListContainer}>
-            {/* Resumen estadístico */}
-            <div className={styles.statsSummary}>
+            {/* Resumen estadístico - OCULTO */}
+            <div className={styles.statsSummary} style={{ display: 'none' }}>
               <div className={styles.summaryCard}>
                 <div className={styles.summaryIcon}>📊</div>
                 <div className={styles.summaryContent}>
