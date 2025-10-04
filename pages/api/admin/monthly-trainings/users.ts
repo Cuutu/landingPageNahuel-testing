@@ -53,6 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           enrolledAt: student.enrolledAt,
           paymentId: student.paymentId,
           experienceLevel: student.experienceLevel,
+          paidMonth: student.paidMonth,
+          paidYear: student.paidYear,
           attendance: student.attendance
         }))
       };

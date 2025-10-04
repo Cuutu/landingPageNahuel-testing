@@ -27,6 +27,8 @@ interface Student {
   enrolledAt: string;
   paymentId: string;
   experienceLevel: string;
+  paidMonth?: number;
+  paidYear?: number;
   attendance: Array<{
     classId: string;
     attended: boolean;
@@ -99,12 +101,22 @@ export default function MonthlyTrainingUsers() {
     return matchesSearch && matchesMonth && matchesYear;
   });
 
+  const getMonthName = (month: number): string => {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    return months[month - 1] || 'Mes Desconocido';
+  };
+
   const exportToCSV = () => {
     const csvData = trainings.flatMap(training => 
       training.students.map(student => ({
         'Entrenamiento': training.title,
         'Mes': training.monthName,
         'Año': training.year,
+        'Mes Pagado': student.paidMonth ? getMonthName(student.paidMonth) : 'N/A',
+        'Año Pagado': student.paidYear || 'N/A',
         'Nombre': student.name,
         'Email': student.email,
         'Teléfono': student.phone || '',
@@ -350,6 +362,15 @@ export default function MonthlyTrainingUsers() {
                                 Nivel: {student.experienceLevel}
                               </span>
                             </div>
+                            
+                            {student.paidMonth && student.paidYear && (
+                              <div className={styles.studentDetail}>
+                                <Calendar size={16} />
+                                <span className={styles.paidMonth}>
+                                  Pagó por: {getMonthName(student.paidMonth)} {student.paidYear}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}

@@ -19,6 +19,8 @@ interface EnrolledStudent {
   paymentStatus: 'pending' | 'completed' | 'failed';
   paymentId?: string; // ID de MercadoPago
   experienceLevel?: 'principiante' | 'intermedio' | 'avanzado';
+  paidMonth?: number; // Mes por el cual pagó (1-12)
+  paidYear?: number; // Año por el cual pagó
   attendance: {
     classId: string; // ID de la clase
     attended: boolean;
@@ -86,6 +88,8 @@ const enrolledStudentSchema = new Schema<EnrolledStudent>({
     type: String, 
     enum: ['principiante', 'intermedio', 'avanzado'] 
   },
+  paidMonth: { type: Number, min: 1, max: 12 },
+  paidYear: { type: Number },
   attendance: [{
     classId: { type: String, required: true },
     attended: { type: Boolean, default: false },

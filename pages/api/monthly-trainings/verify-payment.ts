@@ -79,6 +79,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentStatus: 'completed',
       paymentId: paymentId || '',
       experienceLevel: user.experienceLevel || 'principiante',
+      paidMonth: training.month, // Mes del entrenamiento por el cual pagó
+      paidYear: training.year, // Año del entrenamiento por el cual pagó
       attendance
     };
 

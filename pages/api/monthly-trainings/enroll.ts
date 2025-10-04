@@ -98,6 +98,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       paymentStatus: paymentStatus || 'pending', // 'completed' si viene de página de éxito
       paymentId: paymentId || '', // ID del pago si está disponible
       experienceLevel: experienceLevel || 'principiante',
+      paidMonth: paymentStatus === 'completed' ? training.month : undefined, // Solo si el pago está completado
+      paidYear: paymentStatus === 'completed' ? training.year : undefined, // Solo si el pago está completado
       attendance
     };
 
