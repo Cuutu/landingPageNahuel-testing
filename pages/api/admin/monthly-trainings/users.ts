@@ -11,6 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    // Conectar a la base de datos primero
+    await dbConnect();
+
     // Verificar autenticación y permisos de admin
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.email) {
@@ -22,8 +25,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
-
-    await dbConnect();
 
     // Obtener todos los entrenamientos con estudiantes pagados
     const trainings = await MonthlyTraining.find({
