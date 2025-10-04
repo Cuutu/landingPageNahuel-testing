@@ -29,7 +29,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔔 Webhook recibido:', {
       topic: topicValue,
-      raw: req.body
+      raw: req.body,
+      timestamp: new Date().toISOString()
     });
 
     // Resolver paymentId o merchantOrderId
@@ -364,7 +365,11 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
 
     } else if (isMonthlyTrainingSubscription) {
       // Procesar suscripción mensual
-      console.log('✅ Procesando pago de suscripción mensual...');
+      console.log('✅ Procesando pago de suscripción mensual...', {
+        externalRef,
+        paymentId: paymentInfo.id,
+        timestamp: new Date().toISOString()
+      });
       
       try {
         // Buscar la suscripción mensual por external_reference
