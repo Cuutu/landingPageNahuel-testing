@@ -1074,12 +1074,8 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                               {roadmap.modulos.length} módulos
                             </div>
                             <div className={styles.stat}>
-                              <Target size={16} />
-                              {roadmap.metadatos.totalLecciones} lecciones
-                            </div>
-                            <div className={styles.stat}>
                               <Clock size={16} />
-                              {roadmap.metadatos.totalHoras} horas
+                              {(roadmap as any).metadatos?.totalSemanas ?? 0} semanas
                             </div>
                           </div>
                         </div>

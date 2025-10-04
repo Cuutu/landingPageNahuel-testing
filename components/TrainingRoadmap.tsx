@@ -165,11 +165,15 @@ const TrainingRoadmap: React.FC<TrainingRoadmapProps> = ({
 
       <div className={styles.footerStats}>
         <p className={styles.statsText}>
-          Total: {modules.reduce((acc, module) => acc + module.lecciones, 0)} lecciones • {' '}
-          {modules.reduce((acc, module) => {
-            const hours = parseInt(module.duracion.split(' ')[0]);
-            return acc + (isNaN(hours) ? 0 : hours);
-          }, 0)} horas de contenido
+          {(() => {
+            const totalWeeks = modules.reduce((acc, module) => {
+              const str = (module.duracion || '').toLowerCase();
+              const match = str.match(/(\d+)\s*semana/);
+              const weeks = match ? parseInt(match[1], 10) : 0;
+              return acc + (isNaN(weeks) ? 0 : weeks);
+            }, 0);
+            return `Total: ${totalWeeks} semanas`;
+          })()}
         </p>
       </div>
     </div>

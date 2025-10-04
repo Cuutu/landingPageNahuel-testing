@@ -32,7 +32,8 @@ interface RoadmapDocument extends Document {
   orden: number; // Para ordenar múltiples roadmaps
   metadatos: {
     totalLecciones: number;
-    totalHoras: number;
+    totalHoras: number; // legado
+    totalSemanas?: number;
     autor: string;
     version: string;
   };
@@ -77,6 +78,7 @@ const roadmapSchema = new Schema<RoadmapDocument>({
   metadatos: {
     totalLecciones: { type: Number, default: 0 },
     totalHoras: { type: Number, default: 0 },
+    totalSemanas: { type: Number, default: 0 },
     autor: { type: String, default: 'Admin' },
     version: { type: String, default: '1.0' }
   }
@@ -92,10 +94,18 @@ roadmapSchema.index({ orden: 1 });
 roadmapSchema.pre('save', function(this: RoadmapDocument) {
   if (this.modulos && this.modulos.length > 0) {
     this.metadatos.totalLecciones = this.modulos.reduce((total, modulo) => total + modulo.lecciones, 0);
-    
-    // Calcular total de horas (extraer número de la string "X horas")
+
+    // Calcular total de semanas si la duración viene como "X semanas"
+    this.metadatos.totalSemanas = this.modulos.reduce((total, modulo) => {
+      const str = (modulo.duracion || '').toLowerCase();
+      const match = str.match(/(\d+)\s*semana/);
+      const semanas = match ? parseInt(match[1], 10) : 0;
+      return total + (isNaN(semanas) ? 0 : semanas);
+    }, 0);
+
+    // Mantener totalHoras (legado) por compatibilidad
     this.metadatos.totalHoras = this.modulos.reduce((total, modulo) => {
-      const horas = parseInt(modulo.duracion.split(' ')[0]) || 0;
+      const horas = parseInt((modulo.duracion || '').split(' ')[0]) || 0;
       return total + horas;
     }, 0);
   }
