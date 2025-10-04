@@ -409,6 +409,25 @@
   cursor: not-allowed;
 }
 
+.input {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: white;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.headerContent { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 1rem; }
+.headerText { display: flex; flex-direction: column; gap: 0.25rem; }
+.actions { display: flex; gap: 0.5rem; }
+
 .spinner {
   animation: spin 1s linear infinite;
 }

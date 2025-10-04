@@ -55,13 +55,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Agregar información pública útil
     const publicTrainings = trainings.map(training => {
-      const availableSpots = training.maxStudents - training.students.length;
+      const paidStudentsCount = (training.students || []).filter((s: any) => s.paymentStatus === 'completed').length;
+      const availableSpots = Math.max(0, training.maxStudents - paidStudentsCount);
       
       // Verificar si el usuario actual está inscrito
       let isEnrolled = false;
       if (session?.user?.email) {
         isEnrolled = training.students.some((student: any) => student.email === session.user.email);
       }
+
+      const computedStatus = (training.status === 'open' && availableSpots <= 0) ? 'full' : training.status;
 
       return {
         _id: training._id,
@@ -73,9 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         price: training.price,
         maxStudents: training.maxStudents,
         enrolledStudents: training.students.length,
+        paidStudentsCount,
         availableSpots,
-        status: training.status,
-        canEnroll: availableSpots > 0 && !isEnrolled && training.status === 'open',
+        status: computedStatus,
+        canEnroll: availableSpots > 0 && !isEnrolled && computedStatus === 'open',
         isEnrolled,
         classes: training.classes.map((cls: any) => ({
           _id: cls._id,

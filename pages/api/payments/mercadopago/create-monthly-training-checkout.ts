@@ -36,9 +36,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Entrenamiento no encontrado' });
     }
 
-    // Verificar que el entrenamiento esté disponible
-    if (training.status !== 'open') {
-      return res.status(400).json({ error: 'Entrenamiento no disponible para inscripción' });
+    // Verificar que el entrenamiento esté disponible y que no esté lleno por pagos completados
+    const paidStudentsCount = (training.students || []).filter((s: any) => s.paymentStatus === 'completed').length;
+    const availableSpots = Math.max(0, training.maxStudents - paidStudentsCount);
+    if (training.status !== 'open' || availableSpots <= 0) {
+      return res.status(400).json({ error: 'Entrenamiento no disponible: cupos completos' });
     }
 
     // Verificar cupos disponibles
@@ -46,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'No hay cupos disponibles' });
     }
 
-    // Verificar que el usuario no esté ya inscrito
+    // Verificar que el usuario no esté ya inscrito (pagado o pendiente)
     const isAlreadyEnrolled = training.students.some(
       (student: any) => student.email === session.user.email
     );

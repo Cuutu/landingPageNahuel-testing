@@ -37,6 +37,11 @@ export default function UpcomingTrainingPage() {
   const [stats, setStats] = useState<any>(null);
   const [days, setDays] = useState(30);
   const [status, setStatus] = useState<'all' | 'confirmed' | 'pending'>('all');
+  // Estado para selector mensual y datos del entrenamiento mensual
+  const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
+  const [year, setYear] = useState<number>(new Date().getFullYear());
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [monthlyData, setMonthlyData] = useState<any | null>(null);
 
   const swingSessions = useMemo(() => (
     sessions.filter(s => s.type === 'training' && s.serviceType === 'SwingTrading')
@@ -67,6 +72,28 @@ export default function UpcomingTrainingPage() {
   };
 
   useEffect(() => { fetchSessions(); }, [days, status]);
+
+  const fetchMonthlyTraining = async () => {
+    try {
+      setMonthlyLoading(true);
+      setError(null);
+      const params = new URLSearchParams({ month: String(month), year: String(year) });
+      const res = await fetch(`/api/admin/monthly-trainings?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Error');
+      // La API puede devolver múltiples registros si existieran; tomar el del mes/año exacto
+      const list = Array.isArray(data.data) ? data.data : [];
+      const found = list.find((t: any) => t.month === month && t.year === year) || list[0] || null;
+      setMonthlyData(found);
+    } catch (e: any) {
+      setError(e.message || 'Error al cargar entrenamiento mensual');
+      setMonthlyData(null);
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchMonthlyTraining(); }, [month, year]);
 
   const exportCsv = () => {
     const rows = [
@@ -221,6 +248,85 @@ export default function UpcomingTrainingPage() {
           </div>
         </div>
 
+        {/* Resumen Entrenamiento Mensual + Inscriptos */}
+        <div className={styles.card} style={{ padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>Entrenamiento Mensual - Selector</h3>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <label>Mes:
+                <select className={styles.input} value={month} onChange={e => setMonth(parseInt(e.target.value) || month)} style={{ marginLeft: 6 }}>
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <option key={i+1} value={i+1}>{i+1}</option>
+                  ))}
+                </select>
+              </label>
+              <label>Año:
+                <input className={styles.input} type="number" value={year} onChange={e => setYear(parseInt(e.target.value) || year)} style={{ width: 100, marginLeft: 6 }} />
+              </label>
+              <button className={styles.actionButton} onClick={fetchMonthlyTraining} disabled={monthlyLoading}><RefreshCw size={16} /> Cargar</button>
+            </div>
+          </div>
+
+          {monthlyLoading && <p>Cargando entrenamiento mensual…</p>}
+          {!monthlyLoading && !monthlyData && <p>No se encontró entrenamiento para el mes/año seleccionado.</p>}
+
+          {monthlyData && (
+            <>
+              <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>Mes/Año</div>
+                  <div className={styles.cardValue}>{monthlyData.monthName} {monthlyData.year}</div>
+                </div>
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>Precio</div>
+                  <div className={styles.cardValue}>${Number(monthlyData.price).toLocaleString('es-AR')}</div>
+                </div>
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>Cupos</div>
+                  <div className={styles.cardValue}>{monthlyData.paidStudentsCount}/{monthlyData.maxStudents}</div>
+                </div>
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>Disponibles</div>
+                  <div className={styles.cardValue}>{monthlyData.availableSpots}</div>
+                </div>
+                <div className={styles.card}>
+                  <div className={styles.cardTitle}>Estado</div>
+                  <div className={styles.cardValue}>
+                    <span className={`${styles.badge} ${monthlyData.status === 'open' ? styles.badgeSuccess : styles.badgeWarning}`}>{monthlyData.status}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ margin: '0 0 8px 0' }}>Inscriptos del mes</h3>
+                <div className={styles.tableWrapper}>
+                  <table className={styles.table}>
+                    <thead className={styles.tableHeader}>
+                      <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Estado de pago</th>
+                        <th>Fecha inscripción</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(monthlyData.students || []).map((st: any, idx: number) => (
+                        <tr key={idx} className={styles.tableRow}>
+                          <td className={styles.tableCell}>{st.name}</td>
+                          <td className={styles.tableCell}>{st.email}</td>
+                          <td className={styles.tableCell}><span className={`${styles.badge} ${st.paymentStatus === 'completed' ? styles.badgeSuccess : st.paymentStatus === 'pending' ? styles.badgeWarning : styles.badgeError}`}>{st.paymentStatus}</span></td>
+                          <td className={styles.tableCell}>{st.enrolledAt ? new Date(st.enrolledAt).toLocaleDateString('es-ES') : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {monthlyData.students?.length === 0 && <p style={{ marginTop: 12 }}>Sin inscriptos aún.</p>}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
         {error && <div className={styles.errorBox}>{error}</div>}
 
         <div className={styles.kpiGrid} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16, marginBottom: 16 }}>
@@ -232,7 +338,7 @@ export default function UpcomingTrainingPage() {
 
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
-            <thead>
+            <thead className={styles.tableHeader}>
               <tr>
                 <th>Fecha</th>
                 <th>Hora</th>
@@ -245,14 +351,16 @@ export default function UpcomingTrainingPage() {
             </thead>
             <tbody>
               {swingSessions.map(s => (
-                <tr key={s._id}>
-                  <td>{new Date(s.startDate).toLocaleDateString('es-ES')}</td>
-                  <td>{new Date(s.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</td>
-                  <td>{s.user.name}</td>
-                  <td>{s.user.email}</td>
-                  <td>{s.duration} min</td>
-                  <td>{s.status}</td>
-                  <td>{s.meetingLink ? <a href={s.meetingLink} target="_blank" rel="noreferrer">Abrir</a> : '-'}</td>
+                <tr key={s._id} className={styles.tableRow}>
+                  <td className={styles.tableCell}>{new Date(s.startDate).toLocaleDateString('es-ES')}</td>
+                  <td className={styles.tableCell}>{new Date(s.startDate).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</td>
+                  <td className={styles.tableCell}>{s.user.name}</td>
+                  <td className={styles.tableCell}>{s.user.email}</td>
+                  <td className={styles.tableCell}>{s.duration} min</td>
+                  <td className={styles.tableCell}>
+                    <span className={`${styles.badge} ${s.status === 'confirmed' ? styles.badgeSuccess : styles.badgeWarning}`}>{s.status}</span>
+                  </td>
+                  <td className={styles.tableCell}>{s.meetingLink ? <a href={s.meetingLink} target="_blank" rel="noreferrer">Abrir</a> : '-'}</td>
                 </tr>
               ))}
             </tbody>
