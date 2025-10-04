@@ -119,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Si se vendió todo (50% dos veces o situación similar), cerrar la alerta
     if (sharesRemaining <= 0) {
       alert.status = 'CLOSED';
-      alert.exitPrice = currentPrice;
+      alert.exitPrice = current; // Usar el valor numérico, no el string
       alert.closedAt = new Date();
       alert.closedBy = session.user.email;
       alert.closeReason = 'Venta parcial completa';
