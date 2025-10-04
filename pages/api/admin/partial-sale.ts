@@ -110,9 +110,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           
           if (alertDistribution) {
             allocatedAmount = alertDistribution.allocatedAmount || 0;
-            shares = alertDistribution.shares || Math.floor(allocatedAmount / entryPrice);
+            // SIEMPRE calcular las acciones basándose en la liquidez asignada
+            shares = Math.floor(allocatedAmount / entryPrice);
             
-            console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares} acciones`);
+            console.log(`📊 Liquidez encontrada para alerta ${alertId} (${alert.symbol}): $${allocatedAmount}, ${shares} acciones calculadas`);
+            console.log(`🔢 Cálculo: $${allocatedAmount} ÷ $${entryPrice} = ${shares} acciones`);
           } else {
             console.log(`⚠️ No se encontró distribución de liquidez para alerta ${alertId} (${alert.symbol})`);
             console.log(`📋 Distribuciones disponibles:`, liquidity.distributions.map((d: any) => ({ alertId: d.alertId, symbol: d.symbol })));
