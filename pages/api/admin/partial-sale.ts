@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/googleAuth';
 import dbConnect from '../../../lib/mongodb';
 import Alert from '../../../models/Alert';
+import User from '../../../models/User';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -18,17 +19,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(401).json({ error: 'No autorizado' });
   }
 
-  // Verificar si el usuario es admin
+  // Verificar si el usuario es admin directamente desde la base de datos
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/check-role`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: session.user.email })
-    });
+    const user = await User.findOne({ email: session.user.email });
     
-    const { role } = await response.json();
-    
-    if (role !== 'admin') {
+    if (!user || user.role !== 'admin') {
       return res.status(403).json({ error: 'Acceso denegado - Se requieren permisos de administrador' });
     }
   } catch (error) {
