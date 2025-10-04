@@ -3016,7 +3016,8 @@ const SubscriberView: React.FC = () => {
                   />
                 </div>
 
-                <div className={styles.inputGroup}>
+                {/* Campo Horario de Cierre - OCULTO */}
+                <div className={styles.inputGroup} style={{ display: 'none' }}>
                   <label>Horario de Cierre del Mercado</label>
                   <input
                     type="time"
@@ -3052,7 +3053,8 @@ const SubscriberView: React.FC = () => {
               />
             </div>
 
-            <div className={styles.inputGroup}>
+            {/* Campo Análisis - OCULTO */}
+            <div className={styles.inputGroup} style={{ display: 'none' }}>
               <label>Análisis / Descripción</label>
               <textarea
                 placeholder="Descripción del análisis técnico o fundamental..."
@@ -3062,6 +3064,36 @@ const SubscriberView: React.FC = () => {
                 rows={4}
               />
             </div>
+
+            {/* Selector de Liquidez - Solo para administradores */}
+            {userRole === 'admin' && (
+              <div className={styles.inputGroup}>
+                <label>💰 Asignar Liquidez</label>
+                <p className={styles.liquidityDescription}>
+                  Tienes <strong>${liquidityTotal.toFixed(2)}</strong> de liquidez disponible
+                </p>
+                <div className={styles.liquiditySelector}>
+                  {[0, 5, 10, 15, 20].map((percentage) => (
+                    <button
+                      key={percentage}
+                      type="button"
+                      className={`${styles.liquidityButton} ${newAlert.liquidityPercentage === percentage ? styles.liquidityButtonActive : ''}`}
+                      onClick={() => setNewAlert(prev => ({ ...prev, liquidityPercentage: percentage }))}
+                    >
+                      <span className={styles.liquidityPercentage}>{percentage}%</span>
+                      <span className={styles.liquidityAmount}>
+                        ${((liquidityTotal * percentage) / 100).toFixed(2)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {newAlert.liquidityPercentage > 0 && (
+                  <div className={styles.liquidityPreview}>
+                    💡 Se asignarán <strong>${((liquidityTotal * newAlert.liquidityPercentage) / 100).toFixed(2)}</strong> ({newAlert.liquidityPercentage}% del total)
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className={styles.inputGroup}>
               <label>Mensaje personalizado para Email (opcional)</label>
@@ -3084,38 +3116,6 @@ const SubscriberView: React.FC = () => {
                 className={styles.input}
               />
             </div>
-
-            {/* Selector de Liquidez - Solo para administradores */}
-            {userRole === 'admin' && (
-              <div className={styles.inputGroup}>
-                <label>💰 Asignar Liquidez</label>
-                <p className={styles.liquidityDescription}>
-                  Tienes <strong>${liquidityTotal.toFixed(2)}</strong> de liquidez disponible
-                </p>
-                <div className={styles.liquiditySelector}>
-                  {[0, 5, 10, 15, 20].map((percentage) => (
-                    <button
-                      key={percentage}
-                      type="button"
-                      className={`${styles.liquidityButton} ${newAlert.liquidityPercentage === percentage ? styles.liquidityButtonActive : ''}`}
-                      onClick={() => setNewAlert(prev => ({ ...prev, liquidityPercentage: percentage }))}
-                    >
-                      {percentage === 0 ? 'Sin liquidez' : `${percentage}%`}
-                      {percentage > 0 && (
-                        <span className={styles.liquidityAmount}>
-                          ${(liquidityTotal * percentage / 100).toFixed(2)}
-                        </span>
-                      )}
-                    </button>
-                  ))}
-                </div>
-                {newAlert.liquidityPercentage > 0 && (
-                  <div className={styles.liquidityPreview}>
-                    <span>💡 Se asignarán ${(liquidityTotal * newAlert.liquidityPercentage / 100).toFixed(2)} ({newAlert.liquidityPercentage}% del total)</span>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
           <div className={styles.modalFooter}>
