@@ -175,9 +175,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('📝 Datos de suscripción:', subscriptionData);
     
     const monthlySubscription = new MonthlyTrainingSubscription(subscriptionData);
+    console.log('📋 Objeto de suscripción creado:', {
+      _id: monthlySubscription._id,
+      userEmail: monthlySubscription.userEmail,
+      trainingType: monthlySubscription.trainingType
+    });
 
-    await monthlySubscription.save();
-    console.log('✅ Suscripción creada con ID:', monthlySubscription._id);
+    try {
+      await monthlySubscription.save();
+      console.log('✅ Suscripción guardada exitosamente con ID:', monthlySubscription._id);
+    } catch (saveError) {
+      console.error('❌ Error guardando suscripción:', saveError);
+      return res.status(500).json({ 
+        error: 'Error guardando suscripción', 
+        details: saveError instanceof Error ? saveError.message : 'Error desconocido' 
+      });
+    }
 
     // Crear preferencia de MercadoPago
     const preferenceData = {
@@ -216,6 +229,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🛒 Creando preferencia de MercadoPago...');
     const result = await preference.create({ body: preferenceData });
     console.log('✅ Preferencia creada:', result.id);
+
+    // Verificar que la suscripción se guardó correctamente
+    try {
+      const savedSubscription = await MonthlyTrainingSubscription.findById(monthlySubscription._id);
+      if (savedSubscription) {
+        console.log('✅ Verificación: Suscripción encontrada en BD:', {
+          id: savedSubscription._id,
+          userEmail: savedSubscription.userEmail,
+          paymentStatus: savedSubscription.paymentStatus
+        });
+      } else {
+        console.error('❌ Verificación: Suscripción NO encontrada en BD después del guardado');
+      }
+    } catch (verifyError) {
+      console.error('❌ Error verificando suscripción guardada:', verifyError);
+    }
 
     return res.status(200).json({
       success: true,
