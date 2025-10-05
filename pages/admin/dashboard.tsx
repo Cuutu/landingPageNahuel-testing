@@ -1574,7 +1574,12 @@ function PaymentsList() {
       const res = await fetch('/api/admin/payments');
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Error al cargar pagos');
-      const sorted = (data.payments || []).sort((a: any, b: any) => a.userEmail.localeCompare(b.userEmail));
+      // Ordenar por fecha de transacción (más recientes primero)
+      const sorted = (data.payments || []).sort((a: any, b: any) => {
+        const dateA = new Date(a.transactionDate).getTime();
+        const dateB = new Date(b.transactionDate).getTime();
+        return dateB - dateA; // Más recientes primero
+      });
       setPayments(sorted);
       setBreakdown(data.breakdown);
     } catch (e: any) {
