@@ -60,25 +60,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const userMap = new Map(users.map(user => [user.googleId, user]));
 
     // Obtener fechas de entrenamiento con links de Meet para el mes actual
-    const TrainingDate = (await import('@/models/TrainingDate')).default;
-    const startOfMonth = new Date(currentYear, currentMonth - 1, 1);
-    const endOfMonth = new Date(currentYear, currentMonth, 0, 23, 59, 59);
+    // Obtener links de Meet desde MonthlyTraining (donde realmente están almacenados)
+    const MonthlyTraining = (await import('@/models/MonthlyTraining')).default;
     
-    const trainingDates = await TrainingDate.find({
-      date: { $gte: startOfMonth, $lte: endOfMonth },
-      isActive: true,
-      meetLink: { $exists: true, $ne: null }
+    // Buscar entrenamientos mensuales del mes actual
+    const monthlyTrainings = await MonthlyTraining.find({
+      month: currentMonth,
+      year: currentYear,
+      type: 'swing-trading' // Solo Swing Trading por ahora
     }).lean();
 
-    // Crear mapa de fechas por tipo de entrenamiento
+    // Extraer links de Meet de las clases de cada entrenamiento mensual
     const meetLinksByType = new Map<string, string[]>();
-    trainingDates.forEach(date => {
-      if (!meetLinksByType.has(date.trainingType)) {
-        meetLinksByType.set(date.trainingType, []);
+    
+    monthlyTrainings.forEach(training => {
+      const trainingTypeKey = 'SwingTrading'; // Mapear a la clave que espera el frontend
+      
+      if (!meetLinksByType.has(trainingTypeKey)) {
+        meetLinksByType.set(trainingTypeKey, []);
       }
-      if (date.meetLink) {
-        meetLinksByType.get(date.trainingType)!.push(date.meetLink);
-      }
+      
+      // Recopilar todos los meetingLink de las clases
+      training.classes?.forEach((cls: any) => {
+        if (cls.meetingLink) {
+          meetLinksByType.get(trainingTypeKey)!.push(cls.meetingLink);
+        }
+      });
     });
 
     // Agrupar por tipo de entrenamiento

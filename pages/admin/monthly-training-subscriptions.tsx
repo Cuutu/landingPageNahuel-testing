@@ -242,101 +242,146 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
 
             {/* Filtros - Siempre visibles */}
             <div className={styles.card} style={{ 
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              background: 'linear-gradient(135deg, #2d5a27 0%, #1a3d17 100%)',
               border: 'none',
-              color: 'white'
+              color: 'white',
+              padding: '24px'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 20, color: 'white', fontSize: '18px', fontWeight: '600' }}>
+              <h3 style={{ marginTop: 0, marginBottom: 24, color: 'white', fontSize: '20px', fontWeight: '600' }}>
                 🔍 Filtros de Búsqueda
               </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 20 }}>
                   <div>
-                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>📅 Año</label>
+                    <label style={{ color: '#e8f5e8', fontWeight: '600', marginBottom: '12px', display: 'block', fontSize: '16px' }}>📅 Año</label>
                     <select
                       value={filters.year}
                       onChange={(e) => setFilters({ ...filters, year: parseInt(e.target.value) })}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'white',
-                        fontSize: '14px',
-                        backdropFilter: 'blur(10px)'
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        background: 'rgba(45, 90, 39, 0.8)',
+                        color: '#e8f5e8',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #4ade80';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
                       }}
                     >
                       {[2024, 2025, 2026, 2027].map(year => (
-                        <option key={year} value={year} style={{ background: '#333', color: 'white' }}>{year}</option>
+                        <option key={year} value={year} style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>{year}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>🗓️ Mes</label>
+                    <label style={{ color: '#e8f5e8', fontWeight: '600', marginBottom: '12px', display: 'block', fontSize: '16px' }}>🗓️ Mes</label>
                     <select
                       value={filters.month}
                       onChange={(e) => setFilters({ ...filters, month: parseInt(e.target.value) })}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'white',
-                        fontSize: '14px',
-                        backdropFilter: 'blur(10px)'
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        background: 'rgba(45, 90, 39, 0.8)',
+                        color: '#e8f5e8',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #4ade80';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
                       }}
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month} style={{ background: '#333', color: 'white' }}>{getMonthName(month)}</option>
+                        <option key={month} value={month} style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>{getMonthName(month)}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>📚 Tipo de Entrenamiento</label>
+                    <label style={{ color: '#e8f5e8', fontWeight: '600', marginBottom: '12px', display: 'block', fontSize: '16px' }}>📚 Tipo de Entrenamiento</label>
                     <select
                       value={filters.trainingType}
                       onChange={(e) => setFilters({ ...filters, trainingType: e.target.value })}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'white',
-                        fontSize: '14px',
-                        backdropFilter: 'blur(10px)'
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        background: 'rgba(45, 90, 39, 0.8)',
+                        color: '#e8f5e8',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #4ade80';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
                       }}
                     >
-                      <option value="all" style={{ background: '#333', color: 'white' }}>🎯 Todos</option>
-                      <option value="SwingTrading" style={{ background: '#333', color: 'white' }}>📈 Swing Trading</option>
-                      <option value="DayTrading" style={{ background: '#333', color: 'white' }}>⚡ Day Trading</option>
-                      <option value="DowJones" style={{ background: '#333', color: 'white' }}>📊 Dow Jones</option>
+                      <option value="all" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>🎯 Todos</option>
+                      <option value="SwingTrading" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>📈 Swing Trading</option>
+                      <option value="DayTrading" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>⚡ Day Trading</option>
+                      <option value="DowJones" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>📊 Dow Jones</option>
                     </select>
                   </div>
                   
                   <div>
-                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>✅ Estado</label>
+                    <label style={{ color: '#e8f5e8', fontWeight: '600', marginBottom: '12px', display: 'block', fontSize: '16px' }}>✅ Estado</label>
                     <select
                       value={filters.status}
                       onChange={(e) => setFilters({ ...filters, status: e.target.value })}
                       style={{
                         width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(255,255,255,0.2)',
-                        background: 'rgba(255,255,255,0.1)',
-                        color: 'white',
-                        fontSize: '14px',
-                        backdropFilter: 'blur(10px)'
+                        padding: '14px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(255,255,255,0.3)',
+                        background: 'rgba(45, 90, 39, 0.8)',
+                        color: '#e8f5e8',
+                        fontSize: '16px',
+                        fontWeight: '500',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.3s ease',
+                        cursor: 'pointer'
+                      }}
+                      onFocus={(e) => {
+                        e.target.style.border = '2px solid #4ade80';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
+                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
                       }}
                     >
-                      <option value="completed" style={{ background: '#333', color: 'white' }}>✅ Completado</option>
-                      <option value="pending" style={{ background: '#333', color: 'white' }}>⏳ Pendiente</option>
-                      <option value="failed" style={{ background: '#333', color: 'white' }}>❌ Fallido</option>
-                      <option value="refunded" style={{ background: '#333', color: 'white' }}>🔄 Reembolsado</option>
+                      <option value="completed" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>✅ Completado</option>
+                      <option value="pending" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>⏳ Pendiente</option>
+                      <option value="failed" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>❌ Fallido</option>
+                      <option value="refunded" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>🔄 Reembolsado</option>
                     </select>
                   </div>
                 </div>
@@ -346,106 +391,142 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
             {stats && (
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-                gap: '20px',
-                marginBottom: '24px'
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+                gap: '24px',
+                marginBottom: '32px'
               }}>
                 <div style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  borderRadius: '16px',
-                  padding: '24px',
+                  background: 'linear-gradient(135deg, #2d5a27 0%, #1a3d17 100%)',
+                  borderRadius: '20px',
+                  padding: '28px',
                   color: 'white',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  boxShadow: '0 12px 40px rgba(26, 61, 23, 0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)'
+                  backdropFilter: 'blur(10px)',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(26, 61, 23, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(26, 61, 23, 0.3)';
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ 
-                      background: 'rgba(255,255,255,0.2)', 
-                      borderRadius: '12px', 
-                      padding: '12px',
-                      marginRight: '16px'
+                      background: 'rgba(74, 222, 128, 0.2)', 
+                      borderRadius: '16px', 
+                      padding: '16px',
+                      marginRight: '20px'
                     }}>
-                      <Users size={24} color="white" />
+                      <Users size={28} color="#4ade80" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.total}</div>
-                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Total Suscripciones</div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', lineHeight: '1', color: '#e8f5e8' }}>{stats.total}</div>
+                      <div style={{ fontSize: '16px', opacity: '0.9', fontWeight: '600', color: '#c7e5c7' }}>Total Suscripciones</div>
                     </div>
                   </div>
                 </div>
                 
                 <div style={{
-                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-                  borderRadius: '16px',
-                  padding: '24px',
+                  background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)',
+                  borderRadius: '20px',
+                  padding: '28px',
                   color: 'white',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  boxShadow: '0 12px 40px rgba(26, 46, 5, 0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)'
+                  backdropFilter: 'blur(10px)',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(26, 46, 5, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(26, 46, 5, 0.3)';
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ 
-                      background: 'rgba(255,255,255,0.2)', 
-                      borderRadius: '12px', 
-                      padding: '12px',
-                      marginRight: '16px'
+                      background: 'rgba(74, 222, 128, 0.2)', 
+                      borderRadius: '16px', 
+                      padding: '16px',
+                      marginRight: '20px'
                     }}>
-                      <CheckCircle size={24} color="white" />
+                      <CheckCircle size={28} color="#4ade80" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.active}</div>
-                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Activas</div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', lineHeight: '1', color: '#e8f5e8' }}>{stats.active}</div>
+                      <div style={{ fontSize: '16px', opacity: '0.9', fontWeight: '600', color: '#c7e5c7' }}>Activas</div>
                     </div>
                   </div>
                 </div>
                 
                 <div style={{
-                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                  borderRadius: '16px',
-                  padding: '24px',
+                  background: 'linear-gradient(135deg, #14532d 0%, #052e16 100%)',
+                  borderRadius: '20px',
+                  padding: '28px',
                   color: 'white',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  boxShadow: '0 12px 40px rgba(5, 46, 22, 0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)'
+                  backdropFilter: 'blur(10px)',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(5, 46, 22, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(5, 46, 22, 0.3)';
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ 
-                      background: 'rgba(255,255,255,0.2)', 
-                      borderRadius: '12px', 
-                      padding: '12px',
-                      marginRight: '16px'
+                      background: 'rgba(74, 222, 128, 0.2)', 
+                      borderRadius: '16px', 
+                      padding: '16px',
+                      marginRight: '20px'
                     }}>
-                      <DollarSign size={24} color="white" />
+                      <DollarSign size={28} color="#4ade80" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>${stats.revenue.toLocaleString()}</div>
-                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Ingresos</div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', lineHeight: '1', color: '#e8f5e8' }}>${stats.revenue.toLocaleString()}</div>
+                      <div style={{ fontSize: '16px', opacity: '0.9', fontWeight: '600', color: '#c7e5c7' }}>Ingresos</div>
                     </div>
                   </div>
                 </div>
                 
                 <div style={{
-                  background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
-                  borderRadius: '16px',
-                  padding: '24px',
+                  background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
+                  borderRadius: '20px',
+                  padding: '28px',
                   color: 'white',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  boxShadow: '0 12px 40px rgba(17, 24, 39, 0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
-                  backdropFilter: 'blur(10px)'
+                  backdropFilter: 'blur(10px)',
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(17, 24, 39, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(17, 24, 39, 0.3)';
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ 
-                      background: 'rgba(255,255,255,0.2)', 
-                      borderRadius: '12px', 
-                      padding: '12px',
-                      marginRight: '16px'
+                      background: 'rgba(74, 222, 128, 0.2)', 
+                      borderRadius: '16px', 
+                      padding: '16px',
+                      marginRight: '20px'
                     }}>
-                      <TrendingUp size={24} color="white" />
+                      <TrendingUp size={28} color="#4ade80" />
                     </div>
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.byType.length}</div>
-                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Tipos de Entrenamiento</div>
+                      <div style={{ fontSize: '32px', fontWeight: '700', lineHeight: '1', color: '#e8f5e8' }}>{stats.byType.length}</div>
+                      <div style={{ fontSize: '16px', opacity: '0.9', fontWeight: '600', color: '#c7e5c7' }}>Tipos de Entrenamiento</div>
                     </div>
                   </div>
                 </div>
