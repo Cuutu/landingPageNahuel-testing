@@ -182,6 +182,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
     }
 
     // Crear el entrenamiento
+    const now = new Date();
     const newTraining = new MonthlyTraining({
       type: 'swing-trading',
       title,
@@ -199,7 +200,10 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       })),
       students: [],
       status: 'open',
-      createdBy: adminEmail
+      createdBy: adminEmail,
+      // Ventana: desde creación hasta fin de mes
+      registrationOpenDate: now,
+      registrationCloseDate: new Date(year, month, 0, 23, 59, 59, 999)
     });
 
     await newTraining.save();

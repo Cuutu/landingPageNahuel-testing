@@ -55,6 +55,10 @@ interface MonthlyTrainingDocument extends Document {
   // Estado del entrenamiento
   status: 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
   
+  // Ventana de inscripción
+  registrationOpenDate?: Date;
+  registrationCloseDate?: Date;
+  
   // Metadatos
   createdBy: string; // Email del admin que lo creó
   createdAt: Date;
@@ -130,6 +134,10 @@ const monthlyTrainingSchema = new Schema<MonthlyTrainingDocument>({
     enum: ['open', 'full', 'in-progress', 'completed', 'cancelled'], 
     default: 'open' 
   },
+  
+  // Ventana de inscripción
+  registrationOpenDate: { type: Date },
+  registrationCloseDate: { type: Date },
   
   // Metadatos
   createdBy: { type: String, required: true }
