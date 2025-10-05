@@ -1,163 +1,150 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/googleAuth';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import dbConnect from '@/lib/mongodb';
 import MonthlyTrainingSubscription from '@/models/MonthlyTrainingSubscription';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/emailService';
 
 /**
- * Endpoint para automatización de recordatorios de entrenamientos
- * Se ejecuta cada 24 horas para enviar recordatorios automáticos
+ * Envía recordatorios a usuarios suscritos a entrenamientos mensuales
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  // Solo permitir POST para evitar ejecuciones accidentales
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  // Verificar que sea una llamada autorizada (desde Vercel Cron o con token)
-  const authHeader = req.headers.authorization;
-  const cronSecret = process.env.CRON_SECRET;
-  
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return res.status(401).json({ error: 'No autorizado' });
-  }
-
   try {
-    console.log('🔄 Iniciando proceso automático de recordatorios de entrenamientos...');
-    
     await dbConnect();
 
-    const now = new Date();
-    const currentMonth = now.getMonth() + 1;
-    const currentYear = now.getFullYear();
+    // Verificar autenticación y permisos de admin
+    const session = await getServerSession(req, res, authOptions);
+    if (!session?.user?.email) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
 
-    // Obtener suscripciones activas del mes actual
-    const activeSubscriptions = await MonthlyTrainingSubscription.find({
-      subscriptionYear: currentYear,
-      subscriptionMonth: currentMonth,
+    // Verificar que sea admin
+    const adminUser = await User.findOne({ email: session.user.email });
+    if (!adminUser || adminUser.role !== 'admin') {
+      return res.status(403).json({ error: 'Acceso denegado. Se requieren permisos de administrador.' });
+    }
+
+    const { 
+      year = new Date().getFullYear(), 
+      month = new Date().getMonth() + 1,
+      trainingType = 'all',
+      message = '',
+      sendToAll = false
+    } = req.body;
+
+    // Construir filtros para obtener usuarios suscritos
+    const filters: any = {
+      subscriptionYear: parseInt(year),
+      subscriptionMonth: parseInt(month),
       paymentStatus: 'completed',
       isActive: true
-    }).lean();
+    };
 
-    if (activeSubscriptions.length === 0) {
-      console.log('ℹ️ No hay suscripciones activas para el mes actual');
-      return res.status(200).json({
-        success: true,
-        message: 'No hay suscripciones activas para el mes actual',
-        processed: 0
+    if (trainingType !== 'all') {
+      filters.trainingType = trainingType;
+    }
+
+    // Obtener suscripciones activas
+    const subscriptions = await MonthlyTrainingSubscription.find(filters)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    if (subscriptions.length === 0) {
+      return res.status(404).json({ 
+        error: 'No se encontraron usuarios suscritos para el período seleccionado' 
       });
     }
 
     // Obtener información de usuarios
-    const userIds = activeSubscriptions.map(sub => sub.userId);
+    const userIds = subscriptions.map(sub => sub.userId);
     const users = await User.find({ googleId: { $in: userIds } })
       .select('googleId name email')
       .lean();
 
     const userMap = new Map(users.map(user => [user.googleId, user]));
 
-    // Agrupar por tipo de entrenamiento
-    const subscriptionsByType = activeSubscriptions.reduce((acc, sub) => {
-      if (!acc[sub.trainingType]) {
-        acc[sub.trainingType] = [];
-      }
-      acc[sub.trainingType].push(sub);
-      return acc;
-    }, {} as Record<string, any[]>);
+    // Preparar datos para envío
+    const recipients = subscriptions.map(sub => {
+      const user = userMap.get(sub.userId);
+      return {
+        email: user?.email || sub.userEmail,
+        name: user?.name || sub.userName,
+        trainingType: sub.trainingType,
+        subscriptionId: sub._id
+      };
+    });
+
+    // Filtrar emails únicos para evitar duplicados
+    const uniqueRecipients = recipients.filter((recipient, index, self) => 
+      index === self.findIndex(r => r.email === recipient.email)
+    );
 
     const results = {
-      totalProcessed: 0,
       sent: 0,
       failed: 0,
       errors: [] as string[]
     };
 
-    // Procesar cada tipo de entrenamiento
-    for (const [trainingType, subscriptions] of Object.entries(subscriptionsByType)) {
-      console.log(`📚 Procesando ${subscriptions.length} suscripciones de ${trainingType}...`);
+    // Enviar emails
+    for (const recipient of uniqueRecipients) {
+      try {
+        const trainingName = getTrainingDisplayName(recipient.trainingType);
+        const monthName = getMonthName(parseInt(month));
+        
+        const html = createTrainingReminderTemplate({
+          userName: recipient.name,
+          trainingName,
+          month: monthName,
+          year: parseInt(year),
+          customMessage: message
+        });
 
-      // Filtrar emails únicos para evitar duplicados
-      const uniqueEmails = new Set();
-      const uniqueSubscriptions = subscriptions.filter(sub => {
-        const user = userMap.get(sub.userId);
-        const email = user?.email || sub.userEmail;
-        if (uniqueEmails.has(email)) {
-          return false;
-        }
-        uniqueEmails.add(email);
-        return true;
-      });
+        await sendEmail({
+          to: recipient.email,
+          subject: `📚 Recordatorio: Clases de ${trainingName} - ${monthName} ${year}`,
+          html
+        });
 
-      for (const subscription of uniqueSubscriptions) {
-        try {
-          const user = userMap.get(subscription.userId);
-          const userEmail = user?.email || subscription.userEmail;
-          const userName = user?.name || subscription.userName;
+        results.sent++;
+        console.log(`✅ Recordatorio enviado a: ${recipient.email}`);
 
-          // Verificar si ya se envió recordatorio hoy (evitar spam)
-          const today = new Date().toDateString();
-          const lastReminderKey = `lastReminder_${subscription._id}_${today}`;
-          
-          // En un sistema real, podrías usar Redis o una base de datos para trackear esto
-          // Por ahora, enviamos recordatorios cada 3 días para evitar spam
-          const shouldSendReminder = Math.random() < 0.33; // 33% de probabilidad cada día
-          
-          if (!shouldSendReminder) {
-            console.log(`⏭️ Saltando recordatorio para ${userEmail} (ya enviado recientemente)`);
-            continue;
-          }
-
-          const trainingName = getTrainingDisplayName(trainingType);
-          const monthName = getMonthName(currentMonth);
-          
-          const html = createTrainingReminderTemplate({
-            userName,
-            trainingName,
-            month: monthName,
-            year: currentYear,
-            customMessage: `¡Las clases de ${trainingName} están en curso! Asegúrate de estar atento a los emails con los links de las sesiones.`
-          });
-
-          await sendEmail({
-            to: userEmail,
-            subject: `📚 Recordatorio: Clases de ${trainingName} - ${monthName} ${currentYear}`,
-            html
-          });
-
-          results.sent++;
-          results.totalProcessed++;
-          console.log(`✅ Recordatorio automático enviado a: ${userEmail}`);
-
-        } catch (error) {
-          results.failed++;
-          results.totalProcessed++;
-          const errorMsg = `Error enviando recordatorio automático a ${subscription.userEmail}: ${error instanceof Error ? error.message : 'Error desconocido'}`;
-          results.errors.push(errorMsg);
-          console.error(`❌ ${errorMsg}`);
-        }
+      } catch (error) {
+        results.failed++;
+        const errorMsg = `Error enviando a ${recipient.email}: ${error instanceof Error ? error.message : 'Error desconocido'}`;
+        results.errors.push(errorMsg);
+        console.error(`❌ ${errorMsg}`);
       }
     }
 
-    console.log(`📧 Proceso automático completado:`, {
-      totalProcessed: results.totalProcessed,
+    // Log de la acción
+    console.log(`📧 Recordatorios de entrenamiento enviados:`, {
+      total: uniqueRecipients.length,
       sent: results.sent,
       failed: results.failed,
-      month: `${currentMonth}/${currentYear}`
+      month: `${month}/${year}`,
+      trainingType,
+      sentBy: session.user.email
     });
 
     res.status(200).json({
       success: true,
-      message: 'Recordatorios automáticos procesados exitosamente',
+      message: `Recordatorios enviados exitosamente`,
       results: {
-        totalProcessed: results.totalProcessed,
+        totalRecipients: uniqueRecipients.length,
         sent: results.sent,
         failed: results.failed,
-        errors: results.errors.slice(0, 5) // Limitar errores en respuesta
+        errors: results.errors
       }
     });
 
   } catch (error) {
-    console.error('❌ Error en proceso automático de recordatorios:', error);
+    console.error('Error enviando recordatorios de entrenamiento:', error);
     res.status(500).json({ 
       error: 'Error interno del servidor',
       details: error instanceof Error ? error.message : 'Error desconocido'
@@ -354,7 +341,7 @@ function createTrainingReminderTemplate(params: {
         
         <div class="content">
           <div style="text-align: center; margin-bottom: 20px;">
-            <div class="reminder-badge">Recordatorio Automático</div>
+            <div class="reminder-badge">Recordatorio de Clases</div>
           </div>
           
           <h2>¡Hola ${userName}!</h2>

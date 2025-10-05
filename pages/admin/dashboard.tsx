@@ -164,6 +164,18 @@ const useDashboardSections = () => {
       ]
     },
     {
+      id: 'monthly-training-subscriptions',
+      title: 'Suscripciones Mensuales de Entrenamientos',
+      description: 'Gestiona usuarios suscritos a entrenamientos mensuales, envía recordatorios automáticos y manuales, y controla el estado de las suscripciones por mes.',
+      icon: <BookOpen size={32} />,
+      color: 'from-emerald-500 to-teal-500',
+      links: [
+        { label: 'Gestionar Suscripciones', href: '/admin/monthly-training-subscriptions', icon: <Users size={16} /> },
+        { label: 'Enviar Recordatorios', href: '/admin/monthly-training-subscriptions', icon: <Mail size={16} /> },
+        { label: 'Estadísticas Mensuales', href: '/admin/monthly-training-subscriptions', icon: <TrendingUp size={16} /> }
+      ]
+    },
+    {
       id: 'database',
       title: 'Base de Datos',
       description: 'Información de contacto de los clientes para poder contactarlos por fuera de la web. Envíos de mails masivos, lanzamientos, problema con los pagos, etc',

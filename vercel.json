@@ -2,12 +2,17 @@
   "functions": {
     "pages/api/cron/update-stock-prices.ts": { "maxDuration": 300 },
     "pages/api/cron/market-close.ts": { "maxDuration": 300 },
-    "pages/api/cron/auto-convert-ranges.ts": { "maxDuration": 300 }
+    "pages/api/cron/auto-convert-ranges.ts": { "maxDuration": 300 },
+    "pages/api/cron/training-reminders.ts": { "maxDuration": 300 }
   },
   "crons": [
     {
       "path": "/api/cron/auto-convert-ranges",
       "schedule": "40 10 * * 1-5"
+    },
+    {
+      "path": "/api/cron/training-reminders",
+      "schedule": "0 9 * * *"
     }
   ]
 }
