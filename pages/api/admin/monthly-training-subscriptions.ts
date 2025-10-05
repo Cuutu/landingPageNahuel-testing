@@ -75,14 +75,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userMap = new Map(users.map(user => [user.googleId, user]));
 
-    // Enriquecer suscripciones con datos del usuario
+    // Obtener fechas de entrenamiento con links de Meet para el mes
+    const TrainingDate = (await import('@/models/TrainingDate')).default;
+    const startOfMonth = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
+    const endOfMonth = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
+    
+    const trainingDates = await TrainingDate.find({
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+      isActive: true,
+      meetLink: { $exists: true, $ne: null }
+    }).lean();
+
+    // Crear mapa de fechas por tipo de entrenamiento
+    const meetLinksByType = new Map<string, string[]>();
+    trainingDates.forEach(date => {
+      if (!meetLinksByType.has(date.trainingType)) {
+        meetLinksByType.set(date.trainingType, []);
+      }
+      if (date.meetLink) {
+        meetLinksByType.get(date.trainingType)!.push(date.meetLink);
+      }
+    });
+
+    // Enriquecer suscripciones con datos del usuario y links de Meet
     const enrichedSubscriptions = subscriptions.map(sub => ({
       ...sub,
       user: userMap.get(sub.userId) || {
         name: sub.userName,
         email: sub.userEmail,
         phone: null
-      }
+      },
+      meetLinks: meetLinksByType.get(sub.trainingType) || []
     }));
 
     // Calcular estadísticas generales
@@ -98,7 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           total: totalSubscriptions,
           active: activeSubscriptions,
           revenue: totalRevenue,
-          byType: stats
+          byType: stats,
+          meetLinksAvailable: Object.fromEntries(meetLinksByType)
         },
         filters: {
           year: parseInt(year as string),

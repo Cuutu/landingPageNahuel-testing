@@ -69,14 +69,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userMap = new Map(users.map(user => [user.googleId, user]));
 
+    // Obtener fechas de entrenamiento con links de Meet para el mes
+    const TrainingDate = (await import('@/models/TrainingDate')).default;
+    const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
+    const endOfMonth = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59);
+    
+    const trainingDates = await TrainingDate.find({
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+      isActive: true,
+      meetLink: { $exists: true, $ne: null }
+    }).lean();
+
+    // Crear mapa de fechas por tipo de entrenamiento
+    const meetLinksByType = new Map<string, string[]>();
+    trainingDates.forEach(date => {
+      if (!meetLinksByType.has(date.trainingType)) {
+        meetLinksByType.set(date.trainingType, []);
+      }
+      if (date.meetLink) {
+        meetLinksByType.get(date.trainingType)!.push(date.meetLink);
+      }
+    });
+
     // Preparar datos para envío
     const recipients = subscriptions.map(sub => {
       const user = userMap.get(sub.userId);
+      const meetLinks = meetLinksByType.get(sub.trainingType) || [];
       return {
         email: user?.email || sub.userEmail,
         name: user?.name || sub.userName,
         trainingType: sub.trainingType,
-        subscriptionId: sub._id
+        subscriptionId: sub._id,
+        meetLinks: meetLinks
       };
     });
 
@@ -102,7 +126,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           trainingName,
           month: monthName,
           year: parseInt(year),
-          customMessage: message
+          customMessage: message,
+          meetLinks: recipient.meetLinks
         });
 
         await sendEmail({
@@ -184,8 +209,9 @@ function createTrainingReminderTemplate(params: {
   month: string;
   year: number;
   customMessage?: string;
+  meetLinks?: string[];
 }): string {
-  const { userName, trainingName, month, year, customMessage } = params;
+  const { userName, trainingName, month, year, customMessage, meetLinks = [] } = params;
 
   return `
     <!DOCTYPE html>
@@ -369,6 +395,29 @@ function createTrainingReminderTemplate(params: {
               <p>${customMessage}</p>
             </div>
           ` : ''}
+          
+          ${meetLinks.length > 0 ? `
+            <div class="meet-links" style="background: #DCFCE7; border-left: 4px solid #22c55e; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="color: #166534; margin-top: 0;">🔗 Links de las Clases</h4>
+              <p style="color: #166534; margin-bottom: 16px;">Aquí tienes los links de Google Meet para las clases de este mes:</p>
+              ${meetLinks.map((link, index) => `
+                <div style="margin-bottom: 12px;">
+                  <a href="${link}" target="_blank" style="display: inline-block; background: #16a34a; color: white; padding: 10px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-right: 8px;">
+                    📹 Clase ${index + 1}
+                  </a>
+                  <span style="color: #166534; font-size: 12px;">${link}</span>
+                </div>
+              `).join('')}
+              <p style="color: #166534; font-size: 12px; margin-top: 12px; margin-bottom: 0;">
+                💡 Los links estarán activos 5 minutos antes de cada clase.
+              </p>
+            </div>
+          ` : `
+            <div style="background: #FEF9C3; border-left: 4px solid #EAB308; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h4 style="color: #854d0e; margin-top: 0;">📅 Links de Clases</h4>
+              <p style="color: #854d0e; margin-bottom: 0;">Los links de Google Meet se enviarán por email antes de cada clase.</p>
+            </div>
+          `}
           
           <div class="next-steps">
             <h3>🚀 ¿Qué sigue ahora?</h3>

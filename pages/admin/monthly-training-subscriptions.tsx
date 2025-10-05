@@ -47,6 +47,7 @@ interface Subscription {
     email: string;
     phone?: string;
   };
+  meetLinks: string[];
 }
 
 interface Stats {
@@ -59,6 +60,7 @@ interface Stats {
     totalRevenue: number;
     activeSubscriptions: number;
   }>;
+  meetLinksAvailable: Record<string, string[]>;
 }
 
 interface MonthlyTrainingSubscriptionsProps {
@@ -347,6 +349,38 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
             {/* Panel de Recordatorios */}
             <div className={styles.card}>
               <h3 style={{ marginTop: 0, marginBottom: 16 }}>Enviar Recordatorios</h3>
+              
+              {/* Información sobre links de Meet */}
+              {stats && stats.meetLinksAvailable && Object.keys(stats.meetLinksAvailable).length > 0 && (
+                <div style={{ 
+                  background: '#DCFCE7', 
+                  border: '1px solid #22c55e', 
+                  borderRadius: '8px', 
+                  padding: '16px', 
+                  marginBottom: '16px' 
+                }}>
+                  <h4 style={{ color: '#166534', marginTop: 0, marginBottom: 8 }}>
+                    🔗 Links de Google Meet Disponibles
+                  </h4>
+                  {Object.entries(stats.meetLinksAvailable).map(([trainingType, links]) => (
+                    <div key={trainingType} style={{ marginBottom: 8 }}>
+                      <strong style={{ color: '#166534' }}>
+                        {getTrainingDisplayName(trainingType)}: {links.length} clase{links.length !== 1 ? 's' : ''}
+                      </strong>
+                      {links.length > 0 && (
+                        <div style={{ fontSize: '12px', color: '#166534', marginTop: 4 }}>
+                          {links.map((link, index) => (
+                            <div key={index} style={{ marginBottom: 2 }}>
+                              📹 Clase {index + 1}: {link}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'end' }}>
                 <div>
                   <label className={styles.label}>Mensaje Personalizado (Opcional)</label>
@@ -415,6 +449,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                         <th className={styles.tableHeader}>Entrenamiento</th>
                         <th className={styles.tableHeader}>Estado</th>
                         <th className={styles.tableHeader}>Monto</th>
+                        <th className={styles.tableHeader}>Links de Meet</th>
                         <th className={styles.tableHeader}>Fecha de Suscripción</th>
                         <th className={styles.tableHeader}>Acciones</th>
                       </tr>
@@ -449,6 +484,29 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                             <span style={{ fontWeight: '600', color: '#059669' }}>
                               ${subscription.paymentAmount.toLocaleString()}
                             </span>
+                          </td>
+                          <td className={styles.tableCell}>
+                            {subscription.meetLinks.length > 0 ? (
+                              <div>
+                                <span className={`${styles.badge} ${styles.badgeSuccess}`}>
+                                  {subscription.meetLinks.length} disponible{subscription.meetLinks.length !== 1 ? 's' : ''}
+                                </span>
+                                <div style={{ fontSize: '10px', color: '#6b7280', marginTop: 4 }}>
+                                  {subscription.meetLinks.slice(0, 2).map((link, index) => (
+                                    <div key={index} style={{ marginBottom: 2 }}>
+                                      📹 Clase {index + 1}
+                                    </div>
+                                  ))}
+                                  {subscription.meetLinks.length > 2 && (
+                                    <div>+{subscription.meetLinks.length - 2} más</div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <span className={`${styles.badge} ${styles.badgeWarning}`}>
+                                Sin links
+                              </span>
+                            )}
                           </td>
                           <td className={styles.tableCell}>
                             {new Date(subscription.createdAt).toLocaleDateString('es-ES', {
