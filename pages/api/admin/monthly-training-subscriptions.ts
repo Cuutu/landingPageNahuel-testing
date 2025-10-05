@@ -80,11 +80,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startOfMonth = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
     const endOfMonth = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
     
+    console.log('🔍 Debug: Buscando TrainingDate para:', {
+      year: year as string,
+      month: month as string,
+      startOfMonth,
+      endOfMonth,
+      trainingType: trainingType
+    });
+    
+    // Primero buscar todas las fechas del mes para debug
+    const allTrainingDates = await TrainingDate.find({
+      date: { $gte: startOfMonth, $lte: endOfMonth },
+      isActive: true
+    }).lean();
+    
+    console.log('🔍 Debug: Todas las fechas encontradas:', allTrainingDates.length, allTrainingDates);
+    
     const trainingDates = await TrainingDate.find({
       date: { $gte: startOfMonth, $lte: endOfMonth },
       isActive: true,
       meetLink: { $exists: true, $ne: null }
     }).lean();
+    
+    console.log('🔍 Debug: Fechas con meetLink:', trainingDates.length, trainingDates);
 
     // Crear mapa de fechas por tipo de entrenamiento
     const meetLinksByType = new Map<string, string[]>();
@@ -96,6 +114,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         meetLinksByType.get(date.trainingType)!.push(date.meetLink);
       }
     });
+    
+    console.log('🔍 Debug: meetLinksByType final:', Object.fromEntries(meetLinksByType));
 
     // Enriquecer suscripciones con datos del usuario y links de Meet
     const enrichedSubscriptions = subscriptions.map(sub => ({

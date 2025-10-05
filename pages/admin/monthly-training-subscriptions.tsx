@@ -79,7 +79,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
     status: 'completed'
   });
   const [customMessage, setCustomMessage] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Siempre visibles
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -216,139 +216,277 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
               
               <div className={styles.headerActions}>
                 <button 
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={styles.actionButton}
-                >
-                  <Filter size={20} />
-                  Filtros
-                </button>
-                <button 
                   onClick={fetchSubscriptions}
                   className={styles.actionButton}
                   disabled={loading}
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 20px',
+                    borderRadius: '10px',
+                    fontWeight: '600',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+                  }}
                 >
                   <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
-                  Actualizar
+                  {loading ? 'Actualizando...' : 'Actualizar Datos'}
                 </button>
               </div>
             </div>
 
-            {/* Filtros */}
-            {showFilters && (
-              <motion.div
-                className={styles.card}
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <h3 style={{ marginTop: 0, marginBottom: 16 }}>Filtros</h3>
+            {/* Filtros - Siempre visibles */}
+            <div className={styles.card} style={{ 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              border: 'none',
+              color: 'white'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: 20, color: 'white', fontSize: '18px', fontWeight: '600' }}>
+                🔍 Filtros de Búsqueda
+              </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
                   <div>
-                    <label className={styles.label}>Año</label>
+                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>📅 Año</label>
                     <select
                       value={filters.year}
                       onChange={(e) => setFilters({ ...filters, year: parseInt(e.target.value) })}
-                      className={styles.input}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        fontSize: '14px',
+                        backdropFilter: 'blur(10px)'
+                      }}
                     >
-                      {[2024, 2025, 2026].map(year => (
-                        <option key={year} value={year}>{year}</option>
+                      {[2024, 2025, 2026, 2027].map(year => (
+                        <option key={year} value={year} style={{ background: '#333', color: 'white' }}>{year}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label className={styles.label}>Mes</label>
+                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>🗓️ Mes</label>
                     <select
                       value={filters.month}
                       onChange={(e) => setFilters({ ...filters, month: parseInt(e.target.value) })}
-                      className={styles.input}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        fontSize: '14px',
+                        backdropFilter: 'blur(10px)'
+                      }}
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month}>{getMonthName(month)}</option>
+                        <option key={month} value={month} style={{ background: '#333', color: 'white' }}>{getMonthName(month)}</option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label className={styles.label}>Tipo de Entrenamiento</label>
+                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>📚 Tipo de Entrenamiento</label>
                     <select
                       value={filters.trainingType}
                       onChange={(e) => setFilters({ ...filters, trainingType: e.target.value })}
-                      className={styles.input}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        fontSize: '14px',
+                        backdropFilter: 'blur(10px)'
+                      }}
                     >
-                      <option value="all">Todos</option>
-                      <option value="SwingTrading">Swing Trading</option>
-                      <option value="DayTrading">Day Trading</option>
-                      <option value="DowJones">Dow Jones</option>
+                      <option value="all" style={{ background: '#333', color: 'white' }}>🎯 Todos</option>
+                      <option value="SwingTrading" style={{ background: '#333', color: 'white' }}>📈 Swing Trading</option>
+                      <option value="DayTrading" style={{ background: '#333', color: 'white' }}>⚡ Day Trading</option>
+                      <option value="DowJones" style={{ background: '#333', color: 'white' }}>📊 Dow Jones</option>
                     </select>
                   </div>
                   
                   <div>
-                    <label className={styles.label}>Estado</label>
+                    <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>✅ Estado</label>
                     <select
                       value={filters.status}
                       onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                      className={styles.input}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        fontSize: '14px',
+                        backdropFilter: 'blur(10px)'
+                      }}
                     >
-                      <option value="completed">Completado</option>
-                      <option value="pending">Pendiente</option>
-                      <option value="failed">Fallido</option>
-                      <option value="refunded">Reembolsado</option>
+                      <option value="completed" style={{ background: '#333', color: 'white' }}>✅ Completado</option>
+                      <option value="pending" style={{ background: '#333', color: 'white' }}>⏳ Pendiente</option>
+                      <option value="failed" style={{ background: '#333', color: 'white' }}>❌ Fallido</option>
+                      <option value="refunded" style={{ background: '#333', color: 'white' }}>🔄 Reembolsado</option>
                     </select>
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
 
             {/* Estadísticas */}
             {stats && (
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon}>
-                    <Users size={24} />
-                  </div>
-                  <div className={styles.statContent}>
-                    <div className={styles.statValue}>{stats.total}</div>
-                    <div className={styles.statLabel}>Total Suscripciones</div>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
+                gap: '20px',
+                marginBottom: '24px'
+              }}>
+                <div style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      background: 'rgba(255,255,255,0.2)', 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      marginRight: '16px'
+                    }}>
+                      <Users size={24} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.total}</div>
+                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Total Suscripciones</div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon}>
-                    <CheckCircle size={24} />
-                  </div>
-                  <div className={styles.statContent}>
-                    <div className={styles.statValue}>{stats.active}</div>
-                    <div className={styles.statLabel}>Activas</div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      background: 'rgba(255,255,255,0.2)', 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      marginRight: '16px'
+                    }}>
+                      <CheckCircle size={24} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.active}</div>
+                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Activas</div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon}>
-                    <DollarSign size={24} />
-                  </div>
-                  <div className={styles.statContent}>
-                    <div className={styles.statValue}>${stats.revenue.toLocaleString()}</div>
-                    <div className={styles.statLabel}>Ingresos</div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      background: 'rgba(255,255,255,0.2)', 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      marginRight: '16px'
+                    }}>
+                      <DollarSign size={24} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>${stats.revenue.toLocaleString()}</div>
+                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Ingresos</div>
+                    </div>
                   </div>
                 </div>
                 
-                <div className={styles.statCard}>
-                  <div className={styles.statIcon}>
-                    <TrendingUp size={24} />
-                  </div>
-                  <div className={styles.statContent}>
-                    <div className={styles.statValue}>{stats.byType.length}</div>
-                    <div className={styles.statLabel}>Tipos de Entrenamiento</div>
+                <div style={{
+                  background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  backdropFilter: 'blur(10px)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ 
+                      background: 'rgba(255,255,255,0.2)', 
+                      borderRadius: '12px', 
+                      padding: '12px',
+                      marginRight: '16px'
+                    }}>
+                      <TrendingUp size={24} color="white" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: '700', lineHeight: '1' }}>{stats.byType.length}</div>
+                      <div style={{ fontSize: '14px', opacity: '0.9', fontWeight: '500' }}>Tipos de Entrenamiento</div>
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
+            {/* Debug de Links de Meet */}
+            {stats && stats.meetLinksAvailable && (
+              <div style={{
+                background: '#1f2937',
+                border: '1px solid #374151',
+                borderRadius: '12px',
+                padding: '20px',
+                marginBottom: '20px',
+                color: '#e5e7eb'
+              }}>
+                <h4 style={{ color: '#fbbf24', marginTop: 0, marginBottom: 12 }}>
+                  🔧 Debug: Links de Meet Disponibles
+                </h4>
+                <pre style={{ 
+                  background: '#111827', 
+                  padding: '12px', 
+                  borderRadius: '8px', 
+                  fontSize: '12px',
+                  overflow: 'auto',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {JSON.stringify(stats.meetLinksAvailable, null, 2)}
+                </pre>
+              </div>
+            )}
+
             {/* Panel de Recordatorios */}
-            <div className={styles.card}>
-              <h3 style={{ marginTop: 0, marginBottom: 16 }}>Enviar Recordatorios</h3>
+            <div className={styles.card} style={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              border: 'none',
+              color: 'white'
+            }}>
+              <h3 style={{ marginTop: 0, marginBottom: 20, color: 'white', fontSize: '20px', fontWeight: '600' }}>
+                📧 Enviar Recordatorios
+              </h3>
               
               {/* Información sobre links de Meet */}
               {stats && stats.meetLinksAvailable && Object.keys(stats.meetLinksAvailable).length > 0 && (
@@ -383,28 +521,56 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'end' }}>
                 <div>
-                  <label className={styles.label}>Mensaje Personalizado (Opcional)</label>
+                  <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                    💬 Mensaje Personalizado (Opcional)
+                  </label>
                   <textarea
                     value={customMessage}
                     onChange={(e) => setCustomMessage(e.target.value)}
                     placeholder="Escribe un mensaje personalizado para incluir en los recordatorios..."
-                    className={styles.input}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      borderRadius: '10px',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      background: 'rgba(255,255,255,0.1)',
+                      color: 'white',
+                      fontSize: '14px',
+                      backdropFilter: 'blur(10px)',
+                      resize: 'vertical',
+                      minHeight: '80px'
+                    }}
                     rows={3}
                   />
                 </div>
                 <button
                   onClick={sendReminders}
                   disabled={sendingReminders || subscriptions.length === 0}
-                  className={styles.actionButton}
                   style={{ 
-                    background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
                     color: 'white',
                     border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
+                    padding: '16px 28px',
+                    borderRadius: '12px',
                     fontWeight: '600',
                     cursor: sendingReminders ? 'not-allowed' : 'pointer',
-                    opacity: sendingReminders ? 0.7 : 1
+                    opacity: sendingReminders ? 0.7 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '16px',
+                    boxShadow: '0 6px 20px rgba(79, 172, 254, 0.3)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sendingReminders && subscriptions.length > 0) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.4)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(79, 172, 254, 0.3)';
                   }}
                 >
                   {sendingReminders ? (
