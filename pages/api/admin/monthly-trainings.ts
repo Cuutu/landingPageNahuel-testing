@@ -208,10 +208,12 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
 
     await newTraining.save();
 
-    // Crear eventos de Calendar con Meet para cada clase
+    // Crear eventos de Calendar con Meet para cada clase Y sincronizar con TrainingDate
     try {
       const tz = getGlobalTimezone();
       const updatedClasses = [] as any[];
+      const TrainingDate = (await import('@/models/TrainingDate')).default;
+      
       for (const cls of newTraining.classes as any[]) {
         const startDate: Date = cls.date;
         const durationMinutes = 120; // Duración estándar
@@ -226,6 +228,37 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
         if (meet?.success) {
           cls.googleEventId = meet.eventId;
           cls.meetingLink = meet.meetLink;
+          
+          // Sincronizar con TrainingDate para que aparezcan los links
+          try {
+            const dayStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+            const dayEnd = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + 1);
+            
+            const existingTrainingDate = await TrainingDate.findOne({
+              trainingType: 'SwingTrading',
+              date: { $gte: dayStart, $lt: dayEnd }
+            });
+            
+            if (existingTrainingDate) {
+              // Actualizar el TrainingDate existente con el meetLink
+              existingTrainingDate.meetLink = meet.meetLink;
+              existingTrainingDate.googleEventId = meet.eventId;
+              await existingTrainingDate.save();
+            } else {
+              // Crear nuevo TrainingDate si no existe
+              const newTrainingDate = new TrainingDate({
+                trainingType: 'SwingTrading',
+                date: startDate,
+                title: cls.title || trainingName,
+                isActive: true,
+                meetLink: meet.meetLink,
+                googleEventId: meet.eventId
+              });
+              await newTrainingDate.save();
+            }
+          } catch (syncErr) {
+            console.error('⚠️ Error sincronizando con TrainingDate:', syncErr);
+          }
         }
         updatedClasses.push(cls);
       }
