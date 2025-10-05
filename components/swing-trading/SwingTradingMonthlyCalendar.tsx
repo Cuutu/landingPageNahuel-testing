@@ -105,20 +105,30 @@ export default function SwingTradingCalendar() {
     setEnrolling(trainingId);
     
     try {
-      // Crear checkout de MercadoPago
-      const response = await fetch('/api/payments/mercadopago/create-monthly-training-checkout', {
+      // Buscar el entrenamiento para obtener mes y año
+      const training = trainings.find(t => t._id === trainingId);
+      if (!training) {
+        alert('Entrenamiento no encontrado');
+        setEnrolling(null);
+        return;
+      }
+
+      // Usar el nuevo sistema de suscripciones mensuales
+      const response = await fetch('/api/monthly-training-subscriptions/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trainingId })
+        body: JSON.stringify({
+          trainingType: 'SwingTrading',
+          subscriptionMonth: training.month,
+          subscriptionYear: training.year
+        })
       });
       
       const data = await response.json();
       
-      if (data.success) {
+      if (data.success && (data.checkoutUrl || data.sandboxInitPoint)) {
         // Redirigir a MercadoPago
-        window.location.href = process.env.NODE_ENV === 'production' 
-          ? data.initPoint 
-          : data.sandboxInitPoint;
+        window.location.href = data.checkoutUrl || data.sandboxInitPoint;
       } else {
         alert(`Error: ${data.error}`);
       }
