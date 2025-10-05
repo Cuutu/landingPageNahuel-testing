@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../lib/googleAuth';
 import dbConnect from '../../lib/mongodb';
+import MonthlyTrainingSubscription from '../../models/MonthlyTrainingSubscription';
 import MonthlyTraining from '../../models/MonthlyTraining';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -54,14 +55,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .lean();
 
     // Agregar información pública útil
-    const publicTrainings = trainings.map(training => {
-      const paidStudentsCount = (training.students || []).filter((s: any) => s.paymentStatus === 'completed').length;
+    const publicTrainings = await Promise.all(trainings.map(async (training) => {
+      // Contar estudiantes del modelo viejo
+      const oldStudentsCount = (training.students || []).filter((s: any) => s.paymentStatus === 'completed').length;
+      
+      // Contar suscripciones del nuevo sistema para este mes/año
+      const newSubscriptionsCount = await MonthlyTrainingSubscription.countDocuments({
+        trainingType: 'SwingTrading',
+        subscriptionMonth: training.month,
+        subscriptionYear: training.year,
+        paymentStatus: 'completed',
+        isActive: true
+      });
+      
+      // Total de estudiantes = modelo viejo + nuevo sistema
+      const paidStudentsCount = oldStudentsCount + newSubscriptionsCount;
       const availableSpots = Math.max(0, training.maxStudents - paidStudentsCount);
       
-      // Verificar si el usuario actual está inscrito
+      // Verificar si el usuario actual está inscrito (en cualquiera de los dos sistemas)
       let isEnrolled = false;
       if (session?.user?.email) {
-        isEnrolled = training.students.some((student: any) => student.email === session.user.email);
+        // Verificar en modelo viejo
+        const enrolledInOld = training.students.some((student: any) => student.email === session.user.email);
+        
+        // Verificar en nuevo sistema
+        const enrolledInNew = await MonthlyTrainingSubscription.exists({
+          userEmail: session.user.email,
+          trainingType: 'SwingTrading',
+          subscriptionMonth: training.month,
+          subscriptionYear: training.year,
+          paymentStatus: 'completed',
+          isActive: true
+        });
+        
+        isEnrolled = enrolledInOld || !!enrolledInNew;
       }
 
       const computedStatus = (training.status === 'open' && availableSpots <= 0) ? 'full' : training.status;
@@ -75,7 +102,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         monthName: getMonthName(training.month),
         price: training.price,
         maxStudents: training.maxStudents,
-        enrolledStudents: training.students.length,
+        enrolledStudents: training.students.length + newSubscriptionsCount,
         paidStudentsCount,
         availableSpots,
         status: computedStatus,
@@ -91,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         totalClasses: training.classes.length,
         createdAt: training.createdAt
       };
-    });
+    }));
 
     return res.status(200).json({
       success: true,
