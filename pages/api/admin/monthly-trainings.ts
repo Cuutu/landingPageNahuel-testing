@@ -5,6 +5,7 @@ import dbConnect from '../../../lib/mongodb';
 import MonthlyTraining from '../../../models/MonthlyTraining';
 import TrainingDate from '../../../models/TrainingDate';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
+import { createTrainingEvent } from '../../../lib/googleCalendar';
 import User from '../../../models/User';
 
 // Helper function to create date in Argentina timezone (UTC-3)
@@ -199,6 +200,34 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
 
     await newTraining.save();
 
+    // Crear eventos de Calendar con Meet para cada clase
+    try {
+      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+      const updatedClasses = [] as any[];
+      for (const cls of newTraining.classes as any[]) {
+        const startDate: Date = cls.date;
+        const durationMinutes = 120; // Duración estándar
+        const trainingName = newTraining.title || 'Entrenamiento Swing Trading';
+
+        const meet = await createTrainingEvent(
+          adminEmail,
+          trainingName,
+          startDate,
+          durationMinutes
+        );
+        if (meet?.success) {
+          cls.googleEventId = meet.eventId;
+          cls.meetingLink = meet.meetLink;
+        }
+        updatedClasses.push(cls);
+      }
+      newTraining.classes = updatedClasses as any;
+      await newTraining.save();
+    } catch (calendarErr) {
+      console.error('⚠️ Error creando eventos de Calendar para clases del pack:', calendarErr);
+      // No fallar la creación del entrenamiento si falla Calendar
+    }
+
     return res.status(201).json({
       success: true,
       message: 'Entrenamiento mensual creado exitosamente',
@@ -241,10 +270,32 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
 
     // Procesar fechas si se están actualizando las clases
     if (updateData.classes) {
-      updateData.classes = updateData.classes.map((cls: any) => ({
-        ...cls,
-        date: createArgentinaDate(cls.date, cls.startTime) // Convertir string a Date con hora específica
-      }));
+      // Para cada clase: si no tiene googleEventId, crear evento; si cambia fecha/hora, intentar actualizar
+      const nextClasses = [] as any[];
+      for (const cls of updateData.classes) {
+        const processed = {
+          ...cls,
+          date: createArgentinaDate(cls.date, cls.startTime)
+        } as any;
+        try {
+          if (!processed.googleEventId) {
+            const meet = await createTrainingEvent(
+              adminEmail,
+              training.title || 'Entrenamiento Swing Trading',
+              processed.date,
+              120
+            );
+            if (meet?.success) {
+              processed.googleEventId = meet.eventId;
+              processed.meetingLink = meet.meetLink;
+            }
+          }
+        } catch (e) {
+          console.error('⚠️ Error creando evento para clase actualizada:', e);
+        }
+        nextClasses.push(processed);
+      }
+      updateData.classes = nextClasses;
     }
 
     const updatedTraining = await MonthlyTraining.findByIdAndUpdate(

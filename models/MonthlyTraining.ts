@@ -6,6 +6,7 @@ interface TrainingClass {
   startTime: string; // Hora de inicio (formato HH:MM)
   title: string; // Título de la clase
   meetingLink?: string; // Link de Google Meet (se genera automáticamente)
+  googleEventId?: string; // ID del evento en Google Calendar
   status: 'scheduled' | 'completed' | 'cancelled';
 }
 
@@ -65,6 +66,7 @@ const trainingClassSchema = new Schema<TrainingClass>({
   startTime: { type: String, required: true }, // HH:MM
   title: { type: String, required: true },
   meetingLink: { type: String },
+  googleEventId: { type: String },
   status: { 
     type: String, 
     enum: ['scheduled', 'completed', 'cancelled'], 
