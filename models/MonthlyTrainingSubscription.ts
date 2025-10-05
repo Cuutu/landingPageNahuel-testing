@@ -5,6 +5,7 @@ export interface IMonthlyTrainingSubscription extends Document {
   userEmail: string;
   userName: string;
   trainingType: 'SwingTrading' | 'DayTrading' | 'DowJones';
+  classId?: string; // Opcional: id de clase específica (para reservas por clase)
   subscriptionMonth: number; // 1-12
   subscriptionYear: number; // 2024, 2025, etc.
   startDate: Date; // Primer día del mes
@@ -39,6 +40,11 @@ const MonthlyTrainingSubscriptionSchema: Schema = new Schema({
     required: true,
     enum: ['SwingTrading', 'DayTrading', 'DowJones'],
     default: 'SwingTrading'
+  },
+  classId: {
+    type: String,
+    required: false,
+    index: true
   },
   subscriptionMonth: {
     type: Number,
@@ -95,12 +101,20 @@ MonthlyTrainingSubscriptionSchema.index({ userId: 1, trainingType: 1 });
 MonthlyTrainingSubscriptionSchema.index({ subscriptionMonth: 1, subscriptionYear: 1 });
 MonthlyTrainingSubscriptionSchema.index({ paymentStatus: 1, isActive: 1 });
 MonthlyTrainingSubscriptionSchema.index({ endDate: 1 }); // Para limpieza automática
-// Índice compuesto único: un usuario no puede tener múltiples suscripciones completadas para el mismo mes/año/tipo
+// Unicidad por pack mensual (solo cuando NO es por clase concreta)
 MonthlyTrainingSubscriptionSchema.index(
   { userId: 1, trainingType: 1, subscriptionMonth: 1, subscriptionYear: 1, paymentStatus: 1 },
-  { 
+  {
     unique: true,
-    partialFilterExpression: { paymentStatus: 'completed' } // Solo aplica a pagos completados
+    partialFilterExpression: { paymentStatus: 'completed', classId: { $exists: false } }
+  }
+);
+// Unicidad por clase específica (permite múltiples fechas dentro del mismo mes si classId difiere)
+MonthlyTrainingSubscriptionSchema.index(
+  { userId: 1, trainingType: 1, classId: 1, paymentStatus: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { paymentStatus: 'completed', classId: { $exists: true } }
   }
 );
 
