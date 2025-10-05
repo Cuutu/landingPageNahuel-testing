@@ -6,6 +6,7 @@ import dbConnect from '@/lib/mongodb';
 import MonthlyTrainingSubscription from '@/models/MonthlyTrainingSubscription';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/emailService';
+import { getGlobalTimezone, getGlobalReminderHour } from '@/lib/timeConfig';
 
 /**
  * Envía recordatorios a usuarios suscritos a entrenamientos mensuales
@@ -116,6 +117,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     // Enviar emails
+    const tz = getGlobalTimezone();
+    const reminderHour = getGlobalReminderHour();
+
     for (const recipient of uniqueRecipients) {
       try {
         const trainingName = getTrainingDisplayName(recipient.trainingType);
@@ -126,7 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           trainingName,
           month: monthName,
           year: parseInt(year),
-          customMessage: message,
+          customMessage: message || `Te enviaremos recordatorios alrededor de las ${reminderHour}:00 (${tz}).`,
           meetLinks: recipient.meetLinks
         });
 

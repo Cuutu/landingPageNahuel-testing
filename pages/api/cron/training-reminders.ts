@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import MonthlyTrainingSubscription from '@/models/MonthlyTrainingSubscription';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/emailService';
+import { getGlobalTimezone, getGlobalReminderHour } from '@/lib/timeConfig';
 
 /**
  * Endpoint para automatización de recordatorios de entrenamientos
@@ -30,6 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
+    const tz = getGlobalTimezone();
+    const reminderHour = getGlobalReminderHour();
 
     // Obtener suscripciones activas del mes actual
     const activeSubscriptions = await MonthlyTrainingSubscription.find({
@@ -138,7 +141,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             trainingName,
             month: monthName,
             year: currentYear,
-            customMessage: `¡Las clases de ${trainingName} están en curso! Asegúrate de estar atento a los emails con los links de las sesiones.`,
+            customMessage: `¡Las clases de ${trainingName} están en curso! Revisa tus emails alrededor de las ${reminderHour}:00 (${tz}) para recibir los recordatorios.`,
             meetLinks: meetLinks
           });
 
