@@ -220,18 +220,19 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                   className={styles.actionButton}
                   disabled={loading}
                   style={{
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 20px',
-                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)',
+                    color: '#e8f5e8',
+                    border: '2px solid #4ade80',
+                    padding: '14px 24px',
+                    borderRadius: '12px',
                     fontWeight: '600',
                     cursor: loading ? 'not-allowed' : 'pointer',
                     opacity: loading ? 0.7 : 1,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.3)'
+                    gap: '10px',
+                    boxShadow: '0 6px 20px rgba(54, 83, 20, 0.4)',
+                    fontSize: '16px'
                   }}
                 >
                   <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
@@ -242,10 +243,10 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
 
             {/* Filtros - Siempre visibles */}
             <div className={styles.card} style={{ 
-              background: 'linear-gradient(135deg, #2d5a27 0%, #1a3d17 100%)',
+              background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)',
               border: 'none',
               color: 'white',
-              padding: '24px'
+              padding: '28px'
             }}>
               <h3 style={{ marginTop: 0, marginBottom: 24, color: 'white', fontSize: '20px', fontWeight: '600' }}>
                 🔍 Filtros de Búsqueda
@@ -260,8 +261,8 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                         width: '100%',
                         padding: '14px 16px',
                         borderRadius: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        background: 'rgba(45, 90, 39, 0.8)',
+                        border: '2px solid rgba(74, 222, 128, 0.3)',
+                        background: 'rgba(54, 83, 20, 0.8)',
                         color: '#e8f5e8',
                         fontSize: '16px',
                         fontWeight: '500',
@@ -271,15 +272,15 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                       }}
                       onFocus={(e) => {
                         e.target.style.border = '2px solid #4ade80';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.9)';
                       }}
                       onBlur={(e) => {
-                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
+                        e.target.style.border = '2px solid rgba(74, 222, 128, 0.3)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.8)';
                       }}
                     >
                       {[2024, 2025, 2026, 2027].map(year => (
-                        <option key={year} value={year} style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>{year}</option>
+                        <option key={year} value={year} style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>{year}</option>
                       ))}
                     </select>
                   </div>
@@ -293,8 +294,8 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                         width: '100%',
                         padding: '14px 16px',
                         borderRadius: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        background: 'rgba(45, 90, 39, 0.8)',
+                        border: '2px solid rgba(74, 222, 128, 0.3)',
+                        background: 'rgba(54, 83, 20, 0.8)',
                         color: '#e8f5e8',
                         fontSize: '16px',
                         fontWeight: '500',
@@ -304,15 +305,15 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                       }}
                       onFocus={(e) => {
                         e.target.style.border = '2px solid #4ade80';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.9)';
                       }}
                       onBlur={(e) => {
-                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
+                        e.target.style.border = '2px solid rgba(74, 222, 128, 0.3)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.8)';
                       }}
                     >
                       {Array.from({ length: 12 }, (_, i) => i + 1).map(month => (
-                        <option key={month} value={month} style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>{getMonthName(month)}</option>
+                        <option key={month} value={month} style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>{getMonthName(month)}</option>
                       ))}
                     </select>
                   </div>
@@ -326,8 +327,8 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                         width: '100%',
                         padding: '14px 16px',
                         borderRadius: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        background: 'rgba(45, 90, 39, 0.8)',
+                        border: '2px solid rgba(74, 222, 128, 0.3)',
+                        background: 'rgba(54, 83, 20, 0.8)',
                         color: '#e8f5e8',
                         fontSize: '16px',
                         fontWeight: '500',
@@ -337,17 +338,17 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                       }}
                       onFocus={(e) => {
                         e.target.style.border = '2px solid #4ade80';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.9)';
                       }}
                       onBlur={(e) => {
-                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
+                        e.target.style.border = '2px solid rgba(74, 222, 128, 0.3)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.8)';
                       }}
                     >
-                      <option value="all" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>🎯 Todos</option>
-                      <option value="SwingTrading" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>📈 Swing Trading</option>
-                      <option value="DayTrading" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>⚡ Day Trading</option>
-                      <option value="DowJones" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>📊 Dow Jones</option>
+                      <option value="all" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>🎯 Todos</option>
+                      <option value="SwingTrading" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>📈 Swing Trading</option>
+                      <option value="DayTrading" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>⚡ Day Trading</option>
+                      <option value="DowJones" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>📊 Dow Jones</option>
                     </select>
                   </div>
                   
@@ -360,8 +361,8 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                         width: '100%',
                         padding: '14px 16px',
                         borderRadius: '12px',
-                        border: '2px solid rgba(255,255,255,0.3)',
-                        background: 'rgba(45, 90, 39, 0.8)',
+                        border: '2px solid rgba(74, 222, 128, 0.3)',
+                        background: 'rgba(54, 83, 20, 0.8)',
                         color: '#e8f5e8',
                         fontSize: '16px',
                         fontWeight: '500',
@@ -371,17 +372,17 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                       }}
                       onFocus={(e) => {
                         e.target.style.border = '2px solid #4ade80';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.9)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.9)';
                       }}
                       onBlur={(e) => {
-                        e.target.style.border = '2px solid rgba(255,255,255,0.3)';
-                        e.target.style.background = 'rgba(45, 90, 39, 0.8)';
+                        e.target.style.border = '2px solid rgba(74, 222, 128, 0.3)';
+                        e.target.style.background = 'rgba(54, 83, 20, 0.8)';
                       }}
                     >
-                      <option value="completed" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>✅ Completado</option>
-                      <option value="pending" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>⏳ Pendiente</option>
-                      <option value="failed" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>❌ Fallido</option>
-                      <option value="refunded" style={{ background: '#1a3d17', color: '#e8f5e8', padding: '8px' }}>🔄 Reembolsado</option>
+                      <option value="completed" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>✅ Completado</option>
+                      <option value="pending" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>⏳ Pendiente</option>
+                      <option value="failed" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>❌ Fallido</option>
+                      <option value="refunded" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>🔄 Reembolsado</option>
                     </select>
                   </div>
                 </div>
@@ -396,22 +397,22 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                 marginBottom: '32px'
               }}>
                 <div style={{
-                  background: 'linear-gradient(135deg, #2d5a27 0%, #1a3d17 100%)',
+                  background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)',
                   borderRadius: '20px',
                   padding: '28px',
                   color: 'white',
-                  boxShadow: '0 12px 40px rgba(26, 61, 23, 0.3)',
+                  boxShadow: '0 12px 40px rgba(26, 46, 5, 0.3)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   backdropFilter: 'blur(10px)',
                   transition: 'transform 0.3s ease, box-shadow 0.3s ease'
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(26, 61, 23, 0.4)';
+                  e.currentTarget.style.boxShadow = '0 16px 50px rgba(26, 46, 5, 0.4)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(26, 61, 23, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(26, 46, 5, 0.3)';
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
                     <div style={{ 
@@ -561,35 +562,37 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
 
             {/* Panel de Recordatorios */}
             <div className={styles.card} style={{
-              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
               border: 'none',
-              color: 'white'
+              color: 'white',
+              padding: '28px'
             }}>
-              <h3 style={{ marginTop: 0, marginBottom: 20, color: 'white', fontSize: '20px', fontWeight: '600' }}>
+              <h3 style={{ marginTop: 0, marginBottom: 24, color: '#e8f5e8', fontSize: '22px', fontWeight: '600' }}>
                 📧 Enviar Recordatorios
               </h3>
               
               {/* Información sobre links de Meet */}
               {stats && stats.meetLinksAvailable && Object.keys(stats.meetLinksAvailable).length > 0 && (
                 <div style={{ 
-                  background: '#DCFCE7', 
-                  border: '1px solid #22c55e', 
-                  borderRadius: '8px', 
-                  padding: '16px', 
-                  marginBottom: '16px' 
+                  background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)', 
+                  border: '2px solid #4ade80', 
+                  borderRadius: '16px', 
+                  padding: '20px', 
+                  marginBottom: '24px',
+                  color: 'white'
                 }}>
-                  <h4 style={{ color: '#166534', marginTop: 0, marginBottom: 8 }}>
+                  <h4 style={{ color: '#e8f5e8', marginTop: 0, marginBottom: 12, fontSize: '18px', fontWeight: '600' }}>
                     🔗 Links de Google Meet Disponibles
                   </h4>
                   {Object.entries(stats.meetLinksAvailable).map(([trainingType, links]) => (
-                    <div key={trainingType} style={{ marginBottom: 8 }}>
-                      <strong style={{ color: '#166534' }}>
+                    <div key={trainingType} style={{ marginBottom: 12 }}>
+                      <strong style={{ color: '#c7e5c7', fontSize: '16px' }}>
                         {getTrainingDisplayName(trainingType)}: {links.length} clase{links.length !== 1 ? 's' : ''}
                       </strong>
                       {links.length > 0 && (
-                        <div style={{ fontSize: '12px', color: '#166534', marginTop: 4 }}>
+                        <div style={{ fontSize: '14px', color: '#a7f3d0', marginTop: 8 }}>
                           {links.map((link, index) => (
-                            <div key={index} style={{ marginBottom: 2 }}>
+                            <div key={index} style={{ marginBottom: 6, padding: '8px', background: 'rgba(74, 222, 128, 0.1)', borderRadius: '8px' }}>
                               📹 Clase {index + 1}: {link}
                             </div>
                           ))}
@@ -600,9 +603,9 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                 </div>
               )}
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'end' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 20, alignItems: 'end' }}>
                 <div>
-                  <label style={{ color: 'white', fontWeight: '500', marginBottom: '8px', display: 'block' }}>
+                  <label style={{ color: '#e8f5e8', fontWeight: '600', marginBottom: '12px', display: 'block', fontSize: '16px' }}>
                     💬 Mensaje Personalizado (Opcional)
                   </label>
                   <textarea
@@ -611,15 +614,26 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                     placeholder="Escribe un mensaje personalizado para incluir en los recordatorios..."
                     style={{
                       width: '100%',
-                      padding: '12px',
-                      borderRadius: '10px',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      background: 'rgba(255,255,255,0.1)',
-                      color: 'white',
-                      fontSize: '14px',
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      border: '2px solid rgba(74, 222, 128, 0.3)',
+                      background: 'rgba(31, 41, 55, 0.8)',
+                      color: '#e8f5e8',
+                      fontSize: '16px',
+                      fontWeight: '500',
                       backdropFilter: 'blur(10px)',
                       resize: 'vertical',
-                      minHeight: '80px'
+                      minHeight: '100px',
+                      transition: 'all 0.3s ease',
+                      cursor: 'text'
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.border = '2px solid #4ade80';
+                      e.target.style.background = 'rgba(31, 41, 55, 0.9)';
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.border = '2px solid rgba(74, 222, 128, 0.3)';
+                      e.target.style.background = 'rgba(31, 41, 55, 0.8)';
                     }}
                     rows={3}
                   />
@@ -628,30 +642,32 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                   onClick={sendReminders}
                   disabled={sendingReminders || subscriptions.length === 0}
                   style={{ 
-                    background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-                    color: 'white',
-                    border: 'none',
-                    padding: '16px 28px',
-                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #365314 0%, #1a2e05 100%)',
+                    color: '#e8f5e8',
+                    border: '2px solid #4ade80',
+                    padding: '18px 32px',
+                    borderRadius: '16px',
                     fontWeight: '600',
                     cursor: sendingReminders ? 'not-allowed' : 'pointer',
                     opacity: sendingReminders ? 0.7 : 1,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    fontSize: '16px',
-                    boxShadow: '0 6px 20px rgba(79, 172, 254, 0.3)',
+                    gap: '12px',
+                    fontSize: '18px',
+                    boxShadow: '0 8px 25px rgba(54, 83, 20, 0.4)',
                     transition: 'all 0.3s ease'
                   }}
                   onMouseEnter={(e) => {
                     if (!sendingReminders && subscriptions.length > 0) {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(79, 172, 254, 0.4)';
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 12px 35px rgba(54, 83, 20, 0.5)';
+                      e.currentTarget.style.border = '2px solid #6ee7b7';
                     }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(79, 172, 254, 0.3)';
+                    e.currentTarget.style.boxShadow = '0 8px 25px rgba(54, 83, 20, 0.4)';
+                    e.currentTarget.style.border = '2px solid #4ade80';
                   }}
                 >
                   {sendingReminders ? (
