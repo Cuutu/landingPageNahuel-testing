@@ -1560,6 +1560,7 @@ function PaymentsList() {
   const [loading, setLoading] = useState(false);
   const [payments, setPayments] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [breakdown, setBreakdown] = useState<any>(null);
 
   const fetchPayments = async () => {
     try {
@@ -1570,6 +1571,7 @@ function PaymentsList() {
       if (!res.ok) throw new Error(data.error || 'Error al cargar pagos');
       const sorted = (data.payments || []).sort((a: any, b: any) => a.userEmail.localeCompare(b.userEmail));
       setPayments(sorted);
+      setBreakdown(data.breakdown);
     } catch (e: any) {
       setError(e.message || 'Error de conexión');
     } finally {
@@ -1580,7 +1582,7 @@ function PaymentsList() {
   useEffect(() => { fetchPayments(); }, []);
 
   const exportCsv = () => {
-    const headers = ['Nombre', 'Teléfono', 'CUIT/CUIL', 'Email', 'Pago', 'Moneda', 'Estado', 'Motivo', 'Fecha', 'ID MP'];
+    const headers = ['Nombre', 'Teléfono', 'CUIT/CUIL', 'Email', 'Pago', 'Moneda', 'Estado', 'Motivo', 'Fecha', 'ID MP', 'Origen'];
     const rows = payments.map(p => [
       p.userName || '',
       p.userPhone || '',
@@ -1591,7 +1593,8 @@ function PaymentsList() {
       p.status || '',
       p.reason || p.service || '',
       p.transactionDate ? new Date(p.transactionDate).toLocaleString('es-AR') : '',
-      p.mercadopagoPaymentId || ''
+      p.mercadopagoPaymentId || '',
+      p.source === 'monthly-subscription' ? 'Suscripción Mensual' : 'Pago Regular'
     ]);
     const csv = [headers, ...rows]
       .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','))
@@ -1605,49 +1608,222 @@ function PaymentsList() {
     URL.revokeObjectURL(url);
   };
 
+  const getServiceIcon = (service: string, source: string) => {
+    if (source === 'monthly-subscription') {
+      return <Calendar size={16} style={{ color: '#10B981' }} />;
+    }
+    switch (service) {
+      case 'TraderCall':
+      case 'SmartMoney':
+      case 'CashFlow':
+        return <TrendingUp size={16} style={{ color: '#3B82F6' }} />;
+      case 'SwingTrading':
+      case 'DowJones':
+        return <BookOpen size={16} style={{ color: '#8B5CF6' }} />;
+      default:
+        return <DollarSign size={16} style={{ color: '#6B7280' }} />;
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badgeStyles = {
+      approved: {
+        background: 'linear-gradient(135deg, #10B981, #059669)',
+        color: '#fff',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600' as const,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px'
+      },
+      pending: {
+        background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+        color: '#fff',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600' as const,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px'
+      },
+      rejected: {
+        background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+        color: '#fff',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        fontWeight: '600' as const,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px'
+      }
+    };
+
+    const statusConfig = {
+      approved: { icon: <CheckCircle size={14} />, text: 'Aprobado' },
+      pending: { icon: <Clock size={14} />, text: 'Pendiente' },
+      rejected: { icon: <XCircle size={14} />, text: 'Rechazado' }
+    };
+
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.approved;
+    const style = badgeStyles[status as keyof typeof badgeStyles] || badgeStyles.approved;
+
+    return (
+      <span style={style}>
+        {config.icon}
+        {config.text}
+      </span>
+    );
+  };
+
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className={styles.actionButton} onClick={fetchPayments} disabled={loading}>
           <RefreshCw size={16} /> {loading ? 'Actualizando...' : 'Actualizar'}
         </button>
         <button className={styles.actionButton} onClick={exportCsv} disabled={loading || payments.length === 0}>
           <Download size={16} /> Exportar Excel
         </button>
-        <span style={{ color: '#9CA3AF' }}>{payments.length} pagos</span>
+        <div style={{ 
+          marginLeft: 'auto', 
+          display: 'flex', 
+          gap: 16, 
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
+          padding: '8px 16px',
+          borderRadius: '12px',
+          border: '1px solid rgba(99, 102, 241, 0.2)'
+        }}>
+          <span style={{ color: '#6366F1', fontWeight: '600', fontSize: '14px' }}>
+            📊 Total: {payments.length} pagos
+          </span>
+          {breakdown && (
+            <>
+              <span style={{ color: '#8B5CF6', fontSize: '12px' }}>
+                💳 Regulares: {breakdown.regularPayments}
+              </span>
+              <span style={{ color: '#10B981', fontSize: '12px' }}>
+                📅 Mensuales: {breakdown.monthlySubscriptions}
+              </span>
+            </>
+          )}
+        </div>
       </div>
       {error && <div className={styles.error}>{error}</div>}
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
-          <thead className={styles.tableHeader}>
+      <div style={{ 
+        maxHeight: '600px', 
+        overflowY: 'auto',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: '12px',
+        background: 'rgba(0, 0, 0, 0.2)'
+      }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead style={{ 
+            position: 'sticky', 
+            top: 0, 
+            background: 'linear-gradient(135deg, #1F2937, #111827)',
+            zIndex: 10,
+            borderBottom: '2px solid rgba(99, 102, 241, 0.3)'
+          }}>
             <tr>
-              <th>Email</th>
-              <th>Nombre</th>
-              <th>Teléfono</th>
-              <th>CUIT/CUIL</th>
-              <th>Monto</th>
-              <th>Estado</th>
-              <th>Motivo</th>
-              <th>Fecha</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Tipo</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Email</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Nombre</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Monto</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Estado</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Motivo</th>
+              <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: '600', fontSize: '13px', color: '#A5B4FC' }}>Fecha</th>
             </tr>
           </thead>
           <tbody>
-            {payments.map((p: any) => (
-              <tr key={p.id} className={styles.tableRow}>
-                <td className={styles.tableCell}>{p.userEmail}</td>
-                <td className={styles.tableCell}>{p.userName}</td>
-                <td className={styles.tableCell}>{p.userPhone || '-'}</td>
-                <td className={styles.tableCell}>{p.userCuit || '-'}</td>
-                <td className={styles.tableCell}>{p.currency} ${p.amount?.toLocaleString('es-AR')}</td>
-                <td className={styles.tableCell}>{p.status}</td>
-                <td className={styles.tableCell}>{p.reason || p.service}</td>
-                <td className={styles.tableCell}>{new Date(p.transactionDate).toLocaleString('es-AR')}</td>
+            {payments.map((p: any, index: number) => (
+              <tr 
+                key={p.id}
+                style={{
+                  background: index % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                  e.currentTarget.style.transform = 'scale(1.005)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = index % 2 === 0 ? 'rgba(255, 255, 255, 0.03)' : 'transparent';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                  {getServiceIcon(p.service, p.source)}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '13px', color: '#E5E7EB' }}>
+                  {p.userEmail}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '13px', color: '#D1D5DB', fontWeight: '500' }}>
+                  {p.userName}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '14px' }}>
+                  <span style={{ 
+                    color: '#10B981', 
+                    fontWeight: '700',
+                    background: 'rgba(16, 185, 129, 0.1)',
+                    padding: '4px 8px',
+                    borderRadius: '6px'
+                  }}>
+                    {p.currency} ${p.amount?.toLocaleString('es-AR')}
+                  </span>
+                </td>
+                <td style={{ padding: '12px 16px' }}>
+                  {getStatusBadge(p.status)}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '12px', color: '#9CA3AF' }}>
+                  {p.reason || p.service}
+                </td>
+                <td style={{ padding: '12px 16px', fontSize: '12px', color: '#9CA3AF' }}>
+                  {new Date(p.transactionDate).toLocaleDateString('es-AR', { 
+                    day: '2-digit', 
+                    month: 'short', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {loading && <p style={{ marginTop: 12 }}>Cargando…</p>}
-        {!loading && payments.length === 0 && <p style={{ marginTop: 12 }}>No hay pagos.</p>}
+        {loading && (
+          <div style={{ 
+            padding: 40, 
+            textAlign: 'center', 
+            color: '#6B7280',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite' }} />
+            <p>Cargando pagos...</p>
+          </div>
+        )}
+        {!loading && payments.length === 0 && (
+          <div style={{ 
+            padding: 40, 
+            textAlign: 'center', 
+            color: '#6B7280',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <DollarSign size={48} style={{ opacity: 0.3 }} />
+            <p>No hay pagos registrados</p>
+          </div>
+        )}
       </div>
     </div>
   );
