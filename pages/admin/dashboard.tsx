@@ -33,7 +33,9 @@ import {
   Target,
   RefreshCw,
   Loader,
-  Percent
+  Percent,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
