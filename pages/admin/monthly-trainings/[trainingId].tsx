@@ -59,6 +59,7 @@ interface MonthlyTraining {
   maxStudents: number;
   price: number;
   classes: TrainingClass[];
+  derivedClasses?: TrainingClass[];
   students: Student[];
   status: 'draft' | 'open' | 'full' | 'in-progress' | 'completed' | 'cancelled';
   registrationOpenDate: string;
@@ -359,7 +360,7 @@ export default function MonthlyTrainingDetail() {
             className={`${styles.tab} ${activeTab === 'classes' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('classes')}
           >
-            Clases ({training.classes.length})
+            Clases ({(training.derivedClasses && training.derivedClasses.length > 0) ? training.derivedClasses.length : training.classes.length})
           </button>
           <button
             className={`${styles.tab} ${activeTab === 'students' ? styles.activeTab : ''}`}
@@ -435,7 +436,7 @@ export default function MonthlyTrainingDetail() {
           {activeTab === 'classes' && (
             <div className={styles.classesContent}>
               <div className={styles.classesList}>
-                {training.classes.map((classItem, index) => (
+                {(training.derivedClasses && training.derivedClasses.length > 0 ? training.derivedClasses : training.classes).map((classItem, index) => (
                   <div key={classItem._id} className={styles.classCard}>
                     <div className={styles.classHeader}>
                       <div className={styles.classTitle}>
@@ -452,7 +453,7 @@ export default function MonthlyTrainingDetail() {
                       </div>
                       <div className={styles.classInfoItem}>
                         <Clock size={16} />
-                        <span>{classItem.startTime} - {classItem.endTime}</span>
+                        <span>{classItem.startTime}</span>
                       </div>
                       {classItem.meetingLink && (
                         <div className={styles.classInfoItem}>

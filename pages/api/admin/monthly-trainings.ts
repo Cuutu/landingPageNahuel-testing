@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/googleAuth';
 import dbConnect from '../../../lib/mongodb';
 import MonthlyTraining from '../../../models/MonthlyTraining';
+import TrainingDate from '../../../models/TrainingDate';
 import User from '../../../models/User';
 
 // Helper function to create date in Argentina timezone (UTC-3)
@@ -61,9 +62,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // GET - Obtener entrenamientos mensuales
 async function handleGet(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { month, year, status } = req.query;
+    const { id, month, year, status } = req.query;
 
     let filter: any = {};
+    if (id) filter._id = id;
     
     if (month) filter.month = parseInt(month as string);
     if (year) filter.year = parseInt(year as string);
@@ -74,22 +76,52 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
       .lean();
 
     // Agregar información útil
-    const trainingsWithInfo = trainings.map(training => {
+    const trainingsWithInfo = await Promise.all(trainings.map(async (training) => {
       // Contar solo estudiantes con pago completado
       const paidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
       
+      // Sincronizar clases desde TrainingDate (fuente de verdad usada en la página pública)
+      const startOfMonth = new Date(training.year, training.month - 1, 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(training.year, training.month, 0, 23, 59, 59, 999);
+
+      const monthDates = await TrainingDate.find({
+        trainingType: 'SwingTrading',
+        isActive: true,
+        date: { $gte: startOfMonth, $lte: endOfMonth }
+      }).sort({ date: 1 }).lean();
+
+      // Derivar clases desde TrainingDate
+      const derivedClasses = monthDates.map((d: any) => {
+        const dt = new Date(d.date);
+        const hh = dt.getHours().toString().padStart(2, '0');
+        const mm = dt.getMinutes().toString().padStart(2, '0');
+        return {
+          date: dt,
+          startTime: `${hh}:${mm}`,
+          title: d.title || 'Clase',
+          status: dt.getTime() < Date.now() ? 'completed' : 'scheduled',
+          meetingLink: d.meetLink || undefined
+        };
+      });
+
+      const totalClassesDerived = derivedClasses.length;
+      const completedClassesDerived = derivedClasses.filter((c: any) => c.status === 'completed').length;
+
       return {
         ...training,
         availableSpots: training.maxStudents - paidStudents.length,
-        totalClasses: training.classes.length,
-        completedClasses: training.classes.filter((c: any) => c.status === 'completed').length,
+        // Preferir conteo derivado de TrainingDate si hay datos, para alinear con la página pública
+        totalClasses: totalClassesDerived > 0 ? totalClassesDerived : training.classes.length,
+        completedClasses: totalClassesDerived > 0 ? completedClassesDerived : training.classes.filter((c: any) => c.status === 'completed').length,
         monthName: getMonthName(training.month),
         canEnroll: training.status === 'open' && paidStudents.length < training.maxStudents,
         isEnrolled: false, // Se calculará en el frontend basado en el usuario logueado
         paidStudentsCount: paidStudents.length,
-        paymentRange: training.paymentRange
+        paymentRange: training.paymentRange,
+        // Exponer clases derivadas para UI que lo requiera
+        derivedClasses
       };
-    });
+    }));
 
     return res.status(200).json({
       success: true,

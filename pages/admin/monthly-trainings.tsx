@@ -17,6 +17,8 @@ import {
   XCircle
 } from 'lucide-react';
 import AdminRouteGuard from '../../components/AdminRouteGuard';
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import styles from '../../styles/admin/MonthlyTrainings.module.css';
 
 interface TrainingClass {
@@ -243,6 +245,7 @@ export default function MonthlyTrainingsAdmin() {
 
   return (
     <AdminRouteGuard>
+      <Navbar />
       <div className={styles.container}>
         <Head>
           <title>Entrenamientos Mensuales - Admin</title>
@@ -567,6 +570,7 @@ export default function MonthlyTrainingsAdmin() {
           </div>
         )}
       </div>
+      <Footer />
     </AdminRouteGuard>
   );
 }
