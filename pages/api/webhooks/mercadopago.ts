@@ -397,7 +397,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       
       try {
         // Buscar la suscripción mensual por external_reference (que se guarda como paymentId)
-        const monthlySubscription = await MonthlyTrainingSubscription.findOne({
+        let monthlySubscription = await MonthlyTrainingSubscription.findOne({
           paymentId: externalRef
         });
         
@@ -407,8 +407,38 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         });
         
         if (!monthlySubscription) {
-          console.error('❌ Suscripción mensual no encontrada para external_reference:', externalRef);
-          return;
+          console.log('⚠️ Suscripción mensual no encontrada, creando desde webhook...');
+          
+          // Extraer datos del metadata de MercadoPago
+          const metadata = paymentInfo.metadata || {};
+          const trainingType = metadata.trainingType || 'SwingTrading';
+          const subscriptionMonth = metadata.subscriptionMonth || new Date().getMonth() + 1;
+          const subscriptionYear = metadata.subscriptionYear || new Date().getFullYear();
+          
+          // Calcular fechas de inicio y fin del mes
+          const startDate = new Date(subscriptionYear, subscriptionMonth - 1, 1);
+          const endDate = new Date(subscriptionYear, subscriptionMonth, 0, 23, 59, 59, 999);
+          
+          // Crear la suscripción desde el webhook
+          monthlySubscription = new MonthlyTrainingSubscription({
+            userId: user._id.toString(),
+            userEmail: user.email,
+            userName: user.name || user.email,
+            trainingType,
+            subscriptionMonth,
+            subscriptionYear,
+            startDate,
+            endDate,
+            paymentId: externalRef,
+            paymentAmount: paymentInfo.transaction_amount,
+            paymentStatus: 'completed',
+            mercadopagoPaymentId: paymentInfo.id.toString(),
+            isActive: true,
+            accessGranted: true
+          });
+          
+          await monthlySubscription.save();
+          console.log('✅ Suscripción mensual creada desde webhook:', monthlySubscription._id);
         }
         
         console.log('📋 Suscripción mensual encontrada:', {
@@ -420,13 +450,16 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           paymentStatus: monthlySubscription.paymentStatus
         });
         
-        // Actualizar estado del pago
-        monthlySubscription.paymentStatus = 'completed';
-        monthlySubscription.isActive = true;
-        monthlySubscription.accessGranted = true;
-        monthlySubscription.updatedAt = new Date();
-        
-        await monthlySubscription.save();
+        // Actualizar estado del pago (solo si no está ya completado)
+        if (monthlySubscription.paymentStatus !== 'completed') {
+          monthlySubscription.paymentStatus = 'completed';
+          monthlySubscription.isActive = true;
+          monthlySubscription.accessGranted = true;
+          monthlySubscription.mercadopagoPaymentId = paymentInfo.id.toString();
+          monthlySubscription.updatedAt = new Date();
+          
+          await monthlySubscription.save();
+        }
         
         console.log('✅ Suscripción mensual activada:', {
           subscriptionId: monthlySubscription._id,

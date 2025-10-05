@@ -139,8 +139,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const preference = new Preference(client);
     console.log('✅ MercadoPago configurado correctamente');
 
-    // Generar ID único para el pago
-    const paymentId = `MTS_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Generar ID único para el pago (incluye email del usuario para mayor unicidad)
+    const emailPrefix = (session as any).user.email.split('@')[0].slice(0, 5);
+    const paymentId = `MTS_${emailPrefix}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
     // Crear suscripción en la base de datos (pendiente)
     console.log('💾 Creando suscripción en la base de datos...');
@@ -184,8 +185,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await monthlySubscription.save();
       console.log('✅ Suscripción guardada exitosamente con ID:', monthlySubscription._id);
-    } catch (saveError) {
+    } catch (saveError: any) {
       console.error('❌ Error guardando suscripción:', saveError);
+      
+      // Verificar si es un error de duplicado
+      if (saveError.code === 11000) {
+        console.error('❌ Error de duplicado detectado:', saveError.keyPattern);
+        return res.status(400).json({ 
+          error: 'Ya existe una suscripción con estos datos', 
+          details: 'Puede que ya tengas una suscripción pendiente o completada para este mes. Verifica tu perfil o contacta soporte.'
+        });
+      }
+      
       return res.status(500).json({ 
         error: 'Error guardando suscripción', 
         details: saveError instanceof Error ? saveError.message : 'Error desconocido' 

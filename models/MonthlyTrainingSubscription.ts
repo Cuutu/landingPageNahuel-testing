@@ -62,7 +62,7 @@ const MonthlyTrainingSubscriptionSchema: Schema = new Schema({
   paymentId: {
     type: String,
     required: true,
-    unique: true
+    index: true // Cambiado de unique a index para permitir reintentos
   },
   paymentAmount: {
     type: Number,
@@ -95,6 +95,14 @@ MonthlyTrainingSubscriptionSchema.index({ userId: 1, trainingType: 1 });
 MonthlyTrainingSubscriptionSchema.index({ subscriptionMonth: 1, subscriptionYear: 1 });
 MonthlyTrainingSubscriptionSchema.index({ paymentStatus: 1, isActive: 1 });
 MonthlyTrainingSubscriptionSchema.index({ endDate: 1 }); // Para limpieza automática
+// Índice compuesto único: un usuario no puede tener múltiples suscripciones completadas para el mismo mes/año/tipo
+MonthlyTrainingSubscriptionSchema.index(
+  { userId: 1, trainingType: 1, subscriptionMonth: 1, subscriptionYear: 1, paymentStatus: 1 },
+  { 
+    unique: true,
+    partialFilterExpression: { paymentStatus: 'completed' } // Solo aplica a pagos completados
+  }
+);
 
 // Middleware para calcular fechas automáticamente
 MonthlyTrainingSubscriptionSchema.pre('save', function(next) {
