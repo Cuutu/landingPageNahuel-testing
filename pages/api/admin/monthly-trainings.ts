@@ -4,6 +4,7 @@ import { authOptions } from '../../../lib/googleAuth';
 import dbConnect from '../../../lib/mongodb';
 import MonthlyTraining from '../../../models/MonthlyTraining';
 import TrainingDate from '../../../models/TrainingDate';
+import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import User from '../../../models/User';
 
 // Helper function to create date in Argentina timezone (UTC-3)
@@ -78,7 +79,16 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
     // Agregar información útil
     const trainingsWithInfo = await Promise.all(trainings.map(async (training) => {
       // Contar solo estudiantes con pago completado
-      const paidStudents = training.students.filter((s: any) => s.paymentStatus === 'completed');
+      const paidStudentsLegacy = training.students.filter((s: any) => s.paymentStatus === 'completed');
+
+      // Conteo real alineado con la página pública (suscripciones mensuales)
+      const subsCount = await MonthlyTrainingSubscription.countDocuments({
+        trainingType: 'SwingTrading',
+        subscriptionYear: training.year,
+        subscriptionMonth: training.month,
+        paymentStatus: 'completed',
+        isActive: true
+      });
       
       // Sincronizar clases desde TrainingDate (fuente de verdad usada en la página pública)
       const startOfMonth = new Date(training.year, training.month - 1, 1, 0, 0, 0, 0);
@@ -109,14 +119,15 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
 
       return {
         ...training,
-        availableSpots: training.maxStudents - paidStudents.length,
+        availableSpots: Math.max(0, training.maxStudents - subsCount),
         // Preferir conteo derivado de TrainingDate si hay datos, para alinear con la página pública
         totalClasses: totalClassesDerived > 0 ? totalClassesDerived : training.classes.length,
         completedClasses: totalClassesDerived > 0 ? completedClassesDerived : training.classes.filter((c: any) => c.status === 'completed').length,
         monthName: getMonthName(training.month),
-        canEnroll: training.status === 'open' && paidStudents.length < training.maxStudents,
+        canEnroll: training.status === 'open' && subsCount < training.maxStudents,
         isEnrolled: false, // Se calculará en el frontend basado en el usuario logueado
-        paidStudentsCount: paidStudents.length,
+        // Mostrar el conteo basado en suscripciones (página pública) con fallback al legado
+        paidStudentsCount: subsCount ?? paidStudentsLegacy.length,
         paymentRange: training.paymentRange,
         // Exponer clases derivadas para UI que lo requiera
         derivedClasses
