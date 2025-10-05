@@ -6,29 +6,33 @@ import MonthlyTraining from '../../../models/MonthlyTraining';
 import TrainingDate from '../../../models/TrainingDate';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import { createTrainingEvent } from '../../../lib/googleCalendar';
+import { getGlobalTimezone } from '../../../lib/timeConfig';
 import User from '../../../models/User';
 
-// Helper function to create date in Argentina timezone (UTC-3)
-function createArgentinaDate(dateString: string, timeString: string = '19:00'): Date {
-  console.log('🔍 createArgentinaDate - Input dateString:', dateString, 'timeString:', timeString);
-  
-  // Parse the date string (YYYY-MM-DD) and create date in Argentina timezone
-  const [year, month, day] = dateString.split('-').map(Number);
-  console.log('🔍 Parsed date parts:', { year, month, day });
-  
-  // Parse the time string (HH:MM)
-  const [hours, minutes] = timeString.split(':').map(Number);
-  console.log('🔍 Parsed time parts:', { hours, minutes });
-  
-  // Create date in local timezone with the specific time of the class
-  // This ensures the date represents the exact day and time selected
-  const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-  console.log('🔍 Created local date with time:', localDate);
-  console.log('🔍 Local date ISO string:', localDate.toISOString());
-  console.log('🔍 Local date local string:', localDate.toLocaleDateString('es-AR'));
-  console.log('🔍 Local date local time:', localDate.toLocaleTimeString('es-AR'));
-  
-  return localDate;
+// Helper para crear una Date respetando la zona horaria global (GOOGLE_CALENDAR_TIMEZONE)
+function createDateInTimezone(dateString: string, timeString: string = '19:00', tz?: string): Date {
+  const timezone = tz || getGlobalTimezone();
+  const [year, month, day] = dateString.split('-').map((v) => parseInt(v, 10));
+  const [hours, minutes] = timeString.split(':').map((v) => parseInt(v, 10));
+
+  const yyyy = year;
+  const mm = String(month).padStart(2, '0');
+  const dd = String(day).padStart(2, '0');
+  const hh = String(hours || 0).padStart(2, '0');
+  const mi = String(minutes || 0).padStart(2, '0');
+
+  // Calcular offset de la TZ para esa fecha/hora, imitando lógica usada en training-dates
+  const anchorUtc = new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00Z`);
+  const utc = new Date(anchorUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const local = new Date(anchorUtc.toLocaleString('en-US', { timeZone: timezone }));
+  const diffMinutes = Math.round((local.getTime() - utc.getTime()) / 60000);
+  const sign = diffMinutes >= 0 ? '+' : '-';
+  const abs = Math.abs(diffMinutes);
+  const offH = String(Math.floor(abs / 60)).padStart(2, '0');
+  const offM = String(abs % 60).padStart(2, '0');
+  const offset = `${sign}${offH}:${offM}`;
+
+  return new Date(`${yyyy}-${mm}-${dd}T${hh}:${mi}:00${offset}`);
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -190,7 +194,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       classes: classes.map((cls: any, index: number) => ({
         ...cls,
         _id: undefined, // Dejar que MongoDB genere el ID
-        date: createArgentinaDate(cls.date, cls.startTime), // Convertir string a Date con hora específica
+        date: createDateInTimezone(cls.date, cls.startTime, getGlobalTimezone()), // Respetar zona horaria global
         status: 'scheduled'
       })),
       students: [],
@@ -202,7 +206,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
 
     // Crear eventos de Calendar con Meet para cada clase
     try {
-      const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+      const tz = getGlobalTimezone();
       const updatedClasses = [] as any[];
       for (const cls of newTraining.classes as any[]) {
         const startDate: Date = cls.date;
@@ -275,7 +279,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
       for (const cls of updateData.classes) {
         const processed = {
           ...cls,
-          date: createArgentinaDate(cls.date, cls.startTime)
+          date: createDateInTimezone(cls.date, cls.startTime, getGlobalTimezone())
         } as any;
         try {
           if (!processed.googleEventId) {
