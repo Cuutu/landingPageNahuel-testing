@@ -1563,6 +1563,9 @@ function PaymentsList() {
   const [payments, setPayments] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [breakdown, setBreakdown] = useState<any>(null);
+  const [emailFilter, setEmailFilter] = useState('');
+  const [dateFromFilter, setDateFromFilter] = useState('');
+  const [dateToFilter, setDateToFilter] = useState('');
 
   const fetchPayments = async () => {
     try {
@@ -1681,13 +1684,50 @@ function PaymentsList() {
     );
   };
 
+  // Filtrar pagos
+  const filteredPayments = payments.filter(p => {
+    // Filtro por email
+    if (emailFilter && !p.userEmail.toLowerCase().includes(emailFilter.toLowerCase())) {
+      return false;
+    }
+
+    // Filtro por fecha desde
+    if (dateFromFilter) {
+      const paymentDate = new Date(p.transactionDate);
+      const fromDate = new Date(dateFromFilter);
+      fromDate.setHours(0, 0, 0, 0);
+      if (paymentDate < fromDate) {
+        return false;
+      }
+    }
+
+    // Filtro por fecha hasta
+    if (dateToFilter) {
+      const paymentDate = new Date(p.transactionDate);
+      const toDate = new Date(dateToFilter);
+      toDate.setHours(23, 59, 59, 999);
+      if (paymentDate > toDate) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const clearFilters = () => {
+    setEmailFilter('');
+    setDateFromFilter('');
+    setDateToFilter('');
+  };
+
   return (
     <div style={{ padding: 16 }}>
-      <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Botones de acción */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <button className={styles.actionButton} onClick={fetchPayments} disabled={loading}>
           <RefreshCw size={16} /> {loading ? 'Actualizando...' : 'Actualizar'}
         </button>
-        <button className={styles.actionButton} onClick={exportCsv} disabled={loading || payments.length === 0}>
+        <button className={styles.actionButton} onClick={exportCsv} disabled={loading || filteredPayments.length === 0}>
           <Download size={16} /> Exportar Excel
         </button>
         <div style={{ 
@@ -1715,6 +1755,182 @@ function PaymentsList() {
           )}
         </div>
       </div>
+
+      {/* Filtros */}
+      <div style={{ 
+        display: 'flex', 
+        gap: 12, 
+        marginBottom: 20, 
+        padding: '16px',
+        background: 'rgba(0, 0, 0, 0.2)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        flexWrap: 'wrap',
+        alignItems: 'flex-end'
+      }}>
+        <div style={{ flex: '1 1 300px', minWidth: '200px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '6px', 
+            fontSize: '13px', 
+            color: '#A5B4FC',
+            fontWeight: '500'
+          }}>
+            🔍 Buscar por Email
+          </label>
+          <div style={{ position: 'relative' }}>
+            <Search size={16} style={{ 
+              position: 'absolute', 
+              left: '12px', 
+              top: '50%', 
+              transform: 'translateY(-50%)', 
+              color: '#6B7280' 
+            }} />
+            <input
+              type="text"
+              placeholder="email@ejemplo.com"
+              value={emailFilter}
+              onChange={(e) => setEmailFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px 8px 36px',
+                background: 'rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                color: '#fff',
+                fontSize: '14px',
+                outline: 'none',
+                transition: 'all 0.2s ease'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)';
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ flex: '0 1 180px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '6px', 
+            fontSize: '13px', 
+            color: '#A5B4FC',
+            fontWeight: '500'
+          }}>
+            📅 Desde
+          </label>
+          <input
+            type="date"
+            value={dateFromFilter}
+            onChange={(e) => setDateFromFilter(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: '14px',
+              outline: 'none',
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+            }}
+          />
+        </div>
+
+        <div style={{ flex: '0 1 180px' }}>
+          <label style={{ 
+            display: 'block', 
+            marginBottom: '6px', 
+            fontSize: '13px', 
+            color: '#A5B4FC',
+            fontWeight: '500'
+          }}>
+            📅 Hasta
+          </label>
+          <input
+            type="date"
+            value={dateToFilter}
+            onChange={(e) => setDateToFilter(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              background: 'rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              color: '#fff',
+              fontSize: '14px',
+              outline: 'none',
+              transition: 'all 0.2s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.5)';
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.4)';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.background = 'rgba(0, 0, 0, 0.3)';
+            }}
+          />
+        </div>
+
+        <button 
+          onClick={clearFilters}
+          style={{
+            padding: '8px 16px',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            borderRadius: '8px',
+            color: '#EF4444',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)';
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+            e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+          }}
+        >
+          <X size={16} />
+          Limpiar
+        </button>
+
+        {(emailFilter || dateFromFilter || dateToFilter) && (
+          <div style={{ 
+            flex: '1 1 100%',
+            marginTop: '8px',
+            padding: '8px 12px',
+            background: 'rgba(99, 102, 241, 0.1)',
+            borderRadius: '8px',
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            fontSize: '13px',
+            color: '#A5B4FC'
+          }}>
+            📊 Mostrando <strong style={{ color: '#6366F1' }}>{filteredPayments.length}</strong> de <strong>{payments.length}</strong> pagos
+          </div>
+        )}
+      </div>
+
       {error && <div className={styles.error}>{error}</div>}
       <div style={{ 
         maxHeight: '600px', 
@@ -1742,7 +1958,7 @@ function PaymentsList() {
             </tr>
           </thead>
           <tbody>
-            {payments.map((p: any, index: number) => (
+            {filteredPayments.map((p: any, index: number) => (
               <tr 
                 key={p.id}
                 style={{
@@ -1810,6 +2026,34 @@ function PaymentsList() {
           }}>
             <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite' }} />
             <p>Cargando pagos...</p>
+          </div>
+        )}
+        {!loading && filteredPayments.length === 0 && payments.length > 0 && (
+          <div style={{ 
+            padding: 40, 
+            textAlign: 'center', 
+            color: '#6B7280',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 12
+          }}>
+            <Filter size={48} style={{ opacity: 0.3 }} />
+            <p>No hay pagos que coincidan con los filtros</p>
+            <button 
+              onClick={clearFilters}
+              style={{
+                padding: '8px 16px',
+                background: 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                borderRadius: '8px',
+                color: '#6366F1',
+                fontSize: '14px',
+                cursor: 'pointer'
+              }}
+            >
+              Limpiar filtros
+            </button>
           </div>
         )}
         {!loading && payments.length === 0 && (
