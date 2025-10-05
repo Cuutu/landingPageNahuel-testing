@@ -34,10 +34,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔍 Procesando pago de entrenamiento mensual:', externalReference);
 
-    // Buscar la suscripción mensual
-    const monthlySubscription = await MonthlyTrainingSubscription.findOne({
+    // Buscar la suscripción mensual por _id o paymentId
+    let monthlySubscription = await MonthlyTrainingSubscription.findOne({
       paymentId: externalReference
     });
+
+    // Si no se encuentra por paymentId, buscar por _id
+    if (!monthlySubscription) {
+      monthlySubscription = await MonthlyTrainingSubscription.findById(externalReference);
+    }
 
     if (!monthlySubscription) {
       console.error('❌ Suscripción mensual no encontrada:', externalReference);
