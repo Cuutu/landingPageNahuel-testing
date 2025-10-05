@@ -75,47 +75,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const userMap = new Map(users.map(user => [user.googleId, user]));
 
-    // Obtener fechas de entrenamiento con links de Meet para el mes
-    const TrainingDate = (await import('@/models/TrainingDate')).default;
-    const startOfMonth = new Date(parseInt(year as string), parseInt(month as string) - 1, 1);
-    const endOfMonth = new Date(parseInt(year as string), parseInt(month as string), 0, 23, 59, 59);
+    // Obtener links de Meet desde MonthlyTraining (donde realmente están almacenados)
+    const MonthlyTraining = (await import('@/models/MonthlyTraining')).default;
     
-    console.log('🔍 Debug: Buscando TrainingDate para:', {
+    console.log('🔍 Debug: Buscando MonthlyTraining para:', {
       year: year as string,
       month: month as string,
-      startOfMonth,
-      endOfMonth,
       trainingType: trainingType
     });
     
-    // Primero buscar todas las fechas del mes para debug
-    const allTrainingDates = await TrainingDate.find({
-      date: { $gte: startOfMonth, $lte: endOfMonth },
-      isActive: true
+    // Buscar entrenamientos mensuales del mes especificado
+    const monthlyTrainings = await MonthlyTraining.find({
+      month: parseInt(month as string),
+      year: parseInt(year as string),
+      type: 'swing-trading' // Solo Swing Trading por ahora
     }).lean();
     
-    console.log('🔍 Debug: Todas las fechas encontradas:', allTrainingDates.length, allTrainingDates);
+    console.log('🔍 Debug: MonthlyTrainings encontrados:', monthlyTrainings.length, monthlyTrainings);
     
-    const trainingDates = await TrainingDate.find({
-      date: { $gte: startOfMonth, $lte: endOfMonth },
-      isActive: true,
-      meetLink: { $exists: true, $ne: null }
-    }).lean();
-    
-    console.log('🔍 Debug: Fechas con meetLink:', trainingDates.length, trainingDates);
-
-    // Crear mapa de fechas por tipo de entrenamiento
+    // Extraer links de Meet de las clases de cada entrenamiento mensual
     const meetLinksByType = new Map<string, string[]>();
-    trainingDates.forEach(date => {
-      if (!meetLinksByType.has(date.trainingType)) {
-        meetLinksByType.set(date.trainingType, []);
+    
+    monthlyTrainings.forEach(training => {
+      const trainingTypeKey = 'SwingTrading'; // Mapear a la clave que espera el frontend
+      
+      if (!meetLinksByType.has(trainingTypeKey)) {
+        meetLinksByType.set(trainingTypeKey, []);
       }
-      if (date.meetLink) {
-        meetLinksByType.get(date.trainingType)!.push(date.meetLink);
-      }
+      
+      // Recopilar todos los meetingLink de las clases
+      training.classes?.forEach((cls: any) => {
+        if (cls.meetingLink) {
+          meetLinksByType.get(trainingTypeKey)!.push(cls.meetingLink);
+        }
+      });
     });
     
-    console.log('🔍 Debug: meetLinksByType final:', Object.fromEntries(meetLinksByType));
+    console.log('🔍 Debug: meetLinksByType desde MonthlyTraining:', Object.fromEntries(meetLinksByType));
 
     // Enriquecer suscripciones con datos del usuario y links de Meet
     const enrichedSubscriptions = subscriptions.map(sub => ({
