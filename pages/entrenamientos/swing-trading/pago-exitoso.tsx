@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { CheckCircle, ArrowRight, Calendar } from 'lucide-react';
+import { CheckCircle, ArrowRight, Calendar, AlertCircle } from 'lucide-react';
 import styles from '../../../styles/PaymentSuccess.module.css';
 
 interface PaymentSuccessProps {
@@ -35,6 +35,9 @@ export default function PaymentSuccessPage({
 }: PaymentSuccessProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<any>(null);
 
   useEffect(() => {
     // Log para debugging
@@ -52,20 +55,111 @@ export default function PaymentSuccessPage({
       merchantAccountId
     });
 
-    // Simular carga de verificación
-    const timer = setTimeout(() => {
+    // ✅ VERIFICAR PAGO REAL con MercadoPago
+    if (externalReference) {
+      verifyPaymentWithMercadoPago(externalReference);
+    } else {
       setIsLoading(false);
-    }, 2000);
+    }
+  }, [externalReference]);
 
-    return () => clearTimeout(timer);
-  }, []);
+  const verifyPaymentWithMercadoPago = async (reference: string) => {
+    try {
+      console.log('🔍 Verificando pago de entrenamiento mensual con MercadoPago...');
+      
+      const response = await fetch('/api/payments/process-monthly-training-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ externalReference: reference })
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        console.log('✅ Pago de entrenamiento mensual verificado:', data);
+        setPaymentVerified(true);
+        setPaymentDetails(data);
+      } else {
+        console.error('❌ Pago no verificado:', data.error);
+        
+        // Si es un error de retry, mostrar mensaje específico
+        if (data.shouldRetry) {
+          setVerificationError('Tu pago está siendo procesado. Por favor, espera unos minutos y verifica tu estado desde tu perfil.');
+        } else {
+          setVerificationError(data.error || 'El pago no ha sido verificado. Por favor, completa el proceso de pago.');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error verificando pago:', error);
+      setVerificationError('Error de conexión verificando el pago. Por favor, intenta nuevamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className={styles.container}>
         <div className={styles.loadingContent}>
           <div className={styles.spinner}></div>
-          <p>Verificando tu pago...</p>
+          <p>Verificando tu pago con MercadoPago...</p>
+          <p className={styles.loadingSubtext}>Esto puede tomar unos segundos</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (verificationError) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.iconContainer}>
+            <AlertCircle size={64} className={styles.errorIcon} />
+          </div>
+
+          <h1 className={styles.title}>Error en la Verificación</h1>
+          
+          <p className={styles.description}>
+            {verificationError}
+          </p>
+
+          <div className={styles.actions}>
+            <button 
+              onClick={() => window.location.reload()} 
+              className={styles.retryButton}
+            >
+              Intentar Nuevamente
+            </button>
+
+            <Link href="/entrenamientos/swing-trading" className={styles.profileButton}>
+              Volver al Entrenamiento
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!paymentVerified) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.iconContainer}>
+            <AlertCircle size={64} className={styles.warningIcon} />
+          </div>
+
+          <h1 className={styles.title}>Pago Pendiente</h1>
+          
+          <p className={styles.description}>
+            Tu pago está siendo procesado. Por favor, espera unos minutos y verifica tu estado desde tu perfil.
+          </p>
+
+          <div className={styles.actions}>
+            <Link href="/perfil" className={styles.accessButton}>
+              <ArrowRight size={20} />
+              Ver Mi Perfil
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -95,9 +189,9 @@ export default function PaymentSuccessPage({
             <h3>Detalles del pago:</h3>
             <ul>
               <li><strong>Referencia:</strong> {externalReference || 'No disponible'}</li>
-              <li><strong>Estado:</strong> {status || 'Aprobado'}</li>
-              <li><strong>ID de Pago:</strong> {paymentId || 'No disponible'}</li>
-              <li><strong>ID de Preferencia:</strong> {preferenceId || 'No disponible'}</li>
+              <li><strong>Estado:</strong> {paymentDetails?.payment?.status || status || 'Aprobado'}</li>
+              <li><strong>ID de Pago:</strong> {paymentDetails?.payment?.mercadopagoPaymentId || paymentId || 'No disponible'}</li>
+              <li><strong>Monto:</strong> ${paymentDetails?.payment?.amount || 'No disponible'} {paymentDetails?.payment?.currency || 'ARS'}</li>
             </ul>
           </div>
 

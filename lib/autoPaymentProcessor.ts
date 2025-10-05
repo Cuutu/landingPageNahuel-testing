@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
+import MonthlyTrainingSubscription from '@/models/MonthlyTrainingSubscription';
 import { getMercadoPagoPayment, isPaymentSuccessful } from '@/lib/mercadopago';
 
 /**
@@ -25,9 +26,16 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
       service: { $in: ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'] }
     }).sort({ createdAt: -1 }).limit(5); // Máximo 5 pagos por usuario
 
-    console.log(`🔍 Verificando ${pendingPayments.length} pagos pendientes para: ${userEmail}`);
+    // También buscar suscripciones mensuales pendientes
+    const pendingMonthlySubscriptions = await MonthlyTrainingSubscription.find({
+      userEmail: userEmail,
+      paymentStatus: 'pending',
+      createdAt: { $gte: threeDaysAgo }
+    }).sort({ createdAt: -1 }).limit(3); // Máximo 3 suscripciones mensuales
 
-    if (pendingPayments.length === 0) {
+    console.log(`🔍 Verificando ${pendingPayments.length} pagos pendientes y ${pendingMonthlySubscriptions.length} suscripciones mensuales para: ${userEmail}`);
+
+    if (pendingPayments.length === 0 && pendingMonthlySubscriptions.length === 0) {
       return { success: true, processed: 0, errors: [] };
     }
 
@@ -227,6 +235,49 @@ export async function processUserPendingPayments(userEmail: string): Promise<{
       }
     }
 
+    // Procesar suscripciones mensuales pendientes
+    for (const subscription of pendingMonthlySubscriptions) {
+      try {
+        console.log(`🔄 Procesando suscripción mensual: ${subscription._id}`);
+
+        // Verificar con MercadoPago
+        const searchResult = await searchPaymentsByExternalReference(subscription.paymentId);
+        
+        if (searchResult.success && searchResult.payments && searchResult.payments.length > 0) {
+          const approvedPayment = searchResult.payments.find((p: any) => 
+            isPaymentSuccessful({ status: p.status })
+          );
+
+          if (approvedPayment) {
+            console.log(`✅ Pago aprobado encontrado para suscripción: ${approvedPayment.id}`);
+
+            // Actualizar suscripción
+            subscription.paymentStatus = 'completed';
+            subscription.isActive = true;
+            subscription.accessGranted = true;
+            subscription.mercadopagoPaymentId = approvedPayment.id.toString();
+            subscription.updatedAt = new Date();
+
+            await subscription.save();
+
+            console.log(`✅ Suscripción mensual ${subscription._id} procesada automáticamente`);
+            results.processed++;
+          } else {
+            console.log(`⏳ No se encontró pago aprobado para suscripción ${subscription._id}`);
+          }
+        } else {
+          console.log(`⏳ No se encontraron pagos para suscripción ${subscription._id}`);
+        }
+
+      } catch (error) {
+        console.error(`❌ Error procesando suscripción ${subscription._id}:`, error);
+        results.errors.push({
+          subscriptionId: subscription._id,
+          error: error instanceof Error ? error.message : 'Error desconocido'
+        });
+      }
+    }
+
     if (results.processed > 0) {
       console.log(`🎉 Procesamiento automático completado para ${userEmail}: ${results.processed} pagos procesados`);
     }
@@ -318,7 +369,14 @@ export async function shouldProcessUserPayments(userEmail: string): Promise<bool
       service: { $in: ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'] }
     });
 
-    return pendingPaymentsCount > 0;
+    // También verificar suscripciones mensuales pendientes
+    const pendingMonthlySubscriptionsCount = await MonthlyTrainingSubscription.countDocuments({
+      userEmail: userEmail,
+      paymentStatus: 'pending',
+      createdAt: { $gte: oneDayAgo }
+    });
+
+    return pendingPaymentsCount > 0 || pendingMonthlySubscriptionsCount > 0;
 
   } catch (error) {
     console.error('Error verificando si el usuario necesita procesamiento:', error);
