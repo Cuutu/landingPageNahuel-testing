@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
-// import { sendAlertClosedNotification } from '@/lib/notificationUtils'; // TODO: Implementar notificaciones
+import { createAlertNotification } from '@/lib/notificationUtils';
 
 interface UpdatePricesResponse {
   success?: boolean;
@@ -56,16 +56,21 @@ export default async function handler(
   }
 
   try {
-    // Verificar autenticación (sesión o token de cron)
+    // Verificar autenticación (sesión, token de cron, o público con token)
     const authHeader = req.headers.authorization;
     const isCronCall = authHeader === `Bearer ${process.env.CRON_SECRET}`;
+    const isPublicCall = authHeader === `Bearer cron_mp_2024_xyz_789_abc_def_ghi_jkl_mno_pqr_stu_vwx_yz`;
     
     let userEmail = null;
     
     if (isCronCall) {
-      // Llamada desde cron job
+      // Llamada desde cron job interno
       userEmail = 'cron@system';
-      console.log('🔄 Llamada desde cron job detectada');
+      console.log('🔄 Llamada desde cron job interno detectada');
+    } else if (isPublicCall) {
+      // Llamada pública desde cron job externo
+      userEmail = 'public@cron';
+      console.log('🌐 Llamada pública desde cron job externo detectada');
     } else {
       // Llamada normal con sesión
       const session = await getServerSession(req, res, authOptions);
@@ -82,7 +87,7 @@ export default async function handler(
 
     // Obtener información del usuario (solo si no es cron)
     let user = null;
-    if (!isCronCall) {
+    if (!isCronCall && !isPublicCall) {
       user = await User.findOne({ email: userEmail });
       
       if (!user) {
@@ -137,12 +142,16 @@ export default async function handler(
             alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
             desestimadasCount++;
 
-            // TODO: Enviar notificación de alerta desestimada
-            // await sendAlertClosedNotification(alert, {
-            //   message: `La alerta de rango para ${alert.symbol} ha sido desestimada automáticamente porque el precio rompió el rango de entrada. Motivo: ${reason}.`,
-            //   price: currentPrice
-            // });
-            console.log(`📧 TODO: Enviar notificación de alerta desestimada para ${alert.symbol}`);
+            // Enviar notificación de alerta desestimada
+            try {
+              await createAlertNotification(alert, {
+                message: `🚫 Alerta desestimada: ${alert.symbol} - El precio rompió el rango de entrada. Motivo: ${reason}. Precio actual: $${currentPrice}`,
+                price: currentPrice
+              });
+              console.log(`✅ Notificación de alerta desestimada enviada para ${alert.symbol}`);
+            } catch (notificationError) {
+              console.error(`⚠️ Error enviando notificación para ${alert.symbol}:`, notificationError);
+            }
 
             console.log(`✅ Alerta ${alert.symbol} desestimada automáticamente.`);
           }
