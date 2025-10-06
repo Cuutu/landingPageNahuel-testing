@@ -2887,7 +2887,7 @@ const SubscriberView: React.FC = () => {
                 readOnly={!!editAlert.entryPrice && editAlert.entryPrice !== ''}
                 className={styles.input}
                 style={{
-                  backgroundColor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? '#f9fafb' : 'white',
+                  backgroundColor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                   cursor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? 'not-allowed' : 'text'
                 }}
               />
@@ -3034,7 +3034,7 @@ const SubscriberView: React.FC = () => {
                   readOnly={!!stockPrice && stockPrice !== null}
                   className={styles.input}
                   style={{
-                    backgroundColor: (!!stockPrice && stockPrice !== null) ? '#f9fafb' : 'white',
+                    backgroundColor: (!!stockPrice && stockPrice !== null) ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                     cursor: (!!stockPrice && stockPrice !== null) ? 'not-allowed' : 'text'
                   }}
                 />
