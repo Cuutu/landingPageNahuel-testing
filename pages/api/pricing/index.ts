@@ -55,6 +55,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               duration: '60 minutos'
             }
           },
+          indicadores: {
+            mediasMovilesAutomaticas: {
+              price: 30000,
+              currency: 'ARS',
+              description: 'Indicador Medias Móviles Automáticas para TradingView',
+              originalPrice: undefined,
+              discount: undefined
+            }
+          },
           currency: 'ARS',
           showDiscounts: false
         });

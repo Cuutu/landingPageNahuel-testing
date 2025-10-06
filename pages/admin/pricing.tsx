@@ -36,6 +36,7 @@ export default function AdminPricing({ session }: AdminPricingProps) {
   
   const [isUpdating, setIsUpdating] = useState(false);
   const [localPricing, setLocalPricing] = useState<PricingData | null>(null);
+  const SHOW_TRAININGS_SECTION = false; // oculto por pedido: los entrenamientos se gestionan desde su módulo
 
   // Inicializar precios locales cuando se cargan los precios
   React.useEffect(() => {
@@ -257,71 +258,73 @@ export default function AdminPricing({ session }: AdminPricingProps) {
             </div>
           </section>
 
-          {/* Sección de Entrenamientos */}
-          <section className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <GraduationCap size={24} className={styles.sectionIcon} />
-              <h2>Precios de Entrenamientos</h2>
-            </div>
-            
-            <div className={styles.pricingGrid}>
-              {/* Swing Trading */}
-              <div className={styles.pricingCard}>
-                <h3>Swing Trading</h3>
-                <div className={styles.priceInputs}>
-                  <div className={styles.priceInput}>
-                    <label>Precio</label>
-                    <div className={styles.inputWrapper}>
-                      <span className={styles.currency}>$</span>
-                      <input
-                        type="number"
-                        step={localPricing.currency === 'ARS' ? '1' : '0.01'}
-                        min="0"
-                        value={localPricing.entrenamientos.swingTrading.price}
-                        onChange={(e) => handleInputChange('entrenamientos.swingTrading.price', localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value))}
-                        className={styles.input}
-                      />
+          {/* Sección de Entrenamientos (oculta) */}
+          {SHOW_TRAININGS_SECTION && (
+            <section className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <GraduationCap size={24} className={styles.sectionIcon} />
+                <h2>Precios de Entrenamientos</h2>
+              </div>
+              
+              <div className={styles.pricingGrid}>
+                {/* Swing Trading */}
+                <div className={styles.pricingCard}>
+                  <h3>Swing Trading</h3>
+                  <div className={styles.priceInputs}>
+                    <div className={styles.priceInput}>
+                      <label>Precio</label>
+                      <div className={styles.inputWrapper}>
+                        <span className={styles.currency}>$</span>
+                        <input
+                          type="number"
+                          step={localPricing.currency === 'ARS' ? '1' : '0.01'}
+                          min="0"
+                          value={localPricing.entrenamientos.swingTrading.price}
+                          onChange={(e) => handleInputChange('entrenamientos.swingTrading.price', localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value))}
+                          className={styles.input}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className={styles.priceInput}>
-                    <label>Precio Original (opcional)</label>
-                    <div className={styles.inputWrapper}>
-                      <span className={styles.currency}>$</span>
-                      <input
-                        type="number"
-                        step={localPricing.currency === 'ARS' ? '1' : '0.01'}
-                        min="0"
-                        value={localPricing.entrenamientos.swingTrading.originalPrice || ''}
-                        onChange={(e) => handleInputChange('entrenamientos.swingTrading.originalPrice', e.target.value ? (localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value)) : undefined)}
-                        className={styles.input}
-                        placeholder="Sin descuento"
-                      />
+                    
+                    <div className={styles.priceInput}>
+                      <label>Precio Original (opcional)</label>
+                      <div className={styles.inputWrapper}>
+                        <span className={styles.currency}>$</span>
+                        <input
+                          type="number"
+                          step={localPricing.currency === 'ARS' ? '1' : '0.01'}
+                          min="0"
+                          value={localPricing.entrenamientos.swingTrading.originalPrice || ''}
+                          onChange={(e) => handleInputChange('entrenamientos.swingTrading.originalPrice', e.target.value ? (localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value)) : undefined)}
+                          className={styles.input}
+                          placeholder="Sin descuento"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className={styles.priceInput}>
-                    <label>Descuento % (opcional)</label>
-                    <div className={styles.inputWrapper}>
-                      <input
-                        type="number"
-                        step="1"
-                        min="0"
-                        max="100"
-                        value={localPricing.entrenamientos.swingTrading.discount || ''}
-                        onChange={(e) => handleInputChange('entrenamientos.swingTrading.discount', e.target.value ? parseFloat(e.target.value) : undefined)}
-                        className={styles.input}
-                        placeholder="0"
-                      />
-                      <span className={styles.percent}>%</span>
+                    
+                    <div className={styles.priceInput}>
+                      <label>Descuento % (opcional)</label>
+                      <div className={styles.inputWrapper}>
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="100"
+                          value={localPricing.entrenamientos.swingTrading.discount || ''}
+                          onChange={(e) => handleInputChange('entrenamientos.swingTrading.discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                          className={styles.input}
+                          placeholder="0"
+                        />
+                        <span className={styles.percent}>%</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Oculto: Day Trading y Advanced */}
-            </div>
-          </section>
+                {/* Oculto: Day Trading y Advanced */}
+              </div>
+            </section>
+          )}
 
           {/* Sección de Asesorías */}
           <section className={styles.section}>
@@ -387,6 +390,70 @@ export default function AdminPricing({ session }: AdminPricingProps) {
                         max="100"
                         value={localPricing.asesorias.consultorioFinanciero.discount || ''}
                         onChange={(e) => handleInputChange('asesorias.consultorioFinanciero.discount', e.target.value ? parseFloat(e.target.value) : undefined)}
+                        className={styles.input}
+                        placeholder="0"
+                      />
+                      <span className={styles.percent}>%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Sección de Indicadores */}
+          <section className={styles.section}>
+            <div className={styles.sectionHeader}>
+              <TrendingUp size={24} className={styles.sectionIcon} />
+              <h2>Precios de Indicadores</h2>
+            </div>
+
+            <div className={styles.pricingGrid}>
+              {/* Medias Móviles Automáticas */}
+              <div className={styles.pricingCard}>
+                <h3>Medias Móviles Automáticas</h3>
+                <div className={styles.priceInputs}>
+                  <div className={styles.priceInput}>
+                    <label>Precio</label>
+                    <div className={styles.inputWrapper}>
+                      <span className={styles.currency}>$</span>
+                      <input
+                        type="number"
+                        step={localPricing.currency === 'ARS' ? '1' : '0.01'}
+                        min="0"
+                        value={localPricing.indicadores?.mediasMovilesAutomaticas?.price ?? 30000}
+                        onChange={(e) => handleInputChange('indicadores.mediasMovilesAutomaticas.price', localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value))}
+                        className={styles.input}
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.priceInput}>
+                    <label>Precio Original (opcional)</label>
+                    <div className={styles.inputWrapper}>
+                      <span className={styles.currency}>$</span>
+                      <input
+                        type="number"
+                        step={localPricing.currency === 'ARS' ? '1' : '0.01'}
+                        min="0"
+                        value={localPricing.indicadores?.mediasMovilesAutomaticas?.originalPrice ?? ''}
+                        onChange={(e) => handleInputChange('indicadores.mediasMovilesAutomaticas.originalPrice', e.target.value ? (localPricing.currency === 'ARS' ? parseInt(e.target.value) : parseFloat(e.target.value)) : undefined)}
+                        className={styles.input}
+                        placeholder="Sin descuento"
+                      />
+                    </div>
+                  </div>
+
+                  <div className={styles.priceInput}>
+                    <label>Descuento % (opcional)</label>
+                    <div className={styles.inputWrapper}>
+                      <input
+                        type="number"
+                        step="1"
+                        min="0"
+                        max="100"
+                        value={localPricing.indicadores?.mediasMovilesAutomaticas?.discount ?? ''}
+                        onChange={(e) => handleInputChange('indicadores.mediasMovilesAutomaticas.discount', e.target.value ? parseFloat(e.target.value) : undefined)}
                         className={styles.input}
                         placeholder="0"
                       />
