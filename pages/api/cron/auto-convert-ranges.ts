@@ -18,6 +18,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
   }
 
+  // ✅ NUEVO: Detectar cron jobs externos por User-Agent
+  const userAgent = req.headers['user-agent'] || '';
+  const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
+  
+  if (isCronJobOrg) {
+    console.log('🌐 CRON PÚBLICO DETECTADO (auto-convert-ranges):', {
+      timestamp: new Date().toISOString(),
+      userAgent: req.headers['user-agent'],
+      method: req.method,
+      url: req.url
+    });
+  }
+
   try {
     await dbConnect();
     console.log('🔄 CRON: Iniciando conversión automática de alertas de rango...');

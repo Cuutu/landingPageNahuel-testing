@@ -51,30 +51,37 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<UpdatePricesResponse>
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Método no permitido' });
+  // Permitir GET para cronjobs externos (cron-job.org) y POST para Vercel
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ 
+      success: false,
+      error: 'Método no permitido. Use GET o POST.' 
+    });
   }
 
-  // ✅ NUEVO: Para cron jobs externos, siempre devolver 200 para evitar fallos
+  // ✅ NUEVO: Detectar cron jobs externos por User-Agent o falta de autorización
   const authHeader = req.headers.authorization;
+  const userAgent = req.headers['user-agent'] || '';
+  const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
   const isPublicCronCall = authHeader === `Bearer cron_mp_2024_xyz_789_abc_def_ghi_jkl_mno_pqr_stu_vwx_yz`;
   
   // ✅ NUEVO: Log específico para cron jobs públicos
-  if (isPublicCronCall) {
+  if (isCronJobOrg || isPublicCronCall) {
     console.log('🌐 CRON PÚBLICO DETECTADO:', {
       timestamp: new Date().toISOString(),
       userAgent: req.headers['user-agent'],
       origin: req.headers.origin,
       referer: req.headers.referer,
       method: req.method,
-      url: req.url
+      url: req.url,
+      hasAuth: !!authHeader
     });
   }
 
   try {
-    // Verificar autenticación (sesión, token de cron, o público con token)
+    // Verificar autenticación (sesión, token de cron, o público sin token)
     const isCronCall = authHeader === `Bearer ${process.env.CRON_SECRET}`;
-    const isPublicCall = isPublicCronCall;
+    const isPublicCall = isPublicCronCall || isCronJobOrg;
     
     let userEmail = null;
     
@@ -83,7 +90,7 @@ export default async function handler(
       userEmail = 'cron@system';
       console.log('🔄 Llamada desde cron job interno detectada');
     } else if (isPublicCall) {
-      // Llamada pública desde cron job externo
+      // Llamada pública desde cron job externo (sin token requerido)
       userEmail = 'public@cron';
       console.log('🌐 Llamada pública desde cron job externo detectada');
     } else {

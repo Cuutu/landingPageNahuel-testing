@@ -18,14 +18,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  // Verificar que sea una llamada autorizada (desde Vercel Cron o con token)
+  // ✅ NUEVO: Detectar cron jobs externos por User-Agent
   const authHeader = req.headers.authorization;
+  const userAgent = req.headers['user-agent'] || '';
+  const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
   const cronSecret = process.env.CRON_SECRET;
   
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  // Permitir cron jobs externos sin token, o con token correcto
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && !isCronJobOrg) {
     return res.status(401).json({ 
       success: false,
       error: 'No autorizado' 
+    });
+  }
+  
+  if (isCronJobOrg) {
+    console.log('🌐 CRON PÚBLICO DETECTADO (training-reminders):', {
+      timestamp: new Date().toISOString(),
+      userAgent: req.headers['user-agent'],
+      method: req.method,
+      url: req.url
     });
   }
 
