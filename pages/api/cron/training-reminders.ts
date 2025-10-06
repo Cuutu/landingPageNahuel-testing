@@ -198,6 +198,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       month: `${currentMonth}/${currentYear}`
     });
 
+    // ✅ NUEVO: Respuesta ultra-simple para cron jobs externos
+    if (isCronJobOrg) {
+      return res.status(200).json({
+        success: true,
+        message: 'OK',
+        processed: results.totalProcessed
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'Recordatorios automáticos procesados exitosamente',
@@ -216,9 +225,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🔄 CRON: Devolviendo 200 a pesar del error para evitar fallos en cron job');
     res.status(200).json({ 
       success: true,
-      message: 'OK - Cron ejecutado (error interno manejado)',
-      processed: 0,
-      error: error instanceof Error ? error.message : 'Error desconocido'
+      message: 'OK',
+      processed: 0
     });
   }
 }

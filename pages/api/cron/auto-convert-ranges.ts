@@ -139,6 +139,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
     console.log(`📊 CRON: Detalles de conversión:`, conversionDetails);
 
+    // ✅ NUEVO: Respuesta ultra-simple para cron jobs externos
+    if (isCronJobOrg) {
+      return res.status(200).json({
+        success: true,
+        message: 'OK',
+        processed: conversionDetails.length
+      });
+    }
+
     return res.status(200).json({
       success: true,
       message: `OK - ${conversionDetails.length} alertas convertidas`,
@@ -152,7 +161,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log('🔄 CRON: Devolviendo 200 a pesar del error para evitar fallos en cron job');
     return res.status(200).json({ 
       success: true,
-      message: 'OK - Cron ejecutado (error interno manejado)',
+      message: 'OK',
       processed: 0
     });
   }

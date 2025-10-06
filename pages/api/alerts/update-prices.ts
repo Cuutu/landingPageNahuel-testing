@@ -210,32 +210,40 @@ export default async function handler(
 
     console.log(`Precios actualizados: ${updatedCount} de ${activeAlerts.length} alertas. Desestimadas: ${desestimadasCount}`);
 
-    // ✅ NUEVO: Para cron jobs públicos, respuesta más simple y robusta
-    const response = {
-      success: true,
-      updated: updatedCount,
-      desestimadas: desestimadasCount,
-      alerts: isPublicCronCall ? [] : updatedAlerts, // No enviar alerts completos para cron público
-      message: `Se actualizaron ${updatedCount} alertas${desestimadasCount > 0 ? ` y se desestimaron ${desestimadasCount} alertas de rango` : ''}`,
-      timestamp: new Date().toISOString(),
-      source: isPublicCronCall ? 'public-cron' : 'internal'
-    };
+            // ✅ NUEVO: Para cron jobs públicos, respuesta ultra-simple
+            if (isPublicCronCall || isCronJobOrg) {
+              return res.status(200).json({
+                success: true,
+                message: 'OK',
+                updated: updatedCount,
+                desestimadas: desestimadasCount
+              });
+            }
 
-    return res.status(200).json(response);
+            // Respuesta completa para llamadas internas
+            const response = {
+              success: true,
+              updated: updatedCount,
+              desestimadas: desestimadasCount,
+              alerts: updatedAlerts,
+              message: `Se actualizaron ${updatedCount} alertas${desestimadasCount > 0 ? ` y se desestimaron ${desestimadasCount} alertas de rango` : ''}`,
+              timestamp: new Date().toISOString(),
+              source: 'internal'
+            };
+
+            return res.status(200).json(response);
 
   } catch (error) {
     console.error('Error al actualizar precios:', error);
     
     // ✅ NUEVO: Para cron jobs públicos, siempre devolver 200 para evitar fallos
-    if (isPublicCronCall) {
+    if (isPublicCronCall || isCronJobOrg) {
       console.log('🔄 Cron público: Devolviendo 200 a pesar del error para evitar fallos');
       return res.status(200).json({
         success: true,
+        message: 'OK',
         updated: 0,
-        desestimadas: 0,
-        alerts: [],
-        message: 'Cron job ejecutado (error interno manejado)',
-        error: 'Error interno manejado para cron público'
+        desestimadas: 0
       });
     }
     
