@@ -2093,6 +2093,7 @@ const SubscriberView: React.FC = () => {
                 <option value="ACTIVE">Activas</option>
                 <option value="CLOSED">Cerradas</option>
                 <option value="STOPPED">Detenidas</option>
+                <option value="DESESTIMADA">Desestimadas</option>
               </select>
               <input
                 type="date"

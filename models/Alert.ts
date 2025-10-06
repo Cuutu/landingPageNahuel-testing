@@ -42,7 +42,7 @@ export interface IAlert extends Document {
   currentPrice: number;
   stopLoss: number;
   takeProfit: number;
-  status: 'ACTIVE' | 'CLOSED' | 'STOPPED';
+  status: 'ACTIVE' | 'CLOSED' | 'STOPPED' | 'DESESTIMADA';
   profit: number; // Porcentaje de ganancia/pérdida
   analysis: string;
   date: Date;
@@ -58,7 +58,7 @@ export interface IAlert extends Document {
   horarioCierre: string; // Por defecto "17:30"
   exitPrice?: number;
   exitDate?: Date;
-  exitReason?: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MANUAL';
+  exitReason?: 'TAKE_PROFIT' | 'STOP_LOSS' | 'MANUAL' | 'RANGE_BREAK';
   // ✅ NUEVO: Campos para emails automáticos
   emailsSent: {
     creation: boolean;
@@ -72,6 +72,8 @@ export interface IAlert extends Document {
   recommendedAt?: Date;
   // ✅ NUEVO: Campo para controlar disponibilidad para nuevos clientes
   availableForPurchase: boolean; // Si está disponible para que nuevos clientes la compren
+  // ✅ NUEVO: Motivo de desestimación
+  desestimacionMotivo?: string; // Motivo por el cual se desestimó la alerta
   // Nuevos campos para imágenes
   chartImage?: CloudinaryImage; // Imagen principal del gráfico
   images?: CloudinaryImage[]; // Imágenes adicionales
@@ -80,6 +82,7 @@ export interface IAlert extends Document {
   calculateProfit(): number;
   setFinalPrice(price: number, isFromLastAvailable?: boolean): number;
   recordPriceChange(adminId: mongoose.Types.ObjectId, newPrice: number, reason?: string, ipAddress?: string, userAgent?: string): IAlert;
+  checkRangeBreak(currentPrice: number): { isBroken: boolean; reason?: string };
 }
 
 // Esquema para imágenes de Cloudinary
@@ -190,7 +193,7 @@ const AlertSchema: Schema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['ACTIVE', 'CLOSED', 'STOPPED'],
+    enum: ['ACTIVE', 'CLOSED', 'STOPPED', 'DESESTIMADA'],
     default: 'ACTIVE'
   },
   profit: {
@@ -243,7 +246,7 @@ const AlertSchema: Schema = new Schema({
   exitDate: Date,
   exitReason: {
     type: String,
-    enum: ['TAKE_PROFIT', 'STOP_LOSS', 'MANUAL']
+    enum: ['TAKE_PROFIT', 'STOP_LOSS', 'MANUAL', 'RANGE_BREAK']
   },
   // ✅ NUEVO: Control de emails automáticos
   emailsSent: {
@@ -272,6 +275,10 @@ const AlertSchema: Schema = new Schema({
   availableForPurchase: {
     type: Boolean,
     default: true
+  },
+  // ✅ NUEVO: Motivo de desestimación
+  desestimacionMotivo: {
+    type: String
   },
   // Nuevos campos para imágenes
   chartImage: CloudinaryImageSchema, // Imagen principal del gráfico
@@ -346,6 +353,38 @@ AlertSchema.methods.recordPriceChange = function(this: IAlert, adminId: mongoose
   this.calculateProfit();
   
   return this;
+};
+
+// ✅ NUEVO: Método para verificar si el precio rompe el rango
+AlertSchema.methods.checkRangeBreak = function(this: IAlert, currentPrice: number) {
+  // Solo verificar si es una alerta de rango y está activa
+  if (this.tipoAlerta !== 'rango' || this.status !== 'ACTIVE') {
+    return { isBroken: false };
+  }
+
+  // Verificar si tiene rangos definidos
+  if (!this.entryPriceRange || !this.entryPriceRange.min || !this.entryPriceRange.max) {
+    return { isBroken: false };
+  }
+
+  const { min, max } = this.entryPriceRange;
+  
+  // Verificar si el precio rompe el rango
+  if (currentPrice < min) {
+    return { 
+      isBroken: true, 
+      reason: `Precio ${currentPrice} por debajo del rango mínimo ${min}` 
+    };
+  }
+  
+  if (currentPrice > max) {
+    return { 
+      isBroken: true, 
+      reason: `Precio ${currentPrice} por encima del rango máximo ${max}` 
+    };
+  }
+  
+  return { isBroken: false };
 };
 
 // Middleware para calcular profit antes de guardar
