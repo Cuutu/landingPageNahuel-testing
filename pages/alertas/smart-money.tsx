@@ -2877,14 +2877,19 @@ const SubscriberView: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Precio de Entrada</label>
+              <label>Precio Acción</label>
               <input
                 type="number"
                 step="0.01"
-                placeholder="Precio de entrada"
+                placeholder="Precio acción"
                 value={editAlert.entryPrice}
                 onChange={(e) => setEditAlert(prev => ({ ...prev, entryPrice: e.target.value }))}
+                readOnly={!!editAlert.entryPrice && editAlert.entryPrice !== ''}
                 className={styles.input}
+                style={{
+                  backgroundColor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? '#f9fafb' : 'white',
+                  cursor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? 'not-allowed' : 'text'
+                }}
               />
             </div>
 
@@ -3018,15 +3023,20 @@ const SubscriberView: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>Precio de Entrada</label>
+              <label>Precio Acción</label>
               <div className={styles.priceInputContainer}>
                 <input
                   type="number"
                   step="0.01"
-                  placeholder="Precio de entrada"
+                  placeholder="Precio acción"
                   value={stockPrice || ''}
                   onChange={(e) => setStockPrice(parseFloat(e.target.value) || null)}
+                  readOnly={!!stockPrice && stockPrice !== null}
                   className={styles.input}
+                  style={{
+                    backgroundColor: (!!stockPrice && stockPrice !== null) ? '#f9fafb' : 'white',
+                    cursor: (!!stockPrice && stockPrice !== null) ? 'not-allowed' : 'text'
+                  }}
                 />
               </div>
             </div>
@@ -3440,7 +3450,7 @@ const SubscriberView: React.FC = () => {
 
             <div className={styles.modalBody}>
               <div className={styles.alertInfo}>
-                <p><strong>Precio de entrada:</strong> {partialSaleAlert.entryPrice}</p>
+                <p><strong>Precio acción:</strong> {partialSaleAlert.entryPrice}</p>
                 <p><strong>Precio actual:</strong> {partialSaleAlert.currentPrice}</p>
                 <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit?.includes('+') ? styles.profit : styles.loss}>{partialSaleAlert.profit}</span></p>
               </div>
