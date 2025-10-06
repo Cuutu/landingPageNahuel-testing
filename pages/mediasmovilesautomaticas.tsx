@@ -56,6 +56,17 @@ export default function MediasMovilesAutomaticasPage() {
       <main className={styles.main}>
         {/* Hero */}
         <section className={styles.hero}>
+          {/* Video Background */}
+          <video
+            className={styles.heroVideoBackground}
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src="/logos/DiseñoWeb-LozanoNahuel-Alertas-TraderCall.mp4" type="video/mp4" />
+          </video>
+          
           <div className={styles.container}>
             <div className={styles.heroContent}>
               <div className={styles.heroText}>
