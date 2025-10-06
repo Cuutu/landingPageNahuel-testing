@@ -39,6 +39,15 @@ export interface PricingData {
       discount?: number;
     };
   };
+  indicadores?: {
+    mediasMovilesAutomaticas?: {
+      price: number;
+      currency: string;
+      description: string;
+      originalPrice?: number;
+      discount?: number;
+    };
+  };
   asesorias: {
     consultorioFinanciero: {
       price: number;
