@@ -58,6 +58,18 @@ export default async function handler(
   // ✅ NUEVO: Para cron jobs externos, siempre devolver 200 para evitar fallos
   const authHeader = req.headers.authorization;
   const isPublicCronCall = authHeader === `Bearer cron_mp_2024_xyz_789_abc_def_ghi_jkl_mno_pqr_stu_vwx_yz`;
+  
+  // ✅ NUEVO: Log específico para cron jobs públicos
+  if (isPublicCronCall) {
+    console.log('🌐 CRON PÚBLICO DETECTADO:', {
+      timestamp: new Date().toISOString(),
+      userAgent: req.headers['user-agent'],
+      origin: req.headers.origin,
+      referer: req.headers.referer,
+      method: req.method,
+      url: req.url
+    });
+  }
 
   try {
     // Verificar autenticación (sesión, token de cron, o público con token)
