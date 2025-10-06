@@ -5,12 +5,83 @@ import { getSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Star, CheckCircle, ArrowRight, Users, TrendingUp, Clock } from 'lucide-react';
+import { Star, CheckCircle, ArrowRight, Users, TrendingUp, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import BackgroundVideo from '@/components/BackgroundVideo';
 import styles from '@/styles/Alertas.module.css';
+
+/**
+ * Carousel automático de YouTube (igual al de Entrenamientos)
+ */
+const YouTubeAutoCarousel: React.FC = () => {
+  const [currentVideo, setCurrentVideo] = React.useState(0);
+
+  const videos = [
+    { id: '0NpdClGWaY8', title: 'Video 1' },
+    { id: 'jl3lUCIluAs', title: 'Video 2' },
+    { id: '_AMDVmj9_jw', title: 'Video 3' },
+    { id: 'sUktp76givU', title: 'Video 4' }
+  ];
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVideo((prev) => (prev + 1) % videos.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [videos.length]);
+
+  const goToPrevious = () => {
+    setCurrentVideo((prev) => (prev - 1 + videos.length) % videos.length);
+  };
+
+  const goToNext = () => {
+    setCurrentVideo((prev) => (prev + 1) % videos.length);
+  };
+
+  return (
+    <div className={styles.youtubeAutoCarousel}>
+      <button 
+        onClick={goToPrevious}
+        className={styles.youtubeArrowLeft}
+        aria-label="Video anterior"
+      >
+        <ChevronLeft size={24} />
+      </button>
+
+      <div className={styles.youtubeVideoFrame}>
+        <iframe
+          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          title={videos[currentVideo].title}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className={styles.youtubeVideoPlayer}
+        />
+      </div>
+
+      <button 
+        onClick={goToNext}
+        className={styles.youtubeArrowRight}
+        aria-label="Siguiente video"
+      >
+        <ChevronRight size={24} />
+      </button>
+
+      <div className={styles.youtubeIndicators}>
+        {videos.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentVideo(index)}
+            className={`${styles.youtubeIndicator} ${index === currentVideo ? styles.youtubeIndicatorActive : ''}`}
+            aria-label={`Ver video ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 interface AlertServiceProps {
   title: string;
@@ -346,18 +417,7 @@ const AlertasPage: React.FC = () => {
               </div>
 
               <div className={styles.youtubeCarousel}>
-                <div className={styles.youtubeAutoCarousel}>
-                  <div className={styles.youtubeVideoFrame}>
-                    <YouTubePlayer
-                      videoId="dQw4w9WgXcQ"
-                      title="Comunidad de YouTube - Alertas"
-                      autoplay={false}
-                      muted={true}
-                      loop={false}
-                      className={styles.youtubeVideoPlayer}
-                    />
-                  </div>
-                </div>
+                <YouTubeAutoCarousel />
               </div>
             </motion.div>
           </div>
