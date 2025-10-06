@@ -7,6 +7,7 @@ import { usePricing } from '@/hooks/usePricing';
 import styles from '@/styles/MediasMovilesAutomaticas.module.css';
 
 export default function MediasMovilesAutomaticasPage() {
+  // Landing page para el indicador de Medias Móviles Automáticas
   const { data: session } = useSession();
   const { pricing, loading: pricingLoading, formatPrice } = usePricing();
   const [isProcessing, setIsProcessing] = useState(false);

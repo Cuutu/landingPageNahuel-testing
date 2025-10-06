@@ -755,16 +755,52 @@
   }
 }
 
-/* YouTube Community Banner */
-.youtubeBanner {
-  background: #8A2BE2;
-  padding: 4rem 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
+/* YouTube Section - alineado con Entrenamientos */
+.youtubeSection {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: white;
 }
+
+.youtubeContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.youtubeText { text-align: left; }
+.youtubeTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+  line-height: 1.2;
+}
+.youtubeDescription {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.youtubeCarousel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.youtubeAutoCarousel {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 300px;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.youtubeVideoFrame { width: 100%; height: 100%; position: relative; }
+.youtubeVideoPlayer { width: 100%; height: 100%; border-radius: 1rem; }
 
 .navArrow {
   background: transparent;

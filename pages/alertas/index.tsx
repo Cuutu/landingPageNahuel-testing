@@ -326,59 +326,41 @@ const AlertasPage: React.FC = () => {
           </div>
         </section>
 
-        {/* YouTube Community Banner */}
-        <section className={styles.youtubeBanner}>
-          <button className={styles.navArrow} aria-label="Anterior">
-            <span className={styles.arrowIcon}>‹</span>
-          </button>
-          
-          <div className={styles.bannerContent}>
-            <div className={styles.bannerText}>
-              <motion.h2 
-                className={styles.bannerTitle}
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-              >
-                ¡Sumate a nuestra comunidad
-              </motion.h2>
-              <motion.h3 
-                className={styles.bannerSubtitle}
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
-              >
-                en YouTube!
-              </motion.h3>
-              <motion.p 
-                className={styles.bannerDescription}
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
-              >
-                No te pierdas nuestros <em>últimos videos</em>
-              </motion.p>
-            </div>
-            
-            <div className={styles.bannerVideo}>
-              <div className={styles.videoPlayer}>
-                <YouTubePlayer
-                  videoId="dQw4w9WgXcQ"
-                  title="Comunidad de YouTube - Alertas"
-                  autoplay={false}
-                  muted={true}
-                  loop={false}
-                  className={styles.videoPlayer}
-                />
+        {/* Sección YouTube Community - clonada de Entrenamientos */}
+        <section className={styles.youtubeSection}>
+          <div className={styles.container}>
+            <motion.div 
+              className={styles.youtubeContent}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className={styles.youtubeText}>
+                <h2 className={styles.youtubeTitle}>
+                  ¡Sumate a nuestra comunidad en YouTube!
+                </h2>
+                <p className={styles.youtubeDescription}>
+                  No te pierdas nuestros últimos videos
+                </p>
               </div>
-            </div>
+
+              <div className={styles.youtubeCarousel}>
+                <div className={styles.youtubeAutoCarousel}>
+                  <div className={styles.youtubeVideoFrame}>
+                    <YouTubePlayer
+                      videoId="dQw4w9WgXcQ"
+                      title="Comunidad de YouTube - Alertas"
+                      autoplay={false}
+                      muted={true}
+                      loop={false}
+                      className={styles.youtubeVideoPlayer}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-          
-          <button className={styles.navArrow} aria-label="Siguiente">
-            <span className={styles.arrowIcon}>›</span>
-          </button>
         </section>
       </main>
 
