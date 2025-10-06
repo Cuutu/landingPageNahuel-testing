@@ -154,19 +154,44 @@ export default function MediasMovilesAutomaticasPage() {
             <div className={styles.faqList}>
               <details>
                 <summary>¿Por cuánto tiempo tendré acceso?</summary>
-                <p>Acceso vitalicio con tu usuario de TradingView.</p>
+                <p>El acceso es vitalicio: una vez que lo compras y se habilita en tu usuario de TradingView, podrás usarlo sin límite de tiempo. No es una suscripción mensual ni anual; es un pago único que te garantiza acceso permanente, incluso si actualizo o mejoro el indicador en el futuro.</p>
               </details>
               <details>
                 <summary>¿Necesito TradingView Premium?</summary>
-                <p>No. Funciona con cuenta gratuita.</p>
+                <p>No. El indicador funciona perfectamente con la cuenta gratuita de TradingView. La única condición es que tengas un usuario en la plataforma y me lo envíes tras tu compra para habilitarte el acceso. Tené en cuenta que si ya alcanzaste el máximo de indicadores dentro del gráfico para tu plan, debés quitar uno de ellos para colocar este.</p>
+              </details>
+              <details>
+                <summary>¿Donde encuentro el indicador?</summary>
+                <p>Debes Iniciar sesión en TradingView, luego dirigirte a la sección Productos y abrir los Supergráficos. Una vez en los gráficos, ir al apartado indicadores y luego a Requiere invitación. Allí encontrarás todos los indicadores que ofrecemos. Podés hacer click en la “estrella” para agregarlos a indicadores favoritos.</p>
               </details>
               <details>
                 <summary>¿Puedo usarlo en cualquier activo?</summary>
-                <p>Sí. Acciones, índices, ETFs, futuros o cripto.</p>
+                <p>Sí. Puedes aplicarlo en acciones, índices, criptomonedas, ETFs, futuros o cualquier instrumento disponible en TradingView. El indicador ajusta automáticamente las medias según estés en gráfico diario o semanal.</p>
               </details>
               <details>
-                <summary>¿En cuánto tiempo recibiré el acceso?</summary>
-                <p>Normalmente en menos de 24 h hábiles.</p>
+                <summary>¿Puedo instalarlo en varios dispositivos?</summary>
+                <p>Sí. Mientras uses la misma cuenta de TradingView, puedes acceder al indicador desde tu computadora, tablet o celular sin problema.</p>
+              </details>
+              <details>
+                <summary>¿Puedo compartirlo con otras personas?</summary>
+                <p>No. Es de uso personal. El acceso se otorga de forma individual y está vinculado a tu usuario de TradingView. Compartirlo o intentar duplicarlo sin permiso viola los términos de uso.</p>
+              </details>
+              <details>
+                <summary>¿En cuánto tiempo recibiré el acceso después de pagar?</summary>
+                <p>Normalmente en menos de 24 horas desde que envías tu usuario de TradingView. En muchos casos, lo habilitamos en 1–2 horas durante días hábiles.</p>
+              </details>
+              <details>
+                <summary>¿Recibiré actualizaciones y mejoras del indicador?</summary>
+                <p>Sí. En caso de mejoras o nuevas funciones, tendrás acceso a la versión actualizada sin costo adicional, mientras mantengas activo tu acceso como comprador original.</p>
+              </details>
+              <details>
+                <summary>¿Puedo usarlo en marcos temporales distintos a diario y semanal?</summary>
+                <p>semanal?
+                Puedes aplicarlo en cualquier marco temporal de TradingView, pero el indicador está optimizado para mostrar las medias móviles correspondientes al diario o semanal según el gráfico en el que trabajes.</p>
+              </details>
+              <details>
+                <summary>¿Seguís con dudas?</summary>
+                <p>Escribime un correo electrónico a la siguiente casilla para resolver las dudas que te puedan surgir: lozanonahuel@gmail.com</p>
               </details>
             </div>
           </div>
