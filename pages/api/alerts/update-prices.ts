@@ -8,10 +8,12 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+// import { sendAlertClosedNotification } from '@/lib/notificationUtils'; // TODO: Implementar notificaciones
 
 interface UpdatePricesResponse {
   success?: boolean;
   updated?: number;
+  desestimadas?: number;
   error?: string;
   message?: string;
   alerts?: any[];
@@ -54,30 +56,48 @@ export default async function handler(
   }
 
   try {
-    // Verificar autenticación
-    const session = await getServerSession(req, res, authOptions);
+    // Verificar autenticación (sesión o token de cron)
+    const authHeader = req.headers.authorization;
+    const isCronCall = authHeader === `Bearer ${process.env.CRON_SECRET}`;
     
-    if (!session?.user?.email) {
-      return res.status(401).json({ error: 'No autorizado' });
+    let userEmail = null;
+    
+    if (isCronCall) {
+      // Llamada desde cron job
+      userEmail = 'cron@system';
+      console.log('🔄 Llamada desde cron job detectada');
+    } else {
+      // Llamada normal con sesión
+      const session = await getServerSession(req, res, authOptions);
+      
+      if (!session?.user?.email) {
+        return res.status(401).json({ error: 'No autorizado' });
+      }
+      
+      userEmail = session.user.email;
     }
 
     // Conectar a la base de datos
     await dbConnect();
 
-    // Obtener información del usuario
-    const user = await User.findOne({ email: session.user.email });
-    
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+    // Obtener información del usuario (solo si no es cron)
+    let user = null;
+    if (!isCronCall) {
+      user = await User.findOne({ email: userEmail });
+      
+      if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
     }
 
     // Obtener todas las alertas activas - REMOVIDO filtro por createdBy para que se actualicen todas las alertas
     const activeAlerts = await Alert.find({
-      status: 'ACTIVE',
-      tipo: 'TraderCall' // Por ahora solo TraderCall
+      status: 'ACTIVE'
+      // Removido filtro por tipo para incluir todas las alertas (TraderCall, SmartMoney, etc.)
     });
 
     let updatedCount = 0;
+    let desestimadasCount = 0;
     const updatedAlerts = [];
 
     // Actualizar precios para cada alerta activa
@@ -102,6 +122,31 @@ export default async function handler(
         
         // Actualizar precio actual (siempre si tenemos precio válido)
         alert.currentPrice = currentPrice;
+        
+        // ✅ NUEVO: Verificar si es una alerta de rango y si rompe el rango
+        if (alert.tipoAlerta === 'rango') {
+          const { isBroken, reason } = alert.checkRangeBreak(currentPrice);
+
+          if (isBroken) {
+            console.log(`❌ Alerta ${alert.symbol} (ID: ${alert._id}) ha roto el rango. Cerrando...`);
+
+            alert.status = 'DESESTIMADA';
+            alert.exitDate = new Date();
+            alert.exitReason = 'RANGE_BREAK';
+            alert.desestimacionMotivo = reason;
+            alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
+            desestimadasCount++;
+
+            // TODO: Enviar notificación de alerta desestimada
+            // await sendAlertClosedNotification(alert, {
+            //   message: `La alerta de rango para ${alert.symbol} ha sido desestimada automáticamente porque el precio rompió el rango de entrada. Motivo: ${reason}.`,
+            //   price: currentPrice
+            // });
+            console.log(`📧 TODO: Enviar notificación de alerta desestimada para ${alert.symbol}`);
+
+            console.log(`✅ Alerta ${alert.symbol} desestimada automáticamente.`);
+          }
+        }
         
         // El profit se calcula automáticamente por el middleware pre('save')
         await alert.save();
@@ -132,13 +177,14 @@ export default async function handler(
       }
     }
 
-    console.log(`Precios actualizados: ${updatedCount} de ${activeAlerts.length} alertas`);
+    console.log(`Precios actualizados: ${updatedCount} de ${activeAlerts.length} alertas. Desestimadas: ${desestimadasCount}`);
 
     return res.status(200).json({
       success: true,
       updated: updatedCount,
+      desestimadas: desestimadasCount,
       alerts: updatedAlerts,
-      message: `Se actualizaron ${updatedCount} alertas`
+      message: `Se actualizaron ${updatedCount} alertas${desestimadasCount > 0 ? ` y se desestimaron ${desestimadasCount} alertas de rango` : ''}`
     });
 
   } catch (error) {
