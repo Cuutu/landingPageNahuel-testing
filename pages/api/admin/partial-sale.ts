@@ -272,29 +272,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           `Alerta de venta para ${alert.symbol} en el rango de $${priceRange?.min || sellPrice} a $${priceRange?.max || sellPrice}. ` +
           `Se vendió el ${percentage}% de la posición.`;
         
-        // Crear notificación en la base de datos
-        const notificationData = {
-          title: `Venta Parcial - ${alert.symbol}`,
+        // Importar y usar la función de notificaciones
+        const { notifyAlertSubscribers } = await import('../../../lib/notificationUtils');
+        
+        // Enviar notificación usando el sistema existente
+        await notifyAlertSubscribers(alert, {
           message: notificationMessage,
-          type: 'PARTIAL_SALE',
-          priority: 'HIGH',
-          targetUsers: [user._id],
-          metadata: {
-            alertId: alertId,
-            symbol: alert.symbol,
-            percentage: percentage,
-            priceRange: priceRange,
-            sellPrice: sellPrice,
-            sharesToSell: sharesToSell,
-            liquidityReleased: liquidityReleased,
-            realizedProfit: realizedProfit,
-            sharesRemaining: sharesRemaining
-          },
-          imageUrl: emailImageUrl || null
-        };
-
-        // Enviar notificación (esto podría ser una llamada a un endpoint de notificaciones)
-        console.log(`📧 Notificación preparada:`, notificationData);
+          imageUrl: emailImageUrl || undefined,
+          price: sellPrice,
+          title: `Venta Parcial - ${alert.symbol}`,
+          action: 'SELL'
+        });
+        
+        console.log(`✅ Notificación de venta parcial enviada exitosamente para ${alert.symbol}`);
         
       } catch (emailError) {
         console.log('⚠️ Error enviando notificación por email:', emailError);
