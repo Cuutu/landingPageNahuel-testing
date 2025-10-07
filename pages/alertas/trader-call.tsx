@@ -51,6 +51,7 @@ import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
 import ScreenshotProtection from '@/components/ScreenshotProtection';
+import { toast } from 'react-hot-toast';
 
 interface AlertExample {
   id: string;
@@ -387,6 +388,13 @@ const NonSubscriberView: React.FC<{
         </div>
       </section>
 
+      {/* Rendimiento Comparado */}
+      <section className={styles.comparisonSection}>
+        <div className={styles.container}>
+          <SP500Comparison />
+        </div>
+      </section>
+
       {/* Preguntas Frecuentes */}
       <section className={styles.faqSection}>
         <div className={styles.container}>
@@ -510,6 +518,32 @@ const SubscriberView: React.FC = () => {
     emailImageUrl: '',
     liquidityPercentage: 0 // Nuevo campo para el porcentaje de liquidez
   });
+  
+  const [emailImage, setEmailImage] = useState<CloudinaryImage | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // Funciones para manejar la subida de imagen
+  const handleImageUploaded = (image: CloudinaryImage) => {
+    setEmailImage(image);
+    setNewAlert(prev => ({ ...prev, emailImageUrl: image.secure_url }));
+    setUploadingImage(false);
+    console.log('✅ Imagen de email subida:', image.public_id);
+  };
+
+  const handleImageUploadStart = () => {
+    setUploadingImage(true);
+  };
+
+  const handleImageUploadError = (error: string) => {
+    setUploadingImage(false);
+    toast.error(`Error subiendo imagen: ${error}`);
+  };
+
+  const removeEmailImage = () => {
+    setEmailImage(null);
+    setNewAlert(prev => ({ ...prev, emailImageUrl: '' }));
+  };
+  
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
@@ -1205,6 +1239,7 @@ const SubscriberView: React.FC = () => {
         setStockPrice(null);
         setChartImage(null);
         setAdditionalImages([]);
+        setEmailImage(null);
         setShowCreateAlert(false);
         
         alert('¡Alerta de Trader Call creada exitosamente!');
@@ -2053,9 +2088,10 @@ const SubscriberView: React.FC = () => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // Mostrar solo las alertas que ya moviste a seguimiento (availableForPurchase: false)
+    // Mostrar TODAS las alertas activas para seguimiento (tanto marcadas como desmarcadas)
+    // Los clientes deben poder seguir cualquier alerta que hayan comprado
     const alertasEnSeguimiento = realAlerts.filter(alert => 
-      alert.status === 'ACTIVE' && alert.availableForPurchase === false
+      alert.status === 'ACTIVE'
     );
     
     return (
@@ -2063,7 +2099,7 @@ const SubscriberView: React.FC = () => {
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Alertas que has movido a seguimiento (ya no disponibles para nuevos clientes)
+            Todas las alertas activas disponibles para seguimiento
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -3050,7 +3086,10 @@ const SubscriberView: React.FC = () => {
             <h3>Crear Nueva Alerta</h3>
             <button 
               className={styles.closeModal}
-              onClick={() => setShowCreateAlert(false)}
+              onClick={() => {
+                setShowCreateAlert(false);
+                setEmailImage(null);
+              }}
             >
               ×
             </button>
@@ -3238,20 +3277,47 @@ const SubscriberView: React.FC = () => {
             </div>
 
             <div className={styles.inputGroup}>
-              <label>URL de Imagen para Email (opcional)</label>
-              <input
-                type="text"
-                placeholder="https://... (si se deja vacío, usamos la imagen del gráfico si existe)"
-                value={newAlert.emailImageUrl}
-                onChange={(e) => setNewAlert(prev => ({ ...prev, emailImageUrl: e.target.value }))}
-                className={styles.input}
-              />
+              <label>Imagen para Email (opcional)</label>
+              {emailImage ? (
+                <div className={styles.uploadedImageContainer}>
+                  <img 
+                    src={emailImage.secure_url} 
+                    alt="Imagen de email" 
+                    className={styles.uploadedImagePreview}
+                  />
+                  <button
+                    type="button"
+                    onClick={removeEmailImage}
+                    className={styles.removeImageButton}
+                    title="Eliminar imagen"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              ) : (
+                <ImageUploader
+                  onImageUploaded={handleImageUploaded}
+                  onUploadStart={handleImageUploadStart}
+                  onError={handleImageUploadError}
+                  maxFiles={1}
+                  maxSizeBytes={5 * 1024 * 1024} // 5MB
+                  allowedFormats={['jpeg', 'jpg', 'png', 'gif', 'webp']}
+                  buttonText="Subir Imagen para Email"
+                  className={styles.emailImageUploader}
+                />
+              )}
+              <p className={styles.helpText}>
+                Si no se sube imagen, se usará la imagen del gráfico automáticamente
+              </p>
             </div>
           </div>
 
           <div className={styles.modalFooter}>
             <button 
-              onClick={() => setShowCreateAlert(false)}
+              onClick={() => {
+                setShowCreateAlert(false);
+                setEmailImage(null);
+              }}
               className={styles.cancelButton}
             >
               Cancelar
@@ -4368,21 +4434,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         country: 'Argentina',
         ticker: 'EDN',
         order: 12
-      },
-      {
-        id: 'example-13',
-        title: 'Alertas Históricas',
-        description: 'Resumen de alertas históricas con rendimientos comprobados.',
-        chartImage: '/logos/alertashistoricas.png',
-        entryPrice: 'N/A',
-        exitPrice: 'N/A',
-        profit: 'N/A',
-        profitPercentage: '+87.5%',
-        riskLevel: 'MEDIO' as const,
-        status: 'CERRADO TP1' as const,
-        country: 'Global',
-        ticker: 'HIST',
-        order: 13
       }
 
     ];

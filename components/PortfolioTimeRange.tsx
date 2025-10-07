@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, BarChart3, DollarSign, Target, Percent, Save } from 'lucide-react';
+import { Calendar, TrendingUp, BarChart3, Target, Percent, Save } from 'lucide-react';
 import styles from './PortfolioTimeRange.module.css';
 
 interface TimeRangeOption {
@@ -211,14 +211,6 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   const performance = calculatePerformance();
   const isPositive = performance.percentage >= 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(value);
-  };
 
   const formatPercentage = (value: number) => {
     return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
@@ -298,23 +290,6 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
 
       {!loading && !error && portfolioData.length > 0 && (
         <>
-          {/* ✅ NUEVO: Estadísticas principales mejoradas */}
-          <div className={styles.mainStats}>
-            <div className={styles.mainStatItem}>
-              <DollarSign size={16} />
-              <span className={styles.mainStatLabel}>Valor Actual:</span>
-              <span className={styles.mainStatValue}>
-                {formatCurrency(performance.currentValue)}
-              </span>
-            </div>
-            <div className={styles.mainStatItem}>
-              <TrendingUp size={16} />
-              <span className={styles.mainStatLabel}>Cambio:</span>
-              <span className={`${styles.mainStatValue} ${isPositive ? styles.positive : styles.negative}`}>
-                {formatCurrency(performance.change)}
-              </span>
-            </div>
-          </div>
 
           {/* ✅ NUEVO: Estadísticas del portfolio con inversión y ganancia */}
           {portfolioStats && (
@@ -376,7 +351,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                 <div className={styles.globalStatItem}>
                   <span className={styles.globalStatLabel}>Total Invertido:</span>
                   <span className={styles.globalStatValue}>
-                    {formatCurrency(portfolioStats.totalInvested)}
+                    ${portfolioStats.totalInvested.toLocaleString()}
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
