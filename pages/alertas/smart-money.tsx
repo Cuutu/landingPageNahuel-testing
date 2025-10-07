@@ -1653,13 +1653,18 @@ const SubscriberView: React.FC = () => {
       const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
       const liquidity = liquidityMap?.[alert.symbol];
       const allocated = Number(liquidity?.allocatedAmount || 0);
+      
+      // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
+      // El precio actual viene como string con formato "$XX.XX" desde la API
+      const currentPrice = alert.currentPrice ? parseFloat(alert.currentPrice.replace('$', '')) : 0;
+      
       return {
         id: alert.id,
         symbol: alert.symbol,
         profit: profitValue,
         status: alert.status,
         entryPrice: alert.entryPrice,
-        currentPrice: alert.currentPrice,
+        currentPrice: currentPrice, // ✅ Usar precio actual como número
         stopLoss: alert.stopLoss,
         takeProfit: alert.takeProfit,
         action: alert.action,

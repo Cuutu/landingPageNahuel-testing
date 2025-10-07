@@ -1707,13 +1707,18 @@ const SubscriberView: React.FC = () => {
       const allocated = Number(d.allocatedAmount || 0);
       const alert = (realAlerts || []).find((a: any) => a.symbol === symbol);
       const profitValue = alert ? parseFloat(String(alert.profit || '0').toString().replace(/[+%]/g, '')) : 0;
+      
+      // ✅ CORREGIDO: Usar el precio actual de la alerta en lugar del precio del liquidityMap
+      // El precio del liquidityMap puede estar desactualizado
+      const currentPrice = alert?.currentPrice ? parseFloat(alert.currentPrice.replace('$', '')) : d.currentPrice;
+      
       return {
         id: d.alertId || symbol,
         symbol,
         profit: profitValue,
         status: 'ACTIVE',
         entryPrice: d.entryPrice,
-        currentPrice: d.currentPrice,
+        currentPrice: currentPrice, // ✅ Usar precio actualizado de la alerta
         stopLoss: alert?.stopLoss ?? 0,
         takeProfit: alert?.takeProfit ?? 0,
         action: alert?.action ?? 'BUY',
