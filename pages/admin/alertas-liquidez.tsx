@@ -77,15 +77,17 @@ const AdminLiquidityPage: React.FC = () => {
   const [traderAssignMessage, setTraderAssignMessage] = useState('');
   const [traderAssignImageUrl, setTraderAssignImageUrl] = useState('');
 
-  // Venta
+  // ✅ NUEVO: Venta con rango de precios
   const [smartSellId, setSmartSellId] = useState('');
-  const [smartSellShares, setSmartSellShares] = useState('');
-  const [smartSellPrice, setSmartSellPrice] = useState('');
+  const [smartSellPercentage, setSmartSellPercentage] = useState('50');
+  const [smartSellPriceMin, setSmartSellPriceMin] = useState('');
+  const [smartSellPriceMax, setSmartSellPriceMax] = useState('');
   const [smartSellMessage, setSmartSellMessage] = useState('');
   const [smartSellImageUrl, setSmartSellImageUrl] = useState('');
   const [traderSellId, setTraderSellId] = useState('');
-  const [traderSellShares, setTraderSellShares] = useState('');
-  const [traderSellPrice, setTraderSellPrice] = useState('');
+  const [traderSellPercentage, setTraderSellPercentage] = useState('50');
+  const [traderSellPriceMin, setTraderSellPriceMin] = useState('');
+  const [traderSellPriceMax, setTraderSellPriceMax] = useState('');
   const [traderSellMessage, setTraderSellMessage] = useState('');
   const [traderSellImageUrl, setTraderSellImageUrl] = useState('');
 
@@ -143,8 +145,9 @@ const AdminLiquidityPage: React.FC = () => {
       setTraderAssignMessage('');
       setTraderAssignImageUrl('');
       setTraderSellId('');
-      setTraderSellShares('');
-      setTraderSellPrice('');
+      setTraderSellPercentage('50');
+      setTraderSellPriceMin('');
+      setTraderSellPriceMax('');
       setTraderSellMessage('');
       setTraderSellImageUrl('');
     } else if (selectedPool === 'TraderCall') {
@@ -154,8 +157,9 @@ const AdminLiquidityPage: React.FC = () => {
       setSmartAssignMessage('');
       setSmartAssignImageUrl('');
       setSmartSellId('');
-      setSmartSellShares('');
-      setSmartSellPrice('');
+      setSmartSellPercentage('50');
+      setSmartSellPriceMin('');
+      setSmartSellPriceMax('');
       setSmartSellMessage('');
       setSmartSellImageUrl('');
     }
@@ -226,26 +230,62 @@ const AdminLiquidityPage: React.FC = () => {
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
-  const validateSell = (shares: string, price: string) => {
-    const s = Number(shares);
-    const p = Number(price);
-    if (!Number.isFinite(s) || s <= 0) throw new Error('Shares inválido');
-    if (!Number.isFinite(p) || p <= 0) throw new Error('Precio inválido');
+  // ✅ NUEVO: Validación para venta con rango de precios
+  const validateSellWithRange = (percentage: string, priceMin: string, priceMax: string) => {
+    const pct = Number(percentage);
+    const min = Number(priceMin);
+    const max = Number(priceMax);
+    
+    if (!Number.isFinite(pct) || pct <= 0 || pct > 100) {
+      throw new Error('Porcentaje debe estar entre 1 y 100');
+    }
+    if (!Number.isFinite(min) || min <= 0) {
+      throw new Error('Precio mínimo inválido');
+    }
+    if (!Number.isFinite(max) || max <= 0) {
+      throw new Error('Precio máximo inválido');
+    }
+    if (min >= max) {
+      throw new Error('Precio mínimo debe ser menor al máximo');
+    }
   };
 
-  const handleSell = async (alertId: string, shares: string, price: string, message?: string, imageUrl?: string) => {
-    validateSell(shares, price);
+  // ✅ NUEVO: Función de venta con rango de precios
+  const handleSellWithRange = async (alertId: string, percentage: string, priceMin: string, priceMax: string, message?: string, imageUrl?: string) => {
+    validateSellWithRange(percentage, priceMin, priceMax);
+    
     const result = await fetchJSON<{ success: boolean; result: { remainingShares: number } }>(
-      '/api/liquidity/sell',
-      { method: 'POST', body: JSON.stringify({ alertId, shares: Number(shares), price: Number(price), emailMessage: message || undefined, emailImageUrl: imageUrl || undefined }) }
+      '/api/admin/partial-sale',
+      { 
+        method: 'POST', 
+        body: JSON.stringify({ 
+          alertId, 
+          percentage: Number(percentage),
+          priceRange: {
+            min: Number(priceMin),
+            max: Number(priceMax)
+          },
+          tipo: selectedPool,
+          emailMessage: message || undefined, 
+          emailImageUrl: imageUrl || undefined 
+        }) 
+      }
     );
-    toast?.success('Venta registrada');
+    
+    toast?.success(`Venta de ${percentage}% en rango $${priceMin}-$${priceMax} registrada`);
+    
     // Si se vendió todo, opcionalmente disparar notificación de cierre total con mensaje/imagen
     if (result?.result?.remainingShares === 0) {
       try {
         await fetchJSON('/api/alerts/close', {
           method: 'POST',
-          body: JSON.stringify({ alertId, currentPrice: Number(price), reason: 'MANUAL', emailMessage: message || undefined, emailImageUrl: imageUrl || undefined })
+          body: JSON.stringify({ 
+            alertId, 
+            currentPrice: Number(priceMax), // Usar precio máximo como referencia
+            reason: 'MANUAL', 
+            emailMessage: message || undefined, 
+            emailImageUrl: imageUrl || undefined 
+          })
         });
         toast?.success('Cierre total notificado');
       } catch {}
@@ -259,8 +299,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!smartSellId) throw new Error('Seleccione una alerta SmartMoney');
-      await handleSell(smartSellId, smartSellShares, smartSellPrice, smartSellMessage, smartSellImageUrl);
-      setSmartSellId(''); setSmartSellShares(''); setSmartSellPrice(''); setSmartSellMessage(''); setSmartSellImageUrl('');
+      await handleSellWithRange(smartSellId, smartSellPercentage, smartSellPriceMin, smartSellPriceMax, smartSellMessage, smartSellImageUrl);
+      setSmartSellId(''); setSmartSellPercentage('50'); setSmartSellPriceMin(''); setSmartSellPriceMax(''); setSmartSellMessage(''); setSmartSellImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -268,8 +308,8 @@ const AdminLiquidityPage: React.FC = () => {
     try {
       setSaving(true); setError(null);
       if (!traderSellId) throw new Error('Seleccione una alerta TraderCall');
-      await handleSell(traderSellId, traderSellShares, traderSellPrice, traderSellMessage, traderSellImageUrl);
-      setTraderSellId(''); setTraderSellShares(''); setTraderSellPrice(''); setTraderSellMessage(''); setTraderSellImageUrl('');
+      await handleSellWithRange(traderSellId, traderSellPercentage, traderSellPriceMin, traderSellPriceMax, traderSellMessage, traderSellImageUrl);
+      setTraderSellId(''); setTraderSellPercentage('50'); setTraderSellPriceMin(''); setTraderSellPriceMax(''); setTraderSellMessage(''); setTraderSellImageUrl('');
     } catch (e: any) { setError(e.message); toast?.error(e.message); } finally { setSaving(false); }
   };
 
@@ -418,8 +458,8 @@ const AdminLiquidityPage: React.FC = () => {
           </div>
         </>)}
 
-        {/* Vender SmartMoney */}
-        {selectedPool === 'SmartMoney' && card(<>
+        {/* ✅ NUEVO: Vender SmartMoney con rango de precios */}
+        {selectedPool === 'SmartMoney' && card(<> 
           <div className="font-medium mb-3">Vender - SmartMoney</div>
           <div className={styles.row}>
             <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className={styles.select}>
@@ -428,8 +468,35 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={smartSellShares} onChange={e => setSmartSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
-            <input value={smartSellPrice} onChange={e => setSmartSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
+            <input 
+              value={smartSellPercentage} 
+              onChange={e => setSmartSellPercentage(e.target.value)} 
+              type="number" 
+              min="1" 
+              max="100" 
+              step="1" 
+              className={styles.input} 
+              placeholder="%" 
+              style={{ width: '80px' }}
+            />
+            <input 
+              value={smartSellPriceMin} 
+              onChange={e => setSmartSellPriceMin(e.target.value)} 
+              type="number" 
+              step="0.01" 
+              min="0" 
+              className={styles.input} 
+              placeholder="Precio min" 
+            />
+            <input 
+              value={smartSellPriceMax} 
+              onChange={e => setSmartSellPriceMax(e.target.value)} 
+              type="number" 
+              step="0.01" 
+              min="0" 
+              className={styles.input} 
+              placeholder="Precio max" 
+            />
             <button onClick={() => handleSellSmart()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
@@ -444,7 +511,7 @@ const AdminLiquidityPage: React.FC = () => {
           </div>
         </>)}
 
-        {/* Vender TraderCall */}
+        {/* ✅ NUEVO: Vender TraderCall con rango de precios */}
         {selectedPool === 'TraderCall' && card(<>
           <div className="font-medium mb-3">Vender - TraderCall</div>
           <div className={styles.row}>
@@ -454,8 +521,35 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={traderSellShares} onChange={e => setTraderSellShares(e.target.value)} type="number" step="1" className={styles.input} placeholder="shares" />
-            <input value={traderSellPrice} onChange={e => setTraderSellPrice(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="price" />
+            <input 
+              value={traderSellPercentage} 
+              onChange={e => setTraderSellPercentage(e.target.value)} 
+              type="number" 
+              min="1" 
+              max="100" 
+              step="1" 
+              className={styles.input} 
+              placeholder="%" 
+              style={{ width: '80px' }}
+            />
+            <input 
+              value={traderSellPriceMin} 
+              onChange={e => setTraderSellPriceMin(e.target.value)} 
+              type="number" 
+              step="0.01" 
+              min="0" 
+              className={styles.input} 
+              placeholder="Precio min" 
+            />
+            <input 
+              value={traderSellPriceMax} 
+              onChange={e => setTraderSellPriceMax(e.target.value)} 
+              type="number" 
+              step="0.01" 
+              min="0" 
+              className={styles.input} 
+              placeholder="Precio max" 
+            />
             <button onClick={() => handleSellTrader()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
@@ -500,7 +594,7 @@ const AdminLiquidityPage: React.FC = () => {
                     <td className={styles.td}>${d.profitLoss.toFixed(2)} ({d.profitLossPercentage.toFixed(2)}%)</td>
                     <td className={styles.td}>${(d.realizedProfitLoss || 0).toFixed(2)}</td>
                     <td className={`${styles.td} ${styles.actions}`}>
-                      <button onClick={() => handleSell(d.alertId, String(d.shares), String(d.currentPrice))} className={`${styles.btn} ${styles.btnWarn}`}>Vender total</button>
+                      <button onClick={() => handleSellWithRange(d.alertId, '100', String(d.currentPrice), String(d.currentPrice))} className={`${styles.btn} ${styles.btnWarn}`}>Vender total</button>
                       <button onClick={async () => { try { await fetchJSON('/api/liquidity/remove-distribution', { method: 'POST', body: JSON.stringify({ alertId: d.alertId }) }); toast?.success('Distribución removida'); await loadData(); } catch (e: any) { toast?.error(e.message); } }} className={`${styles.btn} ${styles.btnDanger}`}>Remover</button>
                     </td>
                   </tr>
