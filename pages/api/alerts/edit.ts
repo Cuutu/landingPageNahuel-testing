@@ -247,8 +247,18 @@ export default async function handler(
         );
 
         if (!existingDistribution) {
-          // Crear nueva distribución
-          const priceForShares = alert.entryPrice || alert.currentPrice;
+          // ✅ CORREGIDO: Usar siempre el precio actual para asignación de liquidez
+          // Esto asegura que el precio de entrada sea consistente con el precio actual del mercado
+          const priceForShares = alert.currentPrice;
+          
+          console.log(`🔍 [DEBUG] Precios para asignación de liquidez en edición:`, {
+            symbol: alert.symbol,
+            entryPrice: alert.entryPrice,
+            currentPrice: alert.currentPrice,
+            priceForShares: priceForShares,
+            liquidityAmount: liquidityAmount
+          });
+          
           const shares = Math.floor(liquidityAmount / priceForShares);
 
           const newDistribution = {
@@ -296,9 +306,12 @@ export default async function handler(
           
           if (distribution && distribution.shares > 0) {
             const sharesToSell = Math.floor(distribution.shares * (quickSellPercentage / 100));
+            // ✅ CORREGIDO: Usar precio actual para venta rápida (no precio de entrada)
             const currentPrice = alert.currentPrice || alert.entryPrice;
             
             if (sharesToSell > 0) {
+              // ✅ CORREGIDO: Para venta rápida, usar precio actual como precio de venta
+              // Esto asegura que el P&L sea realista basado en el precio actual del mercado
               const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, sharesToSell, currentPrice);
               
               if (remainingShares === 0) {
@@ -306,13 +319,20 @@ export default async function handler(
               }
               
               await liquidity.save();
+              
+              // ✅ CORREGIDO: Actualizar el precio actual de la alerta para reflejar el precio de venta
+              // Esto asegura que el gráfico de torta muestre el precio correcto para el P&L
+              alert.currentPrice = currentPrice;
+              await alert.save();
+              
               console.log(`✅ Venta rápida ejecutada:`, {
                 alertId,
                 symbol: alert.symbol,
                 sharesSold: sharesToSell,
                 returnedCash,
                 realizedProfit: realized,
-                remainingShares
+                remainingShares,
+                updatedCurrentPrice: currentPrice
               });
             }
           } else {

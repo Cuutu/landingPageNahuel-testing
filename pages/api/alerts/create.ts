@@ -236,10 +236,18 @@ export default async function handler(
         );
 
         if (!existingDistribution) {
-          // Determinar el precio de entrada para el cálculo de acciones
-          const priceForShares = tipoAlerta === 'precio' ? 
-            (entryPrice || newAlert.currentPrice) : 
-            (precioMinimo || newAlert.currentPrice);
+          // ✅ CORREGIDO: Usar siempre el precio actual para asignación de liquidez
+          // Esto asegura que el precio de entrada sea consistente con el precio actual del mercado
+          const priceForShares = newAlert.currentPrice;
+
+          console.log(`🔍 [DEBUG] Precios para asignación de liquidez:`, {
+            symbol: symbol.toUpperCase(),
+            entryPrice: entryPrice,
+            currentPrice: newAlert.currentPrice,
+            precioMinimo: precioMinimo,
+            priceForShares: priceForShares,
+            liquidityAmount: liquidityAmount
+          });
 
           const shares = Math.floor(liquidityAmount / priceForShares);
 

@@ -1740,7 +1740,9 @@ const SubscriberView: React.FC = () => {
         profit: profitValue,
         status: alert.status,
         entryPrice: alert.entryPrice,
-        currentPrice: currentPrice, // ✅ Usar precio actual como número
+        // ✅ CORREGIDO: Para ventas rápidas, usar precio actual como precio efectivo
+        // Esto asegura que el P&L mostrado sea realista basado en el precio actual del mercado
+        currentPrice: currentPrice, // Precio actual (precio de venta para ventas rápidas)
         stopLoss: alert.stopLoss,
         takeProfit: alert.takeProfit,
         action: alert.action,
