@@ -8,6 +8,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 import { createAlertNotification } from '@/lib/notificationUtils';
 
 interface EditAlertRequest {
@@ -20,6 +21,10 @@ interface EditAlertRequest {
   analysis?: string;
   availableForPurchase?: boolean;
   reason?: string;
+  // ✅ NUEVO: Campos para liquidez y venta rápida
+  liquidityPercentage?: number;
+  liquidityAmount?: number;
+  quickSellPercentage?: number;
 }
 
 interface AlertResponse {
@@ -66,7 +71,21 @@ export default async function handler(
     }
 
     // Validar datos de entrada
-    const { alertId, symbol, action, entryPrice, stopLoss, takeProfit, analysis, availableForPurchase, reason }: EditAlertRequest = req.body;
+    const { 
+      alertId, 
+      symbol, 
+      action, 
+      entryPrice, 
+      stopLoss, 
+      takeProfit, 
+      analysis, 
+      availableForPurchase, 
+      reason,
+      // ✅ NUEVO: Parámetros de liquidez y venta rápida
+      liquidityPercentage,
+      liquidityAmount,
+      quickSellPercentage
+    }: EditAlertRequest = req.body;
 
     if (!alertId) {
       return res.status(400).json({ error: 'alertId es requerido' });
@@ -196,6 +215,116 @@ export default async function handler(
 
     // Guardar la alerta actualizada
     await alert.save();
+
+    // ✅ NUEVO: Manejar asignación de liquidez
+    if (liquidityPercentage !== undefined && liquidityPercentage > 0 && liquidityAmount && liquidityAmount > 0) {
+      try {
+        console.log(`💰 Asignando liquidez en edición: ${liquidityPercentage}% ($${liquidityAmount}) para ${alert.symbol}`);
+        
+        // Determinar el pool según el tipo de alerta
+        const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+        
+        // Buscar liquidez existente
+        let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        if (!liquidity) {
+          // Si no existe, crear uno con liquidez por defecto
+          liquidity = await Liquidity.create({
+            totalLiquidity: liquidityAmount * (100 / liquidityPercentage),
+            availableLiquidity: 0,
+            distributedLiquidity: liquidityAmount,
+            distributions: [],
+            totalProfitLoss: 0,
+            totalProfitLossPercentage: 0,
+            createdBy: user._id,
+            pool
+          });
+          console.log(`📊 Documento de liquidez creado para pool ${pool}: $${liquidity.totalLiquidity}`);
+        }
+
+        // Verificar si ya existe una distribución para esta alerta
+        const existingDistribution = liquidity.distributions.find(
+          (d: any) => d.alertId.toString() === alertId.toString()
+        );
+
+        if (!existingDistribution) {
+          // Crear nueva distribución
+          const priceForShares = alert.entryPrice || alert.currentPrice;
+          const shares = Math.floor(liquidityAmount / priceForShares);
+
+          const newDistribution = {
+            alertId: alert._id,
+            symbol: alert.symbol.toUpperCase(),
+            percentage: liquidityPercentage,
+            allocatedAmount: liquidityAmount,
+            entryPrice: priceForShares,
+            currentPrice: priceForShares,
+            shares: shares,
+            profitLoss: 0,
+            profitLossPercentage: 0,
+            realizedProfitLoss: 0,
+            soldShares: 0,
+            isActive: true,
+            createdAt: new Date()
+          };
+
+          liquidity.distributions.push(newDistribution);
+          liquidity.distributedLiquidity = liquidity.distributions
+            .filter((d: any) => d.isActive)
+            .reduce((sum: number, d: any) => sum + d.allocatedAmount, 0);
+          liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
+
+          await liquidity.save();
+          console.log(`✅ Distribución de liquidez creada en edición:`, newDistribution);
+        } else {
+          console.log(`⚠️ Ya existe una distribución para la alerta ${alertId}`);
+        }
+      } catch (liquidityError) {
+        console.error('❌ Error al asignar liquidez en edición:', liquidityError);
+      }
+    }
+
+    // ✅ NUEVO: Manejar venta rápida
+    if (quickSellPercentage !== undefined && quickSellPercentage > 0) {
+      try {
+        console.log(`⚡ Ejecutando venta rápida: ${quickSellPercentage}% para ${alert.symbol}`);
+        
+        const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+        const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        
+        if (liquidity) {
+          const distribution = liquidity.distributions.find((d: any) => d.alertId.toString() === alertId.toString());
+          
+          if (distribution && distribution.shares > 0) {
+            const sharesToSell = Math.floor(distribution.shares * (quickSellPercentage / 100));
+            const currentPrice = alert.currentPrice || alert.entryPrice;
+            
+            if (sharesToSell > 0) {
+              const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, sharesToSell, currentPrice);
+              
+              if (remainingShares === 0) {
+                liquidity.removeDistribution(alertId);
+              }
+              
+              await liquidity.save();
+              console.log(`✅ Venta rápida ejecutada:`, {
+                alertId,
+                symbol: alert.symbol,
+                sharesSold: sharesToSell,
+                returnedCash,
+                realizedProfit: realized,
+                remainingShares
+              });
+            }
+          } else {
+            console.log(`⚠️ No hay distribución de liquidez para venta rápida en alerta ${alertId}`);
+          }
+        } else {
+          console.log(`⚠️ No se encontró liquidez para venta rápida en pool ${pool}`);
+        }
+      } catch (quickSellError) {
+        console.error('❌ Error en venta rápida:', quickSellError);
+      }
+    }
 
     // Obtener la alerta actualizada con el historial
     const updatedAlert = await Alert.findById(alertId).populate('priceChangeHistory.changedBy', 'email name');

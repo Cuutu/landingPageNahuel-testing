@@ -559,7 +559,10 @@ const SubscriberView: React.FC = () => {
     stopLoss: '',
     takeProfit: '',
     analysis: '',
-    availableForPurchase: false
+    availableForPurchase: false,
+    // ✅ NUEVO: Campos para liquidez y venta rápida
+    liquidityPercentage: 0,
+    quickSellPercentage: 0
   });
   const [editLoading, setEditLoading] = useState(false);
   
@@ -1215,6 +1218,15 @@ const SubscriberView: React.FC = () => {
       return;
     }
     
+    // ✅ DEBUG: Log de datos antes de enviar
+    const liquidityAmount = newAlert.liquidityPercentage > 0 ? (liquidityTotal * newAlert.liquidityPercentage / 100) : 0;
+    console.log('🔍 [DEBUG] Datos de liquidez antes de enviar:', {
+      liquidityPercentage: newAlert.liquidityPercentage,
+      liquidityTotal,
+      liquidityAmount,
+      symbol: newAlert.symbol.toUpperCase()
+    });
+    
     setLoading(true);
     try {
       const response = await fetch('/api/alerts/create', {
@@ -1508,7 +1520,10 @@ const SubscriberView: React.FC = () => {
       stopLoss: alert.stopLoss ? alert.stopLoss.replace('$', '') : '',
       takeProfit: alert.takeProfit ? alert.takeProfit.replace('$', '') : '',
       analysis: alert.analysis || '',
-      availableForPurchase: alert.availableForPurchase || false
+      availableForPurchase: alert.availableForPurchase || false,
+      // ✅ NUEVO: Inicializar campos de liquidez y venta rápida
+      liquidityPercentage: 0,
+      quickSellPercentage: 0
     });
 
     // Mostrar el modal de edición
@@ -1610,6 +1625,17 @@ const SubscriberView: React.FC = () => {
         changes: editAlert
       });
 
+      // ✅ NUEVO: Preparar datos de liquidez y venta rápida
+      const liquidityAmount = editAlert.liquidityPercentage > 0 ? (liquidityTotal * editAlert.liquidityPercentage / 100) : 0;
+      
+      console.log('🔍 [DEBUG] Datos de edición con liquidez:', {
+        alertId: editingAlert.id,
+        liquidityPercentage: editAlert.liquidityPercentage,
+        liquidityAmount,
+        quickSellPercentage: editAlert.quickSellPercentage,
+        liquidityTotal
+      });
+
       const response = await fetch('/api/alerts/edit', {
         method: 'PUT',
         headers: {
@@ -1625,6 +1651,10 @@ const SubscriberView: React.FC = () => {
           takeProfit: parseFloat(editAlert.takeProfit),
           analysis: editAlert.analysis,
           availableForPurchase: editAlert.availableForPurchase,
+          // ✅ NUEVO: Campos de liquidez y venta rápida
+          liquidityPercentage: editAlert.liquidityPercentage,
+          liquidityAmount: liquidityAmount,
+          quickSellPercentage: editAlert.quickSellPercentage,
           reason: 'Edición por administrador desde panel de control'
         }),
       });
@@ -3100,6 +3130,63 @@ const SubscriberView: React.FC = () => {
                 <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
               </p>
             </div>
+
+            {/* ✅ NUEVO: Sección de Asignación de Liquidez */}
+            <div className={styles.inputGroup}>
+              <label>💰 Asignar Liquidez</label>
+              <div className={styles.liquidityButtons}>
+                {[0, 5, 10, 15, 20].map(percentage => (
+                  <button
+                    key={percentage}
+                    type="button"
+                    className={`${styles.liquidityButton} ${editAlert.liquidityPercentage === percentage ? styles.liquidityButtonActive : ''}`}
+                    onClick={() => setEditAlert(prev => ({ ...prev, liquidityPercentage: percentage }))}
+                  >
+                    {percentage}%
+                    {percentage > 0 && (
+                      <span className={styles.liquidityAmount}>
+                        ${(liquidityTotal * percentage / 100).toLocaleString()}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <p className={styles.inputDescription}>
+                Selecciona un porcentaje de tu liquidez disponible (${liquidityTotal.toLocaleString()}) para asignar a esta alerta
+              </p>
+            </div>
+
+            {/* ✅ NUEVO: Sección de Venta Rápida */}
+            {editingAlert && liquidityMap[editingAlert.symbol] && (
+              <div className={styles.inputGroup}>
+                <label>⚡ Venta Rápida</label>
+                <div className={styles.quickSellButtons}>
+                  <button
+                    type="button"
+                    className={`${styles.quickSellButton} ${editAlert.quickSellPercentage === 25 ? styles.quickSellButtonActive : ''}`}
+                    onClick={() => setEditAlert(prev => ({ ...prev, quickSellPercentage: 25 }))}
+                  >
+                    Vender 25%
+                    <span className={styles.quickSellInfo}>
+                      {Math.floor(liquidityMap[editingAlert.symbol].shares * 0.25)} acciones
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`${styles.quickSellButton} ${editAlert.quickSellPercentage === 50 ? styles.quickSellButtonActive : ''}`}
+                    onClick={() => setEditAlert(prev => ({ ...prev, quickSellPercentage: 50 }))}
+                  >
+                    Vender 50%
+                    <span className={styles.quickSellInfo}>
+                      {Math.floor(liquidityMap[editingAlert.symbol].shares * 0.5)} acciones
+                    </span>
+                  </button>
+                </div>
+                <p className={styles.inputDescription}>
+                  Venta rápida de un porcentaje de las acciones adquiridas en esta alerta
+                </p>
+              </div>
+            )}
           </div>
 
           <div className={styles.modalFooter}>

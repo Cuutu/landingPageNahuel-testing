@@ -194,6 +194,14 @@ export default async function handler(
 
     console.log('Nueva alerta creada por usuario:', user.name || user.email, newAlert._id);
 
+    // ✅ DEBUG: Log de parámetros de liquidez recibidos
+    console.log('🔍 [DEBUG] Parámetros de liquidez recibidos:', {
+      liquidityPercentage,
+      liquidityAmount,
+      tipo,
+      symbol: symbol.toUpperCase()
+    });
+
     // ✅ NUEVO: Crear distribución de liquidez automáticamente si se asignó liquidez
     if (liquidityPercentage > 0 && liquidityAmount > 0) {
       try {
@@ -203,7 +211,10 @@ export default async function handler(
         const pool = tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
         
         // Buscar o crear el documento de liquidez
+        console.log(`🔍 [DEBUG] Buscando liquidez para usuario ${user._id} en pool ${pool}`);
         let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        console.log(`🔍 [DEBUG] Liquidez encontrada:`, liquidity ? 'SÍ' : 'NO');
+        
         if (!liquidity) {
           // Si no existe, crear uno con liquidez por defecto
           liquidity = await Liquidity.create({
@@ -250,6 +261,7 @@ export default async function handler(
           };
 
           // Agregar la distribución
+          console.log(`🔍 [DEBUG] Agregando distribución:`, newDistribution);
           liquidity.distributions.push(newDistribution);
 
           // Actualizar totales
@@ -259,8 +271,15 @@ export default async function handler(
           
           liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
 
+          console.log(`🔍 [DEBUG] Totales actualizados:`, {
+            totalLiquidity: liquidity.totalLiquidity,
+            distributedLiquidity: liquidity.distributedLiquidity,
+            availableLiquidity: liquidity.availableLiquidity
+          });
+
           // Guardar cambios
           await liquidity.save();
+          console.log(`🔍 [DEBUG] Liquidez guardada exitosamente`);
 
           console.log(`✅ Distribución de liquidez creada automáticamente:`, {
             alertId: newAlert._id.toString(),
