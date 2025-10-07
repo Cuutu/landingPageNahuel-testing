@@ -93,7 +93,19 @@ export default async function handler(
               if (priceData.price && !priceData.isSimulated) {
                 // Actualizar el precio en el objeto alert antes de formatear
                 alert.currentPrice = priceData.price;
-                console.log(`✅ Precio actualizado para ${alert.symbol}: $${priceData.price}`);
+                
+                // ✅ NUEVO: Recalcular P&L con el nuevo precio actual
+                const entryPrice = alert.entryPriceRange?.min || alert.entryPrice;
+                if (entryPrice) {
+                  if (alert.action === 'BUY') {
+                    alert.profit = ((priceData.price - entryPrice) / entryPrice) * 100;
+                  } else { // SELL
+                    alert.profit = ((entryPrice - priceData.price) / entryPrice) * 100;
+                  }
+                  console.log(`✅ Precio y P&L actualizados para ${alert.symbol}: $${priceData.price} (P&L: ${alert.profit.toFixed(2)}%)`);
+                } else {
+                  console.log(`✅ Precio actualizado para ${alert.symbol}: $${priceData.price} (sin P&L - no hay precio de entrada)`);
+                }
               } else {
                 console.log(`⚠️ Precio simulado o no disponible para ${alert.symbol}: $${priceData.price || 'N/A'}`);
               }
