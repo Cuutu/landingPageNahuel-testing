@@ -345,9 +345,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await notifyAlertSubscribers(alert, {
           message: notificationMessage,
           imageUrl: emailImageUrl || undefined,
-          price: sellPrice,
           title: `Venta Parcial - ${alert.symbol}`,
-          action: 'SELL'
+          action: 'SELL',
+          priceRange: notificationPriceRange || undefined
         });
         
         console.log(`✅ Notificación de venta parcial enviada exitosamente para ${alert.symbol}`);

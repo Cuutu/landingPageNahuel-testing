@@ -9,7 +9,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 /**
  * Crea notificación automática cuando se crea una alerta
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number } }): Promise<void> {
   try {
     await dbConnect();
     
@@ -107,10 +107,11 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: overrides?.action || alert.action,
-          alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
+          alertPrice: (overrides?.priceRange ? `${overrides.priceRange.min}-${overrides.priceRange.max}` : (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null))),
           alertService: alert.tipo,
           automatic: true,
-          imageUrl: finalImageUrl
+          imageUrl: finalImageUrl,
+          priceRange: overrides?.priceRange || null
         }
       };
     } else {
@@ -134,10 +135,11 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         metadata: {
           alertSymbol: alert.symbol,
           alertAction: overrides?.action || alert.action,
-          alertPrice: (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null)),
+          alertPrice: (overrides?.priceRange ? `${overrides.priceRange.min}-${overrides.priceRange.max}` : (overrides?.price != null ? overrides.price : (alert.entryPriceRange?.max || alert.entryPrice || null))),
           alertService: alert.tipo,
           automatic: true,
-          imageUrl: finalImageUrl
+          imageUrl: finalImageUrl,
+          priceRange: overrides?.priceRange || null
         }
       };
     }
@@ -849,7 +851,7 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL' }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number } }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
@@ -858,6 +860,7 @@ export async function notifyAlertSubscribers(
     imageUrl: options.imageUrl,
     price: options.price,
     action: options.action,
-    title: options.title
+    title: options.title,
+    priceRange: options.priceRange
   });
 } 
