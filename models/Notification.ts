@@ -26,8 +26,9 @@ export interface INotification extends mongoose.Document {
     alertType?: string; // Tipo de alerta que generó la notificación
     alertSymbol?: string; // Símbolo de la alerta
     alertAction?: string; // Acción de la alerta (BUY/SELL)
-    alertPrice?: number | null; // Precio de la alerta (opcional)
+    alertPrice?: number | string | null; // Precio de la alerta (opcional) - puede ser número o rango string
     imageUrl?: string; // URL de imagen opcional para emails/notificaciones
+    priceRange?: { min: number; max: number } | null; // Rango de precios completo
   };
 }
 
@@ -125,8 +126,12 @@ const NotificationSchema = new mongoose.Schema({
     alertType: String,
     alertSymbol: String,
     alertAction: String,
-    alertPrice: { type: Number, required: false, default: null },
-    imageUrl: { type: String, required: false, default: null }
+    alertPrice: { type: mongoose.Schema.Types.Mixed, required: false, default: null }, // Puede ser Number o String
+    imageUrl: { type: String, required: false, default: null },
+    priceRange: {
+      min: { type: Number, required: false },
+      max: { type: Number, required: false }
+    }
   }
 }, {
   timestamps: true
