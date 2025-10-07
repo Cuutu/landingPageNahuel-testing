@@ -62,27 +62,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Porcentaje debe estar entre 1 y 100' });
   }
 
-  // Determinar el precio a usar para la venta
+  // ✅ CORRECCIÓN: Siempre usar el precio actual real de la alerta para el cálculo
+  // El rango solo se usa para la notificación a los usuarios
   let sellPrice: number;
+  let notificationPriceRange = null;
   
   console.log('🔍 [PARTIAL SALE DEBUG] Validando precios:', {
     priceRange: priceRange,
     currentPrice: currentPrice
   });
   
+  // Primero intentar obtener el precio actual de la alerta
+  try {
+    const alert = await Alert.findById(alertId);
+    if (alert && alert.currentPrice) {
+      // Usar el precio actual real de la alerta para el cálculo
+      sellPrice = typeof alert.currentPrice === 'string' 
+        ? parseFloat(alert.currentPrice.replace('$', '')) 
+        : alert.currentPrice;
+      console.log(`💰 Usando precio actual real de la alerta: $${sellPrice}`);
+    } else {
+      throw new Error('No se pudo obtener precio actual de la alerta');
+    }
+  } catch (error) {
+    console.log('⚠️ No se pudo obtener precio de la alerta, usando fallback');
+    
+    // Fallback: usar currentPrice si está disponible
+    if (currentPrice) {
+      sellPrice = typeof currentPrice === 'string' 
+        ? parseFloat(currentPrice.replace('$', '')) 
+        : currentPrice;
+      console.log(`💰 Usando precio actual como fallback: $${sellPrice}`);
+    } else {
+      console.log('❌ [PARTIAL SALE DEBUG] No hay precio válido disponible');
+      return res.status(400).json({ error: 'Se requiere precio actual de la alerta' });
+    }
+  }
+
+  // Guardar el rango para la notificación (si se proporcionó)
   if (priceRange && priceRange.min && priceRange.max) {
-    // Usar el precio máximo del rango para la venta
-    sellPrice = parseFloat(priceRange.max);
-    console.log(`💰 Usando precio de rango: $${priceRange.min} - $${priceRange.max}, precio de venta: $${sellPrice}`);
-  } else if (currentPrice) {
-    // Fallback al precio actual si no hay rango
-    sellPrice = typeof currentPrice === 'string' 
-      ? parseFloat(currentPrice.replace('$', '')) 
-      : currentPrice;
-    console.log(`💰 Usando precio actual: $${sellPrice}`);
-  } else {
-    console.log('❌ [PARTIAL SALE DEBUG] No hay precio válido disponible');
-    return res.status(400).json({ error: 'Se requiere priceRange o currentPrice' });
+    notificationPriceRange = {
+      min: parseFloat(priceRange.min),
+      max: parseFloat(priceRange.max)
+    };
+    console.log(`📊 Rango para notificación: $${notificationPriceRange.min} - $${notificationPriceRange.max}`);
   }
 
   // Validar que el precio es válido
@@ -94,7 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     console.log(`💰 Ejecutando venta parcial de ${percentage}% para alerta:`, alertId);
 
-    // Buscar la alerta
+    // Buscar la alerta (ya la buscamos antes, pero la buscamos nuevamente para asegurar consistencia)
     const alert = await Alert.findById(alertId);
     if (!alert) {
       return res.status(404).json({ error: 'Alerta no encontrada' });
@@ -104,6 +127,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (alert.status !== 'ACTIVE') {
       return res.status(400).json({ error: 'La alerta no está activa' });
     }
+
+    console.log(`📊 Alerta encontrada: ${alert.symbol}, precio actual: $${alert.currentPrice}, precio entrada: $${alert.entryPrice}`);
 
     // Calcular los valores de la venta parcial
     // Manejar diferentes formatos de precio de entrada
@@ -211,7 +236,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           liquidityReleased: liquidityReleased,
           realizedProfit: realizedProfit,
           executedBy: session.user.email,
-          priceRange: priceRange || null,
+          priceRange: notificationPriceRange || null,
           emailMessage: emailMessage || null,
           emailImageUrl: emailImageUrl || null
         }
@@ -293,7 +318,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Construir el mensaje de notificación
         const notificationMessage = emailMessage || 
-          `Alerta de venta para ${alert.symbol} en el rango de $${priceRange?.min || sellPrice} a $${priceRange?.max || sellPrice}. ` +
+          `Alerta de venta para ${alert.symbol} en el rango de $${notificationPriceRange?.min || sellPrice} a $${notificationPriceRange?.max || sellPrice}. ` +
           `Se vendió el ${percentage}% de la posición.`;
         
         // Importar y usar la función de notificaciones
@@ -330,7 +355,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sharesToSell: sharesToSell,
       newAllocatedAmount: newAllocatedAmount,
       alertStatus: alert.status,
-      priceRange: priceRange,
+      priceRange: notificationPriceRange,
       sellPrice: sellPrice
     });
 

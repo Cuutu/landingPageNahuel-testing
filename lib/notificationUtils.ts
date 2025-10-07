@@ -9,7 +9,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 /**
  * Crea notificación automática cuando se crea una alerta
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL' }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string }): Promise<void> {
   try {
     await dbConnect();
     
@@ -91,7 +91,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
 
       notification = {
-        title: rendered.title,
+        title: overrides?.title || rendered.title,
         message: overrides?.message || rendered.message,
         type: 'alerta',
         priority: 'alta', // Usar valor válido en español
@@ -119,7 +119,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       const defaultMessage = `${alert.action} ${alert.symbol} en $${alert.entryPriceRange?.min || 'N/A'} - $${alert.entryPriceRange?.max || 'N/A'}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
       notification = {
-        title: `🚨 Nueva Alerta ${alert.tipo}`,
+        title: overrides?.title || `🚨 Nueva Alerta ${alert.tipo}`,
         message: overrides?.message || defaultMessage,
         type: 'alerta',
         priority: 'alta', // Usar valor válido en español
@@ -857,6 +857,7 @@ export async function notifyAlertSubscribers(
     message: options.message,
     imageUrl: options.imageUrl,
     price: options.price,
-    action: options.action
+    action: options.action,
+    title: options.title
   });
 } 
