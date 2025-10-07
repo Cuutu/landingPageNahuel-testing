@@ -320,9 +320,6 @@ export function createEmailTemplate({
                                 <h1 style="color: #00ff88; margin: 0 0 8px 0; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;">
                                     Nahuel Lozano
                                 </h1>
-                                <p style="color: rgba(255, 255, 255, 0.9); font-size: 16px; margin: 0; font-weight: 500;">
-                                    Trading & Investment Platform
-                                </p>
                             </td>
                         </tr>
                         
@@ -1183,9 +1180,6 @@ export function createNotificationEmailTemplate({
                                 <h1 style="color: #00ff88; margin: 0 0 8px 0; font-size: 28px; font-weight: 700; letter-spacing: -0.025em;">
                                     Nahuel Lozano
                                 </h1>
-                                <p style="color: rgba(255, 255, 255, 0.9); font-size: 16px; margin: 0; font-weight: 500;">
-                                    Trading & Investment Platform
-                                </p>
                             </td>
                         </tr>
                         
