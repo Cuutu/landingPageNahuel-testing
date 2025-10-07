@@ -48,7 +48,8 @@ export default async function handler(
       status = 'ALL', 
       tipo = 'TraderCall',
       limit = '50',
-      page = '1'
+      page = '1',
+      availableForPurchase // ✅ NUEVO: Filtro para alertas disponibles para compra
     } = req.query;
 
     // Construir filtro - REMOVIDO el filtro por createdBy para que todos vean todas las alertas
@@ -58,6 +59,16 @@ export default async function handler(
 
     if (status !== 'ALL') {
       filter.status = status;
+    }
+
+    // ✅ NUEVO: Filtrar por disponibilidad para compra
+    if (availableForPurchase !== undefined) {
+      if (availableForPurchase === 'true') {
+        filter.availableForPurchase = true;
+      } else if (availableForPurchase === 'false') {
+        // Para seguimiento, mostrar todas las alertas (tanto marcadas como desmarcadas)
+        // No agregamos filtro, mostramos todas
+      }
     }
 
     // Paginación

@@ -803,8 +803,31 @@ const SubscriberView: React.FC = () => {
     return generateRecentActivity();
   }, [realAlerts, informes]);
 
-  // Función para cargar alertas desde la API
-  const loadAlerts = async () => {
+  // ✅ NUEVO: Función para cargar alertas vigentes (solo las marcadas como disponibles para compra)
+  const loadVigentesAlerts = async () => {
+    setLoadingAlerts(true);
+    try {
+      const response = await fetch('/api/alerts/list?tipo=TraderCall&availableForPurchase=true', {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRealAlerts(data.alerts || []);
+        console.log('Alertas vigentes cargadas:', data.alerts?.length || 0);
+      } else {
+        console.error('Error al cargar alertas vigentes:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al cargar alertas vigentes:', error);
+    } finally {
+      setLoadingAlerts(false);
+    }
+  };
+
+  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento)
+  const loadSeguimientoAlerts = async () => {
     setLoadingAlerts(true);
     try {
       const response = await fetch('/api/alerts/list?tipo=TraderCall', {
@@ -815,14 +838,26 @@ const SubscriberView: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('Alertas cargadas:', data.alerts?.length || 0);
+        console.log('Alertas de seguimiento cargadas:', data.alerts?.length || 0);
       } else {
-        console.error('Error al cargar alertas:', response.status);
+        console.error('Error al cargar alertas de seguimiento:', response.status);
       }
     } catch (error) {
-      console.error('Error al cargar alertas:', error);
+      console.error('Error al cargar alertas de seguimiento:', error);
     } finally {
       setLoadingAlerts(false);
+    }
+  };
+
+  // ✅ MODIFICADO: Función principal para cargar alertas según la pestaña activa
+  const loadAlerts = async () => {
+    if (activeTab === 'vigentes') {
+      await loadVigentesAlerts();
+    } else if (activeTab === 'seguimiento') {
+      await loadSeguimientoAlerts();
+    } else {
+      // Para dashboard, cargar alertas vigentes por defecto
+      await loadVigentesAlerts();
     }
   };
 
@@ -1026,6 +1061,11 @@ const SubscriberView: React.FC = () => {
     loadAlerts();
     loadInformes(1); // Cargar primera página
   }, []);
+
+  // ✅ NUEVO: Recargar alertas cuando cambie la pestaña activa
+  React.useEffect(() => {
+    loadAlerts();
+  }, [activeTab]);
 
   // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
   React.useEffect(() => {
