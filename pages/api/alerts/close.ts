@@ -129,19 +129,39 @@ export default async function handler(
 
     // Integrar con Liquidez: vender acciones asignadas y devolver efectivo
     try {
-      const liquidity = await Liquidity.findOne({ createdBy: user._id });
+      // ✅ CORREGIDO: Buscar liquidez por pool específico
+      const pool = updatedAlert?.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+      const liquidity = await Liquidity.findOne({ 
+        createdBy: user._id, 
+        pool: pool 
+      });
+      
       if (liquidity) {
         const dist = liquidity.distributions.find((d: any) => d.alertId === alertId);
         if (dist && dist.shares > 0) {
-          liquidity.sellShares(alertId, dist.shares, currentPrice);
-          liquidity.removeDistribution(alertId);
+          // ✅ CORREGIDO: Vender todas las acciones y devolver efectivo a liquidez disponible
+          const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, dist.shares, currentPrice);
+          
+          // ✅ CORREGIDO: Si se vendieron todas las acciones, remover la distribución
+          if (remainingShares === 0) {
+            liquidity.removeDistribution(alertId);
+          }
+          
           await liquidity.save();
           console.log('💧 Liquidez actualizada por cierre de alerta:', {
             alertId,
             symbol: updatedAlert?.symbol,
-            returnedCash: dist.shares * currentPrice
+            pool: pool,
+            sharesSold: dist.shares,
+            returnedCash: returnedCash,
+            realizedProfit: realized,
+            remainingShares: remainingShares
           });
+        } else {
+          console.log('ℹ️ No hay distribución de liquidez para esta alerta:', alertId);
         }
+      } else {
+        console.log('ℹ️ No se encontró liquidez para el pool:', pool);
       }
     } catch (liqErr) {
       console.error('❌ Error actualizando liquidez al cerrar alerta:', liqErr);

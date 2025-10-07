@@ -1741,8 +1741,14 @@ const SubscriberView: React.FC = () => {
     const activeDistributions = Object.values(liquidityMap || {})
       .filter((d: any) => d && d.allocatedAmount > 0);
 
-    // Mapear distribuciones a segmentos (solo símbolos con liquidez asignada)
-    const chartData = activeDistributions.map((d: any, index: number) => {
+    // ✅ CORREGIDO: Filtrar solo distribuciones de alertas ACTIVAS
+    const activeDistributionsWithActiveAlerts = activeDistributions.filter((d: any) => {
+      const alert = (realAlerts || []).find((a: any) => a.symbol === d.symbol);
+      return alert && alert.status === 'ACTIVE';
+    });
+
+    // Mapear distribuciones a segmentos (solo símbolos con liquidez asignada y alertas activas)
+    const chartData = activeDistributionsWithActiveAlerts.map((d: any, index: number) => {
       const symbol = d.symbol;
       const allocated = Number(d.allocatedAmount || 0);
       const alert = (realAlerts || []).find((a: any) => a.symbol === symbol);
@@ -1873,18 +1879,42 @@ const SubscriberView: React.FC = () => {
               opacity="0.3"
               className={styles.segmentBorder}
             />
-            {/* Etiqueta del símbolo */}
-            {segment.size > 5 && (
+            {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
+            {segment.size > 2 && (
               <text
-                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 80}
-                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 80}
+                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 80 : 100)}
+                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 80 : 100)}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="12"
+                fontSize={segment.size > 5 ? "12" : "10"}
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
+                style={{
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                  pointerEvents: 'none'
+                }}
+              >
+                {segment.symbol}
+              </text>
+            )}
+            {/* Etiqueta alternativa para segmentos muy pequeños */}
+            {segment.size <= 2 && segment.size > 0.5 && (
+              <text
+                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 110}
+                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 110}
+                className={styles.segmentLabel}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize="9"
+                fontWeight="bold"
+                fill="#ffffff"
+                filter="url(#shadow3D)"
+                style={{
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                  pointerEvents: 'none'
+                }}
               >
                 {segment.symbol}
               </text>
