@@ -175,10 +175,19 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-    // ✅ CORREGIDO: Para alertas de rango, usar el precio mínimo como currentPrice inicial
-    // Esto hace que el P&L empiece en 0% al momento de crear la alerta
-    alertData.currentPrice = precioMinimo; // Usar precio mínimo del rango como precio inicial
-    console.log(`📊 Alerta de rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMinimo} (P&L: 0%)`);
+      // ✅ MODIFICADO: Lógica diferente para alertas de compra vs venta
+      if (action === 'BUY') {
+        // Para alertas de COMPRA: usar el precio mínimo como currentPrice inicial
+        alertData.currentPrice = precioMinimo;
+        console.log(`📊 Alerta de COMPRA con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMinimo} (P&L: 0%)`);
+      } else if (action === 'SELL') {
+        // ✅ NUEVO: Para alertas de VENTA: usar el precio máximo como currentPrice inicial
+        alertData.currentPrice = precioMaximo;
+        console.log(`📊 Alerta de VENTA con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMaximo} (P&L: 0%)`);
+      }
+      
+      // ✅ NUEVO: Establecer horario de cierre por defecto a 17:30 para alertas de rango
+      alertData.horarioCierre = '17:30';
     }
 
     const newAlert = await Alert.create(alertData);

@@ -369,19 +369,37 @@ AlertSchema.methods.checkRangeBreak = function(this: IAlert, currentPrice: numbe
 
   const { min, max } = this.entryPriceRange;
   
-  // Verificar si el precio rompe el rango
-  if (currentPrice < min) {
-    return { 
-      isBroken: true, 
-      reason: `Precio ${currentPrice} por debajo del rango mínimo ${min}` 
-    };
-  }
-  
-  if (currentPrice > max) {
-    return { 
-      isBroken: true, 
-      reason: `Precio ${currentPrice} por encima del rango máximo ${max}` 
-    };
+  // ✅ MODIFICADO: Lógica diferente para alertas de compra vs venta
+  if (this.action === 'BUY') {
+    // Para alertas de COMPRA: desestimar si se sale del rango
+    if (currentPrice < min) {
+      return { 
+        isBroken: true, 
+        reason: `Precio ${currentPrice} por debajo del rango mínimo ${min}` 
+      };
+    }
+    
+    if (currentPrice > max) {
+      return { 
+        isBroken: true, 
+        reason: `Precio ${currentPrice} por encima del rango máximo ${max}` 
+      };
+    }
+  } else if (this.action === 'SELL') {
+    // ✅ NUEVO: Para alertas de VENTA: desestimar si se sale del rango
+    if (currentPrice < min) {
+      return { 
+        isBroken: true, 
+        reason: `Precio ${currentPrice} por debajo del rango mínimo ${min}` 
+      };
+    }
+    
+    if (currentPrice > max) {
+      return { 
+        isBroken: true, 
+        reason: `Precio ${currentPrice} por encima del rango máximo ${max}` 
+      };
+    }
   }
   
   return { isBroken: false };
