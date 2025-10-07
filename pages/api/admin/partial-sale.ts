@@ -35,18 +35,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { alertId, percentage, priceRange, currentPrice, tipo, emailMessage, emailImageUrl } = req.body;
 
+  // Log de debugging para identificar el problema
+  console.log('🔍 [PARTIAL SALE DEBUG] Datos recibidos:', {
+    alertId: alertId ? 'presente' : 'faltante',
+    percentage: percentage,
+    priceRange: priceRange ? 'presente' : 'faltante',
+    currentPrice: currentPrice ? 'presente' : 'faltante',
+    tipo: tipo,
+    emailMessage: emailMessage ? 'presente' : 'faltante',
+    emailImageUrl: emailImageUrl ? 'presente' : 'faltante'
+  });
+
   // Validar parámetros requeridos
   if (!alertId || !percentage || !tipo) {
+    console.log('❌ [PARTIAL SALE DEBUG] Validación fallida:', {
+      alertId: !!alertId,
+      percentage: percentage,
+      tipo: tipo
+    });
     return res.status(400).json({ error: 'Faltan datos requeridos: alertId, percentage, tipo' });
   }
 
   // Validar porcentaje
   if (percentage < 1 || percentage > 100) {
+    console.log('❌ [PARTIAL SALE DEBUG] Porcentaje inválido:', percentage);
     return res.status(400).json({ error: 'Porcentaje debe estar entre 1 y 100' });
   }
 
   // Determinar el precio a usar para la venta
   let sellPrice: number;
+  
+  console.log('🔍 [PARTIAL SALE DEBUG] Validando precios:', {
+    priceRange: priceRange,
+    currentPrice: currentPrice
+  });
   
   if (priceRange && priceRange.min && priceRange.max) {
     // Usar el precio máximo del rango para la venta
@@ -59,11 +81,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       : currentPrice;
     console.log(`💰 Usando precio actual: $${sellPrice}`);
   } else {
+    console.log('❌ [PARTIAL SALE DEBUG] No hay precio válido disponible');
     return res.status(400).json({ error: 'Se requiere priceRange o currentPrice' });
   }
 
   // Validar que el precio es válido
   if (isNaN(sellPrice) || sellPrice <= 0) {
+    console.log('❌ [PARTIAL SALE DEBUG] Precio de venta inválido:', sellPrice);
     return res.status(400).json({ error: 'Precio de venta inválido' });
   }
 
