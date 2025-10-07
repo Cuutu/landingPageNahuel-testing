@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Obtener todas las alertas activas
     const activeAlerts = await Alert.find({ 
       status: 'ACTIVE',
-      tipo: { $in: ['TraderCall', 'SmartMoney', 'CashFlow'] }
+      tipo: { $in: ['TraderCall', 'SmartMoney'] }
     }).select('symbol currentPrice entryPriceRange');
 
     if (activeAlerts.length === 0) {

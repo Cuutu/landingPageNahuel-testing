@@ -55,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Obtener todas las alertas activas que no tengan precio final
     const activeAlerts = await Alert.find({ 
       status: 'ACTIVE',
-      tipo: { $in: ['TraderCall', 'SmartMoney', 'CashFlow'] },
+      tipo: { $in: ['TraderCall', 'SmartMoney'] },
       finalPrice: { $exists: false }
     }).populate('createdBy', 'email name');
 

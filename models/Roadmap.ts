@@ -24,7 +24,7 @@ interface RoadmapModule {
 interface RoadmapDocument extends Document {
   nombre: string; // ej: "Trading Fundamentals", "Dow Jones Advanced"
   descripcion: string;
-  tipoEntrenamiento: 'SwingTrading' | 'DayTrading' | 'DowJones' | 'General';
+  tipoEntrenamiento: 'SwingTrading' | 'DayTrading' | 'General';
   modulos: RoadmapModule[];
   activo: boolean;
   fechaCreacion: Date;
@@ -70,7 +70,7 @@ const roadmapSchema = new Schema<RoadmapDocument>({
   tipoEntrenamiento: { 
     type: String, 
     required: true, 
-    enum: ['SwingTrading', 'DayTrading', 'DowJones', 'General'] 
+    enum: ['SwingTrading', 'DayTrading', 'General'] 
   },
   modulos: [roadmapModuleSchema],
   activo: { type: Boolean, default: true },

@@ -23,7 +23,7 @@ interface AlertData {
   profit: number;
   status: string;
   action: 'BUY' | 'SELL';
-  tipo: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  tipo: 'TraderCall' | 'SmartMoney';
   entryPriceRange: {
     min: number;
     max: number;
@@ -61,7 +61,7 @@ interface ChartSegment {
   symbol: string;
   profit: number;
   action: 'BUY' | 'SELL';
-  tipo: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  tipo: 'TraderCall' | 'SmartMoney';
   color: string;
   darkColor: string;
   // ✅ NUEVO: Liquidez
@@ -124,7 +124,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
             symbol: 'LIQUIDEZ',
             profit: 0,
             action: 'BUY',
-            tipo: 'CashFlow',
+            tipo: 'SmartMoney',
             color: '#9CA3AF',
             darkColor: '#9CA3AF80',
             allocatedAmount: undefined,

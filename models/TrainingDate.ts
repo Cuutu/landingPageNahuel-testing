@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface ITrainingDate extends Document {
-  trainingType: string; // 'SwingTrading', 'DowJones', etc.
+  trainingType: string; // 'SwingTrading', etc.
   date: Date; // Fecha específica de la clase
   time: string; // Hora en formato HH:MM
   title: string; // Título de la clase (ej: "Clase 1", "Clase Especial")
@@ -18,7 +18,7 @@ const TrainingDateSchema: Schema = new Schema({
   trainingType: {
     type: String,
     required: true,
-    enum: ['SwingTrading', 'DowJones', 'General']
+    enum: ['SwingTrading', 'General']
   },
   date: {
     type: Date,

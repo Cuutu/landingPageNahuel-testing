@@ -17,9 +17,7 @@ const getServiceDisplayName = (service: string) => {
   const serviceNames: { [key: string]: string } = {
     'TraderCall': 'Trader Call',
     'SmartMoney': 'Smart Money',
-    'CashFlow': 'Cash Flow',
-    'SwingTrading': 'Swing Trading',
-    'DowJones': 'Dow Jones'
+    'SwingTrading': 'Swing Trading'
   };
   return serviceNames[service] || service;
 };

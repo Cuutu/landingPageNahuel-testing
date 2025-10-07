@@ -4,7 +4,7 @@ export interface IMonthlyTrainingSubscription extends Document {
   userId: string;
   userEmail: string;
   userName: string;
-  trainingType: 'SwingTrading' | 'DayTrading' | 'DowJones';
+  trainingType: 'SwingTrading' | 'DayTrading';
   classId?: string; // Opcional: id de clase específica (para reservas por clase)
   subscriptionMonth: number; // 1-12
   subscriptionYear: number; // 2024, 2025, etc.
@@ -38,7 +38,7 @@ const MonthlyTrainingSubscriptionSchema: Schema = new Schema({
   trainingType: {
     type: String,
     required: true,
-    enum: ['SwingTrading', 'DayTrading', 'DowJones'],
+    enum: ['SwingTrading', 'DayTrading'],
     default: 'SwingTrading'
   },
   classId: {

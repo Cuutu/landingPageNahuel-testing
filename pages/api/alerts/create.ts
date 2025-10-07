@@ -19,7 +19,7 @@ interface AlertRequest {
   takeProfit: number;
   analysis: string;
   date: string;
-  tipo?: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  tipo?: 'TraderCall' | 'SmartMoney';
   // ✅ NUEVO: Campos para alertas de rango
   tipoAlerta?: 'precio' | 'rango';
   precioMinimo?: number;

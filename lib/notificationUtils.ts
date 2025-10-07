@@ -29,8 +29,6 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     
     if (alert.tipo === 'SmartMoney') {
       targetUsers = 'alertas_smart';
-    } else if (alert.tipo === 'CashFlow') {
-      targetUsers = 'alertas_cashflow';
     } else if (alert.tipo === 'TraderCall') {
       targetUsers = 'alertas_trader';
     }

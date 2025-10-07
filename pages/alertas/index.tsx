@@ -214,7 +214,7 @@ const AlertasPage: React.FC = () => {
     <>
       <Head>
         <title>Alertas de Trading - Nahuel Lozano</title>
-        <meta name="description" content="Servicios de alertas profesionales: Trader Call, Smart Money y CashFlow" />
+        <meta name="description" content="Servicios de alertas profesionales: Trader Call y Smart Money" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 

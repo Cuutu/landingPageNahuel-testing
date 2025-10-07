@@ -71,8 +71,6 @@ const Footer: React.FC = () => {
             <h4 className={styles.columnTitle}>Empresa</h4>
             <ul className={styles.linkList}>
               <li><Link href="/contacto" className={styles.footerLink}>Contacto</Link></li>
-              <li><Link href="/terminos" className={styles.footerLink}>Términos y Condiciones</Link></li>
-              <li><Link href="/privacidad" className={styles.footerLink}>Políticas de Privacidad</Link></li>
             </ul>
           </div>
         </div>

@@ -49,7 +49,7 @@ export interface IAlert extends Document {
   createdBy: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-  tipo: 'TraderCall' | 'SmartMoney' | 'CashFlow';
+  tipo: 'TraderCall' | 'SmartMoney';
   // ✅ NUEVO: Tipo de alerta (precio específico o rango)
   tipoAlerta: 'precio' | 'rango';
   // ✅ NUEVO: Campos para alertas de rango
@@ -216,7 +216,7 @@ const AlertSchema: Schema = new Schema({
   tipo: {
     type: String,
     required: true,
-    enum: ['TraderCall', 'SmartMoney', 'CashFlow'],
+    enum: ['TraderCall', 'SmartMoney'],
     default: 'TraderCall'
   },
   // ✅ NUEVO: Tipo de alerta
