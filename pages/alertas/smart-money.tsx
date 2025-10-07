@@ -522,6 +522,16 @@ const SubscriberView: React.FC = () => {
   const [partialSaleAlert, setPartialSaleAlert] = useState<any>(null);
   const [partialSaleLoading, setPartialSaleLoading] = useState(false);
   
+  // ✅ NUEVO: Estados para venta con rango de precios
+  const [sellPercentage, setSellPercentage] = useState<number>(50);
+  const [sellPriceMin, setSellPriceMin] = useState<string>('');
+  const [sellPriceMax, setSellPriceMax] = useState<string>('');
+  const [sellEmailMessage, setSellEmailMessage] = useState<string>('');
+  const [sellEmailImageUrl, setSellEmailImageUrl] = useState<string>('');
+  const [sellEmailImageFile, setSellEmailImageFile] = useState<File | null>(null);
+  const [sellEmailImagePreview, setSellEmailImagePreview] = useState<string>('');
+  const [uploadingSellImage, setUploadingSellImage] = useState<boolean>(false);
+  
   // Estados para imágenes del gráfico de TradingView
   const [chartImage, setChartImage] = useState<CloudinaryImage | null>(null);
   const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
@@ -1255,10 +1265,62 @@ const SubscriberView: React.FC = () => {
   const [confirmClose, setConfirmClose] = useState<{open: boolean; alertId?: string; price?: string}>({ open: false });
   const [closeEmailMessage, setCloseEmailMessage] = useState<string>('');
   const [closeEmailImageUrl, setCloseEmailImageUrl] = useState<string>('');
+  const [closeEmailImageFile, setCloseEmailImageFile] = useState<File | null>(null);
+  const [closeEmailImagePreview, setCloseEmailImagePreview] = useState<string>('');
+  const [uploadingCloseImage, setUploadingCloseImage] = useState<boolean>(false);
 
   const handleClosePosition = async (alertId: string, currentPrice: string) => {
     console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
     setConfirmClose({ open: true, alertId, price: currentPrice });
+  };
+
+  // ✅ NUEVO: Función para manejar selección de archivo de imagen
+  const handleImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('❌ Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('❌ La imagen debe ser menor a 5MB');
+        return;
+      }
+
+      setCloseEmailImageFile(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setCloseEmailImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Limpiar URL si había una
+      setCloseEmailImageUrl('');
+    }
+  };
+
+  // ✅ NUEVO: Función para subir imagen a Cloudinary
+  const uploadImageToCloudinary = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', 'alert_images'); // Asegúrate de que este preset existe en Cloudinary
+
+    const response = await fetch('/api/upload/image', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Error al subir la imagen');
+    }
+
+    const data = await response.json();
+    return data.secure_url;
   };
 
   const confirmCloseAction = async () => {
@@ -1267,16 +1329,47 @@ const SubscriberView: React.FC = () => {
       if (userRole !== 'admin') { alert('❌ Solo los administradores pueden cerrar posiciones'); setConfirmClose({ open: false }); return; }
       const priceNumber = parseFloat(confirmClose.price.replace('$',''));
       if (isNaN(priceNumber) || priceNumber <= 0) { alert('❌ Precio inválido. Por favor, verifica el precio actual.'); setConfirmClose({ open: false }); return; }
+      
+      let finalImageUrl: string | undefined = closeEmailImageUrl;
+      
+      // ✅ NUEVO: Subir imagen si se seleccionó un archivo
+      if (closeEmailImageFile) {
+        setUploadingCloseImage(true);
+        try {
+          finalImageUrl = await uploadImageToCloudinary(closeEmailImageFile);
+          console.log('✅ Imagen subida exitosamente:', finalImageUrl);
+        } catch (uploadError) {
+          console.error('❌ Error subiendo imagen:', uploadError);
+          alert('❌ Error al subir la imagen. Se procederá sin imagen.');
+          finalImageUrl = undefined;
+        } finally {
+          setUploadingCloseImage(false);
+        }
+      }
+      
       const response = await fetch('/api/alerts/close', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
-        body: JSON.stringify({ alertId: confirmClose.alertId, currentPrice: priceNumber, reason: 'MANUAL', emailMessage: closeEmailMessage || undefined, emailImageUrl: closeEmailImageUrl || undefined })
+        body: JSON.stringify({ 
+          alertId: confirmClose.alertId, 
+          currentPrice: priceNumber, 
+          reason: 'MANUAL', 
+          emailMessage: closeEmailMessage || undefined, 
+          emailImageUrl: finalImageUrl || undefined 
+        })
       });
       const result = await response.json();
       if (response.ok && result.success) { await loadAlerts(); alert('✅ ¡Posición cerrada exitosamente!'); }
       else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
     } catch (error) {
       console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
-    } finally { setConfirmClose({ open: false }); setCloseEmailMessage(''); setCloseEmailImageUrl(''); }
+    } finally { 
+      setConfirmClose({ open: false }); 
+      setCloseEmailMessage(''); 
+      setCloseEmailImageUrl(''); 
+      setCloseEmailImageFile(null);
+      setCloseEmailImagePreview('');
+      setUploadingCloseImage(false);
+    }
   };
 
   // ✅ NUEVO: Función para probar el cierre de mercado
@@ -1486,15 +1579,95 @@ const SubscriberView: React.FC = () => {
     console.log('💰 Iniciando venta parcial para:', alert);
     setPartialSaleAlert(alert);
     setShowPartialSaleModal(true);
+    
+    // ✅ NUEVO: Inicializar valores por defecto
+    setSellPercentage(50);
+    setSellPriceMin('');
+    setSellPriceMax('');
+    setSellEmailMessage('');
+    setSellEmailImageUrl('');
+    setSellEmailImageFile(null);
+    setSellEmailImagePreview('');
   };
 
-  // Función para ejecutar venta parcial
-  const executePartialSale = async (percentage: 25 | 50) => {
+  // ✅ NUEVO: Función para manejar selección de archivo de imagen en venta
+  const handleSellImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('❌ Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('❌ La imagen debe ser menor a 5MB');
+        return;
+      }
+
+      setSellEmailImageFile(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSellEmailImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Limpiar URL si había una
+      setSellEmailImageUrl('');
+    }
+  };
+
+  // ✅ NUEVO: Función para ejecutar venta con rango de precios
+  const executeSellWithRange = async () => {
     if (!partialSaleAlert) return;
+
+    // Validaciones
+    if (!sellPriceMin || !sellPriceMax) {
+      alert('❌ Por favor ingresa tanto el precio mínimo como el máximo');
+      return;
+    }
+
+    const priceMin = parseFloat(sellPriceMin);
+    const priceMax = parseFloat(sellPriceMax);
+
+    if (isNaN(priceMin) || isNaN(priceMax) || priceMin <= 0 || priceMax <= 0) {
+      alert('❌ Los precios deben ser números válidos mayores a 0');
+      return;
+    }
+
+    if (priceMin >= priceMax) {
+      alert('❌ El precio mínimo debe ser menor al precio máximo');
+      return;
+    }
+
+    if (sellPercentage <= 0 || sellPercentage > 100) {
+      alert('❌ El porcentaje debe estar entre 1 y 100');
+      return;
+    }
 
     try {
       setPartialSaleLoading(true);
-      console.log(`💰 Ejecutando venta parcial de ${percentage}% para alerta:`, partialSaleAlert.id);
+      console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, partialSaleAlert.id);
+
+      let finalImageUrl: string | undefined = sellEmailImageUrl;
+      
+      // Subir imagen si se seleccionó un archivo
+      if (sellEmailImageFile) {
+        setUploadingSellImage(true);
+        try {
+          finalImageUrl = await uploadImageToCloudinary(sellEmailImageFile);
+          console.log('✅ Imagen de venta subida exitosamente:', finalImageUrl);
+        } catch (uploadError) {
+          console.error('❌ Error subiendo imagen de venta:', uploadError);
+          alert('❌ Error al subir la imagen. Se procederá sin imagen.');
+          finalImageUrl = undefined;
+        } finally {
+          setUploadingSellImage(false);
+        }
+      }
 
       const response = await fetch('/api/admin/partial-sale', {
         method: 'POST',
@@ -1503,22 +1676,27 @@ const SubscriberView: React.FC = () => {
         },
         body: JSON.stringify({
           alertId: partialSaleAlert.id,
-          percentage: percentage,
-          currentPrice: partialSaleAlert.currentPrice,
-          tipo: 'SmartMoney'
+          percentage: sellPercentage,
+          priceRange: {
+            min: priceMin,
+            max: priceMax
+          },
+          tipo: 'SmartMoney',
+          emailMessage: sellEmailMessage || undefined,
+          emailImageUrl: finalImageUrl || undefined
         }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Venta parcial ejecutada exitosamente:', result);
+        console.log('✅ Venta con rango ejecutada exitosamente:', result);
         
         // Mostrar mensaje de confirmación
-        alert(`✅ Venta parcial de ${percentage}% ejecutada exitosamente!\n\n` +
-              `💰 Liquidez liberada: $${result.liquidityReleased.toFixed(2)}\n` +
-              `📊 Posición restante: ${100 - percentage}%\n` +
-              `💵 Ganancia realizada: $${result.realizedProfit.toFixed(2)}`);
+        alert(`✅ Venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} ejecutada exitosamente!\n\n` +
+              `💰 Liquidez liberada: $${result.liquidityReleased?.toFixed(2) || 'N/A'}\n` +
+              `📊 Posición restante: ${100 - sellPercentage}%\n` +
+              `💵 Ganancia realizada: $${result.realizedProfit?.toFixed(2) || 'N/A'}`);
         
         // Recargar datos
         await loadAlerts();
@@ -1528,16 +1706,23 @@ const SubscriberView: React.FC = () => {
           await loadLiquidity();
         }, 500); // Esperar 500ms para que la DB se actualice
         
-        // Cerrar modal
+        // Cerrar modal y limpiar estados
         setShowPartialSaleModal(false);
         setPartialSaleAlert(null);
+        setSellPercentage(50);
+        setSellPriceMin('');
+        setSellPriceMax('');
+        setSellEmailMessage('');
+        setSellEmailImageUrl('');
+        setSellEmailImageFile(null);
+        setSellEmailImagePreview('');
       } else {
-        console.error('❌ Error en venta parcial:', result);
+        console.error('❌ Error en venta con rango:', result);
         alert(`❌ Error: ${result.error || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al ejecutar venta parcial:', error);
-      alert('❌ Error al ejecutar venta parcial. Verifica la consola para más detalles.');
+      console.error('❌ Error al ejecutar venta con rango:', error);
+      alert('❌ Error al ejecutar venta. Verifica la consola para más detalles.');
     } finally {
       setPartialSaleLoading(false);
     }
@@ -3559,13 +3744,83 @@ const SubscriberView: React.FC = () => {
                 <textarea className={styles.textarea} rows={3} placeholder="Texto a incluir en el email" value={closeEmailMessage} onChange={(e) => setCloseEmailMessage(e.target.value)} />
               </div>
               <div className={styles.inputGroup}>
-                <label>URL de Imagen para Email (opcional)</label>
-                <input className={styles.input} type="text" placeholder="https://..." value={closeEmailImageUrl} onChange={(e) => setCloseEmailImageUrl(e.target.value)} />
+                <label>Imagen para Email (opcional)</label>
+                <div className={styles.imageUploadContainer}>
+                  {/* Input de archivo */}
+                  <div className={styles.fileInputWrapper}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleImageFileChange}
+                      className={styles.fileInput}
+                      id="closeEmailImageFile"
+                    />
+                    <label htmlFor="closeEmailImageFile" className={styles.fileInputLabel}>
+                      📁 Seleccionar imagen
+                    </label>
+                  </div>
+                  
+                  {/* O separador */}
+                  <div className={styles.orSeparator}>O</div>
+                  
+                  {/* Input de URL */}
+                  <input 
+                    className={styles.input} 
+                    type="text" 
+                    placeholder="https://..." 
+                    value={closeEmailImageUrl} 
+                    onChange={(e) => {
+                      setCloseEmailImageUrl(e.target.value);
+                      // Limpiar archivo si se ingresa URL
+                      if (e.target.value) {
+                        setCloseEmailImageFile(null);
+                        setCloseEmailImagePreview('');
+                      }
+                    }} 
+                  />
+                  
+                  {/* Preview de imagen */}
+                  {closeEmailImagePreview && (
+                    <div className={styles.imagePreview}>
+                      <img src={closeEmailImagePreview} alt="Preview" className={styles.previewImage} />
+                      <button 
+                        type="button"
+                        className={styles.removeImageButton}
+                        onClick={() => {
+                          setCloseEmailImageFile(null);
+                          setCloseEmailImagePreview('');
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Preview de URL */}
+                  {closeEmailImageUrl && !closeEmailImagePreview && (
+                    <div className={styles.urlPreview}>
+                      <span className={styles.urlText}>URL: {closeEmailImageUrl}</span>
+                      <button 
+                        type="button"
+                        className={styles.removeUrlButton}
+                        onClick={() => setCloseEmailImageUrl('')}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <div className={styles.modalActions}>
               <button className={styles.clearFilters} onClick={() => setConfirmClose({ open: false })}>Cancelar</button>
-              <button className={styles.closeButton} onClick={confirmCloseAction}>Cerrar posición</button>
+              <button 
+                className={styles.closeButton} 
+                onClick={confirmCloseAction}
+                disabled={uploadingCloseImage}
+              >
+                {uploadingCloseImage ? '⏳ Subiendo imagen...' : 'Cerrar posición'}
+              </button>
             </div>
           </div>
         </div>
@@ -3640,12 +3895,12 @@ const SubscriberView: React.FC = () => {
         </div>
       )}
 
-      {/* Modal de venta parcial */}
+      {/* ✅ NUEVO: Modal de venta con rango de precios */}
       {showPartialSaleModal && partialSaleAlert && (
         <div className={styles.modalOverlay} onClick={() => setShowPartialSaleModal(false)}>
           <div className={styles.partialSaleModal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
-              <h3>💰 Venta Parcial - {partialSaleAlert.symbol}</h3>
+              <h3>💰 Vender - {partialSaleAlert.symbol}</h3>
               <button 
                 className={styles.closeModal}
                 onClick={() => setShowPartialSaleModal(false)}
@@ -3662,33 +3917,165 @@ const SubscriberView: React.FC = () => {
                 <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit?.includes('+') ? styles.profit : styles.loss}>{partialSaleAlert.profit}</span></p>
               </div>
 
-              <div className={styles.percentageOptions}>
-                <h4>Selecciona el porcentaje de venta:</h4>
-                <div className={styles.percentageButtons}>
-                  <button
-                    className={styles.percentageButton}
-                    onClick={() => executePartialSale(25)}
-                    disabled={partialSaleLoading}
-                  >
-                    <span className={styles.percentage}>25%</span>
-                    <span className={styles.description}>Venta parcial conservadora</span>
-                  </button>
+              {/* ✅ NUEVO: Campo de porcentaje personalizable */}
+              <div className={styles.inputGroup}>
+                <label>Porcentaje a vender</label>
+                <div className={styles.percentageInputContainer}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={sellPercentage}
+                    onChange={(e) => setSellPercentage(parseInt(e.target.value) || 0)}
+                    className={styles.percentageInput}
+                    placeholder="50"
+                  />
+                  <span className={styles.percentageSymbol}>%</span>
+                </div>
+                <p className={styles.inputDescription}>
+                  Porcentaje de tus acciones actuales que deseas vender
+                </p>
+              </div>
+
+              {/* ✅ NUEVO: Rango de precios */}
+              <div className={styles.inputGroup}>
+                <label>Rango de precios de venta</label>
+                <div className={styles.priceRangeContainer}>
+                  <div className={styles.priceInputWrapper}>
+                    <label className={styles.priceLabel}>Precio mínimo</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={sellPriceMin}
+                      onChange={(e) => setSellPriceMin(e.target.value)}
+                      className={styles.priceInput}
+                      placeholder="0.00"
+                    />
+                  </div>
+                  <div className={styles.priceRangeSeparator}>a</div>
+                  <div className={styles.priceInputWrapper}>
+                    <label className={styles.priceLabel}>Precio máximo</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={sellPriceMax}
+                      onChange={(e) => setSellPriceMax(e.target.value)}
+                      className={styles.priceInput}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+                <p className={styles.inputDescription}>
+                  Define el rango de precios en el que deseas vender
+                </p>
+              </div>
+
+              {/* ✅ NUEVO: Mensaje opcional para email */}
+              <div className={styles.inputGroup}>
+                <label>Mensaje de email (opcional)</label>
+                <textarea 
+                  className={styles.textarea} 
+                  rows={3} 
+                  placeholder="Mensaje personalizado para incluir en la notificación" 
+                  value={sellEmailMessage} 
+                  onChange={(e) => setSellEmailMessage(e.target.value)} 
+                />
+              </div>
+
+              {/* ✅ NUEVO: Imagen opcional para email */}
+              <div className={styles.inputGroup}>
+                <label>Imagen para Email (opcional)</label>
+                <div className={styles.imageUploadContainer}>
+                  {/* Input de archivo */}
+                  <div className={styles.fileInputWrapper}>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleSellImageFileChange}
+                      className={styles.fileInput}
+                      id="sellEmailImageFile"
+                    />
+                    <label htmlFor="sellEmailImageFile" className={styles.fileInputLabel}>
+                      📁 Seleccionar imagen
+                    </label>
+                  </div>
                   
+                  {/* O separador */}
+                  <div className={styles.orSeparator}>O</div>
+                  
+                  {/* Input de URL */}
+                  <input 
+                    className={styles.input} 
+                    type="text" 
+                    placeholder="https://..." 
+                    value={sellEmailImageUrl} 
+                    onChange={(e) => {
+                      setSellEmailImageUrl(e.target.value);
+                      // Limpiar archivo si se ingresa URL
+                      if (e.target.value) {
+                        setSellEmailImageFile(null);
+                        setSellEmailImagePreview('');
+                      }
+                    }} 
+                  />
+                  
+                  {/* Preview de imagen */}
+                  {sellEmailImagePreview && (
+                    <div className={styles.imagePreview}>
+                      <img src={sellEmailImagePreview} alt="Preview" className={styles.previewImage} />
                   <button
-                    className={styles.percentageButton}
-                    onClick={() => executePartialSale(50)}
-                    disabled={partialSaleLoading}
-                  >
-                    <span className={styles.percentage}>50%</span>
-                    <span className={styles.description}>Venta parcial moderada</span>
+                        type="button"
+                        className={styles.removeImageButton}
+                        onClick={() => {
+                          setSellEmailImageFile(null);
+                          setSellEmailImagePreview('');
+                        }}
+                      >
+                        ✕
+                  </button>
+                    </div>
+                  )}
+                  
+                  {/* Preview de URL */}
+                  {sellEmailImageUrl && !sellEmailImagePreview && (
+                    <div className={styles.urlPreview}>
+                      <span className={styles.urlText}>URL: {sellEmailImageUrl}</span>
+                  <button
+                        type="button"
+                        className={styles.removeUrlButton}
+                        onClick={() => setSellEmailImageUrl('')}
+                      >
+                        ✕
                   </button>
                 </div>
+                  )}
+                </div>
+              </div>
+
+              {/* ✅ NUEVO: Botón de venta */}
+              <div className={styles.modalActions}>
+                <button 
+                  className={styles.clearFilters} 
+                  onClick={() => setShowPartialSaleModal(false)}
+                  disabled={partialSaleLoading}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  className={styles.closeButton} 
+                  onClick={executeSellWithRange}
+                  disabled={partialSaleLoading || uploadingSellImage}
+                >
+                  {partialSaleLoading ? '⏳ Procesando...' : uploadingSellImage ? '⏳ Subiendo imagen...' : 'Vender'}
+                </button>
               </div>
 
               {partialSaleLoading && (
                 <div className={styles.loadingState}>
                   <div className={styles.spinner}></div>
-                  <p>Procesando venta parcial...</p>
+                  <p>Procesando venta...</p>
                 </div>
               )}
             </div>
