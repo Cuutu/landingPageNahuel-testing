@@ -101,12 +101,24 @@ export default async function handler(
       currentPrice: alert.currentPrice
     });
 
-    // Calcular profit final
+    // Calcular profit final - CORREGIDO para manejar entryPrice undefined
     let finalProfit = 0;
-    if (alert.action === 'BUY') {
-      finalProfit = ((currentPrice - alert.entryPrice) / alert.entryPrice) * 100;
-    } else { // SELL
-      finalProfit = ((alert.entryPrice - currentPrice) / alert.entryPrice) * 100;
+    
+    // ✅ CORREGIDO: Verificar que entryPrice sea válido antes de calcular
+    if (alert.entryPrice && alert.entryPrice > 0) {
+      if (alert.action === 'BUY') {
+        finalProfit = ((currentPrice - alert.entryPrice) / alert.entryPrice) * 100;
+      } else { // SELL
+        finalProfit = ((alert.entryPrice - currentPrice) / alert.entryPrice) * 100;
+      }
+    } else {
+      // Si no hay entryPrice válido, usar 0% de profit
+      console.log('⚠️ EntryPrice no válido, usando 0% de profit:', {
+        entryPrice: alert.entryPrice,
+        currentPrice: currentPrice,
+        symbol: alert.symbol
+      });
+      finalProfit = 0;
     }
 
     console.log('💰 Profit calculado:', finalProfit.toFixed(2) + '%');
