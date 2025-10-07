@@ -47,7 +47,7 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   return data as T;
 }
 
-interface SimpleAlert { id: string; symbol: string; status: string; tipo?: string }
+interface SimpleAlert { id: string; symbol: string; status: string; tipo?: string; currentPrice?: string }
 
 const AdminLiquidityPage: React.FC = () => {
   const router = useRouter();
@@ -112,8 +112,8 @@ const AdminLiquidityPage: React.FC = () => {
         fetchJSON<{ success: boolean; alerts: any[] }>(`/api/alerts/list?status=ACTIVE&tipo=SmartMoney&limit=100`),
         fetchJSON<{ success: boolean; alerts: any[] }>(`/api/alerts/list?status=ACTIVE&tipo=TraderCall&limit=100`)
       ]);
-      setSmartAlerts((smart.alerts || []).map(a => ({ id: a.id, symbol: a.symbol, status: a.status, tipo: 'SmartMoney' })));
-      setTraderAlerts((trader.alerts || []).map(a => ({ id: a.id, symbol: a.symbol, status: a.status, tipo: 'TraderCall' })));
+      setSmartAlerts((smart.alerts || []).map(a => ({ id: a.id, symbol: a.symbol, status: a.status, tipo: 'SmartMoney', currentPrice: a.currentPrice })));
+      setTraderAlerts((trader.alerts || []).map(a => ({ id: a.id, symbol: a.symbol, status: a.status, tipo: 'TraderCall', currentPrice: a.currentPrice })));
     } catch (e) {
       // silencioso
     }
@@ -497,6 +497,11 @@ const AdminLiquidityPage: React.FC = () => {
               className={styles.input} 
               placeholder="Precio max" 
             />
+            {smartSellId && (
+              <span className={styles.currentPriceSpan}>
+                Actual: {smartAlerts.find(a => a.id === smartSellId)?.currentPrice || 'N/A'}
+              </span>
+            )}
             <button onClick={() => handleSellSmart()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
@@ -550,6 +555,11 @@ const AdminLiquidityPage: React.FC = () => {
               className={styles.input} 
               placeholder="Precio max" 
             />
+            {traderSellId && (
+              <span className={styles.currentPriceSpan}>
+                Actual: {traderAlerts.find(a => a.id === traderSellId)?.currentPrice || 'N/A'}
+              </span>
+            )}
             <button onClick={() => handleSellTrader()} disabled={saving} className={`${styles.btn} ${styles.btnWarn}`}>Vender</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>

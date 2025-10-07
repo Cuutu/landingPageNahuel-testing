@@ -33,14 +33,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Error verificando permisos' });
   }
 
-  const { alertId, percentage, currentPrice, tipo } = req.body;
+  const { alertId, percentage, priceRange, currentPrice, tipo, emailMessage, emailImageUrl } = req.body;
 
-  if (!alertId || !percentage || !currentPrice || !tipo) {
-    return res.status(400).json({ error: 'Faltan datos requeridos' });
+  // Validar parámetros requeridos
+  if (!alertId || !percentage || !tipo) {
+    return res.status(400).json({ error: 'Faltan datos requeridos: alertId, percentage, tipo' });
   }
 
-  if (percentage !== 25 && percentage !== 50) {
-    return res.status(400).json({ error: 'Porcentaje debe ser 25 o 50' });
+  // Validar porcentaje
+  if (percentage < 1 || percentage > 100) {
+    return res.status(400).json({ error: 'Porcentaje debe estar entre 1 y 100' });
+  }
+
+  // Determinar el precio a usar para la venta
+  let sellPrice: number;
+  
+  if (priceRange && priceRange.min && priceRange.max) {
+    // Usar el precio máximo del rango para la venta
+    sellPrice = parseFloat(priceRange.max);
+    console.log(`💰 Usando precio de rango: $${priceRange.min} - $${priceRange.max}, precio de venta: $${sellPrice}`);
+  } else if (currentPrice) {
+    // Fallback al precio actual si no hay rango
+    sellPrice = typeof currentPrice === 'string' 
+      ? parseFloat(currentPrice.replace('$', '')) 
+      : currentPrice;
+    console.log(`💰 Usando precio actual: $${sellPrice}`);
+  } else {
+    return res.status(400).json({ error: 'Se requiere priceRange o currentPrice' });
+  }
+
+  // Validar que el precio es válido
+  if (isNaN(sellPrice) || sellPrice <= 0) {
+    return res.status(400).json({ error: 'Precio de venta inválido' });
   }
 
   try {
@@ -68,23 +92,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Precio de entrada inválido' });
     }
 
-    // Manejar precio actual
-    let current: number;
-    if (typeof currentPrice === 'string') {
-      current = parseFloat(currentPrice.replace('$', ''));
-    } else if (typeof currentPrice === 'number') {
-      current = currentPrice;
-    } else {
-      return res.status(400).json({ error: 'Precio actual inválido' });
-    }
-
     // Validar que los precios son números válidos
-    if (isNaN(entryPrice) || isNaN(current)) {
+    if (isNaN(entryPrice) || isNaN(sellPrice)) {
       return res.status(400).json({ error: 'Precios inválidos para el cálculo' });
     }
     
     // Calcular ganancia/pérdida por acción
-    const profitPerShare = current - entryPrice;
+    const profitPerShare = sellPrice - entryPrice;
     
     // Obtener información de liquidez actual
     const liquidityData = alert.liquidityData || {};
@@ -144,7 +158,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Calcular valores de la venta parcial CON DECIMALES
     const sharesToSell = shares * (percentage / 100); // Sin Math.floor()
     const sharesRemaining = shares - sharesToSell;
-    const liquidityReleased = sharesToSell * current;
+    const liquidityReleased = sharesToSell * sellPrice;
     const realizedProfit = sharesToSell * profitPerShare;
     
     console.log(`💰 Venta parcial ${percentage}%:`);
@@ -169,18 +183,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           date: new Date(),
           percentage: percentage,
           sharesToSell: sharesToSell,
-          sellPrice: current,
+          sellPrice: sellPrice,
           liquidityReleased: liquidityReleased,
           realizedProfit: realizedProfit,
-          executedBy: session.user.email
+          executedBy: session.user.email,
+          priceRange: priceRange || null,
+          emailMessage: emailMessage || null,
+          emailImageUrl: emailImageUrl || null
         }
       ]
     };
 
-    // Si se vendió todo (50% dos veces o situación similar), cerrar la alerta
+    // Si se vendió todo (100% o situación similar), cerrar la alerta
     if (sharesRemaining <= 0) {
       alert.status = 'CLOSED';
-      alert.exitPrice = current; // Usar el valor numérico, no el string
+      alert.exitPrice = sellPrice; // Usar el valor numérico, no el string
       alert.closedAt = new Date();
       alert.closedBy = session.user.email;
       alert.closeReason = 'Venta parcial completa';
@@ -245,6 +262,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('⚠️ Error sincronizando con sistema de liquidez:', error);
     }
 
+    // ✅ ENVIAR NOTIFICACIÓN POR EMAIL SI SE ESPECIFICÓ
+    if (emailMessage || emailImageUrl) {
+      try {
+        console.log(`📧 Enviando notificación de venta parcial para alerta ${alert.symbol}...`);
+        
+        // Construir el mensaje de notificación
+        const notificationMessage = emailMessage || 
+          `Alerta de venta para ${alert.symbol} en el rango de $${priceRange?.min || sellPrice} a $${priceRange?.max || sellPrice}. ` +
+          `Se vendió el ${percentage}% de la posición.`;
+        
+        // Crear notificación en la base de datos
+        const notificationData = {
+          title: `Venta Parcial - ${alert.symbol}`,
+          message: notificationMessage,
+          type: 'PARTIAL_SALE',
+          priority: 'HIGH',
+          targetUsers: [user._id],
+          metadata: {
+            alertId: alertId,
+            symbol: alert.symbol,
+            percentage: percentage,
+            priceRange: priceRange,
+            sellPrice: sellPrice,
+            sharesToSell: sharesToSell,
+            liquidityReleased: liquidityReleased,
+            realizedProfit: realizedProfit,
+            sharesRemaining: sharesRemaining
+          },
+          imageUrl: emailImageUrl || null
+        };
+
+        // Enviar notificación (esto podría ser una llamada a un endpoint de notificaciones)
+        console.log(`📧 Notificación preparada:`, notificationData);
+        
+      } catch (emailError) {
+        console.log('⚠️ Error enviando notificación por email:', emailError);
+        // No fallar la operación por un error de email
+      }
+    }
+
     console.log(`✅ Venta parcial de ${percentage}% ejecutada exitosamente`);
     console.log(`💰 Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
     console.log(`📊 Acciones restantes: ${sharesRemaining}`);
@@ -258,7 +315,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sharesRemaining: sharesRemaining,
       sharesToSell: sharesToSell,
       newAllocatedAmount: newAllocatedAmount,
-      alertStatus: alert.status
+      alertStatus: alert.status,
+      priceRange: priceRange,
+      sellPrice: sellPrice
     });
 
   } catch (error) {

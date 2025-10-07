@@ -72,4 +72,17 @@
 .table { width: 100%; font-size: 14px; }
 .th { text-align: left; color: #9ca3af; border-bottom: 1px solid #374151; padding: 8px 12px; }
 .td { border-bottom: 1px solid #111827; padding: 8px 12px; }
-.actions { display: flex; gap: 8px; align-items: center; } 
+.actions { display: flex; gap: 8px; align-items: center; }
+
+/* ✅ NUEVO: Estilo para mostrar precio actual */
+.currentPriceSpan {
+  font-size: 0.85rem;
+  color: #10b981;
+  font-weight: 600;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  white-space: nowrap;
+  min-width: fit-content;
+} 
