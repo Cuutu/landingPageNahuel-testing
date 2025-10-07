@@ -144,6 +144,31 @@ export default async function handler(
       return res.status(400).json({ error: 'Stop Loss y Take Profit deben ser mayores a 0' });
     }
 
+    // ✅ NUEVO: Obtener precio actual del mercado para asignación de liquidez
+    let currentMarketPrice = entryPrice; // Valor por defecto
+    
+    if (liquidityPercentage > 0 && liquidityAmount > 0) {
+      try {
+        console.log(`🔍 [DEBUG] Obteniendo precio actual del mercado para ${symbol.toUpperCase()}`);
+        
+        // Intentar obtener precio actual del mercado
+        const marketPriceResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/stock-price?symbol=${symbol.toUpperCase()}`);
+        if (marketPriceResponse.ok) {
+          const marketData = await marketPriceResponse.json();
+          if (marketData.price && marketData.price > 0) {
+            currentMarketPrice = marketData.price;
+            console.log(`✅ [DEBUG] Precio actual del mercado obtenido: $${currentMarketPrice} para ${symbol.toUpperCase()}`);
+          } else {
+            console.log(`⚠️ [DEBUG] Precio del mercado no válido, usando entryPrice: $${entryPrice}`);
+          }
+        } else {
+          console.log(`⚠️ [DEBUG] Error obteniendo precio del mercado, usando entryPrice: $${entryPrice}`);
+        }
+      } catch (error) {
+        console.log(`⚠️ [DEBUG] Error en fetch de precio del mercado, usando entryPrice: $${entryPrice}`, error);
+      }
+    }
+
     // Crear la nueva alerta en MongoDB
     const alertData: any = {
       symbol: symbol.toUpperCase(),
@@ -165,7 +190,7 @@ export default async function handler(
     // Agregar campos específicos según el tipo de alerta
     if (tipoAlerta === 'precio') {
       alertData.entryPrice = entryPrice;
-      alertData.currentPrice = entryPrice; // Precio inicial igual al de entrada
+      alertData.currentPrice = currentMarketPrice; // ✅ CORREGIDO: Usar precio actual del mercado
     } else if (tipoAlerta === 'rango') {
       // ✅ CORREGIDO: Crear entryPriceRange para compatibilidad con el sistema
       alertData.entryPriceRange = {
@@ -244,6 +269,7 @@ export default async function handler(
             symbol: symbol.toUpperCase(),
             entryPrice: entryPrice,
             currentPrice: newAlert.currentPrice,
+            currentMarketPrice: currentMarketPrice,
             precioMinimo: precioMinimo,
             priceForShares: priceForShares,
             liquidityAmount: liquidityAmount
