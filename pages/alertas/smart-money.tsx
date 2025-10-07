@@ -782,7 +782,7 @@ const SubscriberView: React.FC = () => {
     if (!silent) setUpdatingPrices(true);
     
     try {
-      const response = await fetch('/api/alerts/update-prices', {
+      const response = await fetch('/api/alerts/update-prices-manual', {
         method: 'POST',
         credentials: 'same-origin',
       });
@@ -792,17 +792,9 @@ const SubscriberView: React.FC = () => {
         console.log('Precios actualizados:', data.updated, 'alertas');
         setLastPriceUpdate(new Date());
         
-        // Actualizar información del mercado si está disponible
-        if (data.alerts && data.alerts.length > 0) {
-          // Verificar si alguna alerta está usando precios simulados
-          const hasSimulated = data.alerts.some((alert: any) => alert.isSimulated);
-          setIsUsingSimulatedPrices(hasSimulated);
-          
-          // Usar el estado del mercado de la primera alerta (todas deberían tener el mismo)
-          if (data.alerts[0].marketStatus) {
-            setMarketStatus(data.alerts[0].marketStatus);
-          }
-        }
+        // Actualizar información del mercado
+        setIsUsingSimulatedPrices(data.isSimulated || false);
+        setMarketStatus(data.marketStatus || 'UNKNOWN');
         
         // Recargar alertas para mostrar los nuevos precios
         await loadAlerts();

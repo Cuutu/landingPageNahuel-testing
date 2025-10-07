@@ -57,7 +57,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       await Promise.all(batch.map(async (alert) => {
         try {
-          // ✅ NUEVO: Obtener precio actual desde API externa
+          // ✅ Obtener precio actual desde API externa
           const newPrice = await fetchCurrentStockPrice(alert.symbol);
           
           if (newPrice && newPrice !== alert.currentPrice) {
@@ -68,6 +68,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             
             updatedCount++;
             console.log(`✅ ${alert.symbol}: ${alert.currentPrice} → ${newPrice}`);
+          } else if (newPrice === null) {
+            // Si no se puede obtener precio real, no actualizar
+            errorCount++;
+            const errorMsg = `No se pudo obtener precio real para ${alert.symbol} - manteniendo precio anterior`;
+            errors.push(errorMsg);
+            console.error(errorMsg);
           }
         } catch (error: any) {
           errorCount++;
@@ -127,59 +133,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 /**
- * ✅ NUEVO: Obtener precio actual de una acción desde Google Finance
+ * ✅ MEJORADO: Obtener precio actual de una acción usando la API interna que funciona
  */
 async function fetchCurrentStockPrice(symbol: string): Promise<number | null> {
   try {
-    // ✅ NUEVO: Usar Google Finance API
-    const googleFinanceUrl = `https://www.google.com/finance/quote/${symbol}`;
-    
-    // ✅ NUEVO: Intentar obtener precio desde Google Finance
-    const response = await fetch(googleFinanceUrl, {
+    // ✅ PRIORIDAD: Usar la API interna que ya funciona correctamente con Yahoo Finance
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stock-price?symbol=${symbol}`, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
       }
     });
-
+    
     if (response.ok) {
-      const html = await response.text();
+      const data = await response.json();
       
-      // ✅ NUEVO: Extraer precio del HTML de Google Finance
-      const priceMatch = html.match(/"price":\s*"([^"]+)"/);
-      if (priceMatch) {
-        const price = parseFloat(priceMatch[1].replace(/,/g, ''));
-        return isNaN(price) ? null : price;
-      }
-      
-      // ✅ NUEVO: Fallback - buscar en diferentes formatos de Google Finance
-      const alternativePriceMatch = html.match(/(\d+\.?\d*)\s*USD/);
-      if (alternativePriceMatch) {
-        const price = parseFloat(alternativePriceMatch[1]);
-        return isNaN(price) ? null : price;
+      if (data.price && !data.isSimulated) {
+        console.log(`✅ Precio REAL obtenido para ${symbol}: $${data.price} (${data.marketStatus})`);
+        return data.price;
+      } else if (data.price && data.isSimulated) {
+        console.log(`⚠️ Precio simulado para ${symbol}: $${data.price} (${data.marketStatus}) - API falló`);
+        return data.price;
       }
     }
     
-    // ✅ NUEVO: Si Google Finance falla, usar precio simulado como fallback
-    console.log(`🔄 Google Finance no disponible para ${symbol}, usando precio simulado`);
-    return generateSimulatedPrice(symbol);
+    console.log(`🔄 API interna falló para ${symbol}, intentando Yahoo Finance directamente`);
+    
+    // ✅ FALLBACK: Intentar Yahoo Finance directamente como último recurso
+    const yahooResponse = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${symbol.toUpperCase()}`,
+      {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      }
+    );
+
+    if (yahooResponse.ok) {
+      const yahooData = await yahooResponse.json();
+      
+      if (yahooData.chart?.result?.[0]?.meta?.regularMarketPrice) {
+        const price = yahooData.chart.result[0].meta.regularMarketPrice;
+        console.log(`✅ Yahoo Finance directo - ${symbol}: $${price}`);
+        return parseFloat(price.toFixed(2));
+      }
+    }
+    
+    console.error(`❌ CRÍTICO: Todas las APIs fallaron para ${symbol}`);
+    console.error(`❌ No se pueden obtener precios reales del mercado`);
+    return null; // Retornar null en lugar de precio simulado
 
   } catch (error: any) {
-    console.error(`❌ Error obteniendo precio desde Google Finance para ${symbol}:`, error.message);
-    
-    // ✅ NUEVO: Fallback a precio simulado si Google Finance falla
-    console.log(`🔄 Usando precio simulado para ${symbol}`);
-    return generateSimulatedPrice(symbol);
+    console.error(`❌ Error crítico obteniendo precio para ${symbol}:`, error.message);
+    console.error(`❌ Sistema requiere precios reales del mercado`);
+    return null; // Retornar null en lugar de precio simulado
   }
 }
 
 /**
- * ✅ NUEVO: Generar precio simulado para testing/fallback
+ * ✅ ELIMINADO: No más precios simulados - solo precios reales del mercado
+ * Si no se pueden obtener precios reales, el sistema debe fallar claramente
  */
 function generateSimulatedPrice(symbol: string): number {
-  // Generar precio realista basado en el símbolo
-  const basePrice = symbol.charCodeAt(0) * 10 + symbol.charCodeAt(1);
-  const variation = (Math.random() - 0.5) * 0.1; // ±5% variación
-  return Math.round((basePrice * (1 + variation)) * 100) / 100;
+  // ❌ NO MÁS PRECIOS SIMULADOS
+  // El sistema debe usar solo precios reales del mercado
+  console.error(`❌ CRÍTICO: No se pueden obtener precios reales para ${symbol}`);
+  console.error(`❌ El sistema no debe usar precios inventados`);
+  
+  // Retornar null para indicar que no hay precio disponible
+  throw new Error(`No se pueden obtener precios reales para ${symbol} - sistema requiere precios dinámicos del mercado`);
 }
 
 /**
