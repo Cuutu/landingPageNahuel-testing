@@ -92,11 +92,53 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
   const [loadingTurnos, setLoadingTurnos] = useState(true);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [reservedSlot, setReservedSlot] = useState<{date: string, time: string} | null>(null);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    whatsapp: ''
+  });
 
   // Cargar fechas específicas de asesoría al montar el componente
   useEffect(() => {
     loadAdvisoryDates();
   }, []);
+
+  // Inicializar datos del formulario con los datos de Google si están disponibles
+  useEffect(() => {
+    if (session?.user?.name) {
+      const nameParts = session.user.name.split(' ');
+      setFormData(prev => ({
+        ...prev,
+        nombre: nameParts[0] || '',
+        apellido: nameParts.slice(1).join(' ') || '',
+        email: session.user?.email || ''
+      }));
+    }
+  }, [session]);
+
+  // Función para validar si el formulario está completo
+  const isFormValid = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const whatsappRegex = /^[\+]?[\d\s\-\(\)]{10,}$/;
+    
+    return (
+      formData.nombre.trim() !== '' &&
+      formData.apellido.trim() !== '' &&
+      formData.email.trim() !== '' &&
+      emailRegex.test(formData.email.trim()) &&
+      formData.whatsapp.trim() !== '' &&
+      whatsappRegex.test(formData.whatsapp.trim())
+    );
+  };
+
+  // Función para manejar cambios en los campos del formulario
+  const handleFormChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
 
   // Convertir fechas de asesoría al formato que espera ClassCalendar
   const calendarEvents = advisoryDates.map(advisoryDate => {
@@ -409,6 +451,17 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       return;
     }
 
+    if (!selectedTime) {
+      alert('Por favor selecciona una hora para tu consulta');
+      return;
+    }
+
+    // Validar que el formulario esté completo (ya validado por isFormValid, pero por seguridad)
+    if (!isFormValid()) {
+      alert('Por favor completa todos los campos obligatorios correctamente');
+      return;
+    }
+
     // Buscar la fecha/horario seleccionados (día + hora)
     const advisorySelected = advisoryDates.find(a => {
       const day = new Date(a.date).toISOString().split('T')[0];
@@ -679,7 +732,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         id="nombre"
                         name="nombre"
                         className={`${styles.formInput} ${session?.user?.name ? styles.readOnlyInput : ''}`}
-                        defaultValue={session?.user?.name?.split(' ')[0] || ''}
+                        value={formData.nombre}
+                        onChange={(e) => handleFormChange('nombre', e.target.value)}
                         placeholder="Tu nombre"
                         required
                         readOnly={!!session?.user?.name}
@@ -695,7 +749,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         id="apellido"
                         name="apellido"
                         className={`${styles.formInput} ${session?.user?.name ? styles.readOnlyInput : ''}`}
-                        defaultValue={session?.user?.name?.split(' ').slice(1).join(' ') || ''}
+                        value={formData.apellido}
+                        onChange={(e) => handleFormChange('apellido', e.target.value)}
                         placeholder="Tu apellido"
                         required
                         readOnly={!!session?.user?.name}
@@ -711,7 +766,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         id="email"
                         name="email"
                         className={`${styles.formInput} ${session?.user?.email ? styles.readOnlyInput : ''}`}
-                        defaultValue={session?.user?.email || ''}
+                        value={formData.email}
+                        onChange={(e) => handleFormChange('email', e.target.value)}
                         placeholder="Tu email"
                         required
                         readOnly={!!session?.user?.email}
@@ -732,6 +788,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         id="whatsapp"
                         name="whatsapp"
                         className={styles.formInput}
+                        value={formData.whatsapp}
+                        onChange={(e) => handleFormChange('whatsapp', e.target.value)}
                         placeholder="+54 9 11 1234-5678"
                         required
                       />
@@ -769,7 +827,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                       type="button"
                       className={styles.confirmarButton}
                       onClick={handleSacarTurno}
-                      disabled={!selectedDate || !selectedTime || loading}
+                      disabled={!selectedDate || !selectedTime || !isFormValid() || loading}
                     >
                       {loading ? 'Procesando...' : 'Confirmar Turno >'}
                     </button>
