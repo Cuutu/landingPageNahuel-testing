@@ -6376,6 +6376,14 @@
   position: relative;
 }
 
+.comparisonSection {
+  width: 100%;
+  background: #0f766e;
+  padding: 4rem 0;
+  margin: 0;
+  position: relative;
+}
+
 .historyImageContainer {
   margin: 2rem 0;
   text-align: center;
