@@ -133,18 +133,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Calcular los valores de la venta parcial
     // Manejar diferentes formatos de precio de entrada
     let entryPrice: number;
+    
+    console.log('🔍 [PARTIAL SALE DEBUG] Validando entryPrice:', {
+      entryPrice: alert.entryPrice,
+      type: typeof alert.entryPrice,
+      isNull: alert.entryPrice === null,
+      isUndefined: alert.entryPrice === undefined
+    });
+    
     if (typeof alert.entryPrice === 'string') {
       entryPrice = parseFloat(alert.entryPrice.replace('$', ''));
+      console.log(`💰 EntryPrice parseado desde string: $${entryPrice}`);
     } else if (typeof alert.entryPrice === 'number') {
       entryPrice = alert.entryPrice;
+      console.log(`💰 EntryPrice como número: $${entryPrice}`);
+    } else if (alert.entryPrice === null || alert.entryPrice === undefined) {
+      console.log('⚠️ EntryPrice es null/undefined, usando precio actual como fallback');
+      entryPrice = sellPrice; // Usar el precio actual como fallback
     } else {
+      console.log('❌ [PARTIAL SALE DEBUG] EntryPrice inválido:', alert.entryPrice);
       return res.status(400).json({ error: 'Precio de entrada inválido' });
     }
 
     // Validar que los precios son números válidos
     if (isNaN(entryPrice) || isNaN(sellPrice)) {
+      console.log('❌ [PARTIAL SALE DEBUG] Precios inválidos:', { entryPrice, sellPrice });
       return res.status(400).json({ error: 'Precios inválidos para el cálculo' });
     }
+    
+    console.log(`✅ Precios validados - Entry: $${entryPrice}, Sell: $${sellPrice}`);
     
     // Calcular ganancia/pérdida por acción
     const profitPerShare = sellPrice - entryPrice;
