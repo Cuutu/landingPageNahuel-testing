@@ -347,13 +347,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                     {formatPercentage(portfolioStats.avgProfit)}
                   </span>
                 </div>
-                {/* ✅ NUEVO: Cantidad invertida y porcentaje de ganancia */}
-                <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Total Invertido:</span>
-                  <span className={styles.globalStatValue}>
-                    ${portfolioStats.totalInvested.toLocaleString()}
-                  </span>
-                </div>
+                {/* ✅ NUEVO: Porcentaje de ganancia */}
                 <div className={styles.globalStatItem}>
                   <span className={styles.globalStatLabel}>% de Ganancia:</span>
                   <span className={`${styles.globalStatValue} ${portfolioStats.profitPercentage >= 0 ? styles.positive : styles.negative}`}>
