@@ -1966,22 +1966,7 @@ const SubscriberView: React.FC = () => {
                         <span>📈 P&L:</span>
                         <span className={styles.tooltipPnl}></span>
                       </div>
-                      <div className={styles.tooltipRow}>
-                        <span>🎯 Estado:</span>
-                        <span className={styles.tooltipStatus}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>💵 Liquidez:</span>
-                        <span className={styles.tooltipLiquidity}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>🧩 Shares:</span>
-                        <span className={styles.tooltipShares}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>✅ Realizado:</span>
-                        <span className={styles.tooltipRealized}></span>
-                      </div>
+                      {/* Elementos ocultos del tooltip */}
                     </div>
                   </div>
                 </div>

@@ -53,6 +53,8 @@ interface ActiveAlertsPieChartProps {
   // ✅ NUEVO: Liquidez (opcional)
   liquidityMap?: LiquidityByAlert;
   totalLiquidity?: number;
+  // ✅ NUEVO: Rol del usuario para restricciones de administrador
+  userRole?: string;
 }
 
 interface ChartSegment {
@@ -74,7 +76,8 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   alerts, 
   className = '',
   liquidityMap,
-  totalLiquidity
+  totalLiquidity,
+  userRole
 }) => {
   const [chartData, setChartData] = useState<ChartSegment[]>([]);
   const [selectedAlert, setSelectedAlert] = useState<AlertData | null>(null);
@@ -288,7 +291,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
               </span>
             </div>
           </div>
-          {typeof totalLiquidity === 'number' && (
+          {typeof totalLiquidity === 'number' && userRole === 'admin' && (
             <div className={styles.statRow}>
               <div className={styles.statItem}>
                 <DollarSign size={16} />
