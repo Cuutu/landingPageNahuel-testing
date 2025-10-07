@@ -72,6 +72,39 @@ export default async function handler(
       .skip(skip)
       .lean();
 
+    // ✅ NUEVO: Actualizar precios en tiempo real para alertas activas
+    if (alerts.length > 0) {
+      console.log(`🔄 Actualizando precios para ${alerts.length} alertas antes de devolver datos...`);
+      
+      for (const alert of alerts) {
+        if (alert.status === 'ACTIVE' && alert.symbol) {
+          try {
+            // Obtener precio actual usando la API interna
+            const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stock-price?symbol=${alert.symbol}`, {
+              headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+              }
+            });
+            
+            if (response.ok) {
+              const priceData = await response.json();
+              
+              if (priceData.price && !priceData.isSimulated) {
+                // Actualizar el precio en el objeto alert antes de formatear
+                alert.currentPrice = priceData.price;
+                console.log(`✅ Precio actualizado para ${alert.symbol}: $${priceData.price}`);
+              } else {
+                console.log(`⚠️ Precio simulado o no disponible para ${alert.symbol}: $${priceData.price || 'N/A'}`);
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Error actualizando precio para ${alert.symbol}:`, error);
+          }
+        }
+      }
+    }
+
     // Contar total de alertas
     const total = await Alert.countDocuments(filter);
 
