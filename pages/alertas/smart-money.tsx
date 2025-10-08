@@ -2438,18 +2438,18 @@ const SubscriberView: React.FC = () => {
                       </strong>
                     </div>
                     {alert.hasSellRange && (
-                      <div className={styles.alertDetail}>
+                      <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                         <span>RANGO VENTA:</span>
                         <strong>${alert.sellRangeMin} - ${alert.sellRangeMax}</strong>
                       </div>
                     )}
                     {alert.hasSellPrice && (
-                      <div className={styles.alertDetail}>
+                      <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                         <span>PRECIO VENTA:</span>
                         <strong>{alert.sellPrice}</strong>
                       </div>
                     )}
-                    <div className={styles.alertDetail}>
+                    <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>Fecha:</span>
                       <strong>{alert.date}</strong>
                     </div>
