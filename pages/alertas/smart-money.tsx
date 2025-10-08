@@ -2423,18 +2423,6 @@ const SubscriberView: React.FC = () => {
                       <span>Precio Actual:</span>
                       <strong>{alert.currentPrice}</strong>
                     </div>
-                    {alert.hasSellRange && (
-                      <div className={styles.alertDetail} style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
-                        <span>RANGO VENTA:</span>
-                        <strong>${alert.sellRangeMin} - ${alert.sellRangeMax}</strong>
-                      </div>
-                    )}
-                    {alert.hasSellPrice && (
-                      <div className={styles.alertDetail} style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
-                        <span>PRECIO VENTA:</span>
-                        <strong>{alert.sellPrice}</strong>
-                      </div>
-                    )}
                     <div className={styles.alertDetail}>
                       <span>Stop Loss:</span>
                       <strong>{alert.stopLoss}</strong>
@@ -2449,6 +2437,18 @@ const SubscriberView: React.FC = () => {
                         {alert.profit}
                       </strong>
                     </div>
+                    {alert.hasSellRange && (
+                      <div className={styles.alertDetail} style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                        <span>RANGO VENTA:</span>
+                        <strong>${alert.sellRangeMin} - ${alert.sellRangeMax}</strong>
+                      </div>
+                    )}
+                    {alert.hasSellPrice && (
+                      <div className={styles.alertDetail} style={{ gridColumn: '1 / -1', marginTop: '10px' }}>
+                        <span>PRECIO VENTA:</span>
+                        <strong>{alert.sellPrice}</strong>
+                      </div>
+                    )}
                     <div className={styles.alertDetail}>
                       <span>Fecha:</span>
                       <strong>{alert.date}</strong>
