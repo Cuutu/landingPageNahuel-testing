@@ -176,6 +176,8 @@ export default async function handler(
         sellRangeMin: alert.sellRangeMin ? Number(alert.sellRangeMin).toFixed(2) : null,
         sellRangeMax: alert.sellRangeMax ? Number(alert.sellRangeMax).toFixed(2) : null,
         hasSellRange: !!(alert.sellRangeMin && alert.sellRangeMax),
+        sellPrice: alert.sellPrice ? `$${Number(alert.sellPrice).toFixed(2)}` : null,
+        hasSellPrice: !!alert.sellPrice,
         // Campos adicionales para mostrar si está cerrada
         exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
         exitDate: alert.exitDate?.toISOString().split('T')[0] || null,

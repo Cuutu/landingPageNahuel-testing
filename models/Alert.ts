@@ -80,6 +80,7 @@ export interface IAlert extends Document {
   // ✅ NUEVO: Campos para rango de venta parcial
   sellRangeMin?: number; // Precio mínimo del rango de venta parcial
   sellRangeMax?: number; // Precio máximo del rango de venta parcial
+  sellPrice?: number; // Precio de venta fijo (convertido desde rango)
   
   // ✅ NUEVO: Métodos del esquema
   calculateProfit(): number;
@@ -292,6 +293,10 @@ const AlertSchema: Schema = new Schema({
     min: 0
   },
   sellRangeMax: {
+    type: Number,
+    min: 0
+  },
+  sellPrice: {
     type: Number,
     min: 0
   }

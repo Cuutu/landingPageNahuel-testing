@@ -35,12 +35,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     await dbConnect();
     console.log('🔄 CRON: Iniciando conversión automática de alertas de rango...');
 
-    // Buscar alertas activas con rangos de precio
+    // Buscar alertas activas con rangos de precio (entrada o venta)
     const alertsWithRange = await Alert.find({
       status: 'ACTIVE',
       $or: [
         { entryPriceRange: { $exists: true, $ne: null } },
-        { precioMinimo: { $exists: true, $ne: null }, precioMaximo: { $exists: true, $ne: null } }
+        { precioMinimo: { $exists: true, $ne: null }, precioMaximo: { $exists: true, $ne: null } },
+        { sellRangeMin: { $exists: true, $ne: null }, sellRangeMax: { $exists: true, $ne: null } }
       ]
     });
 
@@ -54,6 +55,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         entryPriceRange: alert.entryPriceRange,
         precioMinimo: alert.precioMinimo,
         precioMaximo: alert.precioMaximo,
+        sellRangeMin: alert.sellRangeMin,
+        sellRangeMax: alert.sellRangeMax,
         status: alert.status
       })));
     }
@@ -77,6 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           currentPrice: alert.currentPrice,
           precioMinimo: alert.precioMinimo,
           precioMaximo: alert.precioMaximo,
+          sellRangeMin: alert.sellRangeMin,
+          sellRangeMax: alert.sellRangeMax,
           tipoAlerta: alert.tipoAlerta
         });
 
@@ -90,41 +95,84 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         
         console.log(`💰 ${alert.symbol}: Precio actual ${closePrice} -> Precio de entrada fijo`);
 
-        // Determinar el rango anterior para el log
-        let oldRange = 'N/A';
-        if (alert.entryPriceRange) {
-          oldRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
-        } else if (alert.precioMinimo && alert.precioMaximo) {
-          oldRange = `$${alert.precioMinimo}-$${alert.precioMaximo}`;
+        // Determinar qué rangos convertir
+        const hasEntryRange = alert.entryPriceRange || (alert.precioMinimo && alert.precioMaximo);
+        const hasSellRange = alert.sellRangeMin && alert.sellRangeMax;
+        
+        let oldEntryRange = 'N/A';
+        let oldSellRange = 'N/A';
+        
+        if (hasEntryRange) {
+          if (alert.entryPriceRange) {
+            oldEntryRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
+          } else if (alert.precioMinimo && alert.precioMaximo) {
+            oldEntryRange = `$${alert.precioMinimo}-$${alert.precioMaximo}`;
+          }
+        }
+        
+        if (hasSellRange) {
+          oldSellRange = `$${alert.sellRangeMin}-$${alert.sellRangeMax}`;
         }
 
-        // Actualizar entryPrice al precio actual Y eliminar campos de rango en una sola operación
+        // Preparar campos para actualizar
+        const updateFields: any = {};
+        const unsetFields: any = {};
+        
+        // Convertir rango de entrada si existe
+        if (hasEntryRange) {
+          updateFields.entryPrice = closePrice;
+          updateFields.tipoAlerta = 'precio'; // Cambiar a tipo precio fijo
+          unsetFields.entryPriceRange = 1;
+          unsetFields.precioMinimo = 1;
+          unsetFields.precioMaximo = 1;
+        }
+        
+        // Convertir rango de venta si existe
+        if (hasSellRange) {
+          updateFields.sellPrice = closePrice;
+          unsetFields.sellRangeMin = 1;
+          unsetFields.sellRangeMax = 1;
+        }
+
+        // Actualizar en una sola operación
         await Alert.updateOne(
           { _id: alert._id },
           { 
-            $set: { 
-              entryPrice: closePrice,
-              tipoAlerta: 'precio' // Cambiar a tipo precio fijo
-            },
-            $unset: { 
-              entryPriceRange: 1,
-              precioMinimo: 1,
-              precioMaximo: 1
-            }
+            $set: updateFields,
+            $unset: unsetFields
           }
         );
 
-        conversionDetails.push({
-          symbol: alert.symbol,
-          oldRange: oldRange,
-          newPrice: closePrice
-        });
-
-        console.log(`✅ CRON: ${alert.symbol}: Rango ${oldRange} convertido a precio fijo $${closePrice}`);
+        // Agregar detalles de conversión
+        if (hasEntryRange) {
+          conversionDetails.push({
+            symbol: alert.symbol,
+            type: 'entry',
+            oldRange: oldEntryRange,
+            newPrice: closePrice
+          });
+          console.log(`✅ CRON: ${alert.symbol}: Rango de entrada ${oldEntryRange} convertido a precio fijo $${closePrice}`);
+        }
+        
+        if (hasSellRange) {
+          conversionDetails.push({
+            symbol: alert.symbol,
+            type: 'sell',
+            oldRange: oldSellRange,
+            newPrice: closePrice
+          });
+          console.log(`✅ CRON: ${alert.symbol}: Rango de venta ${oldSellRange} convertido a precio de venta fijo $${closePrice}`);
+        }
 
         // 📧 NUEVO: Enviar notificación a TODOS los suscriptores
         try {
-          await sendRangeConversionNotification(alert, closePrice, oldRange);
+          const notificationMessage = hasEntryRange && hasSellRange 
+            ? `🎯 Alerta convertida: ${alert.symbol} - Rangos de entrada (${oldEntryRange}) y venta (${oldSellRange}) convertidos a precios fijos $${closePrice}`
+            : hasEntryRange 
+            ? `🎯 Alerta convertida: ${alert.symbol} - Rango de entrada ${oldEntryRange} convertido a precio fijo $${closePrice}`
+            : `🎯 Alerta convertida: ${alert.symbol} - Rango de venta ${oldSellRange} convertido a precio de venta fijo $${closePrice}`;
+            
+          await sendRangeConversionNotification(alert, closePrice, notificationMessage);
           console.log(`📧 CRON: Notificación enviada a suscriptores para ${alert.symbol} - Precio final: $${closePrice}`);
         } catch (emailError) {
           console.error(`❌ CRON: Error enviando notificación para ${alert.symbol}:`, emailError);
@@ -170,14 +218,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 /**
  * 📧 NUEVO: Envía notificación a TODOS los suscriptores cuando se convierte una alerta de rango
  */
-async function sendRangeConversionNotification(alert: any, finalPrice: number, oldRange: string) {
+async function sendRangeConversionNotification(alert: any, finalPrice: number, message: string) {
   try {
     console.log(`📧 CRON: Iniciando envío de notificación para ${alert.symbol}`);
     console.log(`📧 CRON: Detalles de la alerta:`, {
       symbol: alert.symbol,
       tipo: alert.tipo,
       action: alert.action,
-      oldRange: oldRange,
+      message: message,
       finalPrice: finalPrice
     });
     
@@ -188,7 +236,7 @@ async function sendRangeConversionNotification(alert: any, finalPrice: number, o
     
     // Crear una notificación usando el sistema existente que envía a TODOS los suscriptores
     await createAlertNotification(alert, {
-      message: `🎯 Alerta convertida: ${alert.symbol} - Rango ${oldRange} convertido a precio fijo $${finalPrice}`,
+      message: message,
       price: finalPrice,
       action: alert.action
     });

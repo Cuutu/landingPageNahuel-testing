@@ -137,6 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           // ✅ MODIFICADO: Si es una alerta de rango, actualizar entryPrice al precio actual
           // para que se muestre correctamente en la interfaz como precio fijo
           const hasRange = alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max;
+          const hasSellRange = alert.sellRangeMin && alert.sellRangeMax;
           
           if (hasRange) {
             // ✅ CRÍTICO: Para rangos, usar el precio actual como nuevo precio de entrada
@@ -153,19 +154,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.log(`🔄 ${alert.symbol}: Precio de entrada fijado en ${closePrice}`);
           }
 
+          // ✅ NUEVO: Si tiene rango de venta, convertirlo a precio de venta fijo
+          if (hasSellRange) {
+            const oldSellRange = `${alert.sellRangeMin}-${alert.sellRangeMax}`;
+            alert.sellPrice = closePrice; // Usar el último valor de la alerta
+            // Limpiar el rango de venta
+            alert.sellRangeMin = undefined;
+            alert.sellRangeMax = undefined;
+            console.log(`💰 ${alert.symbol}: Rango de venta ${oldSellRange} convertido a precio de venta fijo ${closePrice}`);
+          }
+
           // ✅ NUEVO: Usar $unset para eliminar completamente los campos de rango de la base de datos
+          const fieldsToUnset: any = {};
+          
           if (hasRange) {
+            fieldsToUnset.entryPriceRange = 1;
+            fieldsToUnset.precioMinimo = 1;
+            fieldsToUnset.precioMaximo = 1;
+          }
+          
+          if (hasSellRange) {
+            fieldsToUnset.sellRangeMin = 1;
+            fieldsToUnset.sellRangeMax = 1;
+          }
+          
+          if (Object.keys(fieldsToUnset).length > 0) {
             await Alert.updateOne(
               { _id: alert._id },
-              { 
-                $unset: { 
-                  entryPriceRange: 1,
-                  precioMinimo: 1,
-                  precioMaximo: 1
-                }
-              }
+              { $unset: fieldsToUnset }
             );
-            console.log(`🗑️ ${alert.symbol}: Campos de rango eliminados de la base de datos`);
+            console.log(`🗑️ ${alert.symbol}: Campos de rango eliminados de la base de datos:`, Object.keys(fieldsToUnset));
           }
 
           // ✅ NUEVO: Marcar email de cierre como enviado
