@@ -236,6 +236,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Actualizar la alerta con los nuevos valores
     const newAllocatedAmount = sharesRemaining * entryPrice;
     
+    // ✅ NUEVO: Guardar el rango de venta en la alerta
+    if (notificationPriceRange) {
+      alert.sellRangeMin = notificationPriceRange.min;
+      alert.sellRangeMax = notificationPriceRange.max;
+      console.log(`💾 Guardando rango de venta en alerta: $${notificationPriceRange.min} - $${notificationPriceRange.max}`);
+    }
+    
     alert.liquidityData = {
       ...liquidityData,
       allocatedAmount: newAllocatedAmount,

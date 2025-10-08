@@ -172,6 +172,10 @@ export default async function handler(
         hasFinalPrice: !!alert.finalPrice,
         // ✅ NUEVO: Campo para controlar disponibilidad para compra
         availableForPurchase: alert.availableForPurchase || false,
+        // ✅ NUEVO: Campos para rango de venta parcial
+        sellRangeMin: alert.sellRangeMin ? Number(alert.sellRangeMin).toFixed(2) : null,
+        sellRangeMax: alert.sellRangeMax ? Number(alert.sellRangeMax).toFixed(2) : null,
+        hasSellRange: !!(alert.sellRangeMin && alert.sellRangeMax),
         // Campos adicionales para mostrar si está cerrada
         exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
         exitDate: alert.exitDate?.toISOString().split('T')[0] || null,

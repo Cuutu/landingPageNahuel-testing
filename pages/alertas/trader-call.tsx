@@ -2476,6 +2476,12 @@ const SubscriberView: React.FC = () => {
                       <span>Precio Actual:</span>
                       <strong>{alert.currentPrice}</strong>
                     </div>
+                    {alert.hasSellRange && (
+                      <div className={styles.alertDetail}>
+                        <span>RANGO VENTA:</span>
+                        <strong>${alert.sellRangeMin} - ${alert.sellRangeMax}</strong>
+                      </div>
+                    )}
                     <div className={styles.alertDetail}>
                       <span>Stop Loss:</span>
                       <strong>{alert.stopLoss}</strong>

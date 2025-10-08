@@ -77,6 +77,9 @@ export interface IAlert extends Document {
   // Nuevos campos para imágenes
   chartImage?: CloudinaryImage; // Imagen principal del gráfico
   images?: CloudinaryImage[]; // Imágenes adicionales
+  // ✅ NUEVO: Campos para rango de venta parcial
+  sellRangeMin?: number; // Precio mínimo del rango de venta parcial
+  sellRangeMax?: number; // Precio máximo del rango de venta parcial
   
   // ✅ NUEVO: Métodos del esquema
   calculateProfit(): number;
@@ -282,7 +285,16 @@ const AlertSchema: Schema = new Schema({
   },
   // Nuevos campos para imágenes
   chartImage: CloudinaryImageSchema, // Imagen principal del gráfico
-  images: [CloudinaryImageSchema] // Imágenes adicionales
+  images: [CloudinaryImageSchema], // Imágenes adicionales
+  // ✅ NUEVO: Campos para rango de venta parcial
+  sellRangeMin: {
+    type: Number,
+    min: 0
+  },
+  sellRangeMax: {
+    type: Number,
+    min: 0
+  }
 }, {
   timestamps: true
 });
