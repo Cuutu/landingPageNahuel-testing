@@ -1077,19 +1077,27 @@
 .alertDetail {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  position: relative;
 }
 
 .alertDetail span:first-child {
   font-size: 0.875rem;
-  color: #9ca3af;
+  color: #94a3b8;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .alertDetail strong {
-  font-size: 1rem;
-  color: white;
-  font-weight: 600;
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-weight: 700;
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
 }
 
 /* ✅ NUEVO: Estilos para rangos de precio */
