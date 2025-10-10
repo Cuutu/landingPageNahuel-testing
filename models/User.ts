@@ -320,24 +320,24 @@ UserSchema.methods.renewSubscription = function(
   currency: string = 'ARS',
   mercadopagoPaymentId?: string
 ) {
-  // Encontrar suscripción existente
-  const existingSub = this.activeSubscriptions.find(
+  const startDate = new Date();
+  const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  
+  // 1. Actualizar activeSubscriptions (MercadoPago)
+  const existingActiveSub = this.activeSubscriptions.find(
     (sub: any) => sub.service === service
   );
   
-  if (existingSub) {
+  if (existingActiveSub) {
     // Renovar suscripción existente
-    existingSub.startDate = new Date();
-    existingSub.expiryDate = new Date(existingSub.startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-    existingSub.isActive = true;
-    existingSub.mercadopagoPaymentId = mercadopagoPaymentId;
-    existingSub.amount = amount;
-    existingSub.currency = currency;
+    existingActiveSub.startDate = startDate;
+    existingActiveSub.expiryDate = expiryDate;
+    existingActiveSub.isActive = true;
+    existingActiveSub.mercadopagoPaymentId = mercadopagoPaymentId;
+    existingActiveSub.amount = amount;
+    existingActiveSub.currency = currency;
   } else {
-    // Agregar nueva suscripción SIN GUARDAR (evitar guardado paralelo)
-    const startDate = new Date();
-    const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
+    // Agregar nueva suscripción
     this.activeSubscriptions.push({
       service,
       startDate,
@@ -349,17 +349,48 @@ UserSchema.methods.renewSubscription = function(
     });
   }
   
-  // Actualizar fechas generales
-  this.subscriptionExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  this.lastPaymentDate = new Date();
+  // 2. ✅ NUEVO: También actualizar el array 'subscriptions' (admin) para consistencia
+  const existingAdminSub = this.subscriptions.find(
+    (sub: any) => sub.tipo === service
+  );
   
-  // ✅ IMPORTANTE: Actualizar el rol SOLO si es 'normal' (NO cambiar admin)
+  if (existingAdminSub) {
+    // Renovar suscripción existente en admin array
+    existingAdminSub.fechaInicio = startDate;
+    existingAdminSub.fechaFin = expiryDate;
+    existingAdminSub.activa = true;
+    existingAdminSub.precio = amount;
+  } else {
+    // Agregar nueva suscripción en admin array
+    this.subscriptions.push({
+      tipo: service,
+      precio: amount,
+      fechaInicio: startDate,
+      fechaFin: expiryDate,
+      activa: true
+    });
+  }
+  
+  // 3. Actualizar fechas generales
+  this.subscriptionExpiry = expiryDate;
+  this.lastPaymentDate = startDate;
+  
+  // 4. ✅ IMPORTANTE: Actualizar el rol SOLO si es 'normal' (NO cambiar admin)
   if (this.role === 'normal') {
     this.role = 'suscriptor';
     console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
   } else if (this.role === 'admin') {
     console.log('✅ Usuario admin mantiene su rol, suscripción agregada:', this.email);
   }
+  
+  console.log('✅ Suscripción actualizada en ambos arrays:', {
+    service,
+    amount,
+    currency,
+    mercadopagoPaymentId,
+    activeSubscriptions: this.activeSubscriptions.length,
+    adminSubscriptions: this.subscriptions.length
+  });
   
   // Solo hacer UN save() al final
   return this.save();
