@@ -2456,7 +2456,7 @@ const SubscriberView: React.FC = () => {
                 <div key={alert.id} className={`${styles.alertCard} alertCard`}>
                   <div className={styles.alertHeader}>
                     <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
-                    <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                    <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`} style={{ display: 'none' }}>
                       {alert.action}
                     </span>
                     <span className={styles.alertStatus}>🟢 ACTIVA</span>
@@ -2732,7 +2732,7 @@ const SubscriberView: React.FC = () => {
             <div key={alert.id} className={`${styles.alertCard} alertCard`}>
               <div className={styles.alertHeader}>
                 <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
-                <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`}>
+                <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`} style={{ display: 'none' }}>
                   {alert.action}
                 </span>
               </div>

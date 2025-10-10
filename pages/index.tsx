@@ -1369,34 +1369,12 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
               </p>
               
               <div className={styles.ctaInvestmentActions}>
-                {session ? (
-                  <button 
-                    onClick={() => handleMercadoPagoCheckout(
-                      'subscription',
-                      'TraderCall',
-                      (resolvedPricing?.alertas?.traderCall?.monthly || 0),
-                      resolvedPricing?.currency || 'ARS'
-                    )}
-                    className={styles.ctaInvestmentButtonPrimary}
-                    disabled={isProcessingPayment}
-                  >
-                    {isProcessingPayment ? (
-                      <>
-                        <Loader size={20} className={styles.spinner} />
-                        Procesando...
-                      </>
-                    ) : (
-                      resolvedPricing ? `Suscribirse a Alertas - $${resolvedPricing.alertas.traderCall.monthly} ${resolvedPricing.currency}` : 'Suscribirse a Alertas'
-                    )}
-                  </button>
-                ) : (
-                  <button 
-                    onClick={handleStartNowClick} 
-                    className={styles.ctaInvestmentButtonPrimary}
-                  >
-                    Comenzar ahora
-                  </button>
-                )}
+                <button 
+                  onClick={handleStartNowClick} 
+                  className={styles.ctaInvestmentButtonPrimary}
+                >
+                  Comenzar ahora
+                </button>
                 
                 {/* Botón Mentoring - Condicional */}
                 {isFeatureEnabled('mentoring') && (

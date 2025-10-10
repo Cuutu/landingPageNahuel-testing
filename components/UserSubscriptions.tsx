@@ -224,12 +224,11 @@ export default function UserSubscriptions() {
                         </div>
                       )}
 
-                      <div className={styles.paymentInfo}>
-                        <span>Método: {subscription.paymentMethod}</span>
-                        {subscription.transactionId && (
+                      {subscription.transactionId && (
+                        <div className={styles.paymentInfo}>
                           <span>ID: {subscription.transactionId}</span>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   </motion.div>
                 );
@@ -282,9 +281,6 @@ export default function UserSubscriptions() {
                   <div className={styles.paymentDate}>
                     <Calendar size={14} />
                     <span>{formatDate(payment.transactionDate)}</span>
-                  </div>
-                  <div className={styles.paymentMethod}>
-                    <span>{payment.paymentMethod}</span>
                   </div>
                 </div>
               </motion.div>

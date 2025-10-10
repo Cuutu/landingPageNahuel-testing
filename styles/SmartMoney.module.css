@@ -1023,8 +1023,11 @@
 }
 
 .alertCard:hover {
-  border-color: #10b981;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+  transform: translateY(-2px);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 
+    0 10px 25px -3px rgba(59, 130, 246, 0.2),
+    0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }
 
 .alertHeader {
@@ -1061,9 +1064,14 @@
 
 .alertDetails {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
 }
 
 .alertDetail {
@@ -6013,10 +6021,38 @@
 
 .profit {
   color: var(--success-color);
+  background: rgba(16, 185, 129, 0.1) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  position: relative;
+}
+
+.profit::before {
+  content: '↗';
+  position: absolute;
+  right: -1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
 .loss {
   color: var(--error-color);
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  position: relative;
+}
+
+.loss::before {
+  content: '↘';
+  position: absolute;
+  right: -1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ef4444;
+  font-weight: bold;
+  font-size: 1.2rem;
 }
 
 .tooltipStatus {
