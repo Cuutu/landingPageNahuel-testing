@@ -53,8 +53,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               expiryDate: subscription.fechaFin || new Date(subscription.fechaInicio.getTime() + 30 * 24 * 60 * 60 * 1000),
               amount: subscription.precio || 0,
               currency: 'ARS',
-              paymentMethod: 'Admin',
-              transactionId: 'admin-created'
+              paymentMethod: 'Asignación Manual',
+              transactionId: undefined
             });
           }
         }
@@ -80,8 +80,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 expiryDate: suscripcion.fechaVencimiento,
                 amount: 0, // No hay precio en el array legacy
                 currency: 'ARS',
-                paymentMethod: 'Legacy',
-                transactionId: 'legacy'
+                paymentMethod: 'Sistema Anterior',
+                transactionId: undefined
               });
             }
           }

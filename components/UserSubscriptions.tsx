@@ -24,27 +24,35 @@ const getServiceDisplayName = (service: string) => {
 
 const getStatusIcon = (status: string) => {
   switch (status) {
+    case 'approved':
     case 'active':
       return <CheckCircle size={20} className={styles.statusActive} />;
+    case 'rejected':
+    case 'cancelled':
     case 'expired':
       return <XCircle size={20} className={styles.statusExpired} />;
     case 'pending':
       return <Clock size={20} className={styles.statusPending} />;
     default:
-      return <AlertTriangle size={20} className={styles.statusUnknown} />;
+      return <CheckCircle size={20} className={styles.statusActive} />;
   }
 };
 
 const getStatusText = (status: string) => {
   switch (status) {
+    case 'approved':
     case 'active':
-      return 'Activa';
+      return 'Aprobado';
+    case 'rejected':
+      return 'Rechazado';
+    case 'cancelled':
+      return 'Cancelado';
     case 'expired':
-      return 'Expirada';
+      return 'Expirado';
     case 'pending':
       return 'Pendiente';
     default:
-      return 'Desconocido';
+      return 'Aprobado';
   }
 };
 

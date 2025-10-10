@@ -1,5 +1,5 @@
 import { GetServerSideProps } from 'next';
-import { getSession, signIn } from 'next-auth/react';
+import { getSession, signIn, useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -217,7 +217,7 @@ const YouTubeAutoCarousel: React.FC = () => {
 /**
  * Página principal del sitio web de Nahuel Lozano
  */
-export default function Home({ session, siteConfig, entrenamientos, courseCards, initialPricing }: HomeProps) {
+export default function Home({ session: serverSession, siteConfig, entrenamientos, courseCards, initialPricing }: HomeProps) {
   console.log('🏠 Renderizando página principal');
   console.log('🔧 siteConfig:', siteConfig);
   console.log('🎯 servicios visible:', siteConfig?.servicios?.visible);
@@ -225,6 +225,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
   console.log('🎓 entrenamientos:', entrenamientos);
   
   const router = useRouter();
+  const { data: session } = useSession(); // Hook del cliente para detectar cambios en tiempo real
   const { pricing, loading: pricingLoading, formatPrice: uiFormatPrice } = usePricing();
   const resolvedPricing = pricing || initialPricing;
   const { isFeatureEnabled } = useSiteConfig();
@@ -239,11 +240,19 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
 
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
+    console.log('🔍 Debug handleStartNowClick:', {
+      session: !!session,
+      sessionUser: session?.user?.email,
+      sessionStatus: session ? 'authenticated' : 'not authenticated'
+    });
+    
     if (session) {
       // Si el usuario está autenticado, redirigir a /alertas
+      console.log('✅ Usuario autenticado, redirigiendo a /alertas');
       router.push('/alertas');
     } else {
       // Si no está autenticado, iniciar sesión con Google
+      console.log('❌ Usuario no autenticado, iniciando sesión');
       signIn('google');
     }
   };

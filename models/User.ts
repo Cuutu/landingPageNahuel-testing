@@ -383,14 +383,17 @@ UserSchema.methods.renewSubscription = function(
     console.log('✅ Usuario admin mantiene su rol, suscripción agregada:', this.email);
   }
   
-  console.log('✅ Suscripción actualizada en ambos arrays:', {
-    service,
-    amount,
-    currency,
-    mercadopagoPaymentId,
-    activeSubscriptions: this.activeSubscriptions.length,
-    adminSubscriptions: this.subscriptions.length
-  });
+  // Log solo en desarrollo
+  if (process.env.NODE_ENV === 'development') {
+    console.log('✅ Suscripción actualizada en ambos arrays:', {
+      service,
+      amount,
+      currency,
+      mercadopagoPaymentId,
+      activeSubscriptions: this.activeSubscriptions.length,
+      adminSubscriptions: this.subscriptions.length
+    });
+  }
   
   // Solo hacer UN save() al final
   return this.save();
