@@ -1,8 +1,9 @@
 import React from 'react';
 import { GetServerSideProps } from 'next';
-import { getSession } from 'next-auth/react';
+import { getSession, signIn, useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackgroundVideo from '@/components/BackgroundVideo';
@@ -82,6 +83,21 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
   siteConfig
 }) => {
   const { copyToClipboard, hideNotification, isNotificationVisible, notificationItemName } = useCopyToClipboard();
+  const { data: clientSession } = useSession(); // Hook del cliente para detectar cambios en tiempo real
+  const router = useRouter();
+
+  // Función para manejar el clic del botón "Empezá Ahora"
+  const handleStartNowClick = () => {
+    const currentSession = clientSession || session; // Usar sesión del cliente o del servidor
+    
+    if (currentSession) {
+      // Si el usuario está autenticado, redirigir a /alertas
+      router.push('/alertas');
+    } else {
+      // Si no está autenticado, iniciar sesión con Google
+      signIn('google');
+    }
+  };
 
   // Datos de las herramientas de TradingView
   const tradingViewTools = [
@@ -89,7 +105,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       id: 'wall-street',
       name: 'Lista de Seguimiento Wall Street',
       type: 'watchlist',
-      url: 'https://www.tradingview.com/symbols/NYSE-SPY/',
+      url: 'https://www.notion.so/Testeo-de-la-web-286f5c06979b80b8978adcfc7a4df3a8#:~:text=https%3A//es.tradingview.com/watchlists/18037471/',
       image: '/logos/swst.png'
     },
     {
@@ -384,12 +400,12 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                <div className={styles.infoTradersOverlay}></div>
                <div className={styles.infoTradersText}>Barómetro datos de tasa de interés FED</div>
              </a>
-             <a href="https://finance.yahoo.com/calendar/dividends" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
+             <a href="https://es.investing.com/dividends-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
                <img src="/logos/cdusa.png" alt="Calendario de Dividendos en USA" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
                <div className={styles.infoTradersText}>Calendario de Dividendos en USA</div>
              </a>
-             <a href="https://www.byma.com.ar/cedears/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
+             <a href="https://cdn.prod.website-files.com/6697a441a50c6b926e1972e0/68dc420aea60e3d6ce173ea7_BYMA-Tabla-CEDEARs-2025-10-01.pdf" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
                <img src="/logos/rccars.png" alt="Ratios de Conversión de CEDEARS" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
                <div className={styles.infoTradersText}>Ratios de Conversión de CEDEARS</div>
@@ -412,7 +428,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
           <div className={styles.ctaContainer}>
             <h2 className={styles.ctaTitle}>¿Listo para llevar tus inversiones al siguiente nivel?</h2>
             <p className={styles.ctaSubtitle}>Únete a nuestra comunidad y comienza construir tu libertad financiera</p>
-            <button className={styles.ctaButton}>Elegí tu Broker &gt;</button>
+            <button className={styles.ctaButton} onClick={handleStartNowClick}>Empezá ahora &gt;</button>
           </div>
         </section>
         {/* Fin de Información para Traders */}

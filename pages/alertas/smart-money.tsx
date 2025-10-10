@@ -2477,6 +2477,7 @@ const SubscriberView: React.FC = () => {
                       onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
                       disabled={userRole !== 'admin'}
                       title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
+                      style={{ display: 'none' }}
                     >
                       Cierre total
                     </button>
@@ -2729,6 +2730,7 @@ const SubscriberView: React.FC = () => {
                   onClick={() => handleClosePosition(alert.id, alert.currentPrice)}
                   disabled={userRole !== 'admin'}
                   title={userRole !== 'admin' ? 'Solo los administradores pueden cerrar posiciones' : 'Cierre total: vender todo y cerrar'}
+                  style={{ display: 'none' }}
                 >
                   Cierre total
                 </button>

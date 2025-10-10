@@ -6037,7 +6037,7 @@
 .profit::before {
   content: '↗';
   position: absolute;
-  right: -1.5rem;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   color: #10b981;
@@ -6055,7 +6055,7 @@
 .loss::before {
   content: '↘';
   position: absolute;
-  right: -1.5rem;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
   color: #ef4444;
