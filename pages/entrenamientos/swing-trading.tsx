@@ -1488,29 +1488,6 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               >
                 {checkingEnrollment ? 'Verificando...' : 'Inscribirme ahora >'}
               </button>
-              {isEnrolled && (
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <select
-                    className={styles.ctaSelect}
-                    value={selectedDateId || ''}
-                    onChange={e => setSelectedDateId(e.target.value || null)}
-                  >
-                    <option value="">Seleccioná una fecha</option>
-                    {trainingDates
-                      .filter(d => d.isActive && d.date > new Date())
-                      .sort((a, b) => a.date.getTime() - b.date.getTime())
-                      .map((d: any) => (
-                        <option key={d.id || d._id} value={d.id || d._id}>
-                          {new Date(d.date).toLocaleDateString('es-ES')} {d.time}
-                        </option>
-                      ))}
-                  </select>
-                  <button className={`${styles.ctaButton} ${styles.ctaBlack}`} onClick={handleReserve}>Reservar mi lugar</button>
-                  {nextMeetingLink && (
-                    <a className={`${styles.ctaButton} ${styles.ctaRed}`} href={nextMeetingLink} target="_blank" rel="noreferrer">Entrar a la Reunión</a>
-                  )}
-                </div>
-              )}
             </motion.div>
           </div>
         </section>
