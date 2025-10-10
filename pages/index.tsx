@@ -2,6 +2,7 @@ import { GetServerSideProps } from 'next';
 import { getSession, signIn } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, TrendingUp, Users, Shield, Star, X, BookOpen, Clock, Award, ChevronLeft, Loader } from 'lucide-react';
@@ -223,6 +224,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
   console.log('📚 cursos visible:', siteConfig?.cursos?.visible);
   console.log('🎓 entrenamientos:', entrenamientos);
   
+  const router = useRouter();
   const { pricing, loading: pricingLoading, formatPrice: uiFormatPrice } = usePricing();
   const resolvedPricing = pricing || initialPricing;
   const { isFeatureEnabled } = useSiteConfig();
@@ -234,6 +236,17 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
   const [currentTestimonialIndex, setCurrentTestimonialIndex] = useState(0);
   const [currentDestacadoIndex, setCurrentDestacadoIndex] = useState(0);
   const [currentTestimonialGroupIndex, setCurrentTestimonialGroupIndex] = useState(0);
+
+  // Función para manejar el clic del botón "Empezá Ahora"
+  const handleStartNowClick = () => {
+    if (session) {
+      // Si el usuario está autenticado, redirigir a /alertas
+      router.push('/alertas');
+    } else {
+      // Si no está autenticado, iniciar sesión con Google
+      signIn('google');
+    }
+  };
 
   // Hook para manejar la frecuencia del popup
   const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
@@ -620,7 +633,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
                 </p>
                 
                 <div className={styles.heroActions}>
-                  <button onClick={() => signIn('google')} className={styles.heroButton}>
+                  <button onClick={handleStartNowClick} className={styles.heroButton}>
                     Empezá Ahora &gt;
                   </button>
                 </div>
@@ -1369,7 +1382,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
                   </button>
                 ) : (
                   <button 
-                    onClick={() => signIn('google')} 
+                    onClick={handleStartNowClick} 
                     className={styles.ctaInvestmentButtonPrimary}
                   >
                     Comenzar ahora
