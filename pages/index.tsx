@@ -815,7 +815,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
                         </button>
                       ) : (
                         <Link href="/alertas" className={styles.servicioButton}>
-                          Quiero hacer más &gt;
+                          Quiero saber más &gt;
                         </Link>
                       )}
                     </div>
@@ -868,7 +868,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
                         </button>
                       ) : (
                         <Link href="/entrenamientos" className={styles.servicioButton}>
-                          Quiero hacer más &gt;
+                          Quiero saber más &gt;
                         </Link>
                       )}
                     </div>
@@ -900,7 +900,7 @@ export default function Home({ session, siteConfig, entrenamientos, courseCards,
                       </div>
                       
                       <Link href="/asesorias" className={styles.servicioButton}>
-                        Quiero hacer más &gt;
+                        Quiero saber más &gt;
                       </Link>
                     </div>
                   </motion.div>
