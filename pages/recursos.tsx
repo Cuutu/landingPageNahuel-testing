@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
 import { getSession, signIn, useSession } from 'next-auth/react';
 import Head from 'next/head';
@@ -19,6 +19,8 @@ import {
   Calendar,
   DollarSign,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   Activity,
   Play,
   Download,
@@ -73,6 +75,92 @@ interface RecursosPageProps {
   };
 }
 
+/**
+ * Componente de carousel automático para videos de YouTube
+ */
+const YouTubeAutoCarousel: React.FC = () => {
+  const [currentVideo, setCurrentVideo] = useState(0);
+  
+  const videos = [
+    {
+      id: '0NpdClGWaY8',
+      title: 'Video 1'
+    },
+    {
+      id: 'jl3lUCIluAs',
+      title: 'Video 2'
+    },
+    {
+      id: '_AMDVmj9_jw',
+      title: 'Video 3'
+    },
+    {
+      id: 'sUktp76givU',
+      title: 'Video 4'
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVideo((prev) => (prev + 1) % videos.length);
+    }, 5000); // Cambia cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [videos.length]);
+
+  const goToPrevious = () => {
+    setCurrentVideo((prev) => (prev - 1 + videos.length) % videos.length);
+  };
+
+  const goToNext = () => {
+    setCurrentVideo((prev) => (prev + 1) % videos.length);
+  };
+
+  return (
+    <div className={styles.youtubeAutoCarousel}>
+      <button 
+        onClick={goToPrevious}
+        className={styles.youtubeArrowLeft}
+        aria-label="Video anterior"
+      >
+        <ChevronLeft size={24} />
+      </button>
+      
+      <div className={styles.youtubeVideoFrame}>
+        <iframe
+          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          title={videos[currentVideo].title}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className={styles.youtubeVideoPlayer}
+        />
+      </div>
+      
+      <button 
+        onClick={goToNext}
+        className={styles.youtubeArrowRight}
+        aria-label="Siguiente video"
+      >
+        <ChevronRight size={24} />
+      </button>
+
+      <div className={styles.youtubeIndicators}>
+        {videos.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentVideo(index)}
+            className={`${styles.youtubeIndicator} ${
+              index === currentVideo ? styles.youtubeIndicatorActive : ''
+            }`}
+            aria-label={`Ver video ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const RecursosPage: React.FC<RecursosPageProps> = ({ 
   session,
   formulasTradingView, 
@@ -105,7 +193,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       id: 'wall-street',
       name: 'Lista de Seguimiento Wall Street',
       type: 'watchlist',
-      url: 'https://www.notion.so/Testeo-de-la-web-286f5c06979b80b8978adcfc7a4df3a8#:~:text=https%3A//es.tradingview.com/watchlists/18037471/',
+      url: 'https://es.tradingview.com/watchlists/18037471/',
       image: '/logos/swst.png'
     },
     {
@@ -434,27 +522,30 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         {/* Fin de Información para Traders */}
         {/* Aquí terminan las secciones modernas, eliminamos las viejas */}
         
-         {/* Sección YouTube */}
-         <section className={styles.youtubeSection}>
-          <div className={styles.youtubeContainer}>
-            <div className={styles.youtubeText}>
-              <h2 className={styles.youtubeTitle}>¡Sumate a nuestra comunidad<br/>en YouTube!</h2>
-              <p className={styles.youtubeSubtitle}>No te pierdas nuestros últimos videos</p>
-            </div>
-            <div className={styles.youtubeVideoContainer}>
-              <button className={styles.videoArrow} aria-label="Anterior">&#60;</button>
-              <div className={styles.videoPlayer}>
-                <YouTubePlayer
-                  videoId={siteConfig?.resourcesVideos?.mainVideo?.youtubeId || "dQw4w9WgXcQ"}
-                  title={siteConfig?.resourcesVideos?.mainVideo?.title || "Recursos de Trading"}
-                  autoplay={siteConfig?.resourcesVideos?.mainVideo?.autoplay || false}
-                  muted={siteConfig?.resourcesVideos?.mainVideo?.muted || true}
-                  loop={siteConfig?.resourcesVideos?.mainVideo?.loop || false}
-                  className={styles.videoPlayer}
-                />
+         {/* YouTube Community Section */}
+        <section className={styles.youtubeSection}>
+          <div className="container">
+            <motion.div
+              className={styles.youtubeContent}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <div className={styles.youtubeText}>
+                <h2 className={styles.youtubeTitle}>
+                  ¡Sumate a nuestra comunidad<br />
+                  en YouTube!
+                </h2>
+                <p className={styles.youtubeSubtitle}>
+                  No te pierdas nuestros últimos videos
+                </p>
               </div>
-              <button className={styles.videoArrow} aria-label="Siguiente">&#62;</button>
-            </div>
+
+              <div className={styles.youtubeVideoContainer}>
+                <YouTubeAutoCarousel />
+              </div>
+            </motion.div>
           </div>
         </section>
 

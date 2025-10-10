@@ -918,28 +918,17 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 )}
                 
                 <button 
-                  onClick={handleEnroll}
+                  onClick={() => {
+                    // Hacer scroll a la sección del calendario
+                    const calendarSection = document.querySelector(`.${styles.calendarSection}`);
+                    if (calendarSection) {
+                      calendarSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
                   className={styles.enrollButton}
-                  disabled={checkingEnrollment || isProcessingPayment || (!selectedMonth && !monthlyAccess?.hasAccess && !isEnrolled)}
+                  disabled={checkingEnrollment || isProcessingPayment}
                 >
-                  {isProcessingPayment ? (
-                    <>
-                      <Loader size={20} className={styles.spinner} />
-                      Procesando...
-                    </>
-                  ) : monthlyAccess?.hasAccess ? (
-                    <>
-                      Acceso Activo ✓
-                    </>
-                  ) : isEnrolled ? (
-                    <>
-                      Ver Clase &gt;
-                    </>
-                  ) : (
-                    <>
-                      Suscribirse al Mes &gt;
-                    </>
-                  )}
+                  Inscribirme ahora &gt;
                 </button>
               </div>
               <div className={styles.heroVideo}>
@@ -1392,20 +1381,17 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 </div>
                 
                 <button 
-                  onClick={handleEnroll}
+                  onClick={() => {
+                    // Hacer scroll a la sección del calendario
+                    const calendarSection = document.querySelector(`.${styles.calendarSection}`);
+                    if (calendarSection) {
+                      calendarSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }}
                   className={styles.testimonialsButton}
                   disabled={checkingEnrollment || isProcessingPayment}
                 >
-                  {isProcessingPayment ? (
-                    <>
-                      <Loader size={20} className={styles.spinner} />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      Inscribirme Ahora &gt;
-                    </>
-                  )}
+                  Inscribirme Ahora &gt;
                 </button>
               </div>
 
@@ -1489,15 +1475,19 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               <p className={styles.ctaDescription}>
                 Únete a nuestra comunidad y comienza construir tu libertad financiera
               </p>
-              {!isEnrolled && (
-                <button 
-                  onClick={handleEnroll}
-                  className={`${styles.ctaButton} ${styles.ctaRed}`}
-                  disabled={checkingEnrollment}
-                >
-                  {checkingEnrollment ? 'Verificando...' : 'Inscribirme ahora >'}
-                </button>
-              )}
+              <button 
+                onClick={() => {
+                  // Hacer scroll a la sección del calendario
+                  const calendarSection = document.querySelector(`.${styles.calendarSection}`);
+                  if (calendarSection) {
+                    calendarSection.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+                className={`${styles.ctaButton} ${styles.ctaRed}`}
+                disabled={checkingEnrollment}
+              >
+                {checkingEnrollment ? 'Verificando...' : 'Inscribirme ahora >'}
+              </button>
               {isEnrolled && (
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <select
