@@ -42,6 +42,21 @@ export default function PaymentSuccess() {
     return serviceMessages[service] || 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido premium.';
   };
 
+  // Función para obtener la URL y texto del botón según el servicio
+  const getActionButton = (service: string) => {
+    const actionButtons: { [key: string]: { url: string; text: string } } = {
+      'SmartMoney': { url: '/alertas/smartmoney', text: 'Ir a mis alertas' },
+      'TraderCall': { url: '/alertas/tradercall', text: 'Ir a mis alertas' },
+      'CashFlow': { url: '/alertas/cashflow', text: 'Ir a mis alertas' },
+      'SwingTrading': { url: '/entrenamientos/swing-trading', text: 'Ir a mis entrenamientos' },
+      'DowJones': { url: '/entrenamientos/dow-jones', text: 'Ir a mis entrenamientos' },
+      'Consulta Financiera': { url: '/asesorias', text: 'Ver mis asesorías' },
+      'Asesoría': { url: '/asesorias', text: 'Ver mis asesorías' }
+    };
+    
+    return actionButtons[service] || { url: '/', text: 'Ir al inicio' };
+  };
+
   useEffect(() => {
     const { reference } = router.query;
     
@@ -212,25 +227,13 @@ export default function PaymentSuccess() {
           )}
 
           <div className={styles.buttonGroup}>
-            {paymentDetails?.service && ['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) && (
-              <Link href="/alertas" className={`${styles.button} ${styles.actionButton}`}>
-                Ir a mis alertas
+            {paymentDetails && (
+              <Link href={getActionButton(paymentDetails.service).url} className={`${styles.button} ${styles.actionButton}`}>
+                {getActionButton(paymentDetails.service).text}
               </Link>
             )}
             
-            {paymentDetails?.service && ['SwingTrading', 'DowJones'].includes(paymentDetails.service) && (
-              <Link href="/entrenamientos" className={`${styles.button} ${styles.actionButton}`}>
-                Ir a Entrenamientos
-              </Link>
-            )}
-
-            {paymentDetails?.service && paymentDetails.service.includes('booking') && (
-              <Link href="/reservas" className={`${styles.button} ${styles.actionButton}`}>
-                Ver Mis Reservas
-              </Link>
-            )}
-            
-            <Link href="/" className={`${styles.button} ${styles.actionButton}`}>
+            <Link href="/" className={`${styles.button} ${styles.homeButton}`}>
               Volver al inicio
             </Link>
           </div>
