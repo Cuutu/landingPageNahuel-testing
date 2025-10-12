@@ -343,6 +343,51 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   />
                 </div>
 
+                {/* Imágenes del informe en el contenido principal */}
+                {report.images && report.images.length > 0 && (
+                  <div className={styles.reportImages}>
+                    <h2>📸 Imágenes del Informe ({report.images.length})</h2>
+                    <div className={styles.imagesGrid}>
+                      {report.images.map((image, index) => (
+                        <div 
+                          key={index}
+                          className={styles.imageThumbnail}
+                        >
+                          <div className={styles.imageContainer}>
+                            <img 
+                              src={image.optimizedUrl || image.url}
+                              alt={image.caption || `Imagen ${index + 1}`}
+                              loading="lazy"
+                              onClick={() => handleImageClick(index)}
+                            />
+                            <div className={styles.imageActions}>
+                              <button 
+                                className={styles.stickyButton}
+                                onClick={() => handleImageSticky(image, index)}
+                                title="Hacer sticky"
+                              >
+                                📌
+                              </button>
+                              <button 
+                                className={styles.viewButton}
+                                onClick={() => handleImageClick(index)}
+                                title="Ver en grande"
+                              >
+                                👁️
+                              </button>
+                            </div>
+                          </div>
+                          {image.caption && (
+                            <div className={styles.imageCaption}>
+                              {image.caption}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Navegación de artículos - AHORA DESPUÉS */}
                 {publishedArticles.length > 0 && (
                   <div className={styles.articlesNavigation}>
