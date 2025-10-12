@@ -284,7 +284,8 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     return () => window.removeEventListener('scroll', handleScroll);
   }, [isScrolledPastImages, report.images]);
 
-  // Cambiar imagen sticky automáticamente cada 5 segundos
+  // Cambiar imagen sticky automáticamente cada 5 segundos - DESHABILITADO
+  /*
   useEffect(() => {
     if (!stickyImage || !report.images || report.images.length <= 1) return;
 
@@ -298,6 +299,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
     return () => clearInterval(interval);
   }, [stickyImage, currentStickyImageIndex, report.images]);
+  */
 
   return (
     <>
@@ -543,15 +545,62 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               onClick={closeImageModal}
             >
               <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={styles.closeImageModal} 
+              onClick={closeImageModal}
+              aria-label="Cerrar modal de imagen"
+            >
+              ×
+            </button>
+            
+            <div 
+              className={styles.imageModalContent}
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+            >
+              {report.images.length > 1 && (
                 <button 
-                  className={styles.closeImageModal} 
-                  onClick={closeImageModal}
-                  aria-label="Cerrar modal de imagen"
+                  className={styles.imageNavButton} 
+                  onClick={prevImage}
+                  disabled={currentImageIndex === 0}
+                  aria-label="Imagen anterior"
                 >
-                  ×
+                  ‹
                 </button>
-                
-            {/* Controles de zoom */}
+              )}
+              
+              <div 
+                className={styles.zoomableImageContainer}
+                style={{
+                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                  transformOrigin: 'center center'
+                }}
+              >
+                <img 
+                  src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
+                  alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
+                  className={styles.modalImage}
+                  draggable={false}
+                />
+              </div>
+              
+              {report.images.length > 1 && (
+                <button 
+                  className={styles.imageNavButton} 
+                  onClick={nextImage}
+                  disabled={currentImageIndex === report.images.length - 1}
+                  aria-label="Imagen siguiente"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+
+            {/* Controles de zoom ABAJO */}
             <div className={styles.zoomControls}>
               <span className={styles.imageCounter}>
                 {currentImageIndex + 1} de {report.images.length}
@@ -583,53 +632,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 </button>
               </div>
             </div>
-                
-                <div 
-                  className={styles.imageModalContent}
-                  onWheel={handleWheel}
-                  onMouseDown={handleMouseDown}
-                  onMouseMove={handleMouseMove}
-                  onMouseUp={handleMouseUp}
-                  onMouseLeave={handleMouseUp}
-                  style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
-                >
-                  {report.images.length > 1 && (
-                    <button 
-                      className={styles.imageNavButton} 
-                      onClick={prevImage}
-                      disabled={currentImageIndex === 0}
-                      aria-label="Imagen anterior"
-                    >
-                      ‹
-                    </button>
-                  )}
-                  
-                  <div 
-                    className={styles.zoomableImageContainer}
-                    style={{
-                      transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                      transformOrigin: 'center center'
-                    }}
-                  >
-                    <img 
-                      src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
-                      alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
-                      className={styles.modalImage}
-                      draggable={false}
-                    />
-                  </div>
-                  
-                  {report.images.length > 1 && (
-                    <button 
-                      className={styles.imageNavButton} 
-                      onClick={nextImage}
-                      disabled={currentImageIndex === report.images.length - 1}
-                      aria-label="Imagen siguiente"
-                    >
-                      ›
-                    </button>
-                  )}
-                </div>
                 
             <div className={styles.imageModalInfo}>
               {report.images[currentImageIndex]?.caption && (
@@ -713,39 +715,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               ×
             </button>
             
-            {/* Controles de zoom */}
-            <div className={styles.zoomControls}>
-              <span className={styles.imageCounter}>
-                {currentImageIndex + 1} de {report.images.length}
-              </span>
-              <div className={styles.zoomButtonGroup}>
-                <button 
-                  className={styles.zoomButton} 
-                  onClick={handleZoomOut}
-                  disabled={zoomLevel <= 0.5}
-                  aria-label="Alejar"
-                >
-                  −
-                </button>
-                <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
-                <button 
-                  className={styles.zoomButton} 
-                  onClick={handleZoomIn}
-                  disabled={zoomLevel >= 3}
-                  aria-label="Acercar"
-                >
-                  +
-                </button>
-                <button 
-                  className={styles.zoomButton} 
-                  onClick={resetZoom}
-                  aria-label="Resetear zoom"
-                >
-                  ⌂
-                </button>
-              </div>
-            </div>
-            
             <div 
               className={styles.imageModalContent}
               onWheel={handleWheel}
@@ -791,6 +760,39 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   ›
                 </button>
               )}
+            </div>
+
+            {/* Controles de zoom ABAJO */}
+            <div className={styles.zoomControls}>
+              <span className={styles.imageCounter}>
+                {currentImageIndex + 1} de {report.images.length}
+              </span>
+              <div className={styles.zoomButtonGroup}>
+                <button 
+                  className={styles.zoomButton} 
+                  onClick={handleZoomOut}
+                  disabled={zoomLevel <= 0.5}
+                  aria-label="Alejar"
+                >
+                  −
+                </button>
+                <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
+                <button 
+                  className={styles.zoomButton} 
+                  onClick={handleZoomIn}
+                  disabled={zoomLevel >= 3}
+                  aria-label="Acercar"
+                >
+                  +
+                </button>
+                <button 
+                  className={styles.zoomButton} 
+                  onClick={resetZoom}
+                  aria-label="Resetear zoom"
+                >
+                  ⌂
+                </button>
+              </div>
             </div>
             
             <div className={styles.imageModalInfo}>
