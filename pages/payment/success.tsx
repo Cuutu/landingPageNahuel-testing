@@ -224,24 +224,23 @@ export default function PaymentSuccess() {
               </Link>
             )}
             
-            <Link href="/" className={`${styles.button} ${styles.homeButton}`}>
-              <Home size={20} />
+            <Link href="/" className={`${styles.button} ${styles.homeButtonLarge}`}>
+              <Home size={24} />
               Volver al Inicio
             </Link>
           </div>
 
-
           <div className={styles.supportInfo}>
-            <p>
-              <strong>¿Necesitas ayuda?</strong>
-            </p>
-            <p>
+            <p className={styles.supportMessage}>
               Si tienes alguna pregunta sobre tu compra, no dudes en contactarnos.
             </p>
+            <p className={styles.helpQuestion}>
+              <strong>¿Necesitas ayuda?</strong>
+            </p>
             <div className={styles.contactOptions}>
-              <a href="mailto:soporte@nahuellozano.com" className={styles.contactLink}>
+              <a href="mailto:soporte@lozanonahuel.com" className={styles.contactLink}>
                 <Mail size={16} />
-                soporte@nahuellozano.com
+                soporte@lozanonahuel.com
               </a>
             </div>
           </div>

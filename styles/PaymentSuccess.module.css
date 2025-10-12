@@ -205,6 +205,71 @@
   line-height: 1.6;
 }
 
+/* Nuevos estilos para las mejoras */
+.homeButtonLarge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  border-radius: 16px;
+  padding: 1.2rem 2.5rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+  margin-top: 1rem;
+}
+
+.homeButtonLarge:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.4);
+}
+
+.supportInfo {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.supportMessage {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.helpQuestion {
+  color: white;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.contactOptions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.contactLink {
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.contactLink:hover {
+  color: #10b981;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {
@@ -226,5 +291,19 @@
   .accessInfo {
     flex-direction: column;
     text-align: center;
+  }
+  
+  .homeButtonLarge {
+    font-size: 1.1rem;
+    padding: 1rem 2rem;
+  }
+  
+  .supportInfo {
+    margin-top: 2rem;
+  }
+  
+  .contactOptions {
+    flex-direction: column;
+    gap: 0.5rem;
   }
 }
