@@ -2954,16 +2954,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Solo hacer scroll al bottom cuando se envía un mensaje, no al cargar
+    // Solo hacer scroll al bottom cuando se envía un mensaje NUEVO por el usuario
+    const [previousMessageCount, setPreviousMessageCount] = useState(0);
+    
     useEffect(() => {
-      // Solo hacer scroll si hay mensajes y no estamos cargando
-      if (messages.length > 0 && !loading) {
-        // Pequeño delay para asegurar que el DOM se actualice
+      // Solo hacer scroll si se agregó un mensaje nuevo (no al cargar inicialmente)
+      if (messages.length > previousMessageCount && previousMessageCount > 0 && !loading) {
         setTimeout(() => {
           scrollToBottom();
         }, 100);
       }
-    }, [messages.length]); // Cambio: solo cuando cambia la cantidad de mensajes
+      setPreviousMessageCount(messages.length);
+    }, [messages.length, previousMessageCount, loading]);
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
