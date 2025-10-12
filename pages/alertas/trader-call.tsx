@@ -3002,9 +3002,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const [loading, setLoading] = useState(true);
     const [replyingTo, setReplyingTo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      // Hacer scroll solo dentro del contenedor del chat, no de toda la página
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      }
     };
 
     // Solo hacer scroll al bottom cuando se envía un mensaje NUEVO por el usuario
@@ -3144,7 +3148,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             </div>
           </div>
           
-          <div className={styles.chatMainFull}>
+          <div className={styles.chatMainFull} ref={chatContainerRef}>
             {messages.length === 0 ? (
               <div className={styles.emptyChat}>
                 <div className={styles.emptyChatIcon}>💬</div>
