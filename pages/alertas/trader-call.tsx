@@ -3040,13 +3040,37 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     const fetchMessages = async () => {
       try {
+        // Intentar cargar mensajes desde localStorage primero
+        const cachedMessages = localStorage.getItem('trader-call-chat-messages');
+        const cacheTimestamp = localStorage.getItem('trader-call-chat-timestamp');
+        const now = Date.now();
+        
+        // Si hay cache y tiene menos de 5 minutos, usarlo
+        if (cachedMessages && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
+          setMessages(JSON.parse(cachedMessages));
+          setLoading(false);
+          return;
+        }
+
+        // Si no hay cache válido, fetch desde API
         const response = await fetch('/api/chat/messages?chatType=trader-call');
         if (response.ok) {
           const data = await response.json();
-          setMessages(data.messages || []);
+          const messages = data.messages || [];
+          
+          // Guardar en localStorage
+          localStorage.setItem('trader-call-chat-messages', JSON.stringify(messages));
+          localStorage.setItem('trader-call-chat-timestamp', now.toString());
+          
+          setMessages(messages);
         }
       } catch (error) {
         console.error('Error cargando mensajes:', error);
+        // En caso de error, intentar usar cache aunque sea viejo
+        const cachedMessages = localStorage.getItem('trader-call-chat-messages');
+        if (cachedMessages) {
+          setMessages(JSON.parse(cachedMessages));
+        }
       } finally {
         setLoading(false);
       }
@@ -3079,7 +3103,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
           if (response.ok) {
             const data = await response.json();
-            setMessages(prev => [...prev, data.message]);
+            const updatedMessages = [...messages, data.message];
+            setMessages(updatedMessages);
+            
+            // Actualizar cache local
+            localStorage.setItem('trader-call-chat-messages', JSON.stringify(updatedMessages));
+            localStorage.setItem('trader-call-chat-timestamp', Date.now().toString());
+            
             setMessage('');
             setReplyingTo(null); // Limpiar la respuesta
           } else {
@@ -3115,10 +3145,35 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     };
 
     const formatTime = (timestamp: string) => {
-      return new Date(timestamp).toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
+      const date = new Date(timestamp);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      
+      // Si es hoy, solo mostrar hora
+      if (date.toDateString() === today.toDateString()) {
+        return date.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      }
+      // Si es ayer, mostrar "Ayer" + hora
+      else if (date.toDateString() === yesterday.toDateString()) {
+        return `Ayer ${date.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}`;
+      }
+      // Si es más antiguo, mostrar fecha completa + hora
+      else {
+        return `${date.toLocaleDateString('es-ES', {
+          day: '2-digit',
+          month: '2-digit'
+        })} ${date.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        })}`;
+      }
     };
 
     if (loading) {
