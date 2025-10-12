@@ -289,9 +289,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     if (!stickyImage || !report.images || report.images.length <= 1) return;
 
     const interval = setInterval(() => {
-      const nextIndex = (currentStickyImageIndex + 1) % report.images.length;
-      setStickyImage({ ...report.images[nextIndex], index: nextIndex });
-      setCurrentStickyImageIndex(nextIndex);
+      const nextIndex = (currentStickyImageIndex + 1) % (report.images?.length || 1);
+      if (report.images && report.images[nextIndex]) {
+        setStickyImage({ ...report.images[nextIndex], index: nextIndex });
+        setCurrentStickyImageIndex(nextIndex);
+      }
     }, 5000);
 
     return () => clearInterval(interval);
@@ -667,9 +669,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   className={styles.stickyNavButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const prevIndex = currentStickyImageIndex === 0 ? report.images.length - 1 : currentStickyImageIndex - 1;
-                    setStickyImage({ ...report.images[prevIndex], index: prevIndex });
-                    setCurrentStickyImageIndex(prevIndex);
+                    if (report.images) {
+                      const prevIndex = currentStickyImageIndex === 0 ? report.images.length - 1 : currentStickyImageIndex - 1;
+                      setStickyImage({ ...report.images[prevIndex], index: prevIndex });
+                      setCurrentStickyImageIndex(prevIndex);
+                    }
                   }}
                   style={{ left: '4px' }}
                 >
@@ -679,9 +683,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   className={styles.stickyNavButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    const nextIndex = (currentStickyImageIndex + 1) % report.images.length;
-                    setStickyImage({ ...report.images[nextIndex], index: nextIndex });
-                    setCurrentStickyImageIndex(nextIndex);
+                    if (report.images) {
+                      const nextIndex = (currentStickyImageIndex + 1) % report.images.length;
+                      setStickyImage({ ...report.images[nextIndex], index: nextIndex });
+                      setCurrentStickyImageIndex(nextIndex);
+                    }
                   }}
                   style={{ right: '4px' }}
                 >
