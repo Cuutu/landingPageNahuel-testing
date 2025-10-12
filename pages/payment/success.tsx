@@ -45,13 +45,13 @@ export default function PaymentSuccess() {
   // Función para obtener la URL y texto del botón según el servicio
   const getActionButton = (service: string) => {
     const actionButtons: { [key: string]: { url: string; text: string } } = {
-      'SmartMoney': { url: '/alertas/smartmoney', text: 'Ir a mis alertas' },
-      'TraderCall': { url: '/alertas/tradercall', text: 'Ir a mis alertas' },
+      'SmartMoney': { url: '/alertas/smart-money', text: 'Ir a mis alertas' },
+      'TraderCall': { url: '/alertas/trader-call', text: 'Ir a mis alertas' },
       'CashFlow': { url: '/alertas/cashflow', text: 'Ir a mis alertas' },
       'SwingTrading': { url: '/entrenamientos/swing-trading', text: 'Ir a mis entrenamientos' },
       'DowJones': { url: '/entrenamientos/dow-jones', text: 'Ir a mis entrenamientos' },
-      'Consulta Financiera': { url: '/asesorias', text: 'Ver mis asesorías' },
-      'Asesoría': { url: '/asesorias', text: 'Ver mis asesorías' }
+      'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Ver mis asesorías' },
+      'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Ver mis asesorías' }
     };
     
     return actionButtons[service] || { url: '/', text: 'Ir al inicio' };

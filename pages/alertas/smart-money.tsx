@@ -449,7 +449,7 @@ interface CommunityMessage {
 }
 
 // Vista de suscriptor completa
-const SubscriberView: React.FC = () => {
+const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>([]);
@@ -3360,6 +3360,24 @@ const SubscriberView: React.FC = () => {
 
   const renderComunidad = () => <CommunityChat />;
 
+  const renderFAQ = () => (
+    <div className={styles.faqSection}>
+      <div className={styles.container}>
+        <h2 className={styles.sectionTitle}>
+          Preguntas Frecuentes
+        </h2>
+        
+        <div className={styles.faqContainer}>
+          <FAQAccordion 
+            faqs={faqs}
+            category="smart-money"
+            maxItems={20}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   // Modal para crear nueva alerta
   const renderCreateAlertModal = () => {
     if (!showCreateAlert) return null;
@@ -3708,6 +3726,13 @@ const SubscriberView: React.FC = () => {
               <MessageCircle size={20} />
               Consultas
             </button>
+            <button 
+              className={`${styles.sidebarButton} ${activeTab === 'faq' ? styles.sidebarActive : ''}`}
+              onClick={() => setActiveTab('faq')}
+            >
+              <MessageCircle size={20} />
+              Preguntas frecuentes
+            </button>
           </nav>
 
           {/* Accesos Rápidos */}
@@ -3737,6 +3762,7 @@ const SubscriberView: React.FC = () => {
           {activeTab === 'vigentes' && renderAlertasVigentes()}
           {activeTab === 'informes' && renderInformes()}
           {activeTab === 'comunidad' && renderComunidad()}
+          {activeTab === 'faq' && renderFAQ()}
         </main>
       </div>
 
@@ -4626,7 +4652,7 @@ const SmartMoneyPage: React.FC<SmartMoneyPageProps> = ({
       <main className={styles.main}>
         {isSubscribed ? (
           <ScreenshotProtection>
-            <SubscriberView />
+            <SubscriberView faqs={faqs} />
           </ScreenshotProtection>
         ) : (
           <NonSubscriberView 
