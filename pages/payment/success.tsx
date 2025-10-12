@@ -27,6 +27,21 @@ export default function PaymentSuccess() {
   const [error, setError] = useState<string | null>(null);
   const [processingComplete, setProcessingComplete] = useState(false);
 
+  // Función para obtener el mensaje dinámico según el servicio
+  const getServiceMessage = (service: string) => {
+    const serviceMessages: { [key: string]: string } = {
+      'SmartMoney': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de SmartMoney.',
+      'TraderCall': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de TraderCall.',
+      'CashFlow': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de CashFlow.',
+      'SwingTrading': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de Swing Trading.',
+      'DowJones': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de Dow Jones.',
+      'Consulta Financiera': 'Gracias por tu pago. En unos segundos vas a poder acceder a tu consulta financiera.',
+      'Asesoría': 'Gracias por tu pago. En unos segundos vas a poder acceder a tu asesoría personalizada.'
+    };
+    
+    return serviceMessages[service] || 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido premium.';
+  };
+
   useEffect(() => {
     const { reference } = router.query;
     
@@ -156,7 +171,7 @@ export default function PaymentSuccess() {
           <h1 className={styles.title}>Tu compra fue exitosa!</h1>
           
           <p className={styles.subtitle}>
-            Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de SmartMoney: Premium.
+            {paymentDetails ? getServiceMessage(paymentDetails.service) : 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido premium.'}
           </p>
 
           {paymentDetails && (
