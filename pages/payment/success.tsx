@@ -153,16 +153,17 @@ export default function PaymentSuccess() {
             <CheckCircle size={60} />
           </div>
           
-          <h1 className={styles.title}>¡Pago Exitoso!</h1>
+          <h1 className={styles.title}>Tu compra fue exitosa!</h1>
           
           <p className={styles.subtitle}>
-            Tu pago ha sido procesado correctamente. En 30 segundos podrás acceder a todo el contenido!
+            Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de SmartMoney: Premium.
           </p>
 
           {paymentDetails && (
             <div className={styles.paymentDetails}>
+              <h3 className={styles.summaryTitle}>Resumen de tu operación</h3>
               <div className={styles.detailRow}>
-                <span>Servicio:</span>
+                <span>Servicio pagado:</span>
                 <span>{paymentDetails.service}</span>
               </div>
               <div className={styles.detailRow}>
@@ -170,79 +171,59 @@ export default function PaymentSuccess() {
                 <span>${paymentDetails.amount} {paymentDetails.currency}</span>
               </div>
               <div className={styles.detailRow}>
+                <span>Fecha:</span>
+                <span>{paymentDetails.transactionDate ? new Date(paymentDetails.transactionDate).toLocaleDateString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  timeZone: 'America/Argentina/Buenos_Aires'
+                }) : 'N/A'}</span>
+              </div>
+              <div className={styles.detailRow}>
                 <span>Estado:</span>
                 <span className={styles.statusApproved}>Aprobado</span>
               </div>
               {paymentDetails.paymentId && (
                 <div className={styles.detailRow}>
-                  <span>ID de Transacción:</span>
-                  <span className={styles.transactionId}>{paymentDetails.paymentId}</span>
+                  <span>ID de transacción: {paymentDetails.paymentId}</span>
                 </div>
               )}
-              {paymentDetails.transactionDate && (
-                <div className={styles.detailRow}>
-                  <span>Fecha:</span>
-                  <span>{new Date(paymentDetails.transactionDate).toLocaleDateString('es-ES', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'America/Argentina/Buenos_Aires'
-                  })}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {processingComplete && (
-            <div className={styles.processingStatus}>
-              <CheckCircle size={20} className={styles.successIcon} />
-              <span>Procesamiento completado exitosamente</span>
+              <div className={styles.detailRow}>
+                <span>Procesamiento completado con éxito</span>
+              </div>
             </div>
           )}
 
           <div className={styles.buttonGroup}>
             {paymentDetails?.service && ['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) && (
-              <Link href="/alertas" className={`${styles.button} ${styles.primaryButton}`}>
-                Ir a las Alertas
-                <ArrowRight size={20} />
+              <Link href="/alertas" className={`${styles.button} ${styles.actionButton}`}>
+                Ir a mis alertas
               </Link>
             )}
             
             {paymentDetails?.service && ['SwingTrading', 'DowJones'].includes(paymentDetails.service) && (
-              <Link href="/entrenamientos" className={`${styles.button} ${styles.primaryButton}`}>
+              <Link href="/entrenamientos" className={`${styles.button} ${styles.actionButton}`}>
                 Ir a Entrenamientos
-                <ArrowRight size={20} />
               </Link>
             )}
 
             {paymentDetails?.service && paymentDetails.service.includes('booking') && (
-              <Link href="/reservas" className={`${styles.button} ${styles.primaryButton}`}>
+              <Link href="/reservas" className={`${styles.button} ${styles.actionButton}`}>
                 Ver Mis Reservas
-                <Calendar size={20} />
               </Link>
             )}
             
-            <Link href="/" className={`${styles.button} ${styles.homeButtonLarge}`}>
-              <Home size={24} />
-              Volver al Inicio
+            <Link href="/" className={`${styles.button} ${styles.actionButton}`}>
+              Volver al inicio
             </Link>
           </div>
 
           <div className={styles.supportInfo}>
             <p className={styles.supportMessage}>
-              Si tienes alguna pregunta sobre tu compra, no dudes en contactarnos.
+              Necesitas ayuda. soporte@lozanonahuel.com
             </p>
-            <p className={styles.helpQuestion}>
-              <strong>¿Necesitas ayuda?</strong>
-            </p>
-            <div className={styles.contactOptions}>
-              <a href="mailto:soporte@lozanonahuel.com" className={styles.contactLink}>
-                <Mail size={16} />
-                soporte@lozanonahuel.com
-              </a>
-            </div>
           </div>
         </div>
       </div>
