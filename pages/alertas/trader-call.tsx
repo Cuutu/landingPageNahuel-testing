@@ -4191,6 +4191,8 @@ const ReportViewModal = ({ report, onClose }: {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [stickyImage, setStickyImage] = useState<any>(null);
+  const [showStickyModal, setShowStickyModal] = useState(false);
 
   const handleImageClick = (index: number) => {
     setCurrentImageIndex(index);
@@ -4243,6 +4245,27 @@ const ReportViewModal = ({ report, onClose }: {
     } else {
       handleZoomOut();
     }
+  };
+
+  const handleImageSticky = (image: any, index: number) => {
+    setStickyImage({ ...image, index });
+  };
+
+  const closeStickyImage = () => {
+    setStickyImage(null);
+  };
+
+  const openStickyModal = () => {
+    if (stickyImage) {
+      setCurrentImageIndex(stickyImage.index);
+      setShowStickyModal(true);
+    }
+  };
+
+  const closeStickyModal = () => {
+    setShowStickyModal(false);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
   };
 
   const nextImage = () => {
@@ -4384,14 +4407,31 @@ const ReportViewModal = ({ report, onClose }: {
                     <div 
                       key={image.public_id} 
                       className={styles.imageThumbnail}
-                      onClick={() => handleImageClick(index)}
-                      title={image.caption || `Imagen ${index + 1}`}
                     >
-                      <img 
-                        src={image.secure_url || image.url} 
-                        alt={image.caption || `Imagen ${index + 1}`}
-                        loading="lazy"
-                      />
+                      <div className={styles.imageContainer}>
+                        <img 
+                          src={image.secure_url || image.url} 
+                          alt={image.caption || `Imagen ${index + 1}`}
+                          loading="lazy"
+                          onClick={() => handleImageClick(index)}
+                        />
+                        <div className={styles.imageActions}>
+                          <button 
+                            className={styles.stickyButton}
+                            onClick={() => handleImageSticky(image, index)}
+                            title="Hacer sticky"
+                          >
+                            📌
+                          </button>
+                          <button 
+                            className={styles.viewButton}
+                            onClick={() => handleImageClick(index)}
+                            title="Ver en grande"
+                          >
+                            👁️
+                          </button>
+                        </div>
+                      </div>
                       {image.caption && (
                         <div className={styles.imageCaption}>
                           {image.caption}
@@ -4435,6 +4475,126 @@ const ReportViewModal = ({ report, onClose }: {
             <button 
               className={styles.closeImageModal} 
               onClick={closeImageModal}
+              aria-label="Cerrar modal de imagen"
+            >
+              ×
+            </button>
+            
+            {/* Controles de zoom */}
+            <div className={styles.zoomControls}>
+              <button 
+                className={styles.zoomButton} 
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 0.5}
+                aria-label="Alejar"
+              >
+                −
+              </button>
+              <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
+              <button 
+                className={styles.zoomButton} 
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                aria-label="Acercar"
+              >
+                +
+              </button>
+              <button 
+                className={styles.zoomButton} 
+                onClick={resetZoom}
+                aria-label="Resetear zoom"
+              >
+                ⌂
+              </button>
+            </div>
+
+            <div 
+              className={styles.imageModalContent}
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+            >
+              {report.images.length > 1 && (
+                <button 
+                  className={styles.imageNavButton} 
+                  onClick={prevImage}
+                  disabled={currentImageIndex === 0}
+                  aria-label="Imagen anterior"
+                >
+                  ‹
+                </button>
+              )}
+              <div 
+                className={styles.zoomableImageContainer}
+                style={{
+                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                  transformOrigin: 'center center'
+                }}
+              >
+                <img 
+                  src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
+                  alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
+                  className={styles.modalImage}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </div>
+              {report.images.length > 1 && (
+                <button 
+                  className={styles.imageNavButton} 
+                  onClick={nextImage}
+                  disabled={currentImageIndex === report.images.length - 1}
+                  aria-label="Imagen siguiente"
+                >
+                  ›
+                </button>
+              )}
+            </div>
+            <div className={styles.imageModalInfo}>
+              <span className={styles.imageCounter}>
+                {currentImageIndex + 1} de {report.images.length}
+              </span>
+              {report.images[currentImageIndex].caption && (
+                <span className={styles.imageCaption}>
+                  {report.images[currentImageIndex].caption}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Imagen Sticky Flotante */}
+      {stickyImage && (
+        <div className={styles.stickyImageContainer}>
+          <div className={styles.stickyImage} onClick={openStickyModal}>
+            <img 
+              src={stickyImage.secure_url || stickyImage.url}
+              alt={stickyImage.caption || `Imagen ${stickyImage.index + 1}`}
+            />
+            <div className={styles.stickyImageTitle}>
+              {stickyImage.caption || `Imagen ${stickyImage.index + 1}`}
+            </div>
+            <button 
+              className={styles.closeStickyButton}
+              onClick={closeStickyImage}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para imagen sticky */}
+      {showStickyModal && report.images && report.images.length > 0 && (
+        <div className={styles.imageModalOverlay} onClick={closeStickyModal}>
+          <div className={styles.imageModal} onClick={(e) => e.stopPropagation()}>
+            <button 
+              className={styles.closeImageModal} 
+              onClick={closeStickyModal}
               aria-label="Cerrar modal de imagen"
             >
               ×
