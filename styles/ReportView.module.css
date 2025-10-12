@@ -1160,11 +1160,24 @@
   left: 1rem;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
   background: rgba(0, 0, 0, 0.8);
-  padding: 0.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   z-index: 10;
+}
+
+.imageCounter {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.zoomButtonGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .zoomButton {
