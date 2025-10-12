@@ -4187,6 +4187,10 @@ const ReportViewModal = ({ report, onClose }: {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
   const handleImageClick = (index: number) => {
     setCurrentImageIndex(index);
@@ -4195,17 +4199,63 @@ const ReportViewModal = ({ report, onClose }: {
 
   const closeImageModal = () => {
     setShowImageModal(false);
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const handleZoomIn = () => {
+    setZoomLevel(prev => Math.min(prev + 0.5, 3));
+  };
+
+  const handleZoomOut = () => {
+    setZoomLevel(prev => Math.max(prev - 0.5, 0.5));
+  };
+
+  const resetZoom = () => {
+    setZoomLevel(1);
+    setImagePosition({ x: 0, y: 0 });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoomLevel > 1) {
+      setIsDragging(true);
+      setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging && zoomLevel > 1) {
+      setImagePosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      handleZoomIn();
+    } else {
+      handleZoomOut();
+    }
   };
 
   const nextImage = () => {
     if (report.images && report.images.length > 0 && currentImageIndex < report.images.length - 1) {
       setCurrentImageIndex(currentImageIndex + 1);
+      resetZoom();
     }
   };
 
   const prevImage = () => {
     if (report.images && report.images.length > 0 && currentImageIndex > 0) {
       setCurrentImageIndex(currentImageIndex - 1);
+      resetZoom();
     }
   };
 
@@ -4389,7 +4439,44 @@ const ReportViewModal = ({ report, onClose }: {
             >
               ×
             </button>
-            <div className={styles.imageModalContent}>
+            
+            {/* Controles de zoom */}
+            <div className={styles.zoomControls}>
+              <button 
+                className={styles.zoomButton} 
+                onClick={handleZoomOut}
+                disabled={zoomLevel <= 0.5}
+                aria-label="Alejar"
+              >
+                −
+              </button>
+              <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
+              <button 
+                className={styles.zoomButton} 
+                onClick={handleZoomIn}
+                disabled={zoomLevel >= 3}
+                aria-label="Acercar"
+              >
+                +
+              </button>
+              <button 
+                className={styles.zoomButton} 
+                onClick={resetZoom}
+                aria-label="Resetear zoom"
+              >
+                ⌂
+              </button>
+            </div>
+
+            <div 
+              className={styles.imageModalContent}
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
+            >
               {report.images.length > 1 && (
                 <button 
                   className={styles.imageNavButton} 
@@ -4400,12 +4487,21 @@ const ReportViewModal = ({ report, onClose }: {
                   ‹
                 </button>
               )}
-              <img 
-                src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
-                alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
-                className={styles.modalImage}
-                loading="lazy"
-              />
+              <div 
+                className={styles.zoomableImageContainer}
+                style={{
+                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
+                  transformOrigin: 'center center'
+                }}
+              >
+                <img 
+                  src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
+                  alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
+                  className={styles.modalImage}
+                  loading="lazy"
+                  draggable={false}
+                />
+              </div>
               {report.images.length > 1 && (
                 <button 
                   className={styles.imageNavButton} 

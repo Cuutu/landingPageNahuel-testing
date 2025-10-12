@@ -5325,6 +5325,59 @@
   border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
+/* Controles de Zoom */
+.zoomControls {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 0.5rem;
+  border-radius: 8px;
+  z-index: 10;
+}
+
+.zoomButton {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.zoomButton:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.zoomButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zoomLevel {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  min-width: 45px;
+  text-align: center;
+}
+
+.zoomableImageContainer {
+  transition: transform 0.3s ease;
+  transform-origin: center center;
+}
+
 .imageCounter {
   font-weight: 600;
   font-size: 0.875rem;
