@@ -2967,6 +2967,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       setPreviousMessageCount(messages.length);
     }, [messages.length, previousMessageCount, loading]);
 
+    // Hacer scroll automático al cargar los mensajes por primera vez
+    useEffect(() => {
+      if (messages.length > 0 && !loading) {
+        setTimeout(() => {
+          scrollToBottom();
+        }, 200); // Un poco más de delay para asegurar que el DOM esté listo
+      }
+    }, [loading]); // Solo cuando termine de cargar
+
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
       fetchMessages();
