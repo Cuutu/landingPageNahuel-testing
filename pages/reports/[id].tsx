@@ -84,6 +84,8 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [stickyImage, setStickyImage] = useState<any>(null);
   const [showStickyModal, setShowStickyModal] = useState(false);
+  const [currentStickyImageIndex, setCurrentStickyImageIndex] = useState(0);
+  const [isScrolledPastImages, setIsScrolledPastImages] = useState(false);
 
   const handleBack = () => {
     router.back();
@@ -253,6 +255,48 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [showImageModal, currentImageIndex, report.images]);
 
+  // Detectar scroll para hacer sticky automáticamente las imágenes
+  useEffect(() => {
+    const handleScroll = () => {
+      const sidebarElement = document.querySelector('[data-sidebar]');
+      if (!sidebarElement || !report.images || report.images.length === 0) return;
+
+      const sidebarRect = sidebarElement.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      
+      // Si el sidebar se ha scrolleado fuera de la vista
+      if (sidebarRect.bottom < viewportHeight * 0.3) {
+        if (!isScrolledPastImages) {
+          setIsScrolledPastImages(true);
+          // Hacer sticky la primera imagen automáticamente
+          setStickyImage({ ...report.images[0], index: 0 });
+          setCurrentStickyImageIndex(0);
+        }
+      } else {
+        if (isScrolledPastImages) {
+          setIsScrolledPastImages(false);
+          setStickyImage(null);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isScrolledPastImages, report.images]);
+
+  // Cambiar imagen sticky automáticamente cada 5 segundos
+  useEffect(() => {
+    if (!stickyImage || !report.images || report.images.length <= 1) return;
+
+    const interval = setInterval(() => {
+      const nextIndex = (currentStickyImageIndex + 1) % report.images.length;
+      setStickyImage({ ...report.images[nextIndex], index: nextIndex });
+      setCurrentStickyImageIndex(nextIndex);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [stickyImage, currentStickyImageIndex, report.images]);
+
   return (
     <>
       <Head>
@@ -343,51 +387,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   />
                 </div>
 
-                {/* Imágenes del informe en el contenido principal */}
-                {report.images && report.images.length > 0 && (
-                  <div className={styles.reportImages}>
-                    <h2>📸 Imágenes del Informe ({report.images.length})</h2>
-                    <div className={styles.imagesGrid}>
-                      {report.images.map((image, index) => (
-                        <div 
-                          key={index}
-                          className={styles.imageThumbnail}
-                        >
-                          <div className={styles.imageContainer}>
-                            <img 
-                              src={image.optimizedUrl || image.url}
-                              alt={image.caption || `Imagen ${index + 1}`}
-                              loading="lazy"
-                              onClick={() => handleImageClick(index)}
-                            />
-                            <div className={styles.imageActions}>
-                              <button 
-                                className={styles.stickyButton}
-                                onClick={() => handleImageSticky(image, index)}
-                                title="Hacer sticky"
-                              >
-                                📌
-                              </button>
-                              <button 
-                                className={styles.viewButton}
-                                onClick={() => handleImageClick(index)}
-                                title="Ver en grande"
-                              >
-                                👁️
-                              </button>
-                            </div>
-                          </div>
-                          {image.caption && (
-                            <div className={styles.imageCaption}>
-                              {image.caption}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 {/* Navegación de artículos - AHORA DESPUÉS */}
                 {publishedArticles.length > 0 && (
                   <div className={styles.articlesNavigation}>
@@ -463,7 +462,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               </div>
 
               {/* Sidebar con información adicional */}
-              <aside className={styles.sidebar}>
+              <aside className={styles.sidebar} data-sidebar>
                 {/* Información del informe - OCULTA */}
                 <div className={styles.sidebarCard} style={{ display: 'none' }}>
                   <h3>Información del Informe</h3>
@@ -516,31 +515,13 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                         <div 
                           key={index}
                           className={styles.galleryItem}
+                          onClick={() => handleImageClick(index)}
                         >
-                          <div className={styles.imageContainer}>
-                            <img 
-                              src={image.thumbnailUrl || image.url}
-                              alt={image.caption || `Imagen ${index + 1}`}
-                              className={styles.galleryThumbnail}
-                              onClick={() => handleImageClick(index)}
-                            />
-                            <div className={styles.imageActions}>
-                              <button 
-                                className={styles.stickyButton}
-                                onClick={() => handleImageSticky(image, index)}
-                                title="Hacer sticky"
-                              >
-                                📌
-                              </button>
-                              <button 
-                                className={styles.viewButton}
-                                onClick={() => handleImageClick(index)}
-                                title="Ver en grande"
-                              >
-                                👁️
-                              </button>
-                            </div>
-                          </div>
+                          <img 
+                            src={image.thumbnailUrl || image.url}
+                            alt={image.caption || `Imagen ${index + 1}`}
+                            className={styles.galleryThumbnail}
+                          />
                           {image.caption && (
                             <p className={styles.imageCaption}>{image.caption}</p>
                           )}
@@ -670,12 +651,44 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
             <div className={styles.stickyImageTitle}>
               {stickyImage.caption || `Imagen ${stickyImage.index + 1}`}
             </div>
+            <div className={styles.stickyImageCounter}>
+              {stickyImage.index + 1} / {report.images?.length || 1}
+            </div>
             <button 
               className={styles.closeStickyButton}
               onClick={closeStickyImage}
             >
               ×
             </button>
+            {/* Controles de navegación */}
+            {report.images && report.images.length > 1 && (
+              <>
+                <button 
+                  className={styles.stickyNavButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const prevIndex = currentStickyImageIndex === 0 ? report.images.length - 1 : currentStickyImageIndex - 1;
+                    setStickyImage({ ...report.images[prevIndex], index: prevIndex });
+                    setCurrentStickyImageIndex(prevIndex);
+                  }}
+                  style={{ left: '4px' }}
+                >
+                  ‹
+                </button>
+                <button 
+                  className={styles.stickyNavButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const nextIndex = (currentStickyImageIndex + 1) % report.images.length;
+                    setStickyImage({ ...report.images[nextIndex], index: nextIndex });
+                    setCurrentStickyImageIndex(nextIndex);
+                  }}
+                  style={{ right: '4px' }}
+                >
+                  ›
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
