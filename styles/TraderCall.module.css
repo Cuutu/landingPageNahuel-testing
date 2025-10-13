@@ -6510,17 +6510,25 @@
 }
 
 .profitArrow {
-  color: #10b981;
-  font-weight: bold;
-  font-size: 1.2rem;
+  color: #10b981 !important;
+  font-weight: bold !important;
+  font-size: 1.2rem !important;
   flex-shrink: 0;
+  background: rgba(16, 185, 129, 0.2);
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .lossArrow {
-  color: #ef4444;
-  font-weight: bold;
-  font-size: 1.2rem;
+  color: #ef4444 !important;
+  font-weight: bold !important;
+  font-size: 1.2rem !important;
   flex-shrink: 0;
+  background: rgba(239, 68, 68, 0.2);
+  padding: 0.2rem;
+  border-radius: 4px;
+  display: inline-block;
 }
 
 .tooltipStatus {
