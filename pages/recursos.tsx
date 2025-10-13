@@ -25,7 +25,8 @@ import {
   Play,
   Download,
   Copy,
-  X
+  X,
+  HelpCircle
 } from 'lucide-react';
 import styles from '@/styles/Recursos.module.css';
 import YouTubePlayer from '@/components/YouTubePlayer';
@@ -224,6 +225,9 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
     title: ''
   });
 
+  // Estado para el tooltip de ayuda
+  const [showTooltip, setShowTooltip] = useState<string | false>(false);
+
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
     const currentSession = clientSession || session; // Usar sesión del cliente o del servidor
@@ -265,7 +269,9 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       name: 'Fórmula Acciones en CCL',
       type: 'formula',
       formula: 'BCBA:ALUA/(BCBA:KO*5/NYSE:KO)',
-      image: '/logos/faccl.png'
+      image: '/logos/faccl.png',
+      hasHelp: true,
+      helpText: 'Reemplazá ALUA por el ticker de la acción que querés valuar en dólar CCL. Por ejemplo: BCBA:GGAL/(BCBA:KO*5/NYSE:KO) para Grupo Galicia.'
     },
     {
       id: 'merval-ccl',
@@ -475,6 +481,24 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                       {tool.name.split(' ').slice(0, 2).join(' ')}
                       <br/>
                       {tool.name.split(' ').slice(2).join(' ')}
+                      {tool.hasHelp && (
+                        <div 
+                          className={styles.helpIcon}
+                          onMouseEnter={() => setShowTooltip(tool.id)}
+                          onMouseLeave={() => setShowTooltip(false)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowTooltip(showTooltip === tool.id ? false : tool.id);
+                          }}
+                        >
+                          <HelpCircle size={18} />
+                          {showTooltip === tool.id && (
+                            <div className={styles.tooltip}>
+                              {tool.helpText}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {tool.type === 'formula' && (
                       <div className={styles.copyIndicator}>
