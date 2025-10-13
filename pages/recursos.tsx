@@ -24,7 +24,8 @@ import {
   Activity,
   Play,
   Download,
-  Copy
+  Copy,
+  X
 } from 'lucide-react';
 import styles from '@/styles/Recursos.module.css';
 import YouTubePlayer from '@/components/YouTubePlayer';
@@ -74,6 +75,44 @@ interface RecursosPageProps {
     };
   };
 }
+
+/**
+ * Componente Modal para advertencia de listas de seguimiento
+ */
+const WatchlistModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+}> = ({ isOpen, onClose, onConfirm, title }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <button className={styles.modalCloseButton} onClick={onClose}>
+          <X size={24} />
+        </button>
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle}>Acceso a {title}</h3>
+        </div>
+        <div className={styles.modalBody}>
+          <p className={styles.modalText}>
+            Recordá que solo la pueden usar usuarios <strong>ESSENTIAL</strong> en adelante de la plataforma de TradingView.
+          </p>
+        </div>
+        <div className={styles.modalFooter}>
+          <button className={styles.modalCancelButton} onClick={onClose}>
+            Cancelar
+          </button>
+          <button className={styles.modalConfirmButton} onClick={onConfirm}>
+            OK, continuar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /**
  * Componente de carousel automático para videos de YouTube
@@ -174,6 +213,17 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
   const { data: clientSession } = useSession(); // Hook del cliente para detectar cambios en tiempo real
   const router = useRouter();
 
+  // Estado para el modal de listas de seguimiento
+  const [modalState, setModalState] = useState<{
+    isOpen: boolean;
+    tool: any;
+    title: string;
+  }>({
+    isOpen: false,
+    tool: null,
+    title: ''
+  });
+
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
     const currentSession = clientSession || session; // Usar sesión del cliente o del servidor
@@ -252,9 +302,30 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       // Para fórmulas: copiar al portapapeles
       copyToClipboard(tool.formula, tool.name);
     } else if (tool.type === 'watchlist' && tool.url) {
-      // Para listas de seguimiento: abrir enlace en nueva pestaña
-      window.open(tool.url, '_blank', 'noopener,noreferrer');
+      // Para listas de seguimiento: mostrar modal de advertencia primero
+      setModalState({
+        isOpen: true,
+        tool: tool,
+        title: tool.name
+      });
     }
+  };
+
+  // Función para cerrar el modal
+  const closeModal = () => {
+    setModalState({
+      isOpen: false,
+      tool: null,
+      title: ''
+    });
+  };
+
+  // Función para confirmar y abrir la lista de seguimiento
+  const confirmAndOpenWatchlist = () => {
+    if (modalState.tool && modalState.tool.url) {
+      window.open(modalState.tool.url, '_blank', 'noopener,noreferrer');
+    }
+    closeModal();
   };
 
   return (
@@ -272,6 +343,14 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         isVisible={isNotificationVisible}
         itemName={notificationItemName}
         onClose={hideNotification}
+      />
+
+      {/* Modal de advertencia para listas de seguimiento */}
+      <WatchlistModal
+        isOpen={modalState.isOpen}
+        onClose={closeModal}
+        onConfirm={confirmAndOpenWatchlist}
+        title={modalState.title}
       />
 
       <main className={styles.main}>
@@ -341,7 +420,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                     <br /><br />
                     Ofrece la posibilidad de analizar una gran cantidad de activos y compartirlos rápidamente con la comunidad inversora para discutir puntos de vista.
                   </p>
-                  <div className={styles.tradingViewCTA} id="tradingview-descuento">
+                  <div className={styles.tradingViewCTA}>
                     <h3 className={styles.discountTitle}>¡Comienza a utilizar TradingView con 15 U$D de descuento!</h3>
                     <a 
                       href="https://es.tradingview.com/pricing/?share_your_love=XTrader95" 
@@ -415,7 +494,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
        
 
         {/* Biblioteca del Inversor */}
-        <section className={styles.bibliotecaSection} id="biblioteca-inversor">
+        <section className={styles.bibliotecaSection}>
           <div className={styles.bibliotecaContainer}>
             <h2 className={styles.bibliotecaTitle}>Biblioteca del Inversor</h2>
             <div className={styles.bibliotecaCarousel}>
@@ -460,7 +539,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         </section>
 
                  {/* Información para Traders */}
-         <section className={styles.infoTradersSection} id="informacion-traders">
+         <section className={styles.infoTradersSection}>
            <h2 className={styles.infoTradersTitle}>Información para Traders</h2>
            <div className={styles.infoTradersGrid}>
              <a href="https://es.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
@@ -516,9 +595,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
           <div className={styles.ctaContainer}>
             <h2 className={styles.ctaTitle}>¿Listo para llevar tus inversiones al siguiente nivel?</h2>
             <p className={styles.ctaSubtitle}>Únete a nuestra comunidad y comienza construir tu libertad financiera</p>
-            <button className={styles.ctaButton} onClick={handleStartNowClick}>
-              Empezá ahora &gt;
-            </button>
+            <button className={styles.ctaButton} onClick={handleStartNowClick}>Empezá ahora &gt;</button>
           </div>
         </section>
         {/* Fin de Información para Traders */}
@@ -745,5 +822,6 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
   };
 };
+
 
 export default RecursosPage; 
