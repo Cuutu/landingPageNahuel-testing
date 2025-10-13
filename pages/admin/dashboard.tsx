@@ -239,6 +239,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const [loading, setLoading] = useState(true);
   const [fixingLogins, setFixingLogins] = useState(false);
   const [closingMarket, setClosingMarket] = useState(false);
+  const [cleaningTrainings, setCleaningTrainings] = useState(false);
 
   // Estados para gestión de roadmaps
   const [showRoadmapsModal, setShowRoadmapsModal] = useState(false);
@@ -723,6 +724,50 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
     }
   }, [fetchDashboardStats]);
 
+  // Función para limpiar entrenamientos inválidos
+  const cleanInvalidTrainings = useCallback(async () => {
+    try {
+      setCleaningTrainings(true);
+      console.log('🔧 Iniciando limpieza de entrenamientos inválidos...');
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos para esta operación
+      
+      const response = await fetch('/api/admin/clean-invalid-trainings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        signal: controller.signal
+      });
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Limpieza completada:', data);
+        
+        if (data.details && data.details.length > 0) {
+          const totalRemoved = data.details.reduce((sum: number, item: any) => sum + item.removedCount, 0);
+          alert(`✅ Se limpiaron ${totalRemoved} entrenamientos inválidos de ${data.details.length} usuarios`);
+        } else {
+          alert('ℹ️ No se encontraron entrenamientos inválidos para limpiar');
+        }
+      } else {
+        console.error('❌ Error en limpieza:', response.status);
+        const errorData = await response.json();
+        alert(`❌ Error al limpiar entrenamientos: ${errorData.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error('💥 Error al limpiar entrenamientos:', error);
+        alert('💥 Error al limpiar entrenamientos inválidos');
+      }
+    } finally {
+      setCleaningTrainings(false);
+    }
+  }, []);
+
   // Función para cerrar el mercado y procesar alertas de rango
   const handleCloseMarket = useCallback(async () => {
     try {
@@ -979,6 +1024,24 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                     <>
                       <Clock size={20} />
                       Cerrar Mercado
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  onClick={cleanInvalidTrainings}
+                  disabled={cleaningTrainings}
+                  className={`${styles.toolButton} ${cleaningTrainings ? styles.loading : ''}`}
+                >
+                  {cleaningTrainings ? (
+                    <>
+                      <RefreshCw size={20} className={styles.spinning} />
+                      Limpiando...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={20} />
+                      Limpiar Entrenamientos Inválidos
                     </>
                   )}
                 </button>

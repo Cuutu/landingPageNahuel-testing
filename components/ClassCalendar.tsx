@@ -71,34 +71,24 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
   };
 
   const getEventsForDate = (day: number) => {
-    // Usar zona horaria configurada para comparar fechas correctamente
-    const timezone = getGlobalTimezone();
-    
     return events.filter(event => {
       const eventDate = new Date(event.date);
       
-      // Convertir ambas fechas a la zona horaria local para comparar
-      const eventLocal = new Date(eventDate.toLocaleString('en-US', { timeZone: timezone }));
-      const dayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-      const dayLocalTz = new Date(dayLocal.toLocaleString('en-US', { timeZone: timezone }));
-      
-      return eventLocal.getDate() === dayLocalTz.getDate() && 
-             eventLocal.getMonth() === dayLocalTz.getMonth() && 
-             eventLocal.getFullYear() === dayLocalTz.getFullYear();
+      // Comparación directa sin conversiones complejas de timezone
+      return eventDate.getDate() === day && 
+             eventDate.getMonth() === currentDate.getMonth() && 
+             eventDate.getFullYear() === currentDate.getFullYear();
     });
   };
 
   const handleDateClick = (day: number) => {
     if (onDateSelect) {
-      // Crear fecha en zona horaria configurada para evitar problemas de offset
-      const timezone = getGlobalTimezone();
+      // Crear fecha directamente sin conversiones complejas de timezone
+      // Esto evita problemas de offset que causan que se marque el día anterior
       const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       
-      // Convertir a zona horaria local para mantener consistencia
-      const localSelectedDate = new Date(selectedDate.toLocaleString('en-US', { timeZone: timezone }));
-      
       const dayEvents = getEventsForDate(day);
-      onDateSelect(localSelectedDate, dayEvents);
+      onDateSelect(selectedDate, dayEvents);
     }
   };
 
@@ -119,16 +109,15 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
       const dayEvents = getEventsForDate(day);
       const hasEvents = dayEvents.length > 0;
       
-      // Verificar si este día está seleccionado usando zona horaria correcta
-      const timezone = getGlobalTimezone();
+      // Verificar si este día está seleccionado - comparación directa sin conversiones de timezone
       const isSelected = selectedDate && (() => {
-        const selectedLocal = new Date(selectedDate.toLocaleString('en-US', { timeZone: timezone }));
-        const dayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-        const dayLocalTz = new Date(dayLocal.toLocaleString('en-US', { timeZone: timezone }));
+        const selectedDay = selectedDate.getDate();
+        const selectedMonth = selectedDate.getMonth();
+        const selectedYear = selectedDate.getFullYear();
         
-        return selectedLocal.getDate() === dayLocalTz.getDate() && 
-               selectedLocal.getMonth() === dayLocalTz.getMonth() && 
-               selectedLocal.getFullYear() === dayLocalTz.getFullYear();
+        return day === selectedDay && 
+               currentDate.getMonth() === selectedMonth && 
+               currentDate.getFullYear() === selectedYear;
       })();
 
       days.push(
