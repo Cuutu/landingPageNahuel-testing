@@ -6349,36 +6349,34 @@
   color: var(--success-color);
   background: rgba(16, 185, 129, 0.1) !important;
   border: 1px solid rgba(16, 185, 129, 0.3) !important;
-  position: relative;
-}
-
-.profit::before {
-  content: '↗';
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #10b981;
-  font-weight: bold;
-  font-size: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 0.75rem;
 }
 
 .loss {
   color: var(--error-color);
   background: rgba(239, 68, 68, 0.1) !important;
   border: 1px solid rgba(239, 68, 68, 0.3) !important;
-  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-right: 0.75rem;
 }
 
-.loss::before {
-  content: '↘';
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
+.profitArrow {
+  color: #10b981;
+  font-weight: bold;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.lossArrow {
   color: #ef4444;
   font-weight: bold;
   font-size: 1.2rem;
+  flex-shrink: 0;
 }
 
 .tooltipStatus {

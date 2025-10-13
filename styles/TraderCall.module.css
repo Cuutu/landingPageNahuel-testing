@@ -6490,7 +6490,7 @@
 }
 
 .profit {
-  color: #10b981;
+  color: var(--success-color);
   background: rgba(16, 185, 129, 0.1) !important;
   border: 1px solid rgba(16, 185, 129, 0.3) !important;
   display: inline-flex;
@@ -6500,7 +6500,7 @@
 }
 
 .loss {
-  color: #ef4444;
+  color: var(--error-color);
   background: rgba(239, 68, 68, 0.1) !important;
   border: 1px solid rgba(239, 68, 68, 0.3) !important;
   display: inline-flex;
