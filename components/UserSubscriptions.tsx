@@ -17,7 +17,8 @@ const getServiceDisplayName = (service: string) => {
   const serviceNames: { [key: string]: string } = {
     'TraderCall': 'Trader Call',
     'SmartMoney': 'Smart Money',
-    'SwingTrading': 'Swing Trading'
+    'SwingTrading': 'Swing Trading',
+    'ConsultorioFinanciero': 'Consultorio Financiero'
   };
   return serviceNames[service] || service;
 };
@@ -33,6 +34,9 @@ const getStatusIcon = (status: string) => {
       return <XCircle size={20} className={styles.statusExpired} />;
     case 'pending':
       return <Clock size={20} className={styles.statusPending} />;
+    case 'unknown':
+    case 'desconocido':
+      return <AlertTriangle size={20} className={styles.statusUnknown} />;
     default:
       return <CheckCircle size={20} className={styles.statusActive} />;
   }
@@ -51,6 +55,9 @@ const getStatusText = (status: string) => {
       return 'Expirado';
     case 'pending':
       return 'Pendiente';
+    case 'unknown':
+    case 'desconocido':
+      return 'Desconocido';
     default:
       return 'Aprobado';
   }

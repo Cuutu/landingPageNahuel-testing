@@ -169,7 +169,7 @@ export default function PaymentSuccessPage({
     <>
       <Head>
         <title>Pago Exitoso - Swing Trading | Lozano Nahuel</title>
-        <meta name="description" content="¡Tu pago fue procesado exitosamente! Ya tienes acceso al entrenamiento de Swing Trading." />
+        <meta name="description" content="¡Tu pago fue procesado exitosamente! Tu entrenamiento de Swing Trading ya está agendado." />
       </Head>
 
       <div className={styles.container}>
@@ -182,7 +182,7 @@ export default function PaymentSuccessPage({
           
           <p className={styles.description}>
             Tu pago para el entrenamiento de Swing Trading fue procesado correctamente. 
-            Ya tienes acceso completo al entrenamiento.
+            Tu entrenamiento de Swing Trading ya está agendado. En las próximas horas recibirás un correo con el link a la reunión.
           </p>
 
           <div className={styles.details}>
@@ -195,29 +195,17 @@ export default function PaymentSuccessPage({
             </ul>
           </div>
 
-          <div className={styles.accessInfo}>
-            <Calendar size={24} />
-            <div>
-              <h3>Acceso Activo</h3>
-              <p>Tu suscripción mensual está activa y tienes acceso completo al entrenamiento.</p>
-            </div>
-          </div>
 
           <div className={styles.actions}>
-            <Link href="/entrenamientos/swing-trading" className={styles.accessButton}>
-              <ArrowRight size={20} />
-              Acceder al Entrenamiento
-            </Link>
-
-            <Link href="/perfil" className={styles.profileButton}>
-              Ver Mi Perfil
+            <Link href="/" className={styles.backButton}>
+              Volver al Inicio
             </Link>
           </div>
 
           <div className={styles.help}>
             <h3>¿Qué sigue?</h3>
             <p>
-              Revisa tu email para confirmación del pago y accede al entrenamiento desde tu perfil.
+              Revisa tu email para confirmación del pago y accede al entrenamiento desde el link enviado a tu correo.
             </p>
           </div>
         </div>

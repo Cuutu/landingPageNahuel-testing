@@ -216,6 +216,7 @@
 .statusText {
   font-size: 14px;
   font-weight: 500;
+  color: #000000;
 }
 
 .amount {
@@ -322,6 +323,12 @@
   align-items: center;
   gap: 6px;
   font-size: 14px;
+  color: #000000;
+}
+
+.paymentStatus span {
+  color: #000000;
+  font-weight: 500;
 }
 
 .paymentAmount {

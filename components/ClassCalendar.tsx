@@ -14,13 +14,15 @@ interface ClassCalendarProps {
   onDateSelect?: (date: Date, events: ClassEvent[]) => void;
   isAdmin?: boolean;
   initialDate?: Date; // Nueva prop para fecha inicial
+  selectedDate?: Date; // Nueva prop para fecha seleccionada
 }
 
 const ClassCalendar: React.FC<ClassCalendarProps> = ({ 
   events = [], 
   onDateSelect,
   isAdmin = false,
-  initialDate
+  initialDate,
+  selectedDate
 }) => {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
 
@@ -101,11 +103,17 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
     for (let day = 1; day <= daysInMonth; day++) {
       const dayEvents = getEventsForDate(day);
       const hasEvents = dayEvents.length > 0;
+      
+      // Verificar si este día está seleccionado
+      const isSelected = selectedDate && 
+        selectedDate.getDate() === day && 
+        selectedDate.getMonth() === currentDate.getMonth() && 
+        selectedDate.getFullYear() === currentDate.getFullYear();
 
       days.push(
         <div 
           key={day} 
-          className={`${styles.calendarDay} ${hasEvents ? styles.hasEvents : ''} ${isAdmin ? styles.adminMode : ''}`}
+          className={`${styles.calendarDay} ${hasEvents ? styles.hasEvents : ''} ${isAdmin ? styles.adminMode : ''} ${isSelected ? styles.selectedDay : ''}`}
           onClick={() => handleDateClick(day)}
         >
           <div className={styles.dayNumber}>{day}</div>

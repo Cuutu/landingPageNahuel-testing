@@ -662,6 +662,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                           onDateSelect={handleCalendarDateSelect}
                           isAdmin={true}
                           initialDate={earliestDate}
+                          selectedDate={selectedDate ? new Date(selectedDate) : undefined}
                         />
                       </div>
                     </>
@@ -683,7 +684,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                     <div className={styles.horariosSection}>
                       <div className={styles.horariosHeader}>
                         <h4 className={styles.horariosTitle}>
-                          Fecha de Asesoría Seleccionada
+                          Fecha y hora de asesoría seleccionada
                         </h4>
                         <button 
                           className={styles.closeHorariosButton}
@@ -708,10 +709,21 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                             </button>
                           ))}
                       </div>
-                      {selectedTime && (
-                        <div className={styles.horarioConfirmado}>
-                          <CheckCircle size={20} />
-                          <span>Fecha seleccionada: {selectedTime}hs</span>
+                      {selectedDate && (
+                        <div className={styles.seleccionInfo}>
+                          <div className={styles.infoItem}>
+                            <strong>FECHA:</strong> {new Date(selectedDate).toLocaleDateString('es-ES', { 
+                              weekday: 'long', 
+                              year: 'numeric', 
+                              month: 'long', 
+                              day: 'numeric' 
+                            })}
+                          </div>
+                          {selectedTime && (
+                            <div className={styles.infoItem}>
+                              <strong>HORA:</strong> {selectedTime}hs
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -27,9 +27,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Obtener historial de pagos
+    // Filtrar pagos pendientes de TraderCall y SmartMoney que no deberían aparecer
     const payments = await Payment.find({ 
       userId: user._id,
-      status: { $in: ['approved', 'pending', 'rejected', 'cancelled'] }
+      $or: [
+        // Pagos aprobados, rechazados o cancelados de cualquier servicio
+        { 
+          status: { $in: ['approved', 'rejected', 'cancelled'] }
+        },
+        // Pagos pendientes solo de SwingTrading y ConsultorioFinanciero
+        {
+          status: 'pending',
+          service: { $in: ['SwingTrading', 'ConsultorioFinanciero'] }
+        }
+      ]
     })
     .sort({ transactionDate: -1 })
     .limit(50);
@@ -123,7 +134,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       service: payment.service,
       amount: payment.amount,
       currency: payment.currency,
-      status: payment.status as 'approved' | 'pending' | 'rejected' | 'cancelled',
+      status: payment.status as 'approved' | 'pending' | 'rejected' | 'cancelled' | 'unknown' | 'desconocido',
       transactionDate: payment.transactionDate,
       expiryDate: payment.expiryDate,
       paymentMethod: 'MercadoPago',

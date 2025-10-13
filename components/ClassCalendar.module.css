@@ -88,6 +88,7 @@
   font-size: 0.8rem;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
+  box-sizing: border-box;
 }
 
 .dayHeader:last-child {
@@ -160,6 +161,24 @@
 .hasEvents:hover {
   background: rgba(139, 0, 0, 0.3);
   transform: scale(1.02);
+}
+
+/* Día seleccionado */
+.selectedDay {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%) !important;
+  border-color: #8B5CF6 !important;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+.selectedDay .dayNumber {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.selectedDay .availabilityIndicator {
+  background: linear-gradient(135deg, #7C3AED 0%, #9333EA 100%);
+  color: #FFFFFF;
 }
 
 .availabilityIndicator {

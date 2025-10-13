@@ -72,7 +72,7 @@ const Footer: React.FC = () => {
           <div className={styles.linkColumn}>
             <h4 className={styles.columnTitle}>Empresa</h4>
             <ul className={styles.linkList}>
-              <li><button onClick={openContactModal} className={styles.footerLink}>Contacto</button></li>
+              <li><button onClick={openContactModal} className={styles.footerButton}>Contacto</button></li>
             </ul>
           </div>
         </div>

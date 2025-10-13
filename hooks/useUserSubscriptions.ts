@@ -17,7 +17,7 @@ export interface PaymentHistory {
   service: string;
   amount: number;
   currency: string;
-  status: 'approved' | 'pending' | 'rejected' | 'cancelled';
+  status: 'approved' | 'pending' | 'rejected' | 'cancelled' | 'unknown' | 'desconocido';
   transactionDate: string;
   expiryDate: string;
   paymentMethod: string;

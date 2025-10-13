@@ -1176,6 +1176,29 @@
   margin-bottom: 2rem;
 }
 
+/* Información de selección */
+.seleccionInfo {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1rem;
+  color: white;
+}
+
+.infoItem {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.infoItem:last-child {
+  margin-bottom: 0;
+}
+
+.infoItem strong {
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
 .calendarContainer :global(.calendar) {
   width: 100%;
   max-width: 800px;
