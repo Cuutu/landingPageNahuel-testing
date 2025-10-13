@@ -72,12 +72,16 @@
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Asegurar alineación perfecta entre headers y días */
+  display: grid;
+  grid-template-rows: auto 1fr;
 }
 
 .dayHeaders {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   background: rgba(0, 0, 0, 0.3);
+  gap: 0; /* Sin espacios entre columnas */
 }
 
 .dayHeader {
@@ -89,6 +93,8 @@
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   box-sizing: border-box;
+  min-width: 0; /* Asegurar que las columnas se ajusten correctamente */
+  width: 100%; /* Ocupar todo el ancho disponible */
 }
 
 .dayHeader:last-child {
@@ -99,6 +105,7 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-auto-rows: 80px;
+  gap: 0; /* Sin espacios entre columnas - igual que headers */
 }
 
 /* Calendar Days */
@@ -115,6 +122,8 @@
   justify-content: flex-start;
   overflow: hidden;
   box-sizing: border-box;
+  min-width: 0; /* Asegurar que las columnas se ajusten correctamente */
+  width: 100%; /* Ocupar todo el ancho disponible - igual que headers */
 }
 
 .calendarDay:nth-child(7n) {
@@ -139,6 +148,9 @@
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
 }
 
 .emptyDay:nth-child(7n) {
