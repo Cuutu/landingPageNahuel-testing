@@ -41,6 +41,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmissionTime, setLastSubmissionTime] = useState<number>(0);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
   // Llenar formulario con datos del usuario al abrir
   React.useEffect(() => {
@@ -162,9 +163,15 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success('Mensaje enviado correctamente');
+        // Mostrar popup de éxito
+        setShowSuccessPopup(true);
         setLastSubmissionTime(Date.now());
-        onClose();
+        
+        // Cerrar el modal después de 3 segundos
+        setTimeout(() => {
+          setShowSuccessPopup(false);
+          onClose();
+        }, 3000);
       } else {
         throw new Error(data.error || 'Error al enviar el mensaje');
       }
@@ -321,6 +328,27 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
           </div>
         </form>
       </div>
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className={styles.successOverlay}>
+          <div className={styles.successPopup}>
+            <div className={styles.successIcon}>
+              <CheckCircle size={48} />
+            </div>
+            <h3 className={styles.successTitle}>¡Mensaje Enviado Correctamente!</h3>
+            <p className={styles.successMessage}>
+              Tu mensaje ha sido enviado exitosamente. 
+              <br />
+              Recibirás una confirmación por email en unos momentos.
+            </p>
+            <div className={styles.successDetails}>
+              <p>📧 Email de confirmación enviado</p>
+              <p>⏱️ Te responderemos en las próximas 24 horas</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

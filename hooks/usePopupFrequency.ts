@@ -42,6 +42,12 @@ interface UsePopupFrequencyReturn {
  *   }
  * }, [shouldShow]);
  * ```
+ * 
+ * @note V2.0 - Sistema de códigos de descuento:
+ * - Este hook está preparado para el sistema de códigos de descuento
+ * - Para activarlo en V2.0, cambiar ENABLE_DISCOUNT_POPUP a true en pages/index.tsx
+ * - El popup incluye suscripción a newsletter y promesas de descuentos
+ * - Funcionalidad completa pendiente de desarrollo del backend de códigos
  */
 export const usePopupFrequency = (options: UsePopupFrequencyOptions = {}): UsePopupFrequencyReturn => {
   const {

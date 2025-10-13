@@ -257,12 +257,15 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
     }
   };
 
-  // Hook para manejar la frecuencia del popup
+  // TODO: V2.0 - Sistema de códigos de descuento
+  // Hook para manejar la frecuencia del popup - DESACTIVADO PARA V2.0
+  const ENABLE_DISCOUNT_POPUP = false; // Cambiar a true en V2.0 cuando esté listo el sistema de descuentos
+  
   const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
     frequencyDays: 7, // Mostrar cada semana (cambiar a 30 para mensual)
     manualCloseExtraDays: 14, // Si cierra manualmente, no mostrar por 2 semanas más
     delayMs: 3000, // Delay de 3 segundos
-    isAuthenticated: !!session
+    isAuthenticated: !!session || !ENABLE_DISCOUNT_POPUP // Siempre desactivado hasta V2.0
   });
 
   const handlePopupSubmit = async (e: React.FormEvent) => {
@@ -550,7 +553,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
 
       <Navbar />
 
-      {/* Popup de Descuentos y Alertas */}
+      {/* TODO: V2.0 - Popup de Descuentos y Alertas - DESACTIVADO */}
+      {/* Sistema de códigos de descuento pendiente de desarrollo */}
       <AnimatePresence>
         {showPopup && (
           <motion.div

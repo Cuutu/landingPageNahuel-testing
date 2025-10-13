@@ -298,6 +298,212 @@ export async function sendAdminNotificationEmail(
 }
 
 /**
+ * Envía email de confirmación al usuario que envió el mensaje de contacto
+ */
+export async function sendUserContactConfirmationEmail(
+  contactDetails: {
+    userEmail: string;
+    userName: string;
+    userLastName: string;
+    message: string;
+    timestamp: number;
+  }
+) {
+  try {
+    console.log('📧 Enviando email de confirmación de contacto al usuario:', contactDetails.userEmail);
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Mensaje Enviado Correctamente - Nahuel Lozano Trading</title>
+        <style>
+          body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8f9fa;
+          }
+          .container { 
+            max-width: 600px; 
+            margin: 0 auto; 
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          }
+          .header { 
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6); 
+            color: white; 
+            padding: 30px 20px; 
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+          }
+          .header p {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+          }
+          .content { 
+            padding: 30px 20px; 
+          }
+          .success-icon {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .success-icon .icon {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            line-height: 60px;
+            font-size: 24px;
+            margin-bottom: 15px;
+          }
+          .info-box { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin: 20px 0; 
+            border-left: 4px solid #3b82f6; 
+          }
+          .label { 
+            font-weight: 600; 
+            color: #555; 
+            display: block;
+            margin-bottom: 5px;
+          }
+          .value { 
+            color: #333; 
+            margin-bottom: 15px;
+          }
+          .message-preview {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            font-style: italic;
+            color: #64748b;
+            margin: 15px 0;
+          }
+          .next-steps {
+            background: #ecfdf5;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+            margin: 20px 0;
+          }
+          .next-steps h3 {
+            margin: 0 0 10px 0;
+            color: #065f46;
+            font-size: 18px;
+          }
+          .next-steps ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #047857;
+          }
+          .footer { 
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center; 
+            color: #666; 
+            font-size: 14px; 
+            border-top: 1px solid #e5e7eb;
+          }
+          .footer a {
+            color: #3b82f6;
+            text-decoration: none;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>✅ Mensaje Enviado Correctamente</h1>
+            <p>Tu consulta ha sido recibida</p>
+          </div>
+          
+          <div class="content">
+            <div class="success-icon">
+              <div class="icon">✓</div>
+              <h2 style="margin: 0; color: #10b981;">¡Gracias por contactarnos!</h2>
+            </div>
+            
+            <p>Hola <strong>${contactDetails.userName} ${contactDetails.userLastName}</strong>,</p>
+            
+            <p>Hemos recibido tu mensaje correctamente y te responderemos a la brevedad.</p>
+            
+            <div class="info-box">
+              <div class="label">📧 Email:</div>
+              <div class="value">${contactDetails.userEmail}</div>
+              
+              <div class="label">📅 Fecha de envío:</div>
+              <div class="value">${new Date(contactDetails.timestamp).toLocaleString('es-ES', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</div>
+              
+              <div class="label">💬 Tu mensaje:</div>
+              <div class="message-preview">"${contactDetails.message.substring(0, 150)}${contactDetails.message.length > 150 ? '...' : ''}"</div>
+            </div>
+            
+            <div class="next-steps">
+              <h3>📋 Próximos pasos:</h3>
+              <ul>
+                <li>Revisaremos tu mensaje en las próximas 24 horas</li>
+                <li>Te responderemos directamente a este email</li>
+                <li>Si es urgente, también puedes contactarnos por WhatsApp</li>
+              </ul>
+            </div>
+            
+            <p style="margin-top: 30px;">
+              <strong>¿Necesitas ayuda inmediata?</strong><br>
+              Si tu consulta es urgente, puedes contactarnos directamente por WhatsApp o revisar nuestras <a href="https://lozanonahuel.vercel.app/recursos" style="color: #3b82f6;">preguntas frecuentes</a>.
+            </p>
+          </div>
+          
+          <div class="footer">
+            <p>Este email fue generado automáticamente al recibir tu mensaje de contacto.</p>
+            <p>
+              <a href="https://lozanonahuel.vercel.app">Nahuel Lozano Trading</a> | 
+              <a href="https://lozanonahuel.vercel.app/recursos">Recursos</a> | 
+              <a href="https://lozanonahuel.vercel.app/asesorias">Asesorías</a>
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    
+    await sendEmail({
+      to: contactDetails.userEmail,
+      subject: '✅ Mensaje Enviado Correctamente - Nahuel Lozano Trading',
+      html
+    });
+
+    console.log('✅ Email de confirmación de contacto al usuario enviado exitosamente');
+
+  } catch (error) {
+    console.error('❌ Error al enviar email de confirmación de contacto al usuario:', error);
+    throw error;
+  }
+}
+
+/**
  * Envía notificación al admin sobre nuevo mensaje de contacto
  */
 export async function sendAdminContactNotificationEmail(

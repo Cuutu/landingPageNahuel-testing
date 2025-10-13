@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getGlobalTimezone } from '@/lib/timeConfig';
 import styles from './ClassCalendar.module.css';
 
 interface ClassEvent {
@@ -70,20 +71,34 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
   };
 
   const getEventsForDate = (day: number) => {
-    // Comparar fechas completas: año, mes y día
+    // Usar zona horaria configurada para comparar fechas correctamente
+    const timezone = getGlobalTimezone();
+    
     return events.filter(event => {
       const eventDate = new Date(event.date);
-      return eventDate.getDate() === day && 
-             eventDate.getMonth() === currentDate.getMonth() && 
-             eventDate.getFullYear() === currentDate.getFullYear();
+      
+      // Convertir ambas fechas a la zona horaria local para comparar
+      const eventLocal = new Date(eventDate.toLocaleString('en-US', { timeZone: timezone }));
+      const dayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const dayLocalTz = new Date(dayLocal.toLocaleString('en-US', { timeZone: timezone }));
+      
+      return eventLocal.getDate() === dayLocalTz.getDate() && 
+             eventLocal.getMonth() === dayLocalTz.getMonth() && 
+             eventLocal.getFullYear() === dayLocalTz.getFullYear();
     });
   };
 
   const handleDateClick = (day: number) => {
     if (onDateSelect) {
+      // Crear fecha en zona horaria configurada para evitar problemas de offset
+      const timezone = getGlobalTimezone();
       const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+      
+      // Convertir a zona horaria local para mantener consistencia
+      const localSelectedDate = new Date(selectedDate.toLocaleString('en-US', { timeZone: timezone }));
+      
       const dayEvents = getEventsForDate(day);
-      onDateSelect(selectedDate, dayEvents);
+      onDateSelect(localSelectedDate, dayEvents);
     }
   };
 
@@ -104,11 +119,17 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
       const dayEvents = getEventsForDate(day);
       const hasEvents = dayEvents.length > 0;
       
-      // Verificar si este día está seleccionado
-      const isSelected = selectedDate && 
-        selectedDate.getDate() === day && 
-        selectedDate.getMonth() === currentDate.getMonth() && 
-        selectedDate.getFullYear() === currentDate.getFullYear();
+      // Verificar si este día está seleccionado usando zona horaria correcta
+      const timezone = getGlobalTimezone();
+      const isSelected = selectedDate && (() => {
+        const selectedLocal = new Date(selectedDate.toLocaleString('en-US', { timeZone: timezone }));
+        const dayLocal = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+        const dayLocalTz = new Date(dayLocal.toLocaleString('en-US', { timeZone: timezone }));
+        
+        return selectedLocal.getDate() === dayLocalTz.getDate() && 
+               selectedLocal.getMonth() === dayLocalTz.getMonth() && 
+               selectedLocal.getFullYear() === dayLocalTz.getFullYear();
+      })();
 
       days.push(
         <div 

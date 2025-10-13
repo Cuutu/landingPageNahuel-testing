@@ -44,7 +44,7 @@ interface PaginationInfo {
 export default function NotificacionesPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [userRole, setUserRole] = useState<string>('normal');
+  // const [userRole, setUserRole] = useState<string>('normal'); // Ya no se usa
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -55,7 +55,7 @@ export default function NotificacionesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('todos');
   const [currentPage, setCurrentPage] = useState(1);
-  const [generatingNotifications, setGeneratingNotifications] = useState(false);
+  // const [generatingNotifications, setGeneratingNotifications] = useState(false); // Ya no se usa
 
   // Obtener notificaciones
   const fetchNotifications = async (page: number = 1) => {
@@ -74,7 +74,8 @@ export default function NotificacionesPage() {
     }
   };
 
-  // Verificar el rol del usuario
+  // Verificar el rol del usuario - YA NO SE USA
+  /*
   useEffect(() => {
     const checkUserRole = async () => {
       if (!session?.user?.email) return;
@@ -92,6 +93,7 @@ export default function NotificacionesPage() {
 
     checkUserRole();
   }, [session]);
+  */
 
   // Cargar notificaciones al montar el componente
   useEffect(() => {
@@ -119,7 +121,8 @@ export default function NotificacionesPage() {
     }
   };
 
-  // Función para generar notificaciones reales
+  // Función para generar notificaciones reales - YA NO SE USA
+  /*
   const generateRealNotifications = async () => {
     try {
       setGeneratingNotifications(true);
@@ -146,6 +149,7 @@ export default function NotificacionesPage() {
       setGeneratingNotifications(false);
     }
   };
+  */
 
   // Función para manejar enlaces a informes
   const handleReportLink = (actionUrl: string, actionText: string) => {
@@ -250,7 +254,8 @@ export default function NotificacionesPage() {
                 </select>
               </div>
 
-              {/* Generate Real Notifications Button */}
+              {/* Generate Real Notifications Button - OCULTO */}
+              {/* 
               <button
                 onClick={generateRealNotifications}
                 disabled={generatingNotifications}
@@ -268,6 +273,7 @@ export default function NotificacionesPage() {
                   </>
                 )}
               </button>
+              */}
             </div>
 
             {/* Notifications List */}

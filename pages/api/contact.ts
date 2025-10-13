@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { sendAdminContactNotificationEmail } from '@/lib/emailNotifications';
+import { sendAdminContactNotificationEmail, sendUserContactConfirmationEmail } from '@/lib/emailNotifications';
 
 interface ContactFormData {
   nombre: string;
@@ -33,15 +33,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       console.log('📧 Procesando mensaje de contacto de:', email);
 
-      // Enviar notificación al admin usando el nuevo sistema
-      await sendAdminContactNotificationEmail({
+      const contactDetails = {
         userEmail: email,
         userName: nombre,
         userLastName: apellido,
         message: mensaje,
         timestamp: timestamp || Date.now()
-      });
+      };
 
+      // Enviar email de confirmación al usuario
+      await sendUserContactConfirmationEmail(contactDetails);
+      console.log('✅ Email de confirmación enviado al usuario exitosamente');
+
+      // Enviar notificación al admin
+      await sendAdminContactNotificationEmail(contactDetails);
       console.log('✅ Notificación de contacto enviada al admin exitosamente');
 
       return res.status(200).json({
