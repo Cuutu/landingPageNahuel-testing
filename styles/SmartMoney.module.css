@@ -355,13 +355,6 @@
   font-weight: 700;
 }
 
-.profit {
-  color: #10b981;
-}
-
-.loss {
-  color: #ef4444;
-}
 
 .tooltipStatus {
   font-weight: 600;
@@ -6373,7 +6366,8 @@
   background: rgba(16, 185, 129, 0.2);
   padding: 0.2rem;
   border-radius: 4px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 }
 
 .lossArrow {
@@ -6384,7 +6378,8 @@
   background: rgba(239, 68, 68, 0.2);
   padding: 0.2rem;
   border-radius: 4px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tooltipStatus {
