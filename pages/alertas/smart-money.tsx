@@ -2435,9 +2435,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       <span>P&L:</span>
                       <strong className={alert.profit.includes('+') ? styles.profit : styles.loss}>
                         <span>{alert.profit}</span>
-                        <span className={alert.profit.includes('+') ? styles.profitArrow : styles.lossArrow}>
-                          {alert.profit.includes('+') ? '↗' : '↘'}
-                        </span>
                       </strong>
                     </div>
                     {alert.hasSellRange && (
