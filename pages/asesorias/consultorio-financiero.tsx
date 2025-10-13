@@ -183,7 +183,13 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
 
   // Función para manejar la selección de fecha en el calendario
   const handleCalendarDateSelect = (date: Date, events: any[]) => {
-    console.log('🎯 handleCalendarDateSelect llamado con:', { date, events });
+    console.log('🎯 handleCalendarDateSelect llamado con:', { 
+      date, 
+      dateString: date.toString(),
+      dateISO: date.toISOString(),
+      dateLocal: date.toLocaleDateString(),
+      events 
+    });
     
     if (events.length > 0) {
       // Crear fecha directamente sin conversiones UTC para evitar desfases
@@ -192,6 +198,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       const day = String(date.getDate()).padStart(2, '0');
       const dayStr = `${year}-${month}-${day}`;
       
+      console.log('📅 Fecha original del calendario:', {
+        year: date.getFullYear(),
+        month: date.getMonth() + 1,
+        day: date.getDate()
+      });
       console.log('📅 Fecha seleccionada (sin UTC):', dayStr);
       setSelectedDate(dayStr);
       setSelectedTime('');
