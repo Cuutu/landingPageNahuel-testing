@@ -186,8 +186,13 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     console.log('🎯 handleCalendarDateSelect llamado con:', { date, events });
     
     if (events.length > 0) {
-      // Guardar solo el día (YYYY-MM-DD) y limpiar hora para mostrar todos los horarios de ese día
-      const dayStr = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).toISOString().split('T')[0];
+      // Crear fecha directamente sin conversiones UTC para evitar desfases
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dayStr = `${year}-${month}-${day}`;
+      
+      console.log('📅 Fecha seleccionada (sin UTC):', dayStr);
       setSelectedDate(dayStr);
       setSelectedTime('');
     } else {
