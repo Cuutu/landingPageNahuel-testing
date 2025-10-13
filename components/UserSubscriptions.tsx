@@ -139,15 +139,6 @@ export default function UserSubscriptions() {
           </div>
         </div>
 
-        <div className={styles.statCard}>
-          <div className={styles.statIcon}>
-            <DollarSign size={24} />
-          </div>
-          <div className={styles.statContent}>
-            <h3>{formatCurrency(stats.totalSpent, 'ARS')}</h3>
-            <p>Total Gastado</p>
-          </div>
-        </div>
 
         <div className={styles.statCard}>
           <div className={styles.statIcon}>
