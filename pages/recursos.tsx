@@ -516,7 +516,9 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
           <div className={styles.ctaContainer}>
             <h2 className={styles.ctaTitle}>¿Listo para llevar tus inversiones al siguiente nivel?</h2>
             <p className={styles.ctaSubtitle}>Únete a nuestra comunidad y comienza construir tu libertad financiera</p>
-            <button className={styles.ctaButton} onClick={handleStartNowClick}>Empezá ahora &gt;</button>
+            <button className={styles.ctaButton} onClick={handleStartNowClick}>
+              Empezá ahora &gt;
+            </button>
           </div>
         </section>
         {/* Fin de Información para Traders */}

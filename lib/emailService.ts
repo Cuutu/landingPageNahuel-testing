@@ -384,7 +384,7 @@ export function createEmailTemplate({
                                             </a>
                                         </td>
                                         <td style="padding: 0 8px;">
-                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}" 
+                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" 
                                                style="display: inline-block; width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 50%; text-align: center; line-height: 40px; font-size: 16px;">
                                                 📧
                                             </a>
@@ -408,8 +408,8 @@ export function createEmailTemplate({
                                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
                                         Si tienes preguntas, contáctanos en: 
-                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
-                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}
+                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
+                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}
                                         </a>
                                     </p>
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
@@ -765,12 +765,12 @@ export function createAdvisoryConfirmationTemplate(
       
       <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h3 style="margin: 0 0 15px 0; color: #1a1a1a;">📋 Detalles de la Asesoría:</h3>
-        <p style="margin: 8px 0;"><strong>👤 Cliente:</strong> ${userName}</p>
-        <p style="margin: 8px 0;"><strong>🩺 Servicio:</strong> ${advisoryDetails.type}</p>
-        <p style="margin: 8px 0;"><strong>📅 Fecha:</strong> ${advisoryDetails.date}</p>
-        <p style="margin: 8px 0;"><strong>⏰ Hora:</strong> ${advisoryDetails.time}</p>
-        <p style="margin: 8px 0;"><strong>⏱️ Duración:</strong> ${advisoryDetails.duration} minutos</p>
-        ${advisoryDetails.price ? `<p style="margin: 8px 0;"><strong>💰 Precio:</strong> $${advisoryDetails.price.toLocaleString('es-AR')} ARS</p>` : ''}
+        <p style="margin: 8px 0;"><strong>👤 Cliente: </strong> ${userName}</p>
+        <p style="margin: 8px 0;"><strong>🩺 Servicio: </strong> ${advisoryDetails.type}</p>
+        <p style="margin: 8px 0;"><strong>📅 Fecha: </strong> ${advisoryDetails.date}</p>
+        <p style="margin: 8px 0;"><strong>⏰ Hora: </strong> ${advisoryDetails.time}</p>
+        <p style="margin: 8px 0;"><strong>⏱️ Duración: </strong> ${advisoryDetails.duration} minutos</p>
+        ${advisoryDetails.price ? `<p style="margin: 8px 0;"><strong>💰 Precio: </strong> $${advisoryDetails.price.toLocaleString('es-AR')} ARS</p>` : ''}
       </div>
       
       ${meetLinkSection}
@@ -778,23 +778,33 @@ export function createAdvisoryConfirmationTemplate(
       <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; border-left: 4px solid #00ff88; margin: 20px 0;">
         <h3 style="color: #1a1a1a; margin-top: 0;">📋 Qué Incluye tu Asesoría:</h3>
         <ul style="color: #333; line-height: 1.6; margin: 0; padding-left: 20px;">
-          <li>Análisis completo de tu situación financiera actual</li>
-          <li>Evaluación de tu perfil de riesgo</li>
-          <li>Recomendaciones específicas de inversión</li>
-          <li>Plan de acción detallado y personalizado</li>
-          <li>Seguimiento por email durante 30 días</li>
-          <li>Grabación de la sesión para tu referencia</li>
+          <li>🔍 Diagnóstico integral de tu cartera</li>
+          <li>🎯 Plan de acción personalizado</li>
+          <li>💼 Estrategia de inversión ajustada a tu perfil</li>
+          <li>🧭 Recomendaciones claras y accionables</li>
+          <li>📄 Informe post sesión con próximos pasos</li>
         </ul>
       </div>
       
       <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; margin: 20px 0;">
-        <h3 style="color: #1a1a1a; margin-top: 0;">📝 Preparación para la Sesión:</h3>
+        <h3 style="color: #1a1a1a; margin-top: 0;">📝 Antes de la sesión, tené a mano lo siguiente:</h3>
         <ul style="color: #333; line-height: 1.6; margin: 0; padding-left: 20px;">
-          <li>Ten a mano información sobre tus inversiones actuales</li>
-          <li>Prepara datos sobre tus ingresos y gastos mensuales</li>
-          <li>Define tus objetivos financieros a corto y largo plazo</li>
-          <li>Anota las preguntas específicas que quieras hacer</li>
+          <li>💰 Detalle completo de su cartera actual</li>
+          <li>📊 Porcentajes y montos invertidos por activo</li>
+          <li>🧭 Objetivos financieros y horizonte temporal</li>
+          <li>⚖ Nivel de riesgo y liquidez disponible</li>
+          <li>❓ Dudas puntuales o decisiones a resolver</li>
         </ul>
+      </div>
+      
+      <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
+        <h3 style="color: #0c4a6e; margin-top: 0;">🚀 ¿Qué sigue ahora?</h3>
+        <p style="color: #0c4a6e; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">
+          Tu sesión del Consultorio Financiero ya está agendada. En las próximas horas recibirás un correo con el link a la reunión.
+        </p>
+        <p style="color: #0c4a6e; margin: 0; font-size: 16px; line-height: 1.6;">
+          <a href="#" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">Con este enlace podrás completar un breve formulario con tu información financiera</a> para que podamos diseñar un plan totalmente personalizado.
+        </p>
       </div>
     `,
     buttonText: 'Ver Mi Perfil',
@@ -1242,7 +1252,7 @@ export function createNotificationEmailTemplate({
                                             </a>
                                         </td>
                                         <td style="padding: 0 8px;">
-                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}" 
+                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" 
                                                style="display: inline-block; width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 50%; text-align: center; line-height: 40px; font-size: 16px;">
                                                 📧
                                             </a>
@@ -1266,8 +1276,8 @@ export function createNotificationEmailTemplate({
                                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
                                         Si tienes preguntas, contáctanos en: 
-                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
-                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'info@lozanonahuel.com'}
+                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
+                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}
                                         </a>
                                     </p>
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
