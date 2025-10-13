@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, TrendingUp, BarChart3, Target, Percent, Save } from 'lucide-react';
+import { Calendar, TrendingUp, BarChart3, Target, Percent } from 'lucide-react';
 import styles from './PortfolioTimeRange.module.css';
 
 interface TimeRangeOption {
@@ -259,9 +259,6 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
           >
             <span className={styles.rangeLabel}>{option.label}</span>
             <span className={styles.rangeDescription}>{option.description}</span>
-            {userPreference === option.value && (
-              <Save size={12} className={styles.savedIndicator} />
-            )}
           </button>
         ))}
       </div>

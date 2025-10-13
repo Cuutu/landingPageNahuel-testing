@@ -268,7 +268,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                   <div className={styles.courseInfoGrid}>
                     <div className={styles.courseInfoItem}>
                       <Clock size={20} />
-                      <span>3 meses de duración</span>
+                      <span>1 mes de duración</span>
                     </div>
                     <div className={styles.courseInfoItem}>
                       <Users size={20} />

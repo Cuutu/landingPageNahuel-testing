@@ -25,15 +25,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
+    const userCreatedAt = user.createdAt; // Fecha de creación de la cuenta del usuario
+
     console.log('🗑️ [NOTIFICATIONS] Descartando notificaciones leídas para usuario:', user.email);
 
     // En este esquema, una notificación es "leída" si el email del usuario está en readBy.
     // En lugar de borrar documentos compartidos, marcamos que el usuario la descartó (dismissedBy)
+    // Solo procesamos notificaciones creadas después del registro del usuario
     const updateResult = await Notification.updateMany(
       {
         isActive: true,
         readBy: user.email,
-        dismissedBy: { $ne: user.email }
+        dismissedBy: { $ne: user.email },
+        createdAt: { $gte: userCreatedAt } // Solo notificaciones posteriores al registro
       },
       {
         $addToSet: { dismissedBy: user.email }

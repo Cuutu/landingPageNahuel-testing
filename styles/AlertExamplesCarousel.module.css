@@ -46,13 +46,12 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
   height: 280px;
-  border: 2px solid #e5e7eb;
+  border: none; /* Removido el contorno blanco */
 }
 
 .alertCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
-  border-color: #10b981;
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2); /* Sombra verde en hover */
 }
 
 .chartContainer {
@@ -215,16 +214,19 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 2rem;
+  padding: 1rem;
+  overflow: auto; /* Permitir scroll si es necesario */
 }
 
 .modalContent {
   position: relative;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 100vh; /* Asegurar que ocupe toda la altura */
+  padding: 2rem 0; /* Espacio para el botón de cerrar */
 }
 
 .closeButton {
@@ -251,11 +253,15 @@
 }
 
 .modalImage {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  max-width: 95vw; /* Usar casi todo el ancho de la ventana */
+  max-height: 90vh; /* Usar casi toda la altura de la ventana */
+  width: auto;
+  height: auto;
+  object-fit: contain; /* Mantener proporciones */
   border-radius: 8px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: block;
+  margin: 0 auto; /* Centrar la imagen */
 }
 
 /* Empty State */
@@ -351,11 +357,21 @@
   }
   
   .modalOverlay {
-    padding: 1rem;
+    padding: 0.5rem;
+  }
+  
+  .modalContent {
+    min-height: 100vh;
+    padding: 1rem 0;
+  }
+  
+  .modalImage {
+    max-width: 98vw;
+    max-height: 95vh;
   }
   
   .closeButton {
-    top: -40px;
+    top: -35px;
     width: 35px;
     height: 35px;
   }

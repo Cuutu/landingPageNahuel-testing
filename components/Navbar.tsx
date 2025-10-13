@@ -5,6 +5,7 @@ import { ChevronDown, Menu, X, User, LogOut, Settings, Bell, MessageCircle, Doll
 import NotificationDropdown from '@/components/NotificationDropdown';
 import ContactForm from '@/components/ContactForm';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { useContact } from '@/contexts/ContactContext';
 import styles from '@/styles/Navbar.module.css';
 
 interface NavbarProps {
@@ -19,10 +20,10 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
   const { data: session, status } = useSession();
   const { isFeatureEnabled } = useSiteConfig();
+  const { isContactModalOpen, openContactModal, closeContactModal } = useContact();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showContactForm, setShowContactForm] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
@@ -93,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       setShowNotifications(false);
     }
     if (label !== 'contact') {
-      setShowContactForm(false);
+      closeContactModal();
     }
   };
 
@@ -107,11 +108,15 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
     setShowNotifications(!showNotifications);
     // Cerrar otros dropdowns
     setOpenDropdown(null);
-    setShowContactForm(false);
+    closeContactModal();
   };
 
   const handleContactToggle = () => {
-    setShowContactForm(!showContactForm);
+    if (isContactModalOpen) {
+      closeContactModal();
+    } else {
+      openContactModal();
+    }
     // Cerrar otros dropdowns
     setOpenDropdown(null);
     setShowNotifications(false);
@@ -271,7 +276,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
               <div className={styles.userActions}>
                 {/* Contact Button */}
                 <button
-                  className={`${styles.contactButton} ${showContactForm ? styles.active : ''}`}
+                  className={`${styles.contactButton} ${isContactModalOpen ? styles.active : ''}`}
                   onClick={handleContactToggle}
                   title="Contactar"
                 >
@@ -518,8 +523,8 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
 
       {/* Contact Form Modal */}
       <ContactForm 
-        isOpen={showContactForm} 
-        onClose={() => setShowContactForm(false)} 
+        isOpen={isContactModalOpen} 
+        onClose={closeContactModal} 
       />
     </>
   );

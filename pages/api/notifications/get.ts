@@ -46,11 +46,13 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
 
     const userRole = user.role || 'normal';
     const userEmail = session.user.email;
+    const userCreatedAt = user.createdAt; // Fecha de creación de la cuenta del usuario
 
     // Construir query base
     const now = new Date();
     let query: any = {
       isActive: true,
+      createdAt: { $gte: userCreatedAt }, // Solo notificaciones creadas después del registro del usuario
       $or: [
         { expiresAt: null },
         { expiresAt: { $gt: now } }
@@ -161,12 +163,20 @@ async function handleMarkAsRead(req: NextApiRequest, res: NextApiResponse) {
     const { notificationId, markAllAsRead = false } = req.body;
     const userEmail = session.user.email;
 
+    // Obtener información del usuario para filtrar por fecha de creación
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+    const userCreatedAt = user.createdAt;
+
     if (markAllAsRead) {
-      // Marcar todas las notificaciones como leídas
+      // Marcar todas las notificaciones como leídas (solo las creadas después del registro del usuario)
       await Notification.updateMany(
         { 
           readBy: { $ne: userEmail },
-          isActive: true 
+          isActive: true,
+          createdAt: { $gte: userCreatedAt } // Solo notificaciones posteriores al registro
         },
         { 
           $addToSet: { readBy: userEmail },

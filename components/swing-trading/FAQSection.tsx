@@ -26,7 +26,7 @@ const FAQSection: React.FC = () => {
     {
       id: 3,
       question: "¿Cómo es la modalidad?",
-      answer: "El entrenamiento dura 3 meses e incluye 1 clase en vivo por semana (100% online). Si no podés asistir, las clases quedan grabadas. Además, vas a contar con acceso a materiales descargables, herramientas listas para usar y un canal privado de Telegram donde vas a poder hacer consultas, compartir análisis y recibir seguimiento directo. Todo el proceso está pensado para que no te sientas solo y puedas avanzar paso a paso."
+      answer: "El entrenamiento dura 1 mes e incluye 1 clase en vivo por semana (100% online). Si no podés asistir, las clases quedan grabadas. Además, vas a contar con acceso a materiales descargables, herramientas listas para usar y un canal privado de Telegram donde vas a poder hacer consultas, compartir análisis y recibir seguimiento directo. Todo el proceso está pensado para que no te sientas solo y puedas avanzar paso a paso."
     },
     {
       id: 4,

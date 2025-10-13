@@ -341,7 +341,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                     <br /><br />
                     Ofrece la posibilidad de analizar una gran cantidad de activos y compartirlos rápidamente con la comunidad inversora para discutir puntos de vista.
                   </p>
-                  <div className={styles.tradingViewCTA}>
+                  <div className={styles.tradingViewCTA} id="tradingview-descuento">
                     <h3 className={styles.discountTitle}>¡Comienza a utilizar TradingView con 15 U$D de descuento!</h3>
                     <a 
                       href="https://es.tradingview.com/pricing/?share_your_love=XTrader95" 
@@ -415,7 +415,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
        
 
         {/* Biblioteca del Inversor */}
-        <section className={styles.bibliotecaSection}>
+        <section className={styles.bibliotecaSection} id="biblioteca-inversor">
           <div className={styles.bibliotecaContainer}>
             <h2 className={styles.bibliotecaTitle}>Biblioteca del Inversor</h2>
             <div className={styles.bibliotecaCarousel}>
@@ -460,7 +460,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         </section>
 
                  {/* Información para Traders */}
-         <section className={styles.infoTradersSection}>
+         <section className={styles.infoTradersSection} id="informacion-traders">
            <h2 className={styles.infoTradersTitle}>Información para Traders</h2>
            <div className={styles.infoTradersGrid}>
              <a href="https://es.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>

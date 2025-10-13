@@ -5,6 +5,7 @@ import { SessionProvider } from 'next-auth/react';
 import ToasterProvider from '@/components/ToasterProvider';
 import LoginTracker from '@/components/LoginTracker';
 import SecurityWarning from '@/components/SecurityWarning';
+import { ContactProvider } from '@/contexts/ContactContext';
 // import { useSecurityProtection } from '@/hooks/useSecurityProtection'; // DESHABILITADO
 import '@/styles/globals.css';
 
@@ -36,10 +37,12 @@ export default function App({
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
       </Head>
       <ToasterProvider>
-        {/* <SecurityProtection /> - DESHABILITADO */}
-        <SecurityWarning />
-        <LoginTracker />
-        <Component {...pageProps} />
+        <ContactProvider>
+          {/* <SecurityProtection /> - DESHABILITADO */}
+          <SecurityWarning />
+          <LoginTracker />
+          <Component {...pageProps} />
+        </ContactProvider>
       </ToasterProvider>
     </SessionProvider>
   );
