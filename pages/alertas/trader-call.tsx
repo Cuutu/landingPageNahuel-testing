@@ -2741,12 +2741,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <div className={styles.alertDetails}>
                 <div className={styles.alertDetail}>
                   <span>Precio Entrada:</span>
-                  <strong className={`sensitivePrice ${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
-                    {alert.entryPrice}
+                  <div className={`${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
+                    <strong className="sensitivePrice">
+                      {alert.entryPrice}
+                    </strong>
                     {alert.entryPrice?.includes(' / ') && (
                       <span className={styles.rangeIndicator}>RANGO</span>
                     )}
-                  </strong>
+                  </div>
                 </div>
                 <div className={styles.alertDetail}>
                   <span>Precio Actual:</span>

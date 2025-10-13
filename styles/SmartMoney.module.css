@@ -1102,14 +1102,17 @@
 
 /* ✅ NUEVO: Estilos para rangos de precio */
 .priceRange {
-  color: #10b981 !important;
-  font-weight: 700 !important;
-  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: nowrap;
   white-space: nowrap;
+  position: relative;
+}
+
+.priceRange .sensitivePrice {
+  color: #10b981 !important;
+  font-weight: 700 !important;
 }
 
 .rangeIndicator {
@@ -1123,7 +1126,6 @@
   letter-spacing: 0.5px;
   box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
   animation: pulse 2s infinite;
-  margin-left: 0.5rem;
   flex-shrink: 0;
 }
 
