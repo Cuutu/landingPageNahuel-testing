@@ -87,16 +87,6 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
       // Esto evita problemas de offset que causan que se marque el día anterior
       const selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
       
-      console.log('🗓️ ClassCalendar handleDateClick:', {
-        clickedDay: day,
-        currentYear: currentDate.getFullYear(),
-        currentMonth: currentDate.getMonth(),
-        createdDate: selectedDate,
-        createdDateString: selectedDate.toString(),
-        createdDateISO: selectedDate.toISOString(),
-        createdDateLocal: selectedDate.toLocaleDateString()
-      });
-      
       const dayEvents = getEventsForDate(day);
       onDateSelect(selectedDate, dayEvents);
     }

@@ -183,14 +183,6 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
 
   // Función para manejar la selección de fecha en el calendario
   const handleCalendarDateSelect = (date: Date, events: any[]) => {
-    console.log('🎯 handleCalendarDateSelect llamado con:', { 
-      date, 
-      dateString: date.toString(),
-      dateISO: date.toISOString(),
-      dateLocal: date.toLocaleDateString(),
-      events 
-    });
-    
     if (events.length > 0) {
       // Crear fecha directamente sin conversiones UTC para evitar desfases
       const year = date.getFullYear();
@@ -198,16 +190,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       const day = String(date.getDate()).padStart(2, '0');
       const dayStr = `${year}-${month}-${day}`;
       
-      console.log('📅 Fecha original del calendario:', {
-        year: date.getFullYear(),
-        month: date.getMonth() + 1,
-        day: date.getDate()
-      });
-      console.log('📅 Fecha seleccionada (sin UTC):', dayStr);
       setSelectedDate(dayStr);
       setSelectedTime('');
-    } else {
-      console.log('❌ No hay eventos para esta fecha');
     }
   };
 
@@ -714,7 +698,14 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                       </div>
                       <div className={styles.horariosGrid}>
                         {advisoryDates
-                          .filter(advisory => new Date(advisory.date).toISOString().split('T')[0] === selectedDate && !advisory.isBooked)
+                          .filter(advisory => {
+                            // Crear fecha directamente sin conversiones UTC para evitar desfases
+                            const advisoryYear = new Date(advisory.date).getFullYear();
+                            const advisoryMonth = String(new Date(advisory.date).getMonth() + 1).padStart(2, '0');
+                            const advisoryDay = String(new Date(advisory.date).getDate()).padStart(2, '0');
+                            const advisoryDateStr = `${advisoryYear}-${advisoryMonth}-${advisoryDay}`;
+                            return advisoryDateStr === selectedDate && !advisory.isBooked;
+                          })
                           .map((advisory, index) => (
                             <button
                               key={`${advisory._id}-${index}`}
@@ -728,12 +719,17 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                       {selectedDate && (
                         <div className={styles.seleccionInfo}>
                           <div className={styles.infoItem}>
-                            <strong>FECHA:</strong> {new Date(selectedDate).toLocaleDateString('es-ES', { 
-                              weekday: 'long', 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
+                            <strong>FECHA:</strong> {(() => {
+                              // Crear fecha directamente sin conversiones UTC para evitar desfases
+                              const [year, month, day] = selectedDate.split('-').map(Number);
+                              const date = new Date(year, month - 1, day);
+                              return date.toLocaleDateString('es-ES', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                              });
+                            })()}
                           </div>
                           {selectedTime && (
                             <div className={styles.infoItem}>
