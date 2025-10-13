@@ -662,7 +662,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                           onDateSelect={handleCalendarDateSelect}
                           isAdmin={true}
                           initialDate={earliestDate}
-                          selectedDate={selectedDate ? new Date(selectedDate) : undefined}
+                          selectedDate={selectedDate ? (() => {
+                            // Crear fecha directamente en zona horaria local para evitar desfases
+                            const [year, month, day] = selectedDate.split('-').map(Number);
+                            return new Date(year, month - 1, day);
+                          })() : undefined}
                         />
                       </div>
                     </>
