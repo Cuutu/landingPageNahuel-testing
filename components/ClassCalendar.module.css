@@ -85,16 +85,18 @@
 }
 
 .dayHeader {
-  padding: 1rem 0.5rem;
+  padding: 0.75rem 0.25rem;
   text-align: center;
   color: #FFFFFF;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.05);
   box-sizing: border-box;
   min-width: 0; /* Asegurar que las columnas se ajusten correctamente */
   width: 100%; /* Ocupar todo el ancho disponible */
+  letter-spacing: 0.5px; /* Mejor espaciado entre letras */
+  line-height: 1.2; /* Mejor altura de línea */
 }
 
 .dayHeader:last-child {
@@ -250,8 +252,9 @@
   }
 
   .dayHeader {
-    padding: 0.75rem 0.25rem;
-    font-size: 0.7rem;
+    padding: 0.5rem 0.1rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.3px;
   }
 
   .calendarDay {
@@ -284,8 +287,9 @@
   }
 
   .dayHeader {
-    padding: 0.5rem 0.1rem;
-    font-size: 0.6rem;
+    padding: 0.4rem 0.05rem;
+    font-size: 0.55rem;
+    letter-spacing: 0.2px;
   }
 
   .calendarDay {
