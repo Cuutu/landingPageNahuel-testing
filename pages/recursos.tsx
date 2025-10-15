@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import BackgroundVideo from '@/components/BackgroundVideo';
 import CopyNotification from '@/components/CopyNotification';
+import HelpTooltip from '@/components/HelpTooltip';
 import { useCopyToClipboard } from '@/hooks/useCopyToClipboard';
 import { motion } from 'framer-motion';
 import { 
@@ -227,6 +228,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
 
   // Estado para el tooltip de ayuda
   const [showTooltip, setShowTooltip] = useState<string | false>(false);
+  const [tooltipTarget, setTooltipTarget] = useState<HTMLElement | null>(null);
 
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
@@ -350,6 +352,15 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         itemName={notificationItemName}
         onClose={hideNotification}
       />
+
+      {/* Tooltip de ayuda */}
+      {showTooltip && tooltipTarget && (
+        <HelpTooltip
+          isVisible={true}
+          text={tradingViewTools.find(t => t.id === showTooltip)?.helpText || ''}
+          targetElement={tooltipTarget}
+        />
+      )}
 
       {/* Modal de advertencia para listas de seguimiento */}
       <WatchlistModal
@@ -484,19 +495,26 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                       {tool.hasHelp && (
                         <div 
                           className={styles.helpIcon}
-                          onMouseEnter={() => setShowTooltip(tool.id)}
-                          onMouseLeave={() => setShowTooltip(false)}
+                          ref={(el) => {
+                            if (showTooltip === tool.id && el) {
+                              setTooltipTarget(el);
+                            }
+                          }}
+                          onMouseEnter={(e) => {
+                            setShowTooltip(tool.id);
+                            setTooltipTarget(e.currentTarget);
+                          }}
+                          onMouseLeave={() => {
+                            setShowTooltip(false);
+                            setTooltipTarget(null);
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             setShowTooltip(showTooltip === tool.id ? false : tool.id);
+                            setTooltipTarget(showTooltip === tool.id ? null : e.currentTarget);
                           }}
                         >
                           <HelpCircle size={18} />
-                          {showTooltip === tool.id && (
-                            <div className={styles.tooltip}>
-                              {tool.helpText}
-                            </div>
-                          )}
                         </div>
                       )}
                     </div>
