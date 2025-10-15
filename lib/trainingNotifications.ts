@@ -315,7 +315,7 @@ function createTrainingWelcomeEmailTemplate(
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://nahuellozano.com'}/entrenamientos/swing-trading" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://lozanonahuel.com'}/entrenamientos/swing-trading" 
            style="background: linear-gradient(135deg, #8B0000 0%, #A52A2A 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
           🎓 Comenzar Entrenamiento
         </a>
@@ -325,7 +325,7 @@ function createTrainingWelcomeEmailTemplate(
         <h3 style="color: #1e40af; margin-top: 0;">📞 ¿Necesitas ayuda?</h3>
         <p style="margin-bottom: 10px;">Si tienes alguna pregunta sobre tu entrenamiento, no dudes en contactarnos:</p>
         <ul style="margin: 0; padding-left: 20px;">
-          <li>📧 Email: ${process.env.SMTP_USER || 'contacto@nahuellozano.com'}</li>
+          <li>📧 Email: ${process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}</li>
           <li>💬 WhatsApp: +54 9 11 1234-5678</li>
         </ul>
       </div>
@@ -386,7 +386,7 @@ function createAdminEnrollmentNotificationTemplate(
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://nahuellozano.com'}/admin/users" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://lozanonahuel.com'}/admin/users" 
            style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
           👥 Ver Usuario en Admin
         </a>
@@ -480,7 +480,7 @@ function createTrainingScheduleEmailTemplate(
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://nahuellozano.com'}/entrenamientos" 
+        <a href="${process.env.NEXT_PUBLIC_BASE_URL || 'https://lozanonahuel.com'}/entrenamientos" 
            style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
           📅 Reservar Clase
         </a>

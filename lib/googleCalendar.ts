@@ -194,12 +194,14 @@ async function createGoogleMeetForEvent(
 }
 
 function formatDateTimeInTz(date: Date, timezone: string): string {
+  // Formatear fecha y hora en el timezone especificado
   const datePart = new Intl.DateTimeFormat('en-CA', {
     timeZone: timezone,
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
   }).format(date);
+  
   const timePart = new Intl.DateTimeFormat('en-GB', {
     timeZone: timezone,
     hour: '2-digit',
@@ -207,15 +209,17 @@ function formatDateTimeInTz(date: Date, timezone: string): string {
     second: '2-digit',
     hour12: false
   }).format(date);
-  // Calcular offset horario (e.g., -03:00) en esa zona para esa fecha
-  const utc = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
-  const local = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
-  const diffMinutes = Math.round((local.getTime() - utc.getTime()) / 60000);
-  const sign = diffMinutes >= 0 ? '+' : '-';
-  const abs = Math.abs(diffMinutes);
-  const offH = String(Math.floor(abs / 60)).padStart(2, '0');
-  const offM = String(abs % 60).padStart(2, '0');
-  const offset = `${sign}${offH}:${offM}`;
+  
+  // Calcular offset horario correctamente usando el timezone
+  const formatter = new Intl.DateTimeFormat('en', {
+    timeZone: timezone,
+    timeZoneName: 'longOffset'
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const offsetPart = parts.find(part => part.type === 'timeZoneName');
+  const offset = offsetPart ? offsetPart.value.replace('GMT', '').trim() : '+00:00';
+  
   return `${datePart}T${timePart}${offset}`; // YYYY-MM-DDTHH:mm:ss±hh:mm
 }
 

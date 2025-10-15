@@ -1316,11 +1316,12 @@
   border-radius: 8px;
   font-size: 0.85rem;
   line-height: 1.4;
-  width: 280px;
+  width: 360px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
   z-index: 1000;
   pointer-events: none;
+  word-wrap: break-word;
 }
 
 .tooltip::after {
@@ -1340,7 +1341,7 @@
   .tooltip {
     top: -100px;
     right: -20px;
-    width: 240px;
+    width: 320px;
     font-size: 0.8rem;
   }
   
@@ -1358,7 +1359,7 @@
   .tooltip {
     top: -90px;
     right: -10px;
-    width: 200px;
+    width: 280px;
     font-size: 0.75rem;
     padding: 10px 12px;
   }

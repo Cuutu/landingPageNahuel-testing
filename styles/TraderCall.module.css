@@ -3120,9 +3120,10 @@
   background: var(--bg-secondary);
   border-radius: 12px;
   margin: 1rem;
-  height: calc(100vh - 200px); /* Aumentado de 300px a 200px para x1.5 más grande */
+  height: calc(100vh - 50px); /* Aumentado para hacer el chat más grande */
   display: flex;
   flex-direction: column;
+  min-height: 800px; /* Altura mínima para asegurar que sea grande */
 }
 
 .chatContainer {

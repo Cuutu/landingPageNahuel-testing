@@ -197,6 +197,15 @@ export default function PaymentSuccessPage({
 
 
           <div className={styles.actions}>
+            <Link href="/entrenamientos/swing-trading" className={styles.accessButton}>
+              <ArrowRight size={20} />
+              Ir a mis entrenamientos
+            </Link>
+            
+            <Link href="/perfil" className={styles.profileButton}>
+              Ver mi perfil
+            </Link>
+            
             <Link href="/" className={styles.backButton}>
               Volver al Inicio
             </Link>

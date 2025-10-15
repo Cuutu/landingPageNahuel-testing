@@ -796,16 +796,6 @@ export function createAdvisoryConfirmationTemplate(
           <li>❓ Dudas puntuales o decisiones a resolver</li>
         </ul>
       </div>
-      
-      <div style="background-color: #e0f2fe; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9; margin: 20px 0;">
-        <h3 style="color: #0c4a6e; margin-top: 0;">🚀 ¿Qué sigue ahora?</h3>
-        <p style="color: #0c4a6e; margin: 0 0 15px 0; font-size: 16px; line-height: 1.6;">
-          Tu sesión del Consultorio Financiero ya está agendada. En las próximas horas recibirás un correo con el link a la reunión.
-        </p>
-        <p style="color: #0c4a6e; margin: 0; font-size: 16px; line-height: 1.6;">
-          <a href="#" style="color: #0ea5e9; text-decoration: underline; font-weight: 600;">Con este enlace podrás completar un breve formulario con tu información financiera</a> para que podamos diseñar un plan totalmente personalizado.
-        </p>
-      </div>
     `,
     buttonText: 'Ver Mi Perfil',
     buttonUrl: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil`

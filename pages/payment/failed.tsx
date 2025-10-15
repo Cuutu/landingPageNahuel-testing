@@ -237,9 +237,9 @@ export default function PaymentFailed() {
               Si el problema persiste, nuestro equipo de soporte está aquí para ayudarte.
             </p>
             <div className={styles.contactOptions}>
-              <a href="mailto:soporte@nahuellozano.com" className={styles.contactLink}>
+              <a href="mailto:Soporte@lozanonahuel.com" className={styles.contactLink}>
                 <Mail size={16} />
-                soporte@nahuellozano.com
+                Soporte@lozanonahuel.com
               </a>
               <a href="https://wa.me/59899123456" className={styles.contactLink}>
                 <Phone size={16} />

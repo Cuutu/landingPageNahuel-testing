@@ -444,7 +444,7 @@ function createTrainingReminderTemplate(params: {
           
           <div class="support">
             <h4>💬 ¿Necesitas ayuda?</h4>
-            <p>Si tienes alguna pregunta sobre tu entrenamiento o necesitas asistencia, no dudes en contactarnos en <strong>soporte@nahuellozano.com</strong></p>
+            <p>Si tienes alguna pregunta sobre tu entrenamiento o necesitas asistencia, no dudes en contactarnos en <strong>Soporte@lozanonahuel.com</strong></p>
           </div>
         </div>
         

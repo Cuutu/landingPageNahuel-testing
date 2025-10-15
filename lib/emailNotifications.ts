@@ -472,7 +472,7 @@ export async function sendUserContactConfirmationEmail(
             
             <p style="margin-top: 30px;">
               <strong>¿Necesitas ayuda inmediata?</strong><br>
-              Si tu consulta es urgente, puedes contactarnos directamente por WhatsApp o revisar nuestras <a href="https://lozanonahuel.vercel.app/recursos" style="color: #3b82f6;">preguntas frecuentes</a>.
+              Si tu consulta es urgente, puedes contactarnos directamente por WhatsApp.
             </p>
           </div>
           
@@ -756,7 +756,7 @@ export async function sendPaymentSuccessEmail(
             
             <div class="support">
               <h4>💬 ¿Necesitas ayuda?</h4>
-              <p>Si tienes alguna pregunta sobre tu compra o necesitas asistencia, no dudes en contactarnos en <strong>soporte@nahuellozano.com</strong></p>
+              <p>Si tienes alguna pregunta sobre tu compra o necesitas asistencia, no dudes en contactarnos en <strong>Soporte@lozanonahuel.com</strong></p>
             </div>
           </div>
           
@@ -918,7 +918,7 @@ export async function sendPaymentFailedEmail(
             
             <div class="support">
               <h4>💬 ¿Necesitas ayuda?</h4>
-              <p>Si el problema persiste, nuestro equipo de soporte está aquí para ayudarte. Contáctanos en <strong>soporte@nahuellozano.com</strong> o por WhatsApp.</p>
+              <p>Si el problema persiste, nuestro equipo de soporte está aquí para ayudarte. Contáctanos en <strong>Soporte@lozanonahuel.com</strong> o por WhatsApp.</p>
             </div>
           </div>
           
