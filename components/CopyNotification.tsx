@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Copy } from 'lucide-react';
 import styles from './CopyNotification.module.css';
@@ -14,6 +15,12 @@ const CopyNotification: React.FC<CopyNotificationProps> = ({
   itemName,
   onClose
 }) => {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (isVisible) {
       const timer = setTimeout(() => {
@@ -24,7 +31,9 @@ const CopyNotification: React.FC<CopyNotificationProps> = ({
     }
   }, [isVisible, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  const notificationContent = (
     <AnimatePresence>
       {isVisible && (
         <motion.div
@@ -56,6 +65,9 @@ const CopyNotification: React.FC<CopyNotificationProps> = ({
       )}
     </AnimatePresence>
   );
+
+  // Renderizar directamente en el body usando portal para evitar problemas de z-index
+  return createPortal(notificationContent, document.body);
 };
 
 export default CopyNotification;
