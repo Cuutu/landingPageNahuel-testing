@@ -118,7 +118,7 @@ const monthlyTrainingSchema = new Schema<MonthlyTrainingDocument>({
   year: { type: Number, required: true },
   
   // Configuración
-  maxStudents: { type: Number, required: true, default: 10 },
+  maxStudents: { type: Number, required: true, default: 20 },
   price: { type: Number, required: true },
   
   // Rango de verificación para pagos exitosos

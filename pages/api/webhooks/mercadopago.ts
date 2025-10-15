@@ -473,23 +473,63 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         payment.status = 'approved';
         await payment.save();
         
-        // TODO: Enviar email de confirmación (opcional)
-        // try {
-        //   const { sendMonthlyTrainingConfirmationEmail } = await import('@/lib/emailNotifications');
-        //   await sendMonthlyTrainingConfirmationEmail({
-        //     userEmail: monthlySubscription.userEmail,
-        //     userName: monthlySubscription.userName,
-        //     trainingType: monthlySubscription.trainingType,
-        //     subscriptionMonth: monthlySubscription.subscriptionMonth,
-        //     subscriptionYear: monthlySubscription.subscriptionYear,
-        //     startDate: monthlySubscription.startDate,
-        //     endDate: monthlySubscription.endDate
-        //   });
-        //   console.log('✅ Email de confirmación de suscripción mensual enviado');
-        // } catch (emailError) {
-        //   console.error('⚠️ Error enviando email de confirmación de suscripción mensual:', emailError);
-        //   // No es crítico
-        // }
+        // ✅ Enviar email de confirmación con las clases del mes
+        try {
+          if (!payment.metadata) payment.metadata = {} as any;
+          if (!payment.metadata.monthlyTrainingConfirmationSent) {
+            console.log('📧 Enviando email de confirmación de suscripción mensual...');
+            
+            const { sendMonthlyTrainingConfirmationEmail } = await import('@/lib/emailNotifications');
+            const { default: MonthlyTraining } = await import('@/models/MonthlyTraining');
+            
+            // Buscar las clases programadas para este mes
+            const monthlyTraining = await MonthlyTraining.findOne({
+              month: monthlySubscription.subscriptionMonth,
+              year: monthlySubscription.subscriptionYear
+            });
+            
+            // Formatear las clases para el email
+            const classes = monthlyTraining?.classes.map((cls: any) => {
+              const classDate = new Date(cls.date);
+              const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+              
+              return {
+                date: classDate.toLocaleDateString('es-ES', {
+                  weekday: 'long',
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  timeZone: tz
+                }),
+                startTime: cls.startTime,
+                title: cls.title,
+                meetingLink: cls.meetingLink
+              };
+            }) || [];
+            
+            await sendMonthlyTrainingConfirmationEmail({
+              userEmail: monthlySubscription.userEmail,
+              userName: monthlySubscription.userName,
+              trainingType: monthlySubscription.trainingType,
+              subscriptionMonth: monthlySubscription.subscriptionMonth,
+              subscriptionYear: monthlySubscription.subscriptionYear,
+              startDate: monthlySubscription.startDate,
+              endDate: monthlySubscription.endDate,
+              classes,
+              price: monthlySubscription.paymentAmount
+            });
+            
+            payment.metadata.monthlyTrainingConfirmationSent = true;
+            await payment.save();
+            
+            console.log('✅ Email de confirmación de suscripción mensual enviado con éxito');
+          } else {
+            console.log('ℹ️ Email de confirmación de suscripción mensual ya enviado previamente.');
+          }
+        } catch (emailError) {
+          console.error('⚠️ Error enviando email de confirmación de suscripción mensual:', emailError);
+          // No es crítico, no fallar el pago
+        }
         
       } catch (monthlyError) {
         console.error('❌ Error procesando suscripción mensual:', monthlyError);

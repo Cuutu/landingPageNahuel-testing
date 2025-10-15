@@ -73,17 +73,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Verificar disponibilidad de cupos (máximo 10 suscriptores por mes)
+    // Verificar disponibilidad de cupos (máximo 20 suscriptores por mes)
     const availability = await (MonthlyTrainingSubscription as any).checkAvailability(
       trainingType, 
       subscriptionYear, 
       subscriptionMonth, 
-      10
+      20
     );
 
     if (!availability.available) {
       return res.status(400).json({ 
-        error: `No hay cupos disponibles para este mes. Actualmente hay ${availability.currentSubscribers}/10 suscriptores.` 
+        error: `No hay cupos disponibles para este mes. Actualmente hay ${availability.currentSubscribers}/20 suscriptores.` 
       });
     }
 

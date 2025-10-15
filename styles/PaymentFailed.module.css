@@ -117,7 +117,9 @@
   gap: 16px;
   justify-content: center;
   margin-bottom: 30px;
+  margin-top: auto;
   flex-wrap: wrap;
+  width: 100%;
 }
 
 .primaryButton {

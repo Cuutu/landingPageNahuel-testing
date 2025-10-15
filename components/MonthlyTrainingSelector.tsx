@@ -18,6 +18,7 @@ interface MonthlyTrainingSelectorProps {
   selectedMonth?: number;
   selectedYear?: number;
   disabled?: boolean;
+  onSubscribe?: (month: number, year: number) => void;
 }
 
 const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
@@ -25,7 +26,8 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
   onMonthSelect,
   selectedMonth,
   selectedYear,
-  disabled = false
+  disabled = false,
+  onSubscribe
 }) => {
   const [availabilityData, setAvailabilityData] = useState<AvailabilityData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -168,6 +170,16 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
           Una vez que termine el mes, tu acceso expirará automáticamente.
         </div>
       </div>
+
+      {selectedMonth && selectedYear && onSubscribe && (
+        <button
+          onClick={() => onSubscribe(selectedMonth, selectedYear)}
+          disabled={disabled}
+          className={styles.subscribeButton}
+        >
+          Suscribirse al Mes &gt;
+        </button>
+      )}
     </div>
   );
 };

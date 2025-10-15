@@ -228,12 +228,20 @@ export default function PaymentSuccess() {
 
           <div className={styles.buttonGroup}>
             {paymentDetails && (
-              <Link href={getActionButton(paymentDetails.service).url} className={`${styles.button} ${styles.actionButton}`}>
+              <Link 
+                href={getActionButton(paymentDetails.service).url} 
+                className={`${styles.button} ${styles.actionButton}`}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
                 {getActionButton(paymentDetails.service).text}
               </Link>
             )}
             
-            <Link href="/" className={`${styles.button} ${styles.homeButton}`}>
+            <Link 
+              href="/" 
+              className={`${styles.button} ${styles.homeButton}`}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
               Volver al inicio
             </Link>
           </div>

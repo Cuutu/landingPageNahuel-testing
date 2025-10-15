@@ -901,6 +901,11 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                     selectedMonth={selectedMonth}
                     selectedYear={selectedYear}
                     disabled={isProcessingPayment}
+                    onSubscribe={(month, year) => {
+                      setSelectedMonth(month);
+                      setSelectedYear(year);
+                      handleEnroll();
+                    }}
                   />
                 )}
                 
@@ -1340,7 +1345,10 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              <SwingTradingMonthlyCalendar />
+              <SwingTradingMonthlyCalendar 
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+              />
             </motion.div>
           </div>
         </section>

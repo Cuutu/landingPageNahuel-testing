@@ -209,7 +209,7 @@ MonthlyTrainingSubscriptionSchema.statics.checkAvailability = async function(
   trainingType: string, 
   year: number, 
   month: number, 
-  maxSubscribers: number = 10
+  maxSubscribers: number = 20
 ) {
   const count = await this.countDocuments({
     trainingType,

@@ -68,17 +68,30 @@ function formatArgentinaDate(dateString: string): string {
   return formatted;
 }
 
-export default function SwingTradingCalendar() {
+interface SwingTradingCalendarProps {
+  selectedMonth?: number;
+  selectedYear?: number;
+}
+
+export default function SwingTradingCalendar({ selectedMonth, selectedYear }: SwingTradingCalendarProps = {}) {
   const { data: session } = useSession();
   const [trainings, setTrainings] = useState<MonthlyTraining[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState(selectedMonth || new Date().getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(selectedYear || new Date().getFullYear());
   const [enrolling, setEnrolling] = useState<string | null>(null);
 
   useEffect(() => {
     loadTrainings();
   }, [currentMonth, currentYear, session]);
+
+  // Actualizar mes y año cuando cambien las props
+  useEffect(() => {
+    if (selectedMonth && selectedYear) {
+      setCurrentMonth(selectedMonth);
+      setCurrentYear(selectedYear);
+    }
+  }, [selectedMonth, selectedYear]);
 
   const loadTrainings = async () => {
     setLoading(true);

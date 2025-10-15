@@ -158,6 +158,31 @@
   line-height: 1.5;
 }
 
+.subscribeButton {
+  width: 100%;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 16px;
+}
+
+.subscribeButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.subscribeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .loading {
   display: flex;
   align-items: center;

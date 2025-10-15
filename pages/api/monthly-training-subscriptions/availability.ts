@@ -18,7 +18,7 @@ const availabilitySchema = z.object({
   trainingType: z.enum(['SwingTrading', 'DayTrading', 'DowJones']).default('SwingTrading'),
   year: z.string().transform(val => parseInt(val)).optional(),
   month: z.string().transform(val => parseInt(val)).optional(),
-  maxSubscribers: z.string().transform(val => parseInt(val)).default('10')
+  maxSubscribers: z.string().transform(val => parseInt(val)).default('20')
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {

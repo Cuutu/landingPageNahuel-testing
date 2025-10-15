@@ -71,6 +71,171 @@ export async function sendAdvisoryConfirmationEmail(
 }
 
 /**
+ * Envía email de confirmación para suscripción mensual de entrenamiento
+ */
+export async function sendMonthlyTrainingConfirmationEmail(params: {
+  userEmail: string;
+  userName: string;
+  trainingType: string;
+  subscriptionMonth: number;
+  subscriptionYear: number;
+  startDate: Date;
+  endDate: Date;
+  classes: Array<{
+    date: string;
+    startTime: string;
+    title: string;
+    meetingLink?: string;
+  }>;
+  price: number;
+}) {
+  try {
+    const { userEmail, userName, trainingType, subscriptionMonth, subscriptionYear, classes, price } = params;
+    console.log('📧 Enviando email de confirmación de suscripción mensual a:', userEmail);
+
+    const monthNames = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    const monthName = monthNames[subscriptionMonth - 1];
+
+    const trainingDisplayName = trainingType === 'SwingTrading' ? 'Swing Trading' : trainingType;
+
+    // Crear HTML del email
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Confirmación de Suscripción Mensual</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700;">¡Bienvenido al Entrenamiento Mensual!</h1>
+            <p style="color: #ffffff; margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">Tu suscripción ha sido confirmada</p>
+          </div>
+
+          <!-- Content -->
+          <div style="padding: 40px 30px;">
+            <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 20px 0;">
+              Hola <strong>${userName}</strong>,
+            </p>
+            
+            <p style="font-size: 16px; line-height: 1.6; color: #333333; margin: 0 0 30px 0;">
+              ¡Excelente noticia! Tu suscripción al entrenamiento <strong>${trainingDisplayName}</strong> para el mes de <strong>${monthName} ${subscriptionYear}</strong> ha sido confirmada exitosamente.
+            </p>
+
+            <!-- Classes Section -->
+            <div style="background-color: #f8f9fa; border-radius: 12px; padding: 24px; margin: 30px 0;">
+              <h2 style="color: #333333; font-size: 20px; margin: 0 0 20px 0; font-weight: 600;">
+                📅 Clases Programadas
+              </h2>
+              
+              ${classes.length > 0 ? `
+                <div style="margin-bottom: 20px;">
+                  ${classes.map((cls, index) => `
+                    <div style="background-color: #ffffff; border-left: 4px solid #667eea; padding: 16px; margin-bottom: 12px; border-radius: 8px;">
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                          <h3 style="color: #333333; font-size: 16px; margin: 0 0 8px 0; font-weight: 600;">
+                            ${cls.title}
+                          </h3>
+                          <p style="color: #666666; font-size: 14px; margin: 0 0 4px 0;">
+                            📅 ${cls.date}
+                          </p>
+                          <p style="color: #666666; font-size: 14px; margin: 0;">
+                            🕐 ${cls.startTime}
+                          </p>
+                        </div>
+                        ${cls.meetingLink ? `
+                          <div style="margin-top: 12px;">
+                            <a href="${cls.meetingLink}" 
+                               style="display: inline-block; background-color: #667eea; color: #ffffff; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px;">
+                              Unirse a la Clase
+                            </a>
+                          </div>
+                        ` : `
+                          <div style="margin-top: 12px;">
+                            <span style="display: inline-block; background-color: #f59e0b; color: #ffffff; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;">
+                              Link Próximamente
+                            </span>
+                          </div>
+                        `}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : `
+                <p style="color: #666666; font-size: 14px; margin: 0; padding: 20px; text-align: center; background-color: #ffffff; border-radius: 8px;">
+                  📅 Las clases para este mes se programarán próximamente. Te notificaremos cuando estén disponibles.
+                </p>
+              `}
+            </div>
+
+            <!-- Info Box -->
+            <div style="background-color: #e0f2fe; border-left: 4px solid #0ea5e9; padding: 20px; margin: 30px 0; border-radius: 8px;">
+              <h3 style="color: #0369a1; font-size: 16px; margin: 0 0 12px 0; font-weight: 600;">
+                ℹ️ Información Importante
+              </h3>
+              <ul style="color: #0369a1; font-size: 14px; line-height: 1.8; margin: 0; padding-left: 20px;">
+                <li>Tu acceso al entrenamiento es válido durante todo el mes de <strong>${monthName} ${subscriptionYear}</strong></li>
+                <li>Recibirás recordatorios 24 horas y 1 hora antes de cada clase</li>
+                <li>Los links de Google Meet se compartirán automáticamente</li>
+                <li>Si tienes preguntas, puedes contactarnos en soporte@lozanonahuel.com</li>
+              </ul>
+            </div>
+
+            <!-- CTA Button -->
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/entrenamientos/swing-trading" 
+                 style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+                Ver Detalles del Entrenamiento
+              </a>
+            </div>
+
+            <!-- Footer -->
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 30px;">
+              <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0 0 10px 0;">
+                <strong>Monto Pagado:</strong> $${price.toLocaleString('es-AR')} ARS
+              </p>
+              <p style="color: #666666; font-size: 14px; line-height: 1.6; margin: 0;">
+                <strong>Período de Acceso:</strong> ${monthName} ${subscriptionYear}
+              </p>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="background-color: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
+            <p style="color: #666666; font-size: 14px; margin: 0 0 10px 0;">
+              ¿Necesitas ayuda? Contáctanos en <a href="mailto:soporte@lozanonahuel.com" style="color: #667eea; text-decoration: none;">soporte@lozanonahuel.com</a>
+            </p>
+            <p style="color: #999999; font-size: 12px; margin: 10px 0 0 0;">
+              © ${new Date().getFullYear()} Nahuel Lozano Trading. Todos los derechos reservados.
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await sendEmail({
+      to: userEmail,
+      subject: `✅ Confirmación de Suscripción - ${trainingDisplayName} ${monthName} ${subscriptionYear}`,
+      html
+    });
+
+    console.log('✅ Email de confirmación de suscripción mensual enviado exitosamente');
+
+  } catch (error) {
+    console.error('❌ Error al enviar email de confirmación de suscripción mensual:', error);
+    throw error;
+  }
+}
+
+/**
  * Envía email de recordatorio para asesoría al usuario
  */
 export async function sendAdvisoryReminderEmail(params: {

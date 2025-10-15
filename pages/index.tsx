@@ -806,31 +806,9 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         />
                       </div>
                       
-                      {session ? (
-                        <button 
-                          onClick={() => handleMercadoPagoCheckout(
-                            'subscription',
-                            'TraderCall',
-                            (resolvedPricing?.alertas?.traderCall?.monthly || 0),
-                            resolvedPricing?.currency || 'ARS'
-                          )}
-                          className={styles.servicioButton}
-                          disabled={isProcessingPayment}
-                        >
-                          {isProcessingPayment ? (
-                            <>
-                              <Loader size={16} className={styles.spinner} />
-                              Procesando...
-                            </>
-                          ) : (
-                            resolvedPricing ? `Suscribirse - $${resolvedPricing.alertas.traderCall.monthly} ${resolvedPricing.currency}` : 'Suscribirse'
-                          )}
-                        </button>
-                      ) : (
-                        <Link href="/alertas" className={styles.servicioButton}>
-                          Quiero saber más &gt;
-                        </Link>
-                      )}
+                      <Link href="/alertas" className={styles.servicioButton}>
+                        Quiero saber más &gt;
+                      </Link>
                     </div>
                   </motion.div>
 
@@ -859,31 +837,9 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         />
                       </div>
                       
-                      {session ? (
-                        <button 
-                          onClick={() => handleMercadoPagoCheckout(
-                            'training',
-                            'SwingTrading',
-                            (pricing?.entrenamientos?.swingTrading?.price || 0),
-                            pricing?.currency || 'ARS'
-                          )}
-                          className={styles.servicioButton}
-                          disabled={isProcessingPayment}
-                        >
-                          {isProcessingPayment ? (
-                            <>
-                              <Loader size={16} className={styles.spinner} />
-                              Procesando...
-                            </>
-                          ) : (
-                            pricing ? `Inscribirse - $${pricing.entrenamientos.swingTrading.price} ${pricing.currency}` : 'Inscribirse'
-                          )}
-                        </button>
-                      ) : (
-                        <Link href="/entrenamientos" className={styles.servicioButton}>
-                          Quiero saber más &gt;
-                        </Link>
-                      )}
+                      <Link href="/entrenamientos" className={styles.servicioButton}>
+                        Quiero saber más &gt;
+                      </Link>
                     </div>
                   </motion.div>
 
