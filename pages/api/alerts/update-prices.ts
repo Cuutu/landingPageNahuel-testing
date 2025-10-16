@@ -150,33 +150,12 @@ export default async function handler(
         // Actualizar precio actual (siempre si tenemos precio válido)
         alert.currentPrice = currentPrice;
         
-        // ✅ NUEVO: Verificar si es una alerta de rango y si rompe el rango
+        // ✅ MODIFICADO: NO validar rangos durante la jornada de mercado
+        // La validación de rangos solo se hace al cierre del mercado (17:30hs)
+        // en el endpoint /api/cron/market-close.ts
         if (alert.tipoAlerta === 'rango') {
-          const { isBroken, reason } = alert.checkRangeBreak(currentPrice);
-
-          if (isBroken) {
-            console.log(`❌ Alerta ${alert.symbol} (ID: ${alert._id}) ha roto el rango. Cerrando...`);
-
-            alert.status = 'DESESTIMADA';
-            alert.exitDate = new Date();
-            alert.exitReason = 'RANGE_BREAK';
-            alert.desestimacionMotivo = reason;
-            alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
-            desestimadasCount++;
-
-            // Enviar notificación de alerta desestimada
-            try {
-              await createAlertNotification(alert, {
-                message: `🚫 Alerta desestimada: ${alert.symbol} - El precio rompió el rango de entrada. Motivo: ${reason}. Precio actual: $${currentPrice}`,
-                price: currentPrice
-              });
-              console.log(`✅ Notificación de alerta desestimada enviada para ${alert.symbol}`);
-            } catch (notificationError) {
-              console.error(`⚠️ Error enviando notificación para ${alert.symbol}:`, notificationError);
-            }
-
-            console.log(`✅ Alerta ${alert.symbol} desestimada automáticamente.`);
-          }
+          console.log(`ℹ️ Alerta ${alert.symbol} (ID: ${alert._id}) es de rango. Validación diferida al cierre del mercado.`);
+          // Solo actualizar el precio, no validar el rango
         }
         
         // El profit se calcula automáticamente por el middleware pre('save')

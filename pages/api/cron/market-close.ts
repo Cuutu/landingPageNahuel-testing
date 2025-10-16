@@ -130,16 +130,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (closePrice) {
           console.log(`💰 ${alert.symbol}: Precio actual ${alert.currentPrice} -> Precio de cierre ${closePrice}`);
           
+          // ✅ NUEVO: Validar rango al cierre del mercado (solo para alertas de rango)
+          if (alert.tipoAlerta === 'rango') {
+            const { isBroken, reason } = alert.checkRangeBreak(closePrice);
+            
+            if (isBroken) {
+              console.log(`❌ Alerta ${alert.symbol} (ID: ${alert._id}) ha roto el rango al cierre. Desestimando...`);
+              
+              alert.status = 'DESESTIMADA';
+              alert.exitDate = new Date();
+              alert.exitReason = 'RANGE_BREAK_AT_CLOSE';
+              alert.desestimacionMotivo = reason;
+              alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
+              
+              // Enviar notificación de alerta desestimada
+              try {
+                const { createAlertNotification } = await import('@/lib/notificationUtils');
+                await createAlertNotification(alert, {
+                  message: `🚫 Alerta desestimada al cierre: ${alert.symbol} - El precio de cierre ($${closePrice}) rompió el rango de entrada. Motivo: ${reason}`,
+                  price: closePrice
+                });
+                console.log(`✅ Notificación de alerta desestimada enviada para ${alert.symbol}`);
+              } catch (notificationError) {
+                console.error(`⚠️ Error enviando notificación para ${alert.symbol}:`, notificationError);
+              }
+              
+              console.log(`✅ Alerta ${alert.symbol} desestimada al cierre del mercado.`);
+            } else {
+              console.log(`✅ Alerta ${alert.symbol}: Precio de cierre dentro del rango válido.`);
+            }
+          }
+          
           // ✅ NUEVO: Fijar precio final al cierre
           const isFromLastAvailable = !isBusinessDay; // Si no es hábil, usar último disponible
           alert.setFinalPrice(closePrice, isFromLastAvailable);
 
-          // ✅ MODIFICADO: Si es una alerta de rango, actualizar entryPrice al precio actual
+          // ✅ MODIFICADO: Si es una alerta de rango y NO fue desestimada, actualizar entryPrice al precio actual
           // para que se muestre correctamente en la interfaz como precio fijo
           const hasRange = alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max;
           const hasSellRange = alert.sellRangeMin && alert.sellRangeMax;
           
-          if (hasRange) {
+          // Solo convertir rangos a precios fijos si la alerta sigue activa (no fue desestimada)
+          if (hasRange && alert.status === 'ACTIVE') {
             // ✅ CRÍTICO: Para rangos, usar el precio actual como nuevo precio de entrada
             const oldRange = `${alert.entryPriceRange.min}-${alert.entryPriceRange.max}`;
             alert.entryPrice = closePrice;
@@ -148,7 +180,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             alert.precioMinimo = undefined;
             alert.precioMaximo = undefined;
             console.log(`🔄 ${alert.symbol}: Rango ${oldRange} convertido a precio fijo ${closePrice}`);
-          } else if (!alert.entryPrice) {
+          } else if (!alert.entryPrice && alert.status === 'ACTIVE') {
             // Si no hay precio de entrada, usar el precio de cierre
             alert.entryPrice = closePrice;
             console.log(`🔄 ${alert.symbol}: Precio de entrada fijado en ${closePrice}`);
@@ -165,25 +197,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           }
 
           // ✅ NUEVO: Usar $unset para eliminar completamente los campos de rango de la base de datos
-          const fieldsToUnset: any = {};
-          
-          if (hasRange) {
-            fieldsToUnset.entryPriceRange = 1;
-            fieldsToUnset.precioMinimo = 1;
-            fieldsToUnset.precioMaximo = 1;
-          }
-          
-          if (hasSellRange) {
-            fieldsToUnset.sellRangeMin = 1;
-            fieldsToUnset.sellRangeMax = 1;
-          }
-          
-          if (Object.keys(fieldsToUnset).length > 0) {
-            await Alert.updateOne(
-              { _id: alert._id },
-              { $unset: fieldsToUnset }
-            );
-            console.log(`🗑️ ${alert.symbol}: Campos de rango eliminados de la base de datos:`, Object.keys(fieldsToUnset));
+          // Solo si la alerta sigue activa (no fue desestimada)
+          if (alert.status === 'ACTIVE') {
+            const fieldsToUnset: any = {};
+            
+            if (hasRange) {
+              fieldsToUnset.entryPriceRange = 1;
+              fieldsToUnset.precioMinimo = 1;
+              fieldsToUnset.precioMaximo = 1;
+            }
+            
+            if (hasSellRange) {
+              fieldsToUnset.sellRangeMin = 1;
+              fieldsToUnset.sellRangeMax = 1;
+            }
+            
+            if (Object.keys(fieldsToUnset).length > 0) {
+              await Alert.updateOne(
+                { _id: alert._id },
+                { $unset: fieldsToUnset }
+              );
+              console.log(`🗑️ ${alert.symbol}: Campos de rango eliminados de la base de datos:`, Object.keys(fieldsToUnset));
+            }
           }
 
           // ✅ NUEVO: Marcar email de cierre como enviado
