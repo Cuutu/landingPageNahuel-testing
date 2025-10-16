@@ -811,6 +811,19 @@ export async function createPaymentNotification(
       paymentId
     });
 
+    // ✅ NUEVO: Verificar si ya existe una notificación para este pago
+    const existingNotification = await Notification.findOne({
+      'metadata.paymentId': paymentId,
+      'metadata.userEmail': user.email,
+      type: 'sistema',
+      title: '💳 Pago procesado exitosamente'
+    });
+
+    if (existingNotification) {
+      console.log(`ℹ️ [PAYMENT NOTIFICATION] Ya existe una notificación para el pago ${paymentId}. Saltando creación.`);
+      return;
+    }
+
     // Determinar el tipo de servicio y mensaje apropiado
     let serviceDisplayName = service;
     let actionUrl = '/perfil';
@@ -840,6 +853,7 @@ export async function createPaymentNotification(
       isActive: true,
       createdBy: 'sistema',
       isAutomatic: true,
+      createdAt: new Date(), // ✅ NUEVO: Establecer explícitamente la fecha de creación
       metadata: {
         paymentId: paymentId,
         service: service,

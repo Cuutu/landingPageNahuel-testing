@@ -327,22 +327,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         console.error('❌ Error enviando notificación de nuevo suscriptor al admin:', e);
       }
 
-      // 🔔 Crear notificación de pago exitoso
-      try {
-        const { createPaymentNotification } = await import('@/lib/notificationUtils');
-        await createPaymentNotification(
-          user,
-          payment,
-          service,
-          amount,
-          currency,
-          paymentInfo.id
-        );
-        console.log('✅ Notificación de pago creada exitosamente');
-      } catch (notificationError) {
-        console.error('❌ Error creando notificación de pago:', notificationError);
-        // No es crítico, el pago ya está procesado
-      }
+      // 🔔 Notificación de pago se creará al final del procesamiento para evitar duplicados
 
       // 📧 Confirmación de suscripción al usuario (idempotente)
       try {
@@ -389,22 +374,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         transactionId: paymentInfo.id
       });
 
-      // 🔔 Crear notificación de entrenamiento comprado
-      try {
-        const { createPaymentNotification } = await import('@/lib/notificationUtils');
-        await createPaymentNotification(
-          user,
-          payment,
-          service,
-          amount,
-          currency,
-          paymentInfo.id
-        );
-        console.log('✅ Notificación de entrenamiento creada exitosamente');
-      } catch (notificationError) {
-        console.error('❌ Error creando notificación de entrenamiento:', notificationError);
-        // No es crítico, el pago ya está procesado
-      }
+      // 🔔 Notificación de pago se creará al final del procesamiento para evitar duplicados
 
       // Notificación de confirmación al usuario y admins (idempotente)
       try {
@@ -565,22 +535,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           // No es crítico, no fallar el pago
         }
 
-        // 🔔 Crear notificación de suscripción mensual
-        try {
-          const { createPaymentNotification } = await import('@/lib/notificationUtils');
-          await createPaymentNotification(
-            user,
-            payment,
-            'MonthlyTraining',
-            amount,
-            currency,
-            paymentInfo.id
-          );
-          console.log('✅ Notificación de suscripción mensual creada exitosamente');
-        } catch (notificationError) {
-          console.error('❌ Error creando notificación de suscripción mensual:', notificationError);
-          // No es crítico, el pago ya está procesado
-        }
+        // 🔔 Notificación de pago se creará al final del procesamiento para evitar duplicados
         
       } catch (monthlyError) {
         console.error('❌ Error procesando suscripción mensual:', monthlyError);
@@ -652,22 +607,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           transactionId: paymentInfo.id
         });
 
-        // 🔔 Crear notificación de asesoría reservada
-        try {
-          const { createPaymentNotification } = await import('@/lib/notificationUtils');
-          await createPaymentNotification(
-            bookingUser,
-            payment,
-            serviceType,
-            amount,
-            currency,
-            paymentInfo.id
-          );
-          console.log('✅ Notificación de asesoría creada exitosamente');
-        } catch (notificationError) {
-          console.error('❌ Error creando notificación de asesoría:', notificationError);
-          // No es crítico, el pago ya está procesado
-        }
+        // 🔔 Notificación de pago se creará al final del procesamiento para evitar duplicados
         
         // Si es una reserva de asesoría, marcar la fecha como reservada
         if (serviceType === 'ConsultorioFinanciero') {
@@ -905,6 +845,23 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       console.log('✅ Email de confirmación de pago exitoso enviado');
     } catch (emailError) {
       console.error('❌ Error enviando email de confirmación:', emailError);
+      // No es crítico, el pago ya está procesado
+    }
+
+    // 🔔 Crear notificación de pago exitoso (UNA SOLA VEZ al final)
+    try {
+      const { createPaymentNotification } = await import('@/lib/notificationUtils');
+      await createPaymentNotification(
+        user,
+        payment,
+        payment.service,
+        payment.amount,
+        payment.currency,
+        paymentInfo.id
+      );
+      console.log('✅ Notificación de pago creada exitosamente');
+    } catch (notificationError) {
+      console.error('❌ Error creando notificación de pago:', notificationError);
       // No es crítico, el pago ya está procesado
     }
 
