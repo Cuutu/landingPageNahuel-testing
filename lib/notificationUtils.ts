@@ -789,6 +789,87 @@ export async function ensureUserSubscriptions(): Promise<void> {
 }
 
 /**
+ * Crea notificación automática cuando se procesa un pago exitoso
+ */
+export async function createPaymentNotification(
+  user: any,
+  payment: any,
+  service: string,
+  amount: number,
+  currency: string,
+  paymentId: string
+): Promise<void> {
+  try {
+    await dbConnect();
+    
+    console.log('💳 [PAYMENT NOTIFICATION] Iniciando creación de notificación para pago:', paymentId);
+    console.log('💳 [PAYMENT NOTIFICATION] Detalles del pago:', {
+      user: user.email,
+      service,
+      amount,
+      currency,
+      paymentId
+    });
+
+    // Determinar el tipo de servicio y mensaje apropiado
+    let serviceDisplayName = service;
+    let actionUrl = '/perfil';
+    let actionText = 'Ver Detalles';
+    
+    if (['TraderCall', 'SmartMoney', 'CashFlow'].includes(service)) {
+      serviceDisplayName = service === 'TraderCall' ? 'Trader Call' : 
+                          service === 'SmartMoney' ? 'Smart Money' : 'Cash Flow';
+      actionUrl = '/alertas';
+      actionText = 'Ver Alertas';
+    } else if (['SwingTrading', 'DowJones'].includes(service)) {
+      serviceDisplayName = service === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones';
+      actionUrl = '/entrenamientos';
+      actionText = 'Ver Entrenamientos';
+    }
+
+    // Crear notificación de pago exitoso
+    const notification = {
+      title: `💳 Pago procesado exitosamente`,
+      message: `Tu suscripción a ${serviceDisplayName} ha sido renovada por $${amount} ${currency}. ¡Ya puedes acceder a todos los beneficios!`,
+      type: 'sistema',
+      priority: 'alta',
+      targetUsers: 'todos', // Se mostrará a todos los usuarios, pero solo el usuario específico la verá
+      icon: '💳',
+      actionUrl: actionUrl,
+      actionText: actionText,
+      isActive: true,
+      createdBy: 'sistema',
+      isAutomatic: true,
+      metadata: {
+        paymentId: paymentId,
+        service: service,
+        amount: amount,
+        currency: currency,
+        userEmail: user.email,
+        transactionDate: new Date(),
+        automatic: true
+      }
+    };
+
+    console.log('💳 [PAYMENT NOTIFICATION] Creando notificación global:', {
+      title: notification.title,
+      targetUsers: notification.targetUsers,
+      userEmail: user.email
+    });
+
+    // Crear la notificación en la base de datos
+    const notificationDoc = new Notification(notification);
+    await notificationDoc.save();
+
+    console.log(`✅ [PAYMENT NOTIFICATION] Notificación de pago creada exitosamente: ${notificationDoc._id}`);
+    console.log(`📊 [PAYMENT NOTIFICATION] Notificación visible para el usuario: ${user.email}`);
+
+  } catch (error) {
+    console.error('❌ [PAYMENT NOTIFICATION] Error creando notificación de pago:', error);
+  }
+}
+
+/**
  * Función de diagnóstico para verificar el estado del sistema de notificaciones
  */
 export async function diagnoseNotificationSystem(): Promise<{
