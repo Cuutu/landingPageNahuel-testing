@@ -2304,16 +2304,31 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const renderSeguimientoAlertas = () => {
     // Mostrar TODAS las alertas activas para seguimiento (tanto marcadas como desmarcadas)
     // Los clientes deben poder seguir cualquier alerta que hayan comprado
-    const alertasEnSeguimiento = realAlerts.filter(alert => 
-      alert.status === 'ACTIVE'
-    );
+    // ✅ NUEVO: Incluir alertas descartadas del día actual
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    
+    const alertasEnSeguimiento = realAlerts.filter(alert => {
+      if (alert.status === 'ACTIVE') {
+        return true;
+      }
+      
+      // Incluir alertas descartadas del día actual
+      if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
+        const descartadaAt = new Date(alert.descartadaAt);
+        return descartadaAt >= startOfDay && descartadaAt <= endOfDay;
+      }
+      
+      return false;
+    });
     
     return (
       <div className={styles.seguimientoContent}>
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Todas las alertas activas disponibles para seguimiento
+            Todas las alertas activas y descartadas del día actual disponibles para seguimiento
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -2400,13 +2415,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Lista de alertas en seguimiento */}
             <div className={styles.alertsList}>
               {alertasEnSeguimiento.map((alert) => (
-                <div key={alert.id} className={`${styles.alertCard} alertCard`}>
+                <div key={alert.id} className={`${styles.alertCard} alertCard ${alert.status === 'DESCARTADA' ? styles.discardedAlert : ''}`}>
                   <div className={styles.alertHeader}>
                     <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
                     <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`} style={{ display: 'none' }}>
                       {alert.action}
                     </span>
-                    <span className={styles.alertStatus}>🟢 ACTIVA</span>
+                    <span className={`${styles.alertStatus} ${alert.status === 'DESCARTADA' ? styles.discardedStatus : ''}`}>
+                      {alert.status === 'DESCARTADA' ? '❌ DESCARTADA' : '🟢 ACTIVA'}
+                    </span>
                   </div>
                   
                   <div className={styles.alertDetails}>
@@ -2456,6 +2473,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       <span>Fecha:</span>
                       <strong>{alert.date}</strong>
                     </div>
+                    {alert.status === 'DESCARTADA' && alert.descartadaMotivo && (
+                      <div className={styles.alertDetail} style={{ flex: '1 1 100%', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px' }}>
+                        <span>Motivo de descarte:</span>
+                        <strong style={{ color: '#d32f2f', fontSize: '0.9em' }}>{alert.descartadaMotivo}</strong>
+                      </div>
+                    )}
+                    {alert.status === 'DESCARTADA' && alert.descartadaAt && (
+                      <div className={styles.alertDetail} style={{ flex: '1 1 100%' }}>
+                        <span>Descartada el:</span>
+                        <strong style={{ color: '#666', fontSize: '0.9em' }}>
+                          {new Date(alert.descartadaAt).toLocaleString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </strong>
+                      </div>
+                    )}
                   </div>
                   
                   {alert.analysis && (

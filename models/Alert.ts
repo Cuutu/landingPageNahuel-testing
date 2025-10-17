@@ -42,7 +42,7 @@ export interface IAlert extends Document {
   currentPrice: number;
   stopLoss: number;
   takeProfit: number;
-  status: 'ACTIVE' | 'CLOSED' | 'STOPPED' | 'DESESTIMADA';
+  status: 'ACTIVE' | 'CLOSED' | 'STOPPED' | 'DESESTIMADA' | 'DESCARTADA';
   profit: number; // Porcentaje de ganancia/pérdida
   analysis: string;
   date: Date;
@@ -74,6 +74,10 @@ export interface IAlert extends Document {
   availableForPurchase: boolean; // Si está disponible para que nuevos clientes la compren
   // ✅ NUEVO: Motivo de desestimación
   desestimacionMotivo?: string; // Motivo por el cual se desestimó la alerta
+  // ✅ NUEVO: Campos para alertas descartadas
+  descartadaAt?: Date; // Fecha y hora cuando se descartó la alerta
+  descartadaMotivo?: string; // Motivo por el cual se descartó (ej: "Precio fuera de rango")
+  descartadaPrecio?: number; // Precio al momento de ser descartada
   // Nuevos campos para imágenes
   chartImage?: CloudinaryImage; // Imagen principal del gráfico
   images?: CloudinaryImage[]; // Imágenes adicionales
@@ -87,6 +91,7 @@ export interface IAlert extends Document {
   setFinalPrice(price: number, isFromLastAvailable?: boolean): number;
   recordPriceChange(adminId: mongoose.Types.ObjectId, newPrice: number, reason?: string, ipAddress?: string, userAgent?: string): IAlert;
   checkRangeBreak(currentPrice: number): { isBroken: boolean; reason?: string };
+  discardAlert(motivo: string, precioActual: number): IAlert;
 }
 
 // Esquema para imágenes de Cloudinary
@@ -197,7 +202,7 @@ const AlertSchema: Schema = new Schema({
   status: {
     type: String,
     required: true,
-    enum: ['ACTIVE', 'CLOSED', 'STOPPED', 'DESESTIMADA'],
+    enum: ['ACTIVE', 'CLOSED', 'STOPPED', 'DESESTIMADA', 'DESCARTADA'],
     default: 'ACTIVE'
   },
   profit: {
@@ -283,6 +288,17 @@ const AlertSchema: Schema = new Schema({
   // ✅ NUEVO: Motivo de desestimación
   desestimacionMotivo: {
     type: String
+  },
+  // ✅ NUEVO: Campos para alertas descartadas
+  descartadaAt: {
+    type: Date
+  },
+  descartadaMotivo: {
+    type: String
+  },
+  descartadaPrecio: {
+    type: Number,
+    min: 0
   },
   // Nuevos campos para imágenes
   chartImage: CloudinaryImageSchema, // Imagen principal del gráfico
@@ -420,6 +436,16 @@ AlertSchema.methods.checkRangeBreak = function(this: IAlert, currentPrice: numbe
   }
   
   return { isBroken: false };
+};
+
+// ✅ NUEVO: Método para descartar alertas
+AlertSchema.methods.discardAlert = function(this: IAlert, motivo: string, precioActual: number) {
+  this.status = 'DESCARTADA';
+  this.descartadaAt = new Date();
+  this.descartadaMotivo = motivo;
+  this.descartadaPrecio = precioActual;
+  
+  return this;
 };
 
 // Middleware para calcular profit antes de guardar

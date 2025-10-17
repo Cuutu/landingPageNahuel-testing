@@ -1023,6 +1023,26 @@
     0 4px 6px -2px rgba(0, 0, 0, 0.1);
 }
 
+/* ✅ NUEVO: Estilos para alertas descartadas */
+.discardedAlert {
+  background: linear-gradient(135deg, #2d1b1b 0%, #3d2525 100%) !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
+  opacity: 0.8;
+}
+
+.discardedAlert:hover {
+  border-color: rgba(220, 38, 38, 0.5) !important;
+  box-shadow: 
+    0 10px 25px -3px rgba(220, 38, 38, 0.2),
+    0 4px 6px -2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.discardedStatus {
+  color: #fca5a5 !important;
+  background: rgba(220, 38, 38, 0.2) !important;
+  border: 1px solid rgba(220, 38, 38, 0.3) !important;
+}
+
 .alertHeader {
   display: flex;
   justify-content: space-between;

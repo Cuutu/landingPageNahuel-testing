@@ -59,6 +59,22 @@ export default async function handler(
 
     if (status !== 'ALL') {
       filter.status = status;
+    } else {
+      // ✅ NUEVO: Para seguimiento, incluir alertas descartadas del día actual
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      
+      filter.$or = [
+        { status: { $ne: 'DESCARTADA' } }, // Todas las alertas que no están descartadas
+        { 
+          status: 'DESCARTADA',
+          descartadaAt: { 
+            $gte: startOfDay, 
+            $lte: endOfDay 
+          }
+        } // Alertas descartadas solo del día actual
+      ];
     }
 
     // ✅ NUEVO: Filtrar por disponibilidad para compra

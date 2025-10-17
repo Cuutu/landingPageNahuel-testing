@@ -93,7 +93,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           continue;
         }
         
-        console.log(`💰 ${alert.symbol}: Precio actual ${closePrice} -> Precio de entrada fijo`);
+        console.log(`💰 ${alert.symbol}: Precio actual ${closePrice} -> Verificando si está dentro del rango`);
 
         // Determinar qué rangos convertir
         const hasEntryRange = alert.entryPriceRange || (alert.precioMinimo && alert.precioMaximo);
@@ -101,18 +101,65 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         
         let oldEntryRange = 'N/A';
         let oldSellRange = 'N/A';
+        let entryRangeMin = 0;
+        let entryRangeMax = 0;
         
         if (hasEntryRange) {
           if (alert.entryPriceRange) {
             oldEntryRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
+            entryRangeMin = alert.entryPriceRange.min;
+            entryRangeMax = alert.entryPriceRange.max;
           } else if (alert.precioMinimo && alert.precioMaximo) {
             oldEntryRange = `$${alert.precioMinimo}-$${alert.precioMaximo}`;
+            entryRangeMin = alert.precioMinimo;
+            entryRangeMax = alert.precioMaximo;
           }
         }
         
         if (hasSellRange) {
           oldSellRange = `$${alert.sellRangeMin}-$${alert.sellRangeMax}`;
         }
+
+        // ✅ NUEVO: Verificar si el precio está dentro del rango de entrada
+        if (hasEntryRange && (closePrice < entryRangeMin || closePrice > entryRangeMax)) {
+          console.log(`❌ ${alert.symbol}: Precio $${closePrice} está FUERA del rango ${oldEntryRange} - DESCARTANDO alerta`);
+          
+          // Descartar la alerta
+          await Alert.updateOne(
+            { _id: alert._id },
+            { 
+              $set: { 
+                status: 'DESCARTADA',
+                descartadaAt: new Date(),
+                descartadaMotivo: `Precio $${closePrice} fuera del rango de entrada ${oldEntryRange}`,
+                descartadaPrecio: closePrice
+              }
+            }
+          );
+
+          conversionDetails.push({
+            symbol: alert.symbol,
+            type: 'discarded',
+            oldRange: oldEntryRange,
+            newPrice: closePrice,
+            reason: 'Precio fuera de rango'
+          });
+          
+          console.log(`🗑️ CRON: ${alert.symbol}: Alerta DESCARTADA - Precio $${closePrice} fuera del rango ${oldEntryRange}`);
+          
+          // Enviar notificación de descarte
+          try {
+            const discardMessage = `❌ Alerta descartada: ${alert.symbol} - Precio $${closePrice} fuera del rango de entrada ${oldEntryRange}`;
+            await sendRangeConversionNotification(alert, closePrice, discardMessage);
+            console.log(`📧 CRON: Notificación de descarte enviada para ${alert.symbol}`);
+          } catch (emailError) {
+            console.error(`❌ CRON: Error enviando notificación de descarte para ${alert.symbol}:`, emailError);
+          }
+          
+          continue; // Saltar al siguiente alerta
+        }
+        
+        console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango ${oldEntryRange} - Convirtiendo a precio fijo`);
 
         // Preparar campos para actualizar
         const updateFields: any = {};
