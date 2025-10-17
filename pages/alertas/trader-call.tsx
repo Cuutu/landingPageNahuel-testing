@@ -2363,16 +2363,21 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     
     const alertasEnSeguimiento = realAlerts.filter(alert => {
+      // Excluir alertas de rango que están disponibles para compra (esas van en "Alertas vigentes")
+      if (alert.status === 'ACTIVE' && alert.tipoAlerta === 'rango' && alert.availableForPurchase === true) {
+        return false;
+      }
+
       if (alert.status === 'ACTIVE') {
         return true;
       }
-      
+
       // Incluir alertas descartadas del día actual
       if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
         const descartadaAt = new Date(alert.descartadaAt);
         return descartadaAt >= startOfDay && descartadaAt <= endOfDay;
       }
-      
+
       return false;
     });
     
@@ -2381,7 +2386,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Todas las alertas activas y descartadas del día actual disponibles para seguimiento
+            Alertas de precio fijo en seguimiento y alertas descartadas del día actual
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -2731,7 +2736,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.vigentesHeader}>
           <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
           <p className={styles.sectionDescription}>
-            Alertas disponibles para comprar ahora
+            Alertas de rango disponibles para comprar ahora
           </p>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
@@ -2804,14 +2809,40 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               </div>
               
               <div className={styles.alertDetails}>
-                <div className={styles.alertDetail}>
-                  <span>Precio Entrada:</span>
-                  <div className={`${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
-                    <strong className="sensitivePrice">
-                      {alert.entryPrice}
-                    </strong>
-                    {alert.entryPrice?.includes(' / ') && (
-                      <span className={styles.rangeIndicator}>RANGO</span>
+                <div className={styles.alertDetail} style={{
+                  background: 'rgba(55, 65, 81, 0.5)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{
+                    fontSize: '0.85em',
+                    color: '#9ca3af',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontWeight: '600'
+                  }}>Precio Entrada:</span>
+                  <div style={{ marginTop: '4px' }}>
+                    {alert.tipoAlerta === 'rango' ? (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <span style={{ color: '#60a5fa' }}>$</span>
+                        <span className="sensitivePrice">{alert.precioMinimo}</span>
+                        <span style={{ color: '#60a5fa' }}>-</span>
+                        <span className="sensitivePrice">{alert.precioMaximo}</span>
+                      </div>
+                    ) : (
+                      <strong className="sensitivePrice" style={{
+                        fontSize: '1.1em',
+                        color: '#f3f4f6'
+                      }}>{alert.entryPrice}</strong>
                     )}
                   </div>
                 </div>
