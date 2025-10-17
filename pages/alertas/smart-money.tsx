@@ -2473,6 +2473,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       <span>Fecha:</span>
                       <strong>{alert.date}</strong>
                     </div>
+                    <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
+                      <span>Participación:</span>
+                      <strong style={{ 
+                        color: alert.participationPercentage === 100 ? '#10b981' : 
+                               alert.participationPercentage >= 50 ? '#f59e0b' : '#ef4444',
+                        fontSize: '1.1em',
+                        fontWeight: '700'
+                      }}>
+                        {alert.participationPercentage || 100}%
+                      </strong>
+                    </div>
                     {alert.status === 'DESCARTADA' && alert.descartadaMotivo && (
                       <div className={styles.alertDetail} style={{ flex: '1 1 100%', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px' }}>
                         <span>Motivo de descarte:</span>

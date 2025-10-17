@@ -184,7 +184,10 @@ export default async function handler(
       tipoAlerta,
       horarioCierre,
       chartImage: chartImage || null, // Imagen principal del gráfico
-      images: images || [] // Imágenes adicionales
+      images: images || [], // Imágenes adicionales
+      // ✅ NUEVO: Inicializar porcentajes de participación
+      participationPercentage: 100, // Comenzar con 100% de participación
+      originalParticipationPercentage: 100 // Porcentaje original al crear
     };
 
     // Agregar campos específicos según el tipo de alerta

@@ -236,6 +236,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Actualizar la alerta con los nuevos valores
     const newAllocatedAmount = sharesRemaining * entryPrice;
     
+    // ✅ NUEVO: Actualizar el porcentaje de participación
+    const newParticipationPercentage = Math.max(0, (alert.participationPercentage || 100) - percentage);
+    alert.participationPercentage = newParticipationPercentage;
+    console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}% (reducido en ${percentage}%)`);
+    
     // ✅ NUEVO: Guardar el rango de venta en la alerta
     if (notificationPriceRange) {
       alert.sellRangeMin = notificationPriceRange.min;
@@ -268,12 +273,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     // Si se vendió todo (100% o situación similar), cerrar la alerta
-    if (sharesRemaining <= 0) {
+    if (sharesRemaining <= 0 || alert.participationPercentage <= 0) {
       alert.status = 'CLOSED';
       alert.exitPrice = sellPrice; // Usar el valor numérico, no el string
-      alert.closedAt = new Date();
-      alert.closedBy = session.user.email;
-      alert.closeReason = 'Venta parcial completa';
+      alert.exitDate = new Date();
+      alert.exitReason = 'MANUAL';
+      alert.participationPercentage = 0; // Asegurar que esté en 0
+      console.log(`🔒 Alerta cerrada completamente - participación: ${alert.participationPercentage}%`);
     }
 
     await alert.save();
@@ -380,7 +386,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       newAllocatedAmount: newAllocatedAmount,
       alertStatus: alert.status,
       priceRange: notificationPriceRange,
-      sellPrice: sellPrice
+      sellPrice: sellPrice,
+      participationPercentage: alert.participationPercentage,
+      originalParticipationPercentage: alert.originalParticipationPercentage
     });
 
   } catch (error) {

@@ -85,6 +85,9 @@ export interface IAlert extends Document {
   sellRangeMin?: number; // Precio mínimo del rango de venta parcial
   sellRangeMax?: number; // Precio máximo del rango de venta parcial
   sellPrice?: number; // Precio de venta fijo (convertido desde rango)
+  // ✅ NUEVO: Sistema de porcentaje de participación
+  participationPercentage: number; // Porcentaje de participación actual (100% = posición completa)
+  originalParticipationPercentage: number; // Porcentaje original al crear la alerta
   
   // ✅ NUEVO: Métodos del esquema
   calculateProfit(): number;
@@ -92,6 +95,7 @@ export interface IAlert extends Document {
   recordPriceChange(adminId: mongoose.Types.ObjectId, newPrice: number, reason?: string, ipAddress?: string, userAgent?: string): IAlert;
   checkRangeBreak(currentPrice: number): { isBroken: boolean; reason?: string };
   discardAlert(motivo: string, precioActual: number): IAlert;
+  sellPartial(percentageSold: number, sellPrice: number): IAlert;
 }
 
 // Esquema para imágenes de Cloudinary
@@ -315,6 +319,21 @@ const AlertSchema: Schema = new Schema({
   sellPrice: {
     type: Number,
     min: 0
+  },
+  // ✅ NUEVO: Sistema de porcentaje de participación
+  participationPercentage: {
+    type: Number,
+    required: true,
+    default: 100,
+    min: 0,
+    max: 100
+  },
+  originalParticipationPercentage: {
+    type: Number,
+    required: true,
+    default: 100,
+    min: 0,
+    max: 100
   }
 }, {
   timestamps: true
@@ -444,6 +463,27 @@ AlertSchema.methods.discardAlert = function(this: IAlert, motivo: string, precio
   this.descartadaAt = new Date();
   this.descartadaMotivo = motivo;
   this.descartadaPrecio = precioActual;
+  
+  return this;
+};
+
+// ✅ NUEVO: Método para ventas parciales
+AlertSchema.methods.sellPartial = function(this: IAlert, percentageSold: number, sellPrice: number) {
+  // Validar que el porcentaje a vender no exceda el porcentaje actual
+  if (percentageSold > this.participationPercentage) {
+    throw new Error(`No se puede vender ${percentageSold}% cuando solo se tiene ${this.participationPercentage}%`);
+  }
+  
+  // Reducir el porcentaje de participación
+  this.participationPercentage = Math.max(0, this.participationPercentage - percentageSold);
+  
+  // Si se vendió todo, marcar como cerrada
+  if (this.participationPercentage === 0) {
+    this.status = 'CLOSED';
+    this.exitPrice = sellPrice;
+    this.exitDate = new Date();
+    this.exitReason = 'MANUAL';
+  }
   
   return this;
 };
