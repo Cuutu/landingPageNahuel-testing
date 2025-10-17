@@ -152,10 +152,14 @@ export default async function handler(
       // ✅ CORREGIDO: Formatear precio de entrada - priorizar entryPrice sobre rango
       let entryPriceDisplay = '';
       
-      // ✅ CRÍTICO: Si hay entryPrice (precio fijo), usarlo (después del cierre de mercado)
-      if (alert.entryPrice && alert.entryPrice > 0) {
+      // ✅ CRÍTICO: Si es alerta de rango, mostrar siempre el rango
+      if (alert.tipoAlerta === 'rango' && alert.precioMinimo && alert.precioMaximo) {
+        entryPriceDisplay = `$${Number(alert.precioMinimo).toFixed(2)} / $${Number(alert.precioMaximo).toFixed(2)}`;
+      }
+      // ✅ Si hay entryPrice (precio fijo), usarlo (después del cierre de mercado)
+      else if (alert.entryPrice && alert.entryPrice > 0) {
         entryPriceDisplay = `$${Number(alert.entryPrice).toFixed(2)}`;
-      } 
+      }
       // ✅ Si hay rango Y no hay entryPrice fijo, mostrar rango
       else if (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max) {
         entryPriceDisplay = `$${Number(alert.entryPriceRange.min).toFixed(2)} / $${Number(alert.entryPriceRange.max).toFixed(2)}`;
@@ -188,6 +192,12 @@ export default async function handler(
         hasFinalPrice: !!alert.finalPrice,
         // ✅ NUEVO: Campo para controlar disponibilidad para compra
         availableForPurchase: alert.availableForPurchase || false,
+        // ✅ NUEVO: Sistema de porcentaje de participación
+        participationPercentage: alert.participationPercentage || 100,
+        originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+        // ✅ NUEVO: Campos para mostrar rangos originales
+        precioMinimo: alert.precioMinimo ? Number(alert.precioMinimo).toFixed(2) : null,
+        precioMaximo: alert.precioMaximo ? Number(alert.precioMaximo).toFixed(2) : null,
         // ✅ NUEVO: Campos para rango de venta parcial
         sellRangeMin: alert.sellRangeMin ? Number(alert.sellRangeMin).toFixed(2) : null,
         sellRangeMax: alert.sellRangeMax ? Number(alert.sellRangeMax).toFixed(2) : null,
