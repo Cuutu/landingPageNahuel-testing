@@ -2482,12 +2482,32 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   <div className={styles.alertDetails}>
                     <div className={styles.alertDetail}>
                       <span>Precio Entrada:</span>
-                      <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
-                        {alert.entryPrice}
-                        {alert.entryPrice?.includes(' / ') && (
-                          <span className={styles.rangeIndicator}>RANGO</span>
-                        )}
-                      </strong>
+                      {alert.tipoAlerta === 'rango' ? (
+                        <strong style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '4px',
+                          background: 'rgba(59, 130, 246, 0.1)',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid rgba(59, 130, 246, 0.2)'
+                        }}>
+                          <span style={{ color: '#60a5fa' }}>$</span>
+                          <span>{alert.precioMinimo}</span>
+                          <span style={{ color: '#60a5fa' }}>-</span>
+                          <span>{alert.precioMaximo}</span>
+                          <span style={{ 
+                            fontSize: '0.7em', 
+                            background: '#3b82f6', 
+                            color: 'white',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            marginLeft: '4px'
+                          }}>RANGO</span>
+                        </strong>
+                      ) : (
+                        <strong>{alert.entryPrice}</strong>
+                      )}
                     </div>
                     <div className={styles.alertDetail}>
                       <span>Precio Actual:</span>
@@ -2529,8 +2549,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>Participación:</span>
                       <strong style={{ 
-                        color: alert.participationPercentage === 100 ? '#10b981' : 
-                               alert.participationPercentage >= 50 ? '#f59e0b' : '#ef4444',
+                        color: alert.participationPercentage === 100 ? '#10b981' : // Verde fuerte
+                               alert.participationPercentage >= 75 ? '#34d399' : // Verde claro
+                               alert.participationPercentage >= 50 ? '#fbbf24' : // Amarillo
+                               '#f97316', // Naranja
                         fontSize: '1.1em',
                         fontWeight: '700'
                       }}>
