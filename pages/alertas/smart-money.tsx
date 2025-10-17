@@ -2430,9 +2430,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     <div className={styles.alertDetail}>
                       <span>Precio Entrada:</span>
                       {alert.tipoAlerta === 'rango' ? (
-                        <strong style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                        <strong style={{
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: '4px',
                           background: 'rgba(59, 130, 246, 0.1)',
                           padding: '4px 8px',
@@ -2443,14 +2443,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                           <span>{alert.precioMinimo}</span>
                           <span style={{ color: '#60a5fa' }}>-</span>
                           <span>{alert.precioMaximo}</span>
-                          <span style={{ 
-                            fontSize: '0.7em', 
-                            background: '#3b82f6', 
-                            color: 'white',
-                            padding: '2px 6px',
-                            borderRadius: '4px',
-                            marginLeft: '4px'
-                          }}>RANGO</span>
                         </strong>
                       ) : (
                         <strong>{alert.entryPrice}</strong>
