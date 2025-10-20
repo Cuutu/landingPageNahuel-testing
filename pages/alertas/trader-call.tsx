@@ -679,12 +679,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     
     // Calcular ganadoras y perdedoras basándose en el profit
     const alertasGanadoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return profitValue > 0;
     }).length;
     
     const alertasPerdedoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return profitValue < 0;
     }).length;
     
@@ -703,7 +707,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     });
 
     const gananciasAnual = alertasAnualConGanancias.reduce((total, alert) => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return total + profitValue;
     }, 0);
 
@@ -1984,7 +1990,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const symbol = d.symbol;
       const allocated = Number(d.allocatedAmount || 0);
       const alert = (realAlerts || []).find((a: any) => a.symbol === symbol);
-      const profitValue = alert ? parseFloat(String(alert.profit || '0').toString().replace(/[+%]/g, '')) : 0;
+      const profitValue = alert ? (typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace(/[+%]/g, ''))
+        : Number(alert.profit) || 0) : 0;
       
       // ✅ CORREGIDO: Usar el precio actual de la alerta en lugar del precio del liquidityMap
       // El precio del liquidityMap puede estar desactualizado

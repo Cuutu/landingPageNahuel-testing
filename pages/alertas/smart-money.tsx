@@ -630,12 +630,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     
     // Calcular ganadoras y perdedoras basándose en el profit
     const alertasGanadoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return profitValue > 0;
     }).length;
     
     const alertasPerdedoras = alertasCerradas.filter(alert => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return profitValue < 0;
     }).length;
     
@@ -654,7 +658,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     });
 
     const gananciasAnual = alertasAnualConGanancias.reduce((total, alert) => {
-      const profitValue = parseFloat(alert.profit.replace('%', '').replace('+', ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace('%', '').replace('+', ''))
+        : Number(alert.profit) || 0;
       return total + profitValue;
     }, 0);
 
@@ -1928,7 +1934,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     // Preparar datos para el gráfico de torta 3D - Solo alertas activas con liquidez
     const chartData = activeAlertsWithLiquidity.map((alert, index) => {
-      const profitValue = parseFloat(alert.profit.replace(/[+%]/g, ''));
+      const profitValue = typeof alert.profit === 'string' 
+        ? parseFloat(alert.profit.replace(/[+%]/g, ''))
+        : Number(alert.profit) || 0;
       const liquidity = liquidityMap?.[alert.symbol];
       const allocated = Number(liquidity?.allocatedAmount || 0);
       
