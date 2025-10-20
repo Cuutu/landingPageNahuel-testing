@@ -85,15 +85,23 @@ export default async function handler(
       keepExtensions: true,
       filter: ({ mimetype }) => {
         // Solo permitir imágenes
-        return Boolean(mimetype && mimetype.includes('image'));
+        const isImage = Boolean(mimetype && mimetype.includes('image'));
+        console.log('🔍 Validando archivo:', { mimetype, isImage });
+        return isImage;
       }
     });
 
     // Procesar el archivo
+    console.log('📁 Procesando archivo con formidable...');
     const [fields, files] = await form.parse(req);
+    console.log('📁 Archivos recibidos:', Object.keys(files));
+    console.log('📁 Campos recibidos:', Object.keys(fields));
+    
     const file = Array.isArray(files.image) ? files.image[0] : files.image;
+    console.log('📁 Archivo extraído:', file ? 'SÍ' : 'NO');
 
     if (!file) {
+      console.error('❌ No se encontró archivo de imagen en la request');
       return res.status(400).json({
         success: false,
         error: 'No se encontró archivo de imagen'

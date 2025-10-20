@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import { sendBulkEmails, createEmailTemplate, createPromotionalEmailTemplate } from '@/lib/emailService';
 import User from '@/models/User';
+import EmailList from '@/models/EmailList';
 import dbConnect from '@/lib/mongodb';
 
 /**
@@ -99,12 +100,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('👥 [BULK EMAIL] Determinando destinatarios para tipo:', finalRecipientType);
 
-    // Determinar destinatarios
+    // Determinar destinatarios usando la nueva base de datos de emails
     if (finalRecipientType === 'all') {
-      console.log('👥 [BULK EMAIL] Obteniendo todos los usuarios...');
-      const allUsers = await User.find({}, 'email');
-      targetEmails = allUsers.map(user => user.email);
-      console.log('👥 [BULK EMAIL] Usuarios encontrados:', allUsers.length);
+      console.log('👥 [BULK EMAIL] Obteniendo todos los emails de la lista...');
+      const emailList = await (EmailList as any).getActiveEmails();
+      targetEmails = emailList.map((item: any) => item.email);
+      console.log('👥 [BULK EMAIL] Emails encontrados en la lista:', emailList.length);
     } else if (finalRecipientType === 'custom' && finalRecipients) {
       console.log('👥 [BULK EMAIL] Validando emails personalizados...');
       // Validar emails individuales
@@ -112,8 +113,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       targetEmails = finalRecipients.filter((email: string) => emailRegex.test(email));
       console.log('👥 [BULK EMAIL] Emails válidos de la lista personalizada:', targetEmails.length, 'de', finalRecipients.length);
     } else if (finalRecipientType === 'subscribers' || finalRecipientType === 'suscriptores') {
-      console.log('👥 [BULK EMAIL] Obteniendo suscriptores...');
-      // Buscar usuarios con role 'suscriptor' O con suscripciones activas
+      console.log('👥 [BULK EMAIL] Obteniendo emails de suscriptores...');
+      // Buscar emails de usuarios con role 'suscriptor' O con suscripciones activas
       const subscribers = await User.find({
         $or: [
           { role: 'suscriptor' },
@@ -122,14 +123,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           { 'suscripciones.activa': true }
         ]
       }, 'email');
-      targetEmails = subscribers.map(user => user.email);
-      console.log('👥 [BULK EMAIL] Suscriptores encontrados:', subscribers.length);
+      
+      // Obtener emails de la lista que coincidan con suscriptores
+      const subscriberEmails = subscribers.map((user: any) => user.email);
+      const emailList = await EmailList.find({
+        email: { $in: subscriberEmails },
+        isActive: true
+      });
+      targetEmails = emailList.map((item: any) => item.email);
+      console.log('👥 [BULK EMAIL] Emails de suscriptores encontrados:', emailList.length);
     } else if (finalRecipientType === 'admins' || finalRecipientType === 'administradores') {
-      console.log('👥 [BULK EMAIL] Obteniendo solo administradores...');
+      console.log('👥 [BULK EMAIL] Obteniendo emails de administradores...');
       // Solo administradores
       const admins = await User.find({ role: 'admin' }, 'email');
-      targetEmails = admins.map(user => user.email);
-      console.log('👥 [BULK EMAIL] Administradores encontrados:', admins.length);
+      const adminEmails = admins.map((user: any) => user.email);
+      
+      // Obtener emails de la lista que coincidan con administradores
+      const emailList = await EmailList.find({
+        email: { $in: adminEmails },
+        isActive: true
+      });
+      targetEmails = emailList.map((item: any) => item.email);
+      console.log('👥 [BULK EMAIL] Emails de administradores encontrados:', emailList.length);
     } else {
       console.error('❌ [BULK EMAIL] Tipo de destinatario no válido:', finalRecipientType);
       console.error('❌ [BULK EMAIL] Tipos válidos: all, custom, subscribers/suscriptores, admins/administradores');
@@ -232,6 +247,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (results.errors.length > 0) {
       console.error('❌ [BULK EMAIL] Errores durante el envío:', results.errors.slice(0, 3));
+    }
+
+    // Marcar emails como usados en la base de datos
+    try {
+      await (EmailList as any).markAsUsed(targetEmails);
+      console.log('✅ [BULK EMAIL] Emails marcados como usados en la base de datos');
+    } catch (markError) {
+      console.error('⚠️ [BULK EMAIL] Error marcando emails como usados:', markError);
+      // No fallar el envío si no se pueden marcar como usados
     }
 
     console.log(`📊 [BULK EMAIL] Envío masivo completado: ${results.sent} enviados, ${results.failed} fallidos`);

@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import dbConnect from './mongodb';
 import User from '@/models/User';
+import EmailList from '@/models/EmailList';
 
 export const authOptions: NextAuthOptions = {
   // ❌ DESHABILITAMOS el adapter para evitar conflictos con nuestro sistema personalizado
@@ -50,6 +51,16 @@ export const authOptions: NextAuthOptions = {
             suscripciones: [],
             lastLogin: new Date(),
           });
+
+          // Agregar email a la lista de envío masivo
+          try {
+            console.log('📧 [SIGNIN] Agregando email a lista de envío masivo:', user.email);
+            await (EmailList as any).addEmailIfNotExists(user.email, 'registration');
+            console.log('✅ [SIGNIN] Email agregado exitosamente a la lista');
+          } catch (emailError) {
+            console.error('⚠️ [SIGNIN] Error agregando email a la lista (no crítico):', emailError);
+            // No fallar el registro si no se puede agregar a la lista
+          }
         } else {
           console.log('👤 [SIGNIN] Actualizando usuario existente:', user.email);
           await User.findByIdAndUpdate(existingUser._id, {
@@ -58,6 +69,16 @@ export const authOptions: NextAuthOptions = {
             googleId: account?.providerAccountId,
             lastLogin: new Date(),
           });
+
+          // Asegurar que el email esté en la lista de envío masivo (por si no estaba)
+          try {
+            console.log('📧 [SIGNIN] Verificando email en lista de envío masivo:', user.email);
+            await (EmailList as any).addEmailIfNotExists(user.email, 'registration');
+            console.log('✅ [SIGNIN] Email verificado/agregado a la lista');
+          } catch (emailError) {
+            console.error('⚠️ [SIGNIN] Error verificando email en la lista (no crítico):', emailError);
+            // No fallar el login si no se puede verificar en la lista
+          }
         }
         
         console.log('✅ [SIGNIN] Usuario procesado correctamente, rol:', existingUser.role);

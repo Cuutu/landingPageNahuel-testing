@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next';
 import { getSession } from 'next-auth/react';
 import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Mail, 
@@ -10,7 +10,15 @@ import {
   Users,
   ArrowLeft,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Plus,
+  Trash2,
+  Search,
+  Filter,
+  Download,
+  RefreshCw,
+  Upload,
+  FileText
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -28,6 +36,212 @@ export default function AdminBulkEmailPage() {
   });
   const [testEmail, setTestEmail] = useState('');
   const [testLoading, setTestLoading] = useState(false);
+  
+  // Estados para gestión de lista de emails
+  const [emailList, setEmailList] = useState<any[]>([]);
+  const [emailListLoading, setEmailListLoading] = useState(false);
+  const [showAddEmail, setShowAddEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newEmailTags, setNewEmailTags] = useState('');
+  const [newEmailNotes, setNewEmailNotes] = useState('');
+  const [emailStats, setEmailStats] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterSource, setFilterSource] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  
+  // Estados para importar/exportar CSV
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+
+  // Cargar lista de emails al montar el componente
+  useEffect(() => {
+    fetchEmailList();
+  }, [currentPage, searchTerm, filterSource]);
+
+  // Función para cargar la lista de emails
+  const fetchEmailList = async () => {
+    try {
+      setEmailListLoading(true);
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: '20',
+        search: searchTerm,
+        source: filterSource === 'all' ? '' : filterSource
+      });
+
+      const response = await fetch(`/api/admin/email-list?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setEmailList(data.data.emails);
+        setEmailStats(data.data.stats);
+        setTotalPages(data.data.pagination.pages);
+      } else {
+        toast.error(data.error || 'Error cargando lista de emails');
+      }
+    } catch (error) {
+      console.error('Error cargando lista de emails:', error);
+      toast.error('Error cargando lista de emails');
+    } finally {
+      setEmailListLoading(false);
+    }
+  };
+
+  // Función para agregar email
+  const addEmail = async () => {
+    if (!newEmail.trim()) {
+      toast.error('Por favor ingresa un email válido');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/email-list/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: newEmail,
+          tags: newEmailTags ? newEmailTags.split(',').map(tag => tag.trim()) : [],
+          notes: newEmailNotes
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        setNewEmail('');
+        setNewEmailTags('');
+        setNewEmailNotes('');
+        setShowAddEmail(false);
+        fetchEmailList(); // Recargar lista
+      } else {
+        toast.error(data.error || 'Error agregando email');
+      }
+    } catch (error) {
+      console.error('Error agregando email:', error);
+      toast.error('Error agregando email');
+    }
+  };
+
+  // Función para eliminar/desactivar email
+  const removeEmail = async (email: string) => {
+    if (!confirm(`¿Estás seguro de que quieres eliminar ${email} de la lista?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/email-list', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, action: 'deactivate' }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        fetchEmailList(); // Recargar lista
+      } else {
+        toast.error(data.error || 'Error eliminando email');
+      }
+    } catch (error) {
+      console.error('Error eliminando email:', error);
+      toast.error('Error eliminando email');
+    }
+  };
+
+  // Función para exportar emails a CSV
+  const exportToCSV = async () => {
+    try {
+      setExportLoading(true);
+      
+      const response = await fetch('/api/admin/email-list/export');
+      
+      if (response.ok) {
+        // Crear blob y descargar
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `emails-export-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        toast.success('Archivo CSV exportado exitosamente');
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Error exportando CSV');
+      }
+    } catch (error) {
+      console.error('Error exportando CSV:', error);
+      toast.error('Error exportando CSV');
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  // Función para manejar selección de archivo CSV
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar que sea un archivo CSV
+      if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+        setCsvFile(file);
+      } else {
+        toast.error('Por favor selecciona un archivo CSV válido');
+      }
+    }
+  };
+
+  // Función para importar emails desde CSV
+  const importFromCSV = async () => {
+    if (!csvFile) {
+      toast.error('Por favor selecciona un archivo CSV');
+      return;
+    }
+
+    try {
+      setImportLoading(true);
+      
+      const formData = new FormData();
+      formData.append('csv', csvFile);
+
+      const response = await fetch('/api/admin/email-list/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success(data.message);
+        setCsvFile(null);
+        setShowImportModal(false);
+        fetchEmailList(); // Recargar lista
+        
+        // Mostrar detalles del resultado
+        if (data.results) {
+          console.log('Resultados de importación:', data.results);
+        }
+      } else {
+        toast.error(data.error || 'Error importando CSV');
+      }
+    } catch (error) {
+      console.error('Error importando CSV:', error);
+      toast.error('Error importando CSV');
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   const sendBulkEmail = async () => {
     if (!emailData.subject.trim() || !emailData.message.trim()) {
@@ -341,9 +555,416 @@ export default function AdminBulkEmailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Gestión de Lista de Emails */}
+            <div className={styles.tableContainer} style={{ marginTop: '2rem' }}>
+              <div style={{ padding: '2rem' }}>
+                <div className={styles.subscriptionStats}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3>📧 Gestión de Lista de Emails</h3>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <button
+                        onClick={exportToCSV}
+                        disabled={exportLoading}
+                        className={`${styles.actionButton} ${styles.secondary}`}
+                        style={{ width: 'auto' }}
+                      >
+                        <Download size={20} />
+                        {exportLoading ? 'Exportando...' : 'Exportar CSV'}
+                      </button>
+                      <button
+                        onClick={() => setShowImportModal(true)}
+                        className={`${styles.actionButton} ${styles.primary}`}
+                        style={{ width: 'auto' }}
+                      >
+                        <Upload size={20} />
+                        Importar CSV
+                      </button>
+                      <button
+                        onClick={() => setShowAddEmail(!showAddEmail)}
+                        className={`${styles.actionButton} ${styles.primary}`}
+                        style={{ width: 'auto' }}
+                      >
+                        <Plus size={20} />
+                        Agregar Email
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Formulario para agregar email */}
+                  {showAddEmail && (
+                    <div className={styles.subscriptionCard} style={{ marginBottom: '1.5rem', backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                      <h4 style={{ marginBottom: '1rem' }}>Agregar Email a la Lista</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                            Email *
+                          </label>
+                          <input
+                            type="email"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            placeholder="ejemplo@gmail.com"
+                            className={styles.searchInput}
+                            style={{ width: '100%', maxWidth: '400px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                            Tags (opcional)
+                          </label>
+                          <input
+                            type="text"
+                            value={newEmailTags}
+                            onChange={(e) => setNewEmailTags(e.target.value)}
+                            placeholder="tag1, tag2, tag3"
+                            className={styles.searchInput}
+                            style={{ width: '100%', maxWidth: '400px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                            Notas (opcional)
+                          </label>
+                          <textarea
+                            value={newEmailNotes}
+                            onChange={(e) => setNewEmailNotes(e.target.value)}
+                            placeholder="Notas sobre este email..."
+                            className={styles.searchInput}
+                            style={{ width: '100%', maxWidth: '400px', minHeight: '60px' }}
+                          />
+                        </div>
+                        <div style={{ display: 'flex', gap: '1rem' }}>
+                          <button
+                            onClick={addEmail}
+                            className={`${styles.actionButton} ${styles.primary}`}
+                            style={{ width: 'auto' }}
+                          >
+                            <Plus size={20} />
+                            Agregar Email
+                          </button>
+                          <button
+                            onClick={() => setShowAddEmail(false)}
+                            className={`${styles.actionButton} ${styles.secondary}`}
+                            style={{ width: 'auto' }}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Estadísticas */}
+                  {emailStats && (
+                    <div className={styles.statsGrid} style={{ marginBottom: '1.5rem' }}>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <Mail size={24} className={styles.iconBlue} />
+                        </div>
+                        <div className={styles.statInfo}>
+                          <h3>{emailStats.total}</h3>
+                          <p>Total Emails</p>
+                        </div>
+                      </div>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <CheckCircle size={24} className={styles.iconGreen} />
+                        </div>
+                        <div className={styles.statInfo}>
+                          <h3>{emailStats.active}</h3>
+                          <p>Activos</p>
+                        </div>
+                      </div>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <Users size={24} className={styles.iconGold} />
+                        </div>
+                        <div className={styles.statInfo}>
+                          <h3>{emailStats.bySource?.manual?.active || 0}</h3>
+                          <p>Manuales</p>
+                        </div>
+                      </div>
+                      <div className={styles.statCard}>
+                        <div className={styles.statIcon}>
+                          <RefreshCw size={24} className={styles.iconPurple} />
+                        </div>
+                        <div className={styles.statInfo}>
+                          <h3>{emailStats.bySource?.registration?.active || 0}</h3>
+                          <p>Registros</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Filtros y búsqueda */}
+                  <div className={styles.filtersSection} style={{ marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Search size={20} />
+                        <input
+                          type="text"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          placeholder="Buscar email..."
+                          className={styles.searchInput}
+                          style={{ width: '200px' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Filter size={20} />
+                        <select
+                          value={filterSource}
+                          onChange={(e) => setFilterSource(e.target.value)}
+                          className={styles.searchInput}
+                          style={{ width: '150px' }}
+                        >
+                          <option value="all">Todos</option>
+                          <option value="manual">Manual</option>
+                          <option value="registration">Registro</option>
+                          <option value="import">Importado</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={fetchEmailList}
+                        className={`${styles.actionButton} ${styles.secondary}`}
+                        style={{ width: 'auto' }}
+                      >
+                        <RefreshCw size={20} />
+                        Actualizar
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lista de emails */}
+                  <div className={styles.tableContainer}>
+                    {emailListLoading ? (
+                      <div style={{ textAlign: 'center', padding: '2rem' }}>
+                        <RefreshCw size={24} className="animate-spin" />
+                        <p style={{ marginTop: '1rem' }}>Cargando lista de emails...</p>
+                      </div>
+                    ) : emailList.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '2rem' }}>
+                        <Mail size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                        <p>No hay emails en la lista</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ overflowX: 'auto' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                              <tr style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Email</th>
+                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Fuente</th>
+                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Agregado</th>
+                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Tags</th>
+                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Estado</th>
+                                <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {emailList.map((emailItem: any) => (
+                                <tr key={emailItem._id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                  <td style={{ padding: '1rem' }}>
+                                    <div style={{ fontWeight: '500' }}>{emailItem.email}</div>
+                                    {emailItem.notes && (
+                                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+                                        {emailItem.notes}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '1rem' }}>
+                                    <span style={{
+                                      padding: '0.25rem 0.5rem',
+                                      borderRadius: '4px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: '500',
+                                      backgroundColor: emailItem.source === 'manual' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                                      color: emailItem.source === 'manual' ? '#10b981' : '#3b82f6'
+                                    }}>
+                                      {emailItem.source === 'manual' ? 'Manual' : 
+                                       emailItem.source === 'registration' ? 'Registro' : 'Importado'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                                    {new Date(emailItem.addedAt).toLocaleDateString('es-ES')}
+                                  </td>
+                                  <td style={{ padding: '1rem' }}>
+                                    {emailItem.tags && emailItem.tags.length > 0 ? (
+                                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                                        {emailItem.tags.map((tag: string, index: number) => (
+                                          <span
+                                            key={index}
+                                            style={{
+                                              padding: '0.125rem 0.375rem',
+                                              backgroundColor: 'var(--bg-secondary)',
+                                              borderRadius: '12px',
+                                              fontSize: '0.75rem',
+                                              color: 'var(--text-secondary)'
+                                            }}
+                                          >
+                                            {tag}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>-</span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '1rem' }}>
+                                    <span style={{
+                                      padding: '0.25rem 0.5rem',
+                                      borderRadius: '4px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: '500',
+                                      backgroundColor: emailItem.isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                                      color: emailItem.isActive ? '#10b981' : '#ef4444'
+                                    }}>
+                                      {emailItem.isActive ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    <button
+                                      onClick={() => removeEmail(emailItem.email)}
+                                      className={`${styles.actionButton} ${styles.danger}`}
+                                      style={{ width: 'auto', padding: '0.5rem' }}
+                                      title="Eliminar email"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Paginación */}
+                        {totalPages > 1 && (
+                          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button
+                              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className={`${styles.actionButton} ${styles.secondary}`}
+                              style={{ width: 'auto' }}
+                            >
+                              Anterior
+                            </button>
+                            <span style={{ color: 'var(--text-secondary)' }}>
+                              Página {currentPage} de {totalPages}
+                            </span>
+                            <button
+                              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                              className={`${styles.actionButton} ${styles.secondary}`}
+                              style={{ width: 'auto' }}
+                            >
+                              Siguiente
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
           </motion.div>
         </div>
       </main>
+
+      {/* Modal para importar CSV */}
+      {showImportModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }}>
+            <h3 style={{ marginBottom: '1.5rem', color: '#1f2937' }}>
+              📥 Importar Emails desde CSV
+            </h3>
+            
+            <div style={{ marginBottom: '1.5rem' }}>
+              <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
+                Selecciona un archivo CSV con los siguientes formatos:
+              </p>
+              <div style={{ 
+                backgroundColor: '#f9fafb', 
+                padding: '1rem', 
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.875rem',
+                fontFamily: 'monospace'
+              }}>
+                <div>email,source,tags,notes</div>
+                <div>ejemplo@email.com,manual,tag1;tag2,Notas opcionales</div>
+                <div>usuario@test.com,registration,,</div>
+              </div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Archivo CSV *
+                </label>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={handleFileSelect}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '0.875rem'
+                  }}
+                />
+                {csvFile && (
+                  <p style={{ marginTop: '0.5rem', color: '#10b981', fontSize: '0.875rem' }}>
+                    ✅ Archivo seleccionado: {csvFile.name}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  setCsvFile(null);
+                }}
+                className={`${styles.actionButton} ${styles.secondary}`}
+                style={{ width: 'auto' }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={importFromCSV}
+                disabled={!csvFile || importLoading}
+                className={`${styles.actionButton} ${styles.primary}`}
+                style={{ width: 'auto' }}
+              >
+                <Upload size={20} />
+                {importLoading ? 'Importando...' : 'Importar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </>
