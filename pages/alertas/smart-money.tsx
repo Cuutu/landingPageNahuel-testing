@@ -786,9 +786,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         console.log('📊 [GLOBAL] Alertas vigentes cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas vigentes:', response.status);
+        setRealAlerts([]); // Establecer array vacío en caso de error
       }
     } catch (error) {
       console.error('Error al cargar alertas vigentes:', error);
+      setRealAlerts([]); // Establecer array vacío en caso de error
     } finally {
       setLoadingAlerts(false);
     }
@@ -813,9 +815,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         console.log('📊 [GLOBAL] Alertas de seguimiento cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas de seguimiento:', response.status);
+        setRealAlerts([]); // Establecer array vacío en caso de error
       }
     } catch (error) {
       console.error('Error al cargar alertas de seguimiento:', error);
+      setRealAlerts([]); // Establecer array vacío en caso de error
     } finally {
       setLoadingAlerts(false);
     }
@@ -823,13 +827,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   // ✅ MODIFICADO: Función principal para cargar alertas según la pestaña activa
   const loadAlerts = async () => {
-    if (activeTab === 'vigentes') {
-      await loadVigentesAlerts();
-    } else if (activeTab === 'seguimiento') {
-      await loadSeguimientoAlerts();
-    } else {
-      // Para dashboard, cargar alertas vigentes por defecto
-      await loadVigentesAlerts();
+    try {
+      if (activeTab === 'vigentes') {
+        await loadVigentesAlerts();
+      } else if (activeTab === 'seguimiento') {
+        await loadSeguimientoAlerts();
+      } else {
+        // Para dashboard, cargar alertas vigentes por defecto
+        await loadVigentesAlerts();
+      }
+    } catch (error) {
+      console.error('Error cargando alertas:', error);
+      // Continuar sin alertas si hay error
     }
   };
 
