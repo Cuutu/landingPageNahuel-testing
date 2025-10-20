@@ -14,15 +14,20 @@ interface PortfolioData {
   value: number;
   profit: number;
   alertsCount: number;
+  sp500Value?: number;
+  sp500Change?: number;
 }
 
 interface PortfolioStats {
   totalProfit: number;
   totalAlerts: number;
+  closedAlerts: number;
   winRate: number;
-  avgProfit: number;
-  totalInvested: number; // ✅ NUEVO: Cantidad total invertida
-  profitPercentage: number; // ✅ NUEVO: Porcentaje de ganancia
+  portfolioReturn: number;
+  sp500Return: number;
+  relativeReturn: number;
+  outperformance: number;
+  baseValue: number;
 }
 
 interface PortfolioTimeRangeProps {
@@ -128,7 +133,14 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     setError(null);
     
     try {
-      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}`);
+      // ✅ CAMBIO: Usar API global sin autenticación
+      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // No incluir credentials para datos globales
+      });
       const result = await response.json();
       
       if (result.success) {
@@ -160,39 +172,33 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     }
   }, [selectedRange]);
 
-  // ✅ NUEVO: Calcular estadísticas mejoradas incluyendo inversión y porcentaje de ganancia
+  // Calcular estadísticas usando datos del API actualizado
   const calculateEnhancedStats = (data: PortfolioData[], baseStats: any): PortfolioStats => {
-    if (data.length === 0) {
+    if (!baseStats) {
       return {
         totalProfit: 0,
         totalAlerts: 0,
+        closedAlerts: 0,
         winRate: 0,
-        avgProfit: 0,
-        totalInvested: 0,
-        profitPercentage: 0
+        portfolioReturn: 0,
+        sp500Return: 0,
+        relativeReturn: 0,
+        outperformance: 0,
+        baseValue: 10000
       };
     }
     
-    // ✅ NUEVO: Calcular cantidad total invertida (simulado por ahora)
-    const totalInvested = data.reduce((sum, item) => sum + (item.value * 0.1), 0); // 10% del valor como inversión
-    
-    // ✅ NUEVO: Calcular profit total y porcentaje
-    const totalProfit = data.reduce((sum, item) => sum + item.profit, 0);
-    const profitPercentage = totalInvested > 0 ? (totalProfit / totalInvested) * 100 : 0;
-    
-    // Calcular estadísticas base
-    const totalAlerts = data.reduce((sum, item) => sum + item.alertsCount, 0);
-    const positiveAlerts = data.filter(item => item.profit > 0).length;
-    const winRate = totalAlerts > 0 ? (positiveAlerts / totalAlerts) * 100 : 0;
-    const avgProfit = totalAlerts > 0 ? totalProfit / totalAlerts : 0;
-    
+    // Usar estadísticas del API que ya incluyen comparación con S&P 500
     return {
-      totalProfit,
-      totalAlerts,
-      winRate,
-      avgProfit,
-      totalInvested,
-      profitPercentage
+      totalProfit: baseStats.totalProfit || 0,
+      totalAlerts: baseStats.totalAlerts || 0,
+      closedAlerts: baseStats.closedAlerts || 0,
+      winRate: baseStats.winRate || 0,
+      portfolioReturn: baseStats.portfolioReturn || 0,
+      sp500Return: baseStats.sp500Return || 0,
+      relativeReturn: baseStats.relativeReturn || 0,
+      outperformance: baseStats.outperformance || 0,
+      baseValue: baseStats.baseValue || 10000
     };
   };
 
@@ -314,41 +320,59 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
 
           {/* ✅ NUEVO: Estadísticas generales mejoradas */}
           {portfolioStats && (
-            <div className={styles.globalStats}>
+              <div className={styles.globalStats}>
               <h4 className={styles.globalStatsTitle}>
                 <Target size={16} />
                 Estadísticas Generales
               </h4>
+              <div className={styles.explanationBox}>
+                <p><strong>P&L Total:</strong> Ganancia/pérdida absoluta en dólares</p>
+                <p><strong>Rendimiento Portfolio:</strong> % de ganancia/pérdida sobre capital inicial (${portfolioStats.baseValue.toLocaleString()})</p>
+                <p><strong>Rendimiento S&P 500:</strong> % de cambio del índice en el mismo período</p>
+                <p><strong>Rendimiento Relativo:</strong> Cuánto mejor/peor fue el portfolio vs S&P 500</p>
+                <p><strong>Outperformance:</strong> Diferencia absoluta entre portfolio y S&P 500</p>
+              </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>P&L Total:</span>
+                  <span className={styles.globalStatLabel}>P&L Total (USD):</span>
                   <span className={`${styles.globalStatValue} ${portfolioStats.totalProfit >= 0 ? styles.positive : styles.negative}`}>
-                    {formatPercentage(portfolioStats.totalProfit)}
+                    ${portfolioStats.totalProfit.toFixed(2)}
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Total Alertas:</span>
-                  <span className={styles.globalStatValue}>
-                    {portfolioStats.totalAlerts}
+                  <span className={styles.globalStatLabel}>Rendimiento Portfolio:</span>
+                  <span className={`${styles.globalStatValue} ${portfolioStats.portfolioReturn >= 0 ? styles.positive : styles.negative}`}>
+                    {portfolioStats.portfolioReturn.toFixed(2)}%
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Win Rate:</span>
+                  <span className={styles.globalStatLabel}>Rendimiento S&P 500:</span>
+                  <span className={`${styles.globalStatValue} ${portfolioStats.sp500Return >= 0 ? styles.positive : styles.negative}`}>
+                    {portfolioStats.sp500Return.toFixed(2)}%
+                  </span>
+                </div>
+                <div className={styles.globalStatItem}>
+                  <span className={styles.globalStatLabel}>Rendimiento Relativo:</span>
+                  <span className={`${styles.globalStatValue} ${portfolioStats.relativeReturn >= 0 ? styles.positive : styles.negative}`}>
+                    {portfolioStats.relativeReturn >= 0 ? '+' : ''}{portfolioStats.relativeReturn.toFixed(2)}%
+                  </span>
+                </div>
+                <div className={styles.globalStatItem}>
+                  <span className={styles.globalStatLabel}>Outperformance:</span>
+                  <span className={`${styles.globalStatValue} ${portfolioStats.outperformance >= 0 ? styles.positive : styles.negative}`}>
+                    {portfolioStats.outperformance >= 0 ? '+' : ''}{portfolioStats.outperformance.toFixed(2)}%
+                  </span>
+                </div>
+                <div className={styles.globalStatItem}>
+                  <span className={styles.globalStatLabel}>Win Rate (Alertas Cerradas):</span>
                   <span className={`${styles.globalStatValue} ${portfolioStats.winRate >= 50 ? styles.positive : styles.negative}`}>
                     {portfolioStats.winRate.toFixed(1)}%
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Profit Promedio:</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.avgProfit >= 0 ? styles.positive : styles.negative}`}>
-                    {formatPercentage(portfolioStats.avgProfit)}
-                  </span>
-                </div>
-                {/* ✅ NUEVO: Porcentaje de ganancia */}
-                <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>% de Ganancia:</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.profitPercentage >= 0 ? styles.positive : styles.negative}`}>
-                    {formatPercentage(portfolioStats.profitPercentage)}
+                  <span className={styles.globalStatLabel}>Alertas Cerradas:</span>
+                  <span className={styles.globalStatValue}>
+                    {portfolioStats.closedAlerts} / {portfolioStats.totalAlerts}
                   </span>
                 </div>
               </div>

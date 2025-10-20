@@ -457,4 +457,29 @@
   .performanceValue {
     font-size: 1.1rem;
   }
+}
+
+/* Caja de explicación */
+.explanationBox {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.explanationBox p {
+  margin: 0 0 0.5rem 0;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.explanationBox p:last-child {
+  margin-bottom: 0;
+}
+
+.explanationBox strong {
+  color: #3b82f6;
+  font-weight: 600;
 } 

@@ -820,15 +820,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const loadVigentesAlerts = async () => {
     setLoadingAlerts(true);
     try {
-      const response = await fetch('/api/alerts/list?tipo=TraderCall&availableForPurchase=true', {
+      // ✅ CAMBIO: Usar API global para datos consistentes
+      const response = await fetch('/api/alerts/global?tipo=TraderCall&availableForPurchase=true', {
         method: 'GET',
-        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // No incluir credentials para datos globales
       });
 
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('Alertas vigentes cargadas:', data.alerts?.length || 0);
+        console.log('📊 [GLOBAL] Alertas vigentes cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas vigentes:', response.status);
       }
@@ -843,15 +847,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const loadSeguimientoAlerts = async () => {
     setLoadingAlerts(true);
     try {
-      const response = await fetch('/api/alerts/list?tipo=TraderCall', {
+      // ✅ CAMBIO: Usar API global para datos consistentes
+      const response = await fetch('/api/alerts/global?tipo=TraderCall', {
         method: 'GET',
-        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // No incluir credentials para datos globales
       });
 
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('Alertas de seguimiento cargadas:', data.alerts?.length || 0);
+        console.log('📊 [GLOBAL] Alertas de seguimiento cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas de seguimiento:', response.status);
       }
@@ -2357,36 +2365,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const renderSeguimientoAlertas = () => {
     // Mostrar TODAS las alertas activas para seguimiento (tanto marcadas como desmarcadas)
     // Los clientes deben poder seguir cualquier alerta que hayan comprado
-    // ✅ NUEVO: Incluir alertas descartadas del día actual
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-    
-    const alertasEnSeguimiento = realAlerts.filter(alert => {
-      // Excluir alertas de rango que están disponibles para compra (esas van en "Alertas vigentes")
-      if (alert.status === 'ACTIVE' && alert.tipoAlerta === 'rango' && alert.availableForPurchase === true) {
-        return false;
-      }
-
-      if (alert.status === 'ACTIVE') {
-        return true;
-      }
-
-      // Incluir alertas descartadas del día actual
-      if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
-        const descartadaAt = new Date(alert.descartadaAt);
-        return descartadaAt >= startOfDay && descartadaAt <= endOfDay;
-      }
-
-      return false;
-    });
+    const alertasEnSeguimiento = realAlerts.filter(alert => 
+      alert.status === 'ACTIVE'
+    );
     
     return (
       <div className={styles.seguimientoContent}>
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Alertas de precio fijo en seguimiento y alertas descartadas del día actual
+            Todas las alertas activas disponibles para seguimiento
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -2473,38 +2461,24 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Lista de alertas en seguimiento */}
             <div className={styles.alertsList}>
               {alertasEnSeguimiento.map((alert) => (
-                <div key={alert.id} className={`${styles.alertCard} alertCard ${alert.status === 'DESCARTADA' ? styles.discardedAlert : ''}`}>
+                <div key={alert.id} className={`${styles.alertCard} alertCard`}>
                   <div className={styles.alertHeader}>
                     <h3 className={styles.alertSymbol}>{alert.symbol}</h3>
                     <span className={`${styles.alertAction} ${alert.action === 'BUY' ? styles.buyAction : styles.sellAction}`} style={{ display: 'none' }}>
                       {alert.action}
                     </span>
-                    <span className={`${styles.alertStatus} ${alert.status === 'DESCARTADA' ? styles.discardedStatus : ''}`}>
-                      {alert.status === 'DESCARTADA' ? '❌ DESCARTADA' : '🟢 ACTIVA'}
-                    </span>
+                    <span className={styles.alertStatus}>🟢 ACTIVA</span>
                   </div>
                   
                   <div className={styles.alertDetails}>
                     <div className={styles.alertDetail}>
                       <span>Precio Entrada:</span>
-                      {alert.tipoAlerta === 'rango' ? (
-                        <strong style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '4px',
-                          background: 'rgba(59, 130, 246, 0.1)',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          border: '1px solid rgba(59, 130, 246, 0.2)'
-                        }}>
-                          <span style={{ color: '#60a5fa' }}>$</span>
-                          <span>{alert.precioMinimo}</span>
-                          <span style={{ color: '#60a5fa' }}>-</span>
-                          <span>{alert.precioMaximo}</span>
-                        </strong>
-                      ) : (
-                        <strong>{alert.entryPrice}</strong>
-                      )}
+                      <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
+                        {alert.entryPrice}
+                        {alert.entryPrice?.includes(' / ') && (
+                          <span className={styles.rangeIndicator}>RANGO</span>
+                        )}
+                      </strong>
                     </div>
                     <div className={styles.alertDetail}>
                       <span>Precio Actual:</span>
@@ -2543,39 +2517,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       <span>Fecha:</span>
                       <strong>{alert.date}</strong>
                     </div>
-                    <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
-                      <span>Participación:</span>
-                      <strong style={{ 
-                        color: alert.participationPercentage === 100 ? '#10b981' : // Verde fuerte
-                               alert.participationPercentage >= 75 ? '#34d399' : // Verde claro
-                               alert.participationPercentage >= 50 ? '#fbbf24' : // Amarillo
-                               '#f97316', // Naranja
-                        fontSize: '1.1em',
-                        fontWeight: '700'
-                      }}>
-                        {alert.participationPercentage || 100}%
-                      </strong>
-                    </div>
-                    {alert.status === 'DESCARTADA' && alert.descartadaMotivo && (
-                      <div className={styles.alertDetail} style={{ flex: '1 1 100%', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px' }}>
-                        <span>Motivo de descarte:</span>
-                        <strong style={{ color: '#d32f2f', fontSize: '0.9em' }}>{alert.descartadaMotivo}</strong>
-                      </div>
-                    )}
-                    {alert.status === 'DESCARTADA' && alert.descartadaAt && (
-                      <div className={styles.alertDetail} style={{ flex: '1 1 100%' }}>
-                        <span>Descartada el:</span>
-                        <strong style={{ color: '#666', fontSize: '0.9em' }}>
-                          {new Date(alert.descartadaAt).toLocaleString('es-ES', {
-                            day: '2-digit',
-                            month: '2-digit',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </strong>
-                      </div>
-                    )}
                   </div>
                   
                   {alert.analysis && (
@@ -2736,7 +2677,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.vigentesHeader}>
           <h2 className={styles.sectionTitle}>Alertas Vigentes</h2>
           <p className={styles.sectionDescription}>
-            Alertas de rango disponibles para comprar ahora
+            Alertas disponibles para comprar ahora
           </p>
           <div className={styles.priceUpdateControls}>
             {userRole === 'admin' && (
@@ -2809,40 +2750,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               </div>
               
               <div className={styles.alertDetails}>
-                <div className={styles.alertDetail} style={{
-                  background: 'rgba(55, 65, 81, 0.5)',
-                  borderRadius: '8px',
-                  padding: '12px',
-                  marginBottom: '8px'
-                }}>
-                  <span style={{
-                    fontSize: '0.85em',
-                    color: '#9ca3af',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    fontWeight: '600'
-                  }}>Precio Entrada:</span>
-                  <div style={{ marginTop: '4px' }}>
-                    {alert.tipoAlerta === 'rango' ? (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        background: 'rgba(59, 130, 246, 0.1)',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(59, 130, 246, 0.2)'
-                      }}>
-                        <span style={{ color: '#60a5fa' }}>$</span>
-                        <span className="sensitivePrice">{alert.precioMinimo}</span>
-                        <span style={{ color: '#60a5fa' }}>-</span>
-                        <span className="sensitivePrice">{alert.precioMaximo}</span>
-                      </div>
-                    ) : (
-                      <strong className="sensitivePrice" style={{
-                        fontSize: '1.1em',
-                        color: '#f3f4f6'
-                      }}>{alert.entryPrice}</strong>
+                <div className={styles.alertDetail}>
+                  <span>Precio Entrada:</span>
+                  <div className={`${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
+                    <strong className="sensitivePrice">
+                      {alert.entryPrice}
+                    </strong>
+                    {alert.entryPrice?.includes(' / ') && (
+                      <span className={styles.rangeIndicator}>RANGO</span>
                     )}
                   </div>
                 </div>
@@ -2862,9 +2777,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   <span>P&L:</span>
                   <strong className={alert.profit.includes('+') ? styles.profit : styles.loss}>
                     <span>{alert.profit}</span>
-                    <span className={alert.profit.includes('+') ? styles.profitArrow : styles.lossArrow}>
-                      {alert.profit.includes('+') ? '↗' : '↘'}
-                    </span>
                   </strong>
                 </div>
               </div>

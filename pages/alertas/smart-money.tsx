@@ -771,15 +771,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const loadVigentesAlerts = async () => {
     setLoadingAlerts(true);
     try {
-      const response = await fetch('/api/alerts/list?tipo=SmartMoney&availableForPurchase=true', {
+      // ✅ CAMBIO: Usar API global para datos consistentes
+      const response = await fetch('/api/alerts/global?tipo=SmartMoney&availableForPurchase=true', {
         method: 'GET',
-        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // No incluir credentials para datos globales
       });
 
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('Alertas vigentes cargadas:', data.alerts?.length || 0);
+        console.log('📊 [GLOBAL] Alertas vigentes cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas vigentes:', response.status);
       }
@@ -794,15 +798,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const loadSeguimientoAlerts = async () => {
     setLoadingAlerts(true);
     try {
-      const response = await fetch('/api/alerts/list?tipo=SmartMoney', {
+      // ✅ CAMBIO: Usar API global para datos consistentes
+      const response = await fetch('/api/alerts/global?tipo=SmartMoney', {
         method: 'GET',
-        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // No incluir credentials para datos globales
       });
 
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('Alertas de seguimiento cargadas:', data.alerts?.length || 0);
+        console.log('📊 [GLOBAL] Alertas de seguimiento cargadas:', data.alerts?.length || 0);
       } else {
         console.error('Error al cargar alertas de seguimiento:', response.status);
       }
