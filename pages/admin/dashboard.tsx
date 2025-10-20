@@ -178,12 +178,12 @@ const useDashboardSections = () => {
     {
       id: 'database',
       title: 'Base de Datos',
-      description: 'Información de contacto de los clientes para poder contactarlos por fuera de la web. Envíos de mails masivos, lanzamientos, problema con los pagos, etc',
+      description: 'Gestión completa de emails para envío masivo. Agregar, importar, exportar y enviar emails masivos a todos los usuarios registrados y leads.',
       icon: <Database size={32} />,
       color: 'from-purple-500 to-violet-500',
       links: [
-        { label: 'Exportar Contactos', href: '/admin/export/contacts', icon: <Download size={16} /> },
         { label: 'Envío Masivo', href: '/admin/email/bulk', icon: <Mail size={16} /> },
+        { label: 'Exportar Contactos', href: '/admin/export/contacts', icon: <Download size={16} /> },
         { label: 'Gestión de BD', href: '/admin/database', icon: <Database size={16} /> }
       ]
     },
@@ -912,7 +912,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
             <div className={styles.sectionsGrid}>
               {dashboardSections.map((section, index) => {
                 // Definir qué secciones ocultar
-                const hiddenSections = ['billing', 'pricing', 'database'];
+                const hiddenSections = ['billing', 'pricing'];
                 const isHidden = hiddenSections.includes(section.id);
                 
                 return (
