@@ -138,14 +138,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
         <div className={styles.summaryCards}>
           <div className={styles.card}>
-            <DollarSign className="w-8 h-8" />
-            <h3>Balance Actual</h3>
-            <p className={currentBalance >= 0 ? styles.positive : styles.negative}>
-              {formatCurrency(currentBalance)}
-            </p>
-          </div>
-          
-          <div className={styles.card}>
             <CheckCircle className="w-8 h-8" />
             <h3>Total Operaciones</h3>
             <p>{total}</p>
