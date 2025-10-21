@@ -1469,6 +1469,13 @@
   align-items: start;
 }
 
+.simpleChartLayout {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+}
+
 .chartLegend {
   background: var(--bg-secondary);
   border-radius: 8px;

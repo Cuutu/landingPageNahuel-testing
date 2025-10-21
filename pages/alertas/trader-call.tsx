@@ -2258,91 +2258,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         {/* Gráfico de Distribución de Alertas */}
         <div className={styles.chartSection}>
           <div className={styles.chartHeader}>
-            {typeof liquidityTotal === 'number' && userRole === 'admin' && (
-              <>
-                <span className={styles.totalLiquidityBadge}>Liquidez Total: ${Number(liquidityTotal).toFixed(2)}</span>
-                <span className={styles.totalLiquidityBadge}>Liquidez Distribuida: ${Object.values(liquidityMap || {}).reduce((s: number, d: any) => s + (d?.allocatedAmount || 0), 0).toFixed(2)}{liquidityTotal > 0 ? ` (${Math.round((Object.values(liquidityMap || {}).reduce((s: number, d: any) => s + (d?.allocatedAmount || 0), 0) / liquidityTotal) * 100)}%)` : ''}</span>
-              </>
-            )}
             <h3>📊 Distribución de Alertas Activas</h3>
-            <div className={styles.chartActions}>
-              <button
-                className={styles.viewDetailedButton}
-                onClick={() => setActiveTab('seguimiento')}
-              >
-                Ver Análisis Detallado
-              </button>
-            </div>
           </div>
           <div className={styles.dashboardChartContainer}>
             {chartSegments.length > 0 ? (
-              <>
-                <div className={styles.dashboardChartLayout}>
-                  {renderPieChart(chartSegments)}
-                  <div className={styles.chartInfoPanel}>
-                    <div className={styles.infoHeader}>
-                      <h3 className={styles.infoTitle}>📈 Detalles de Alertas</h3>
-                      <p className={styles.infoSubtitle}>Información detallada de cada alerta activa</p>
-                    </div>
-                    <div className={styles.statsSummary}>
-                      <div className={styles.summaryCard}>
-                        <div className={styles.summaryIcon}>📊</div>
-                        <div className={styles.summaryContent}>
-                          <span className={styles.summaryLabel}>Total Alertas</span>
-                          <span className={styles.summaryValue}>{chartSegments.length}</span>
-                        </div>
-                      </div>
-                      <div className={styles.summaryCard}>
-                        <div className={styles.summaryIcon}>🟢</div>
-                        <div className={styles.summaryContent}>
-                          <span className={styles.summaryLabel}>Activas</span>
-                          <span className={styles.summaryValue}>{alertasActivas.length}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className={styles.chartLegend3D}>
-                      <h3 className={styles.legendTitle}>🎨 Alertas por Color</h3>
-                      <div className={styles.legendList}>
-                        {chartSegments.map((segment) => (
-                          <div key={segment.id} className={styles.legendItem3D}>
-                            <div className={styles.legendColor3D} style={{ backgroundColor: segment.color }} />
-                            <div className={styles.legendInfo}>
-                              <span className={styles.legendSymbol}>{segment.symbol}</span>
-                              <span className={styles.legendProfit}>{segment.profit >= 0 ? '+' : ''}{segment.profit.toFixed(2)}%</span>
-                              <span className={styles.legendStatus}>{segment.status === 'ACTIVE' ? '🟢' : '🔴'}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {/* Tooltip flotante para el dashboard (no usado, duplicado evitado) */}
-                <div id="chartTooltipDashboard" className={styles.chartTooltip3D}>
-                  <div className={styles.tooltipContent3D}>
-                    <h4 className={styles.tooltipSymbol}></h4>
-                    <div className={styles.tooltipDetails}>
-                      <div className={styles.tooltipRow}>
-                        <span>📈 Acción:</span>
-                        <span className={styles.tooltipAction}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>💰 Entrada:</span>
-                        <span className={styles.tooltipEntry}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>📊 Actual:</span>
-                        <span className={styles.tooltipCurrent}></span>
-                      </div>
-                      <div className={styles.tooltipRow}>
-                        <span>📈 P&L:</span>
-                        <span className={styles.tooltipPnl}></span>
-                      </div>
-                      {/* Elementos ocultos del tooltip */}
-                    </div>
-                  </div>
-                </div>
-              </>
+              <div className={styles.simpleChartLayout}>
+                {renderPieChart(chartSegments)}
+              </div>
             ) : (
               <div className={styles.emptyChartState}>
                 <div className={styles.emptyChartIcon}>📊</div>
@@ -2364,7 +2286,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 className={styles.viewAllButton}
                 onClick={() => setActiveTab('seguimiento')}
               >
-                Ver toda la actividad
+                Ver Seguimiento
               </button>
               <button
                 className={styles.refreshButton}
