@@ -73,14 +73,13 @@ export default async function handler(
     }
 
     const existingDistribution = liquidity.distributions.find((dist: any) => dist.alertId === alertId);
-    const currentTotalPercentage = (liquidity.distributions || []).reduce((sum: number, d: any) => sum + (d.percentage || 0), 0);
 
     const entryPrice = alert.entryPriceRange?.max || alert.entryPrice;
     if (!entryPrice) {
       return res.status(400).json({ success: false, error: "La alerta no tiene precio de entrada válido" });
     }
 
-    // Calcular porcentaje objetivo según entrada
+    // ✅ NUEVO: Calcular porcentaje objetivo basado en liquidez TOTAL
     const targetPercentage = typeof amount === 'number' && amount > 0
       ? (amount / liquidity.totalLiquidity) * 100
       : (percentage as number);
@@ -90,13 +89,13 @@ export default async function handler(
     }
 
     if (existingDistribution) {
+      // ✅ NUEVO: Verificar contra liquidez total, no disponible
       const requiredAmount = (liquidity.totalLiquidity * targetPercentage) / 100;
-      if (requiredAmount > liquidity.availableLiquidity) {
-        return res.status(400).json({ success: false, error: "No hay suficiente liquidez disponible para aumentar esta asignación" });
+      if (requiredAmount > liquidity.totalLiquidity) {
+        return res.status(400).json({ success: false, error: "No hay suficiente liquidez total para esta asignación" });
       }
-      if (currentTotalPercentage + targetPercentage > 100) {
-        return res.status(400).json({ success: false, error: "El porcentaje total no puede exceder 100%" });
-      }
+      
+      // ✅ NUEVO: Remover restricción de 100% total - permitir múltiples asignaciones
       const additionalShares = Math.floor(requiredAmount / entryPrice);
       const actualAllocatedAmount = additionalShares * entryPrice;
 

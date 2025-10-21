@@ -297,6 +297,58 @@ export default async function handler(
             createdAt: new Date()
           };
 
+          // ✅ NUEVO: Guardar información original en la alerta para ventas futuras
+          newAlert.originalParticipationPercentage = 100;
+          newAlert.participationPercentage = 100;
+          newAlert.liquidityData = {
+            allocatedAmount: liquidityAmount,
+            shares: shares,
+            originalAllocatedAmount: liquidityAmount,
+            originalShares: shares,
+            originalParticipationPercentage: 100
+          };
+
+          // ✅ NUEVO: Registrar operación de compra automáticamente
+          try {
+            const OperationModule = await import('@/models/Operation');
+            const Operation = OperationModule.default;
+            
+            // Obtener balance actual del usuario para este sistema
+            const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system: pool })
+              .sort({ date: -1 })
+              .select('balance');
+            const currentBalance = currentBalanceDoc?.balance || 0;
+            const newBalance = currentBalance - liquidityAmount;
+
+            const operation = new Operation({
+              ticker: symbol.toUpperCase(),
+              operationType: 'COMPRA',
+              quantity: shares,
+              price: priceForShares,
+              amount: liquidityAmount,
+              date: new Date(),
+              balance: newBalance,
+              alertId: newAlert._id,
+              alertSymbol: symbol.toUpperCase(),
+              system: pool,
+              createdBy: user._id,
+              liquidityData: {
+                allocatedAmount: liquidityAmount,
+                shares: shares,
+                entryPrice: priceForShares
+              },
+              executedBy: user.email,
+              executionMethod: 'AUTOMATIC',
+              notes: `Compra automática al crear alerta - ${liquidityPercentage}% de liquidez`
+            });
+
+            await operation.save();
+            console.log(`✅ Operación de compra registrada: ${symbol} - ${shares} acciones por $${priceForShares}`);
+          } catch (operationError) {
+            console.error('⚠️ Error registrando operación de compra:', operationError);
+            // No fallar la creación de la alerta por un error en la operación
+          }
+
           // Agregar la distribución
           console.log(`🔍 [DEBUG] Agregando distribución:`, newDistribution);
           liquidity.distributions.push(newDistribution);

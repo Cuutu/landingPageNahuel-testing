@@ -65,16 +65,20 @@ const LiquiditySchema = new Schema({
 }, { timestamps: true });
 
 LiquiditySchema.methods.addDistribution = function(this: any, alertId: string, symbol: string, percentage: number, entryPrice: number): ILiquidityDistribution {
+  // ✅ NUEVO: Calcular monto basado en liquidez TOTAL, no disponible
   const requiredAmount = (this.totalLiquidity * percentage) / 100;
-  if (requiredAmount > this.availableLiquidity) {
-    throw new Error("No hay suficiente liquidez disponible");
+  
+  // ✅ NUEVO: Verificar que hay suficiente liquidez TOTAL disponible (no importa si ya está distribuida)
+  if (requiredAmount > this.totalLiquidity) {
+    throw new Error("No hay suficiente liquidez total para esta asignación");
   }
-  const currentTotalPercentage = this.distributions.reduce((sum: number, dist: ILiquidityDistribution) => sum + dist.percentage, 0);
-  if (currentTotalPercentage + percentage > 100) {
-    throw new Error("El porcentaje total no puede exceder 100%");
-  }
+  
+  // ✅ NUEVO: Permitir múltiples asignaciones sin restricción de 100% total
+  // El sistema ahora permite asignar más del 100% si hay liquidez suficiente
+  
   const shares = Math.floor(requiredAmount / entryPrice);
   const actualAllocatedAmount = shares * entryPrice;
+  
   const distribution = {
     alertId,
     symbol: symbol.toUpperCase(),
@@ -91,9 +95,13 @@ LiquiditySchema.methods.addDistribution = function(this: any, alertId: string, s
     createdAt: new Date(),
     updatedAt: new Date()
   } as ILiquidityDistribution;
+  
   this.distributions.push(distribution);
+  
+  // ✅ NUEVO: Actualizar liquidez disponible basándose en la nueva distribución
   this.availableLiquidity -= actualAllocatedAmount;
   this.distributedLiquidity += actualAllocatedAmount;
+  
   return distribution;
 };
 
@@ -139,7 +147,12 @@ LiquiditySchema.methods.sellShares = function(this: any, alertId: string, shares
   distribution.isActive = distribution.shares > 0;
   distribution.updatedAt = new Date();
 
+  // ✅ NUEVO: Aumentar liquidez total con las ganancias realizadas
   this.totalLiquidity += realized;
+  
+  // ✅ NUEVO: Aumentar liquidez disponible con el efectivo devuelto
+  this.availableLiquidity += proceeds;
+  
   this.recalculateDistributions();
 
   return { realized, returnedCash: proceeds, remainingShares: distribution.shares };

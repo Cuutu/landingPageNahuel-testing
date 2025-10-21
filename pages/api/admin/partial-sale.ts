@@ -221,13 +221,37 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'No hay acciones suficientes para realizar venta parcial' });
     }
     
-    // Calcular valores de la venta parcial CON DECIMALES
-    const sharesToSell = shares * (percentage / 100); // Sin Math.floor()
-    const sharesRemaining = shares - sharesToSell;
+    // ✅ NUEVO: Lógica de venta mejorada - vender posiciones completas
+    let sharesToSell: number;
+    let sharesRemaining: number;
+    let isCompleteSale = false;
+    
+    if (percentage >= 100) {
+      // Venta completa - vender todas las acciones
+      sharesToSell = shares;
+      sharesRemaining = 0;
+      isCompleteSale = true;
+      console.log(`💰 Venta COMPLETA (${percentage}%): Vendiendo todas las acciones`);
+    } else {
+      // ✅ NUEVO: Para ventas parciales, calcular basándose en la posición original
+      // No en las acciones actuales (evita ventas compuestas)
+      const originalShares = alert.liquidityData?.originalShares || shares;
+      sharesToSell = originalShares * (percentage / 100);
+      
+      // Asegurar que no vendamos más de lo que tenemos
+      if (sharesToSell > shares) {
+        sharesToSell = shares;
+        isCompleteSale = true;
+        console.log(`💰 Ajustando a venta completa: solo tenemos ${shares.toFixed(4)} acciones`);
+      }
+      
+      sharesRemaining = shares - sharesToSell;
+    }
+    
     const liquidityReleased = sharesToSell * sellPrice;
     const realizedProfit = sharesToSell * profitPerShare;
     
-    console.log(`💰 Venta parcial ${percentage}%:`);
+    console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);
     console.log(`📊 Acciones totales: ${shares.toFixed(4)}`);
     console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}%)`);
     console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)} (${100-percentage}%)`);
@@ -236,10 +260,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Actualizar la alerta con los nuevos valores
     const newAllocatedAmount = sharesRemaining * entryPrice;
     
-    // ✅ NUEVO: Actualizar el porcentaje de participación
-    const newParticipationPercentage = Math.max(0, (alert.participationPercentage || 100) - percentage);
-    alert.participationPercentage = newParticipationPercentage;
-    console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}% (reducido en ${percentage}%)`);
+    // ✅ NUEVO: Actualizar el porcentaje de participación correctamente
+    if (isCompleteSale) {
+      alert.participationPercentage = 0;
+    } else {
+      // Para ventas parciales, reducir el porcentaje basándose en la posición original
+      const originalPercentage = alert.originalParticipationPercentage || 100;
+      const newParticipationPercentage = Math.max(0, originalPercentage - percentage);
+      alert.participationPercentage = newParticipationPercentage;
+    }
+    console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
     
     // ✅ NUEVO: Guardar el rango de venta en la alerta
     if (notificationPriceRange) {
@@ -248,13 +278,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`💾 Guardando rango de venta en alerta: $${notificationPriceRange.min} - $${notificationPriceRange.max}`);
     }
     
+    // ✅ NUEVO: Guardar información de liquidez mejorada
     alert.liquidityData = {
       ...liquidityData,
       allocatedAmount: newAllocatedAmount,
       shares: sharesRemaining,
-      // Guardar el monto original para referencia
+      // Guardar el monto original para referencia (importante para ventas futuras)
       originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
       originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
+      // Guardar el porcentaje de participación original
+      originalParticipationPercentage: alert.originalParticipationPercentage || 100,
       partialSales: [
         ...(liquidityData.partialSales || []),
         {
@@ -267,7 +300,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           executedBy: session.user.email,
           priceRange: notificationPriceRange || null,
           emailMessage: emailMessage || null,
-          emailImageUrl: emailImageUrl || null
+          emailImageUrl: emailImageUrl || null,
+          isCompleteSale: isCompleteSale
         }
       ]
     };
@@ -303,27 +337,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (distributionIndex !== -1) {
           console.log(`📝 Actualizando distribución en índice ${distributionIndex}`);
           
-          // Actualizar la distribución existente
-          liquidity.distributions[distributionIndex].allocatedAmount = newAllocatedAmount;
-          liquidity.distributions[distributionIndex].shares = sharesRemaining;
+          // ✅ NUEVO: Actualizar la distribución usando el método sellShares del modelo
+          const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, sharesToSell, sellPrice);
           
-          // Actualizar la liquidez total disponible PRIMERO
-          liquidity.totalLiquidity += liquidityReleased;
+          console.log(`📊 Venta ejecutada en sistema de liquidez:`);
+          console.log(`💰 Ganancia realizada: $${realized.toFixed(2)}`);
+          console.log(`💵 Efectivo devuelto: $${returnedCash.toFixed(2)}`);
+          console.log(`📈 Acciones restantes: ${remainingShares.toFixed(4)}`);
           
-          // ✅ RECALCULAR EL PORCENTAJE basándose en la nueva liquidez total
-          const newPercentage = liquidity.totalLiquidity > 0 
-            ? (newAllocatedAmount / liquidity.totalLiquidity) * 100 
-            : 0;
-          
-          liquidity.distributions[distributionIndex].percentage = Math.round(newPercentage * 100) / 100; // Redondear a 2 decimales
-          
-          console.log(`📊 Porcentaje recalculado: ${liquidity.distributions[distributionIndex].percentage}%`);
-          console.log(`🔢 Cálculo: $${newAllocatedAmount} ÷ $${liquidity.totalLiquidity} × 100 = ${newPercentage.toFixed(2)}%`);
-          
-          // Si se cerró completamente, marcar como cerrada
-          if (sharesRemaining <= 0) {
-            liquidity.distributions[distributionIndex].status = 'CLOSED';
-            liquidity.distributions[distributionIndex].closedAt = new Date();
+          // Si se cerró completamente, remover la distribución
+          if (remainingShares <= 0) {
+            liquidity.removeDistribution(alertId);
+            console.log(`🗑️ Distribución removida - posición cerrada completamente`);
+          }
+
+          // ✅ NUEVO: Registrar operación de venta automáticamente
+          try {
+            const OperationModule = await import('@/models/Operation');
+            const Operation = OperationModule.default;
+            
+            // Obtener balance actual del usuario para este sistema
+            const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system: tipo })
+              .sort({ date: -1 })
+              .select('balance');
+            const currentBalance = currentBalanceDoc?.balance || 0;
+            const newBalance = currentBalance + liquidityReleased;
+
+            const operation = new Operation({
+              ticker: alert.symbol.toUpperCase(),
+              operationType: 'VENTA',
+              quantity: -sharesToSell, // Negativo para ventas
+              price: sellPrice,
+              amount: liquidityReleased,
+              date: new Date(),
+              balance: newBalance,
+              alertId: alert._id,
+              alertSymbol: alert.symbol.toUpperCase(),
+              system: tipo,
+              createdBy: user._id,
+              isPartialSale: !isCompleteSale,
+              partialSalePercentage: percentage,
+              originalQuantity: alert.liquidityData?.originalShares || shares,
+              liquidityData: {
+                allocatedAmount: newAllocatedAmount,
+                shares: sharesRemaining,
+                entryPrice: entryPrice,
+                realizedProfit: realizedProfit
+              },
+              executedBy: session.user.email,
+              executionMethod: 'ADMIN',
+              notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) - ${alert.symbol}`
+            });
+
+            await operation.save();
+            console.log(`✅ Operación de venta registrada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones por $${sellPrice}`);
+          } catch (operationError) {
+            console.error('⚠️ Error registrando operación de venta:', operationError);
+            // No fallar la venta por un error en la operación
           }
           
           // Guardar cambios directamente en la base de datos

@@ -51,6 +51,7 @@ import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
 import ScreenshotProtection from '@/components/ScreenshotProtection';
+import OperationsTable from '@/components/OperationsTable';
 import { toast } from 'react-hot-toast';
 
 interface AlertExample {
@@ -2431,6 +2432,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         </span>
                       </strong>
                     </div>
+                    {/* ✅ NUEVO: Porcentaje de participación restante */}
+                    <div className={styles.alertDetail}>
+                      <span>Participación:</span>
+                      <strong className={styles.participationPercentage}>
+                        {alert.participationPercentage || 100}%
+                        {alert.participationPercentage && alert.participationPercentage < 100 && (
+                          <span className={styles.partialSaleIndicator} title="Venta parcial realizada">
+                            📉
+                          </span>
+                        )}
+                      </strong>
+                    </div>
                     {alert.hasSellRange && (
                       <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                         <span>RANGO VENTA:</span>
@@ -3841,6 +3854,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               Seguimiento
             </button>
             <button 
+              className={`${styles.sidebarButton} ${activeTab === 'operaciones' ? styles.sidebarActive : ''}`}
+              onClick={() => setActiveTab('operaciones')}
+            >
+              <TrendingUp size={20} />
+              Operaciones
+            </button>
+            <button 
               className={`${styles.sidebarButton} ${activeTab === 'vigentes' ? styles.sidebarActive : ''}`}
               onClick={() => setActiveTab('vigentes')}
             >
@@ -3894,6 +3914,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <main className={styles.mainContent}>
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'seguimiento' && renderSeguimientoAlertas()}
+          {activeTab === 'operaciones' && (
+            <div className="p-6">
+              <OperationsTable system="SmartMoney" />
+            </div>
+          )}
           {activeTab === 'vigentes' && renderAlertasVigentes()}
           {activeTab === 'informes' && renderInformes()}
           {activeTab === 'comunidad' && renderComunidad()}

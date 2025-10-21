@@ -158,6 +158,49 @@ export default async function handler(
           if (remainingShares === 0) {
             liquidity.removeDistribution(alertId);
           }
+
+          // ✅ NUEVO: Registrar operación de venta automáticamente
+          try {
+            const OperationModule = await import('@/models/Operation');
+            const Operation = OperationModule.default;
+            
+            // Obtener balance actual del usuario para este sistema
+            const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system: pool })
+              .sort({ date: -1 })
+              .select('balance');
+            const currentBalance = currentBalanceDoc?.balance || 0;
+            const newBalance = currentBalance + returnedCash;
+
+            const operation = new Operation({
+              ticker: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
+              operationType: 'VENTA',
+              quantity: -dist.shares, // Negativo para ventas
+              price: currentPrice,
+              amount: returnedCash,
+              date: new Date(),
+              balance: newBalance,
+              alertId: alertId,
+              alertSymbol: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
+              system: pool,
+              createdBy: user._id,
+              isPartialSale: false,
+              liquidityData: {
+                allocatedAmount: 0, // Se vendió todo
+                shares: 0,
+                entryPrice: dist.entryPrice,
+                realizedProfit: realized
+              },
+              executedBy: user.email,
+              executionMethod: 'MANUAL',
+              notes: `Cierre manual de alerta - ${updatedAlert?.symbol} - Razón: ${reason}`
+            });
+
+            await operation.save();
+            console.log(`✅ Operación de cierre registrada: ${updatedAlert?.symbol} - ${dist.shares} acciones por $${currentPrice}`);
+          } catch (operationError) {
+            console.error('⚠️ Error registrando operación de cierre:', operationError);
+            // No fallar el cierre por un error en la operación
+          }
           
           await liquidity.save();
           console.log('💧 Liquidez actualizada por cierre de alerta:', {
