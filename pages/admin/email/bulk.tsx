@@ -238,7 +238,7 @@ export default function AdminBulkEmailPage() {
       const formData = new FormData();
       formData.append('csv', csvFile);
 
-      const response = await fetch('/api/admin/email-list/import', {
+      const response = await fetch('/api/admin/email-list/import-async', {
         method: 'POST',
         body: formData,
       });
@@ -246,17 +246,16 @@ export default function AdminBulkEmailPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast.success(data.message);
+        toast.success(`Procesamiento iniciado para ${data.total} emails. Los emails se procesarán en segundo plano.`);
         setCsvFile(null);
         setShowImportModal(false);
-        fetchEmailList(); // Recargar lista
         
-        // Mostrar detalles del resultado
-        if (data.results) {
-          console.log('Resultados de importación:', data.results);
-        }
+        // Actualizar la lista después de un breve delay
+        setTimeout(() => {
+          fetchEmailList();
+        }, 2000);
       } else {
-        toast.error(data.error || 'Error importando CSV');
+        toast.error(data.error || 'Error iniciando importación');
       }
     } catch (error) {
       console.error('Error importando CSV:', error);
@@ -1006,6 +1005,18 @@ export default function AdminBulkEmailPage() {
                 <strong>Nota:</strong> El archivo debe contener solo una columna con emails. 
                 Todos los emails importados se marcarán automáticamente como "importados".
               </p>
+              <div style={{ 
+                backgroundColor: '#d1fae5', 
+                border: '1px solid #10b981', 
+                borderRadius: '8px', 
+                padding: '1rem', 
+                marginBottom: '1rem' 
+              }}>
+                <p style={{ margin: 0, color: '#065f46', fontSize: '0.875rem' }}>
+                  <strong>✅ Procesamiento asíncrono:</strong> Puedes importar archivos grandes sin límite. 
+                  El procesamiento se realizará en segundo plano y recibirás una notificación cuando termine.
+                </p>
+              </div>
               
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>

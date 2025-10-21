@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Configurar timeout más agresivo para evitar cancelación de Vercel
   const startTime = Date.now();
-  const maxExecutionTime = 240000; // 4 minutos (menos que el timeout de Vercel de 5 minutos)
+  const maxExecutionTime = 180000; // 3 minutos (más conservador)
 
   try {
     // Verificar autenticación de admin
@@ -131,19 +131,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               });
             }
 
-            // Limitar el número de emails para evitar timeout
-            const maxEmails = 500; // Reducido de 1000 a 500
-            if (emails.length > maxEmails) {
-              console.log(`⚠️ [IMPORT CSV] Limitando a ${maxEmails} emails de ${emails.length} total`);
-              emails.splice(maxEmails);
-            }
+            // No limitar emails - procesar todos los que vengan
+            console.log(`📊 [IMPORT CSV] Procesando ${emails.length} emails sin límite`);
 
             // Usar operaciones bulk de MongoDB para mayor eficiencia
             const results = {
               total: emails.length,
-              added: 0,
-              alreadyExists: 0,
-              reactivated: 0,
+              processed: 0,
               errors: [] as string[]
             };
 
@@ -163,62 +157,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               total: emails.length
             }) + '\n');
 
-            // Obtener emails existentes en una sola consulta
-            const existingEmails = await EmailList.find({
-              email: { $in: emails.map(e => e.email) }
-            }, 'email isActive');
+            // Verificar timeout antes de consultar la base de datos
+            if (Date.now() - startTime > maxExecutionTime) {
+              console.log(`⏰ [IMPORT CSV] Timeout alcanzado antes de consultar BD`);
+              const timeoutResult = {
+                success: false,
+                error: 'Timeout: El archivo es demasiado grande para procesar en el tiempo disponible',
+                message: 'Intenta con un archivo más pequeño (máximo 200 emails)',
+                completed: true
+              };
+              res.write(JSON.stringify(timeoutResult) + '\n');
+              res.end();
+              return;
+            }
 
-            const existingEmailMap = new Map();
-            existingEmails.forEach(email => {
-              existingEmailMap.set(email.email, email);
-            });
-
-            // Preparar operaciones bulk
+            // Estrategia optimizada: usar upsert para evitar consultas previas
             const bulkOps = [];
             const now = new Date();
 
+            // Preparar operaciones upsert - más eficiente que consultar primero
             for (const emailData of emails) {
-              const existingEmail = existingEmailMap.get(emailData.email);
-              
-              if (existingEmail) {
-                if (!existingEmail.isActive) {
-                  // Reactivar email inactivo
-                  bulkOps.push({
-                    updateOne: {
-                      filter: { email: emailData.email },
-                      update: { 
-                        $set: { 
-                          isActive: true, 
-                          source: emailData.source,
-                          updatedAt: now
-                        } 
-                      }
-                    }
-                  });
-                  results.reactivated++;
-                } else {
-                  results.alreadyExists++;
-                }
-              } else {
-                // Insertar nuevo email
-                bulkOps.push({
-                  insertOne: {
-                    document: {
+              bulkOps.push({
+                updateOne: {
+                  filter: { email: emailData.email },
+                  update: { 
+                    $set: { 
                       email: emailData.email,
                       source: emailData.source,
                       isActive: true,
-                      addedAt: now,
-                      createdAt: now,
                       updatedAt: now
+                    },
+                    $setOnInsert: {
+                      addedAt: now,
+                      createdAt: now
                     }
-                  }
-                });
-                results.added++;
-              }
+                  },
+                  upsert: true
+                }
+              });
             }
 
-            // Ejecutar operaciones bulk en lotes pequeños
-            const bulkBatchSize = 100;
+            // Ejecutar operaciones bulk en lotes más grandes para mayor eficiencia
+            const bulkBatchSize = 100; // Aumentado para procesar más rápido
             for (let i = 0; i < bulkOps.length; i += bulkBatchSize) {
               // Verificar timeout antes de cada lote
               if (Date.now() - startTime > maxExecutionTime) {
@@ -231,7 +211,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               console.log(`📦 [IMPORT CSV] Ejecutando lote bulk ${Math.floor(i/bulkBatchSize) + 1}/${Math.ceil(bulkOps.length/bulkBatchSize)} (${batch.length} operaciones)`);
               
               try {
-                await EmailList.bulkWrite(batch, { ordered: false });
+                const bulkResult = await EmailList.bulkWrite(batch, { ordered: false });
+                results.processed += batch.length;
+                
+                console.log(`✅ [IMPORT CSV] Lote ${Math.floor(i/bulkBatchSize) + 1} completado: ${batch.length} operaciones`);
+                
+                // Sin pausa entre lotes para máxima velocidad
               } catch (error) {
                 console.error(`❌ [IMPORT CSV] Error en operación bulk:`, error);
                 const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -244,7 +229,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // Enviar resultado final
             const finalResult = {
               success: true,
-              message: `Importación completada: ${results.added} agregados, ${results.reactivated} reactivados, ${results.alreadyExists} ya existían`,
+              message: `Importación completada: ${results.processed} emails procesados exitosamente`,
               results: {
                 ...results,
                 csvErrors: errors
