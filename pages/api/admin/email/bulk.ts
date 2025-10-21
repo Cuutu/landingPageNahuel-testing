@@ -46,7 +46,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       offer,
       expiryDate,
       buttonText,
-      buttonUrl
+      buttonUrl,
+      images = []
     } = req.body;
 
     // Manejar diferentes formatos de datos del frontend
@@ -164,6 +165,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log(`📧 [BULK EMAIL] Preparando envío masivo a ${targetEmails.length} destinatarios`);
     console.log('🎨 [BULK EMAIL] Creando plantilla de email tipo:', emailType);
+    console.log('🖼️ [BULK EMAIL] Imágenes incluidas:', images.length);
+
+    // Función para generar HTML de imágenes
+    const generateImagesHtml = (images: any[]) => {
+      if (!images || images.length === 0) return '';
+      
+      return `
+        <div style="margin: 20px 0;">
+          ${images.map((image: any) => `
+            <div style="text-align: center; margin: 15px 0;">
+              <img 
+                src="${image.secure_url}" 
+                alt="Imagen del email" 
+                style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);"
+              />
+            </div>
+          `).join('')}
+        </div>
+      `;
+    };
 
     // Crear HTML del email basado en el tipo
     let emailHtml: string;
@@ -173,7 +194,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('🎨 [BULK EMAIL] Creando plantilla promocional...');
         emailHtml = createPromotionalEmailTemplate({
           title: subject,
-          content: message,
+          content: message + generateImagesHtml(images),
           offer,
           expiryDate,
           buttonText,
@@ -192,6 +213,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 ${message}
               </p>
             </div>
+            ${generateImagesHtml(images)}
           `,
           buttonText,
           buttonUrl
@@ -211,6 +233,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 ).join('')}
               </div>
             </div>
+            ${generateImagesHtml(images)}
           `,
           buttonText,
           buttonUrl
@@ -221,7 +244,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('🎨 [BULK EMAIL] Creando plantilla general...');
         emailHtml = createEmailTemplate({
           title: subject,
-          content: message,
+          content: message + generateImagesHtml(images),
           buttonText,
           buttonUrl
         });

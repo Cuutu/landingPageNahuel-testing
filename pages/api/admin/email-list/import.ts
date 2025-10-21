@@ -75,8 +75,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const emails: Array<{
       email: string;
       source: string;
-      tags: string[];
-      notes: string;
     }> = [];
     const errors: string[] = [];
     let lineNumber = 0;
@@ -84,7 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return new Promise((resolve) => {
       fs.createReadStream(file.filepath)
         .pipe(csv({
-          headers: ['email', 'source', 'tags', 'notes'] // Headers esperados
+          headers: ['email', 'source'] // Headers esperados
         }))
         .on('data', (row) => {
           lineNumber++;
@@ -106,14 +104,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             // Procesar datos
             const source = row.source?.trim() || 'import';
-            const tags = row.tags ? row.tags.split(';').map((tag: string) => tag.trim()).filter(Boolean) : [];
-            const notes = row.notes?.trim() || '';
 
             emails.push({
               email: email.toLowerCase(),
-              source: ['manual', 'registration', 'import'].includes(source) ? source : 'import',
-              tags,
-              notes
+              source: ['manual', 'registration', 'import'].includes(source) ? source : 'import'
             });
 
           } catch (error) {
@@ -135,7 +129,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               });
             }
 
-            // Agregar emails a la base de datos
+            // Limitar el número de emails para evitar timeout
+            const maxEmails = 1000;
+            if (emails.length > maxEmails) {
+              console.log(`⚠️ [IMPORT CSV] Limitando a ${maxEmails} emails de ${emails.length} total`);
+              emails.splice(maxEmails);
+            }
+
+            // Agregar emails a la base de datos en lotes para evitar timeout
             const results = {
               total: emails.length,
               added: 0,
@@ -144,26 +145,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               errors: [] as string[]
             };
 
-            for (const emailData of emails) {
-              try {
-                const result = await (EmailList as any).addEmailIfNotExists(
-                  emailData.email,
-                  emailData.source,
-                  emailData.tags,
-                  emailData.notes
-                );
+            // Procesar en lotes de 50 emails para evitar timeout
+            const batchSize = 50;
+            const batches = [];
+            for (let i = 0; i < emails.length; i += batchSize) {
+              batches.push(emails.slice(i, i + batchSize));
+            }
 
-                if (result.wasAdded) {
-                  results.added++;
-                } else if (result.wasReactivated) {
-                  results.reactivated++;
-                } else {
-                  results.alreadyExists++;
+            console.log(`📦 [IMPORT CSV] Procesando ${batches.length} lotes de máximo ${batchSize} emails cada uno`);
+
+            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+              const batch = batches[batchIndex];
+              console.log(`📦 [IMPORT CSV] Procesando lote ${batchIndex + 1}/${batches.length} (${batch.length} emails)`);
+
+              // Procesar lote en paralelo
+              const batchPromises = batch.map(async (emailData) => {
+                try {
+                  const result = await (EmailList as any).addEmailIfNotExists(
+                    emailData.email,
+                    emailData.source
+                  );
+
+                  if (result.wasAdded) {
+                    results.added++;
+                  } else if (result.wasReactivated) {
+                    results.reactivated++;
+                  } else {
+                    results.alreadyExists++;
+                  }
+
+                  return { success: true, email: emailData.email };
+
+                } catch (error) {
+                  console.error(`❌ [IMPORT CSV] Error agregando email ${emailData.email}:`, error);
+                  results.errors.push(`${emailData.email}: ${error}`);
+                  return { success: false, email: emailData.email, error };
                 }
+              });
 
-              } catch (error) {
-                console.error(`❌ [IMPORT CSV] Error agregando email ${emailData.email}:`, error);
-                results.errors.push(`${emailData.email}: ${error}`);
+              // Esperar a que termine el lote actual
+              await Promise.all(batchPromises);
+
+              // Pequeña pausa entre lotes para evitar sobrecarga
+              if (batchIndex < batches.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 100));
               }
             }
 

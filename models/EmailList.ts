@@ -40,7 +40,7 @@ const EmailListSchema = new Schema<IEmailList>({
 });
 
 // Índices para optimizar consultas
-EmailListSchema.index({ email: 1 });
+// Nota: email ya tiene índice único automático por 'unique: true'
 EmailListSchema.index({ source: 1 });
 EmailListSchema.index({ isActive: 1 });
 EmailListSchema.index({ addedAt: -1 });

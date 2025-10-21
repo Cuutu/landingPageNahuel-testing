@@ -18,7 +18,9 @@ import {
   Download,
   RefreshCw,
   Upload,
-  FileText
+  FileText,
+  X,
+  Image as ImageIcon
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -26,13 +28,16 @@ import Link from 'next/link';
 import User from '@/models/User';
 import styles from '@/styles/AdminUsers.module.css';
 import { toast } from 'react-hot-toast';
+import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 
 export default function AdminBulkEmailPage() {
   const [loading, setLoading] = useState(false);
   const [emailData, setEmailData] = useState({
     subject: '',
     message: '',
-    recipients: 'all' // all, suscriptores, admins
+    recipients: 'all', // all, suscriptores, admins
+    buttonText: 'Visitar Sitio Web',
+    buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://landingpagenahuel.vercel.app'
   });
   const [testEmail, setTestEmail] = useState('');
   const [testLoading, setTestLoading] = useState(false);
@@ -53,11 +58,35 @@ export default function AdminBulkEmailPage() {
   const [csvFile, setCsvFile] = useState<File | null>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
+  
+  // Estados para imágenes
+  const [emailImages, setEmailImages] = useState<CloudinaryImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   // Cargar lista de emails al montar el componente
   useEffect(() => {
     fetchEmailList();
   }, [currentPage, searchTerm, filterSource]);
+
+  // Funciones para manejar imágenes
+  const handleImageUploaded = (image: CloudinaryImage) => {
+    setEmailImages(prev => [...prev, image]);
+    setUploadingImages(false);
+    console.log('✅ Imagen agregada al email:', image.public_id);
+  };
+
+  const handleImageUploadStart = () => {
+    setUploadingImages(true);
+  };
+
+  const handleImageUploadError = (error: string) => {
+    setUploadingImages(false);
+    toast.error(`Error subiendo imagen: ${error}`);
+  };
+
+  const removeImage = (imageId: string) => {
+    setEmailImages(prev => prev.filter(img => img.public_id !== imageId));
+  };
 
   // Función para cargar la lista de emails
   const fetchEmailList = async () => {
@@ -250,13 +279,23 @@ export default function AdminBulkEmailPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify({
+          ...emailData,
+          images: emailImages
+        }),
       });
 
       if (response.ok) {
         const result = await response.json();
         toast.success(`Email enviado a ${result.sentCount} usuarios`);
-        setEmailData({ subject: '', message: '', recipients: 'all' });
+        setEmailData({ 
+          subject: '', 
+          message: '', 
+          recipients: 'all',
+          buttonText: 'Visitar Sitio Web',
+          buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://landingpagenahuel.vercel.app'
+        });
+        setEmailImages([]);
       } else {
         const error = await response.json();
         toast.error(error.error || 'Error al enviar emails');
@@ -400,6 +439,111 @@ export default function AdminBulkEmailPage() {
                         />
                       </div>
 
+                      {/* Button Configuration */}
+                      <div className={styles.formGroup}>
+                        <label style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'block' }}>
+                          Configuración del Botón (opcional)
+                        </label>
+                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                          <div style={{ flex: 1, minWidth: '200px' }}>
+                            <input
+                              type="text"
+                              value={emailData.buttonText}
+                              onChange={(e) => setEmailData(prev => ({ ...prev, buttonText: e.target.value }))}
+                              placeholder="Texto del botón"
+                              className={styles.searchInput}
+                              style={{ width: '100%' }}
+                            />
+                          </div>
+                          <div style={{ flex: 2, minWidth: '300px' }}>
+                            <input
+                              type="url"
+                              value={emailData.buttonUrl}
+                              onChange={(e) => setEmailData(prev => ({ ...prev, buttonUrl: e.target.value }))}
+                              placeholder="URL del botón"
+                              className={styles.searchInput}
+                              style={{ width: '100%' }}
+                            />
+                          </div>
+                        </div>
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                          El botón aparecerá al final del email para que los usuarios puedan visitar el sitio web
+                        </p>
+                      </div>
+
+                      {/* Images Upload */}
+                      <div className={styles.formGroup}>
+                        <label style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'block' }}>
+                          Imágenes para el Email (opcional)
+                        </label>
+                        
+                        {/* Image Uploader */}
+                        <ImageUploader
+                          onImageUploaded={handleImageUploaded}
+                          onUploadStart={handleImageUploadStart}
+                          onError={handleImageUploadError}
+                          maxFiles={5}
+                          maxSizeBytes={5 * 1024 * 1024} // 5MB
+                          allowedFormats={['jpeg', 'jpg', 'png', 'gif', 'webp']}
+                          buttonText="Subir Imágenes"
+                          multiple={true}
+                          className="email-images-uploader"
+                        />
+
+                        {/* Display uploaded images */}
+                        {emailImages.length > 0 && (
+                          <div style={{ marginTop: '1rem' }}>
+                            <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', fontSize: '0.875rem' }}>
+                              Imágenes subidas ({emailImages.length}):
+                            </h4>
+                            <div style={{ 
+                              display: 'grid', 
+                              gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+                              gap: '1rem' 
+                            }}>
+                              {emailImages.map((image) => (
+                                <div key={image.public_id} style={{ position: 'relative' }}>
+                                  <img
+                                    src={image.secure_url}
+                                    alt="Imagen del email"
+                                    style={{
+                                      width: '100%',
+                                      height: '100px',
+                                      objectFit: 'cover',
+                                      borderRadius: '8px',
+                                      border: '2px solid var(--border)'
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImage(image.public_id)}
+                                    style={{
+                                      position: 'absolute',
+                                      top: '4px',
+                                      right: '4px',
+                                      background: 'rgba(239, 68, 68, 0.9)',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '50%',
+                                      width: '24px',
+                                      height: '24px',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      cursor: 'pointer',
+                                      fontSize: '12px'
+                                    }}
+                                    title="Eliminar imagen"
+                                  >
+                                    <X size={14} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
                       {/* Send Button */}
                       <div className={styles.formGroup}>
                         <button
@@ -424,10 +568,10 @@ export default function AdminBulkEmailPage() {
                       <h4>Importante</h4>
                       <p>Usa esta función con responsabilidad:</p>
                       <ul style={{ marginTop: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-                        <li>• Verifica el contenido antes de enviar</li>
-                        <li>• El envío no se puede deshacer</li>
-                        <li>• Se enviará a todos los usuarios del grupo seleccionado</li>
-                        <li>• Evita el spam respetando la frecuencia de envíos</li>
+                        <li>Verifica el contenido antes de enviar</li>
+                        <li>El envío no se puede deshacer</li>
+                        <li>Se enviará a todos los usuarios del grupo seleccionado</li>
+                        <li>Evita el spam respetando la frecuencia de envíos</li>
                       </ul>
                     </div>
                   </div>
