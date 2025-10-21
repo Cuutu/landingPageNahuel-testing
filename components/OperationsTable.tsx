@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Clock
 } from 'lucide-react';
+import styles from '@/styles/OperationsTable.module.css';
 
 interface OperationsTableProps {
   system: 'TraderCall' | 'SmartMoney';
@@ -97,8 +98,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   if (loading && operations.length === 0) {
     return (
-      <div className={`flex items-center justify-center p-8 ${className}`}>
-        <div className="flex items-center space-x-2">
+      <div className={`${styles.operationsContainer} ${className}`}>
+        <div className={styles.loading}>
           <RefreshCw className="w-5 h-5 animate-spin" />
           <span>Cargando operaciones...</span>
         </div>
@@ -108,14 +109,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   if (error) {
     return (
-      <div className={`flex items-center justify-center p-8 ${className}`}>
-        <div className="text-center">
-          <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-          <p className="text-red-600 mb-2">Error al cargar operaciones</p>
-          <p className="text-sm text-gray-600 mb-4">{error}</p>
+      <div className={`${styles.operationsContainer} ${className}`}>
+        <div className={styles.error}>
+          <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+          <p>Error al cargar operaciones</p>
+          <p className="text-sm mb-4">{error}</p>
           <button
             onClick={() => fetchOperations(system)}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            className={styles.paginationButton}
           >
             Reintentar
           </button>
@@ -125,228 +126,182 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   }
 
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`${styles.operationsContainer} ${className}`}>
       {/* Header con estadísticas */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Operaciones - {system}
-          </h2>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={refreshOperations}
-              disabled={loading}
-              className="p-2 text-gray-500 hover:text-gray-700 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </button>
-          </div>
-        </div>
+      <div>
+        <h2 className={styles.title}>
+          Operaciones - {system}
+        </h2>
+        <p className={styles.description}>
+          Gestiona y monitorea todas tus operaciones de trading
+        </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <DollarSign className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-600">Balance Actual</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">
+        <div className={styles.summaryCards}>
+          <div className={styles.card}>
+            <DollarSign className="w-8 h-8" />
+            <h3>Balance Actual</h3>
+            <p className={currentBalance >= 0 ? styles.positive : styles.negative}>
               {formatCurrency(currentBalance)}
             </p>
           </div>
           
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-600">Total Operaciones</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{total}</p>
+          <div className={styles.card}>
+            <CheckCircle className="w-8 h-8" />
+            <h3>Total Operaciones</h3>
+            <p>{total}</p>
           </div>
           
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-gray-600" />
-              <span className="text-sm text-gray-600">Activos Únicos</span>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{summary.length}</p>
+          <div className={styles.card}>
+            <TrendingUp className="w-8 h-8" />
+            <h3>Activos Únicos</h3>
+            <p>{summary.length}</p>
           </div>
         </div>
       </div>
 
       {/* Filtros y búsqueda */}
-      <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por ticker..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-          </div>
-          
-          <div className="flex gap-2">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value as 'ALL' | 'COMPRA' | 'VENTA')}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="ALL">Todas</option>
-              <option value="COMPRA">Compras</option>
-              <option value="VENTA">Ventas</option>
-            </select>
-            
-            <select
-              value={`${sortBy}-${sortOrder}`}
-              onChange={(e) => {
-                const [field, order] = e.target.value.split('-');
-                setSortBy(field as 'date' | 'ticker' | 'amount');
-                setSortOrder(order as 'asc' | 'desc');
-              }}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="date-desc">Fecha (Reciente)</option>
-              <option value="date-asc">Fecha (Antiguo)</option>
-              <option value="ticker-asc">Ticker (A-Z)</option>
-              <option value="ticker-desc">Ticker (Z-A)</option>
-              <option value="amount-desc">Monto (Mayor)</option>
-              <option value="amount-asc">Monto (Menor)</option>
-            </select>
-          </div>
+      <div className={styles.filters}>
+        <div className={styles.filterGroup}>
+          <Search className="w-4 h-4" />
+          <input
+            type="text"
+            placeholder="Buscar por ticker..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.filterInput}
+          />
+        </div>
+        
+        <div className={styles.filterGroup}>
+          <Filter className="w-4 h-4" />
+          <select
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as 'ALL' | 'COMPRA' | 'VENTA')}
+            className={styles.filterSelect}
+          >
+            <option value="ALL">Todas</option>
+            <option value="COMPRA">Compras</option>
+            <option value="VENTA">Ventas</option>
+          </select>
+        </div>
+        
+        <div className={styles.filterGroup}>
+          <Calendar className="w-4 h-4" />
+          <select
+            value={`${sortBy}-${sortOrder}`}
+            onChange={(e) => {
+              const [field, order] = e.target.value.split('-');
+              setSortBy(field as 'date' | 'ticker' | 'amount');
+              setSortOrder(order as 'asc' | 'desc');
+            }}
+            className={styles.filterSelect}
+          >
+            <option value="date-desc">Fecha (Reciente)</option>
+            <option value="date-asc">Fecha (Antiguo)</option>
+            <option value="ticker-asc">Ticker (A-Z)</option>
+            <option value="ticker-desc">Ticker (Z-A)</option>
+            <option value="amount-desc">Monto (Mayor)</option>
+            <option value="amount-asc">Monto (Menor)</option>
+          </select>
         </div>
       </div>
 
       {/* Tabla de operaciones */}
-      <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b">
+      <div className={styles.tableWrapper}>
+        <table className={styles.operationsTable}>
+          <thead>
+            <tr>
+              <th>Operación</th>
+              <th>Ticker</th>
+              <th>Cantidad</th>
+              <th>Precio</th>
+              <th>Monto</th>
+              <th>Fecha</th>
+              <th>Saldo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredOperations.length === 0 ? (
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Operación
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ticker
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cantidad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Saldo
-                </th>
+                <td colSpan={7} className={styles.noData}>
+                  <Clock className="w-8 h-8 mx-auto mb-2" />
+                  <p>No hay operaciones para mostrar</p>
+                  {searchTerm && (
+                    <p className="text-sm mt-1">
+                      Intenta con otro término de búsqueda
+                    </p>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredOperations.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                    <Clock className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-                    <p>No hay operaciones para mostrar</p>
-                    {searchTerm && (
-                      <p className="text-sm mt-1">
-                        Intenta con otro término de búsqueda
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ) : (
-                filteredOperations.map((operation) => (
-                  <tr key={operation._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${getOperationBgColor(operation.operationType)}`}>
-                        {getOperationIcon(operation.operationType)}
-                        <span className={getOperationColor(operation.operationType)}>
-                          {operation.operationType}
+            ) : (
+              filteredOperations.map((operation) => (
+                <tr key={operation._id} className={operation.operationType === 'COMPRA' ? styles.buyRow : styles.sellRow}>
+                  <td>
+                    <div className="flex items-center space-x-2">
+                      {getOperationIcon(operation.operationType)}
+                      <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
+                        {operation.operationType}
+                      </span>
+                    </div>
+                    {operation.isPartialSale && (
+                      <div className="mt-1">
+                        <span className={styles.partialSaleTag}>
+                          Parcial ({operation.partialSalePercentage}%)
                         </span>
                       </div>
-                      {operation.isPartialSale && (
-                        <div className="mt-1">
-                          <span className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800">
-                            Parcial ({operation.partialSalePercentage}%)
-                          </span>
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
+                    )}
+                  </td>
+                  <td>
+                    <div>
+                      <div className="font-medium">
                         {operation.ticker}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm opacity-75">
                         {operation.alertSymbol}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm font-medium ${operation.quantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {operation.quantity > 0 ? '+' : ''}{operation.quantity.toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(operation.price)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className={`text-sm font-medium ${operation.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {operation.amount > 0 ? '+' : ''}{formatCurrency(operation.amount)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatDate(operation.date)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(operation.balance)}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </td>
+                  <td>
+                    <div className={operation.quantity > 0 ? styles.positive : styles.negative}>
+                      {operation.quantity > 0 ? '+' : ''}{operation.quantity.toFixed(2)}
+                    </div>
+                  </td>
+                  <td>
+                    {formatCurrency(operation.price)}
+                  </td>
+                  <td>
+                    <div className={operation.amount > 0 ? styles.positive : styles.negative}>
+                      {operation.amount > 0 ? '+' : ''}{formatCurrency(operation.amount)}
+                    </div>
+                  </td>
+                  <td>
+                    {formatDate(operation.date)}
+                  </td>
+                  <td>
+                    {formatCurrency(operation.balance)}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       {/* Resumen por ticker */}
       {summary.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className={styles.tickerSummary}>
+          <h3>
             Resumen por Activo
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className={styles.summaryGrid}>
             {summary.map((item) => (
-              <div key={item._id} className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium text-gray-900">{item._id}</h4>
-                  <span className="text-sm text-gray-500">
-                    {item.totalOperations} ops
-                  </span>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Cantidad:</span>
-                    <span className="font-medium">{item.totalQuantity.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Monto Total:</span>
-                    <span className="font-medium">{formatCurrency(item.totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Precio Promedio:</span>
-                    <span className="font-medium">{formatCurrency(item.avgPrice)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Última Operación:</span>
-                    <span className="font-medium">{formatDate(item.lastOperation)}</span>
-                  </div>
-                </div>
+              <div key={item._id} className={styles.summaryCard}>
+                <h4>{item._id}</h4>
+                <p>{item.totalOperations} operaciones</p>
+                <p>Cantidad: {item.totalQuantity.toFixed(2)}</p>
+                <p>Monto Total: {formatCurrency(item.totalAmount)}</p>
+                <p>Precio Promedio: {formatCurrency(item.avgPrice)}</p>
+                <p>Última Operación: {formatDate(item.lastOperation)}</p>
               </div>
             ))}
           </div>
