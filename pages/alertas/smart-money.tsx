@@ -1023,7 +1023,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // Filtrar por símbolo
     if (filterSymbol) {
       filtered = filtered.filter(alert => 
-        alert.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
+        alert.symbol && typeof alert.symbol === 'string' && alert.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
       );
     }
 

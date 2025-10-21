@@ -42,8 +42,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   const filteredOperations = operations
     .filter(op => {
-      const matchesSearch = op.ticker.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           op.alertSymbol.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = (op.ticker && typeof op.ticker === 'string' && op.ticker.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                           (op.alertSymbol && typeof op.alertSymbol === 'string' && op.alertSymbol.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesFilter = filterType === 'ALL' || op.operationType === filterType;
       return matchesSearch && matchesFilter;
     })

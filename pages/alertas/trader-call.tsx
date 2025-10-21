@@ -1072,7 +1072,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // Filtrar por símbolo
     if (filterSymbol) {
       filtered = filtered.filter(alert => 
-        alert.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
+        alert.symbol && typeof alert.symbol === 'string' && alert.symbol.toLowerCase().includes(filterSymbol.toLowerCase())
       );
     }
 
@@ -2424,9 +2424,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   <div className={styles.alertDetails}>
                     <div className={styles.alertDetail}>
                       <span>Precio Entrada:</span>
-                      <strong className={alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}>
+                      <strong className={alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') ? styles.priceRange : ''}>
                         {alert.entryPrice}
-                        {alert.entryPrice?.includes(' / ') && (
+                        {alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') && (
                           <span className={styles.rangeIndicator}>RANGO</span>
                         )}
                       </strong>
@@ -2715,11 +2715,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <div className={styles.alertDetails}>
                 <div className={styles.alertDetail}>
                   <span>Precio Entrada:</span>
-                  <div className={`${alert.entryPrice?.includes(' / ') ? styles.priceRange : ''}`}>
+                  <div className={`${alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') ? styles.priceRange : ''}`}>
                     <strong className="sensitivePrice">
                       {alert.entryPrice}
                     </strong>
-                    {alert.entryPrice?.includes(' / ') && (
+                    {alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') && (
                       <span className={styles.rangeIndicator}>RANGO</span>
                     )}
                   </div>
