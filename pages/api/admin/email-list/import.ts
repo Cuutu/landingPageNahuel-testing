@@ -19,6 +19,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
+  // Configurar timeout más agresivo para evitar cancelación de Vercel
+  const startTime = Date.now();
+  const maxExecutionTime = 240000; // 4 minutos (menos que el timeout de Vercel de 5 minutos)
+
   try {
     // Verificar autenticación de admin
     const session = await getServerSession(req, res, authOptions);
@@ -82,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return new Promise((resolve) => {
       fs.createReadStream(file.filepath)
         .pipe(csv({
-          headers: ['email', 'source'] // Headers esperados
+          headers: ['email'] // Solo email, sin source
         }))
         .on('data', (row) => {
           lineNumber++;
@@ -102,12 +106,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               return;
             }
 
-            // Procesar datos
-            const source = row.source?.trim() || 'import';
-
+            // Procesar datos - solo email, source será 'import' por defecto
             emails.push({
               email: email.toLowerCase(),
-              source: ['manual', 'registration', 'import'].includes(source) ? source : 'import'
+              source: 'import' // Todos los emails del CSV se marcan como 'import'
             });
 
           } catch (error) {
@@ -130,13 +132,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             // Limitar el número de emails para evitar timeout
-            const maxEmails = 1000;
+            const maxEmails = 500; // Reducido de 1000 a 500
             if (emails.length > maxEmails) {
               console.log(`⚠️ [IMPORT CSV] Limitando a ${maxEmails} emails de ${emails.length} total`);
               emails.splice(maxEmails);
             }
 
-            // Agregar emails a la base de datos en lotes para evitar timeout
+            // Usar operaciones bulk de MongoDB para mayor eficiencia
             const results = {
               total: emails.length,
               added: 0,
@@ -145,80 +147,136 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               errors: [] as string[]
             };
 
-            // Procesar en lotes de 50 emails para evitar timeout
-            const batchSize = 50;
-            const batches = [];
-            for (let i = 0; i < emails.length; i += batchSize) {
-              batches.push(emails.slice(i, i + batchSize));
+            console.log(`📦 [IMPORT CSV] Procesando ${emails.length} emails usando operaciones bulk`);
+
+            // Enviar respuesta temprana para evitar timeout del cliente
+            res.writeHead(200, {
+              'Content-Type': 'application/json',
+              'Transfer-Encoding': 'chunked'
+            });
+            
+            // Enviar progreso inicial
+            res.write(JSON.stringify({
+              success: true,
+              message: 'Procesando archivo CSV...',
+              progress: 'Iniciando importación',
+              total: emails.length
+            }) + '\n');
+
+            // Obtener emails existentes en una sola consulta
+            const existingEmails = await EmailList.find({
+              email: { $in: emails.map(e => e.email) }
+            }, 'email isActive');
+
+            const existingEmailMap = new Map();
+            existingEmails.forEach(email => {
+              existingEmailMap.set(email.email, email);
+            });
+
+            // Preparar operaciones bulk
+            const bulkOps = [];
+            const now = new Date();
+
+            for (const emailData of emails) {
+              const existingEmail = existingEmailMap.get(emailData.email);
+              
+              if (existingEmail) {
+                if (!existingEmail.isActive) {
+                  // Reactivar email inactivo
+                  bulkOps.push({
+                    updateOne: {
+                      filter: { email: emailData.email },
+                      update: { 
+                        $set: { 
+                          isActive: true, 
+                          source: emailData.source,
+                          updatedAt: now
+                        } 
+                      }
+                    }
+                  });
+                  results.reactivated++;
+                } else {
+                  results.alreadyExists++;
+                }
+              } else {
+                // Insertar nuevo email
+                bulkOps.push({
+                  insertOne: {
+                    document: {
+                      email: emailData.email,
+                      source: emailData.source,
+                      isActive: true,
+                      addedAt: now,
+                      createdAt: now,
+                      updatedAt: now
+                    }
+                  }
+                });
+                results.added++;
+              }
             }
 
-            console.log(`📦 [IMPORT CSV] Procesando ${batches.length} lotes de máximo ${batchSize} emails cada uno`);
+            // Ejecutar operaciones bulk en lotes pequeños
+            const bulkBatchSize = 100;
+            for (let i = 0; i < bulkOps.length; i += bulkBatchSize) {
+              // Verificar timeout antes de cada lote
+              if (Date.now() - startTime > maxExecutionTime) {
+                console.log(`⏰ [IMPORT CSV] Timeout alcanzado, procesando ${i}/${bulkOps.length} operaciones`);
+                results.errors.push(`Timeout: Solo se procesaron ${i} de ${bulkOps.length} operaciones`);
+                break;
+              }
 
-            for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-              const batch = batches[batchIndex];
-              console.log(`📦 [IMPORT CSV] Procesando lote ${batchIndex + 1}/${batches.length} (${batch.length} emails)`);
-
-              // Procesar lote en paralelo
-              const batchPromises = batch.map(async (emailData) => {
-                try {
-                  const result = await (EmailList as any).addEmailIfNotExists(
-                    emailData.email,
-                    emailData.source
-                  );
-
-                  if (result.wasAdded) {
-                    results.added++;
-                  } else if (result.wasReactivated) {
-                    results.reactivated++;
-                  } else {
-                    results.alreadyExists++;
-                  }
-
-                  return { success: true, email: emailData.email };
-
-                } catch (error) {
-                  console.error(`❌ [IMPORT CSV] Error agregando email ${emailData.email}:`, error);
-                  results.errors.push(`${emailData.email}: ${error}`);
-                  return { success: false, email: emailData.email, error };
-                }
-              });
-
-              // Esperar a que termine el lote actual
-              await Promise.all(batchPromises);
-
-              // Pequeña pausa entre lotes para evitar sobrecarga
-              if (batchIndex < batches.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+              const batch = bulkOps.slice(i, i + bulkBatchSize);
+              console.log(`📦 [IMPORT CSV] Ejecutando lote bulk ${Math.floor(i/bulkBatchSize) + 1}/${Math.ceil(bulkOps.length/bulkBatchSize)} (${batch.length} operaciones)`);
+              
+              try {
+                await EmailList.bulkWrite(batch, { ordered: false });
+              } catch (error) {
+                console.error(`❌ [IMPORT CSV] Error en operación bulk:`, error);
+                const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+                results.errors.push(`Error en lote ${Math.floor(i/bulkBatchSize) + 1}: ${errorMessage}`);
               }
             }
 
             console.log('✅ [IMPORT CSV] Importación completada:', results);
 
-            return res.status(200).json({
+            // Enviar resultado final
+            const finalResult = {
               success: true,
               message: `Importación completada: ${results.added} agregados, ${results.reactivated} reactivados, ${results.alreadyExists} ya existían`,
               results: {
                 ...results,
                 csvErrors: errors
-              }
-            });
+              },
+              completed: true
+            };
+
+            res.write(JSON.stringify(finalResult) + '\n');
+            res.end();
 
           } catch (error) {
             console.error('❌ [IMPORT CSV] Error en procesamiento final:', error);
-            return res.status(500).json({
+            const errorResult = {
               success: false,
               error: 'Error procesando archivo CSV',
-              message: error instanceof Error ? error.message : 'Error desconocido'
-            });
+              message: error instanceof Error ? error.message : 'Error desconocido',
+              completed: true
+            };
+            res.write(JSON.stringify(errorResult) + '\n');
+            res.end();
           }
         })
         .on('error', (error) => {
           console.error('❌ [IMPORT CSV] Error leyendo archivo CSV:', error);
-          return res.status(500).json({
+          const errorResult = {
             success: false,
             error: 'Error leyendo archivo CSV',
-            message: error.message
-          });
+            message: error.message,
+            completed: true
+          };
+          res.write(JSON.stringify(errorResult) + '\n');
+          res.end();
         });
     });
 

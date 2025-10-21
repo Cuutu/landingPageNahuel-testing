@@ -987,7 +987,7 @@ export default function AdminBulkEmailPage() {
             
             <div style={{ marginBottom: '1.5rem' }}>
               <p style={{ marginBottom: '1rem', color: '#6b7280' }}>
-                Selecciona un archivo CSV con los siguientes formatos:
+                Selecciona un archivo CSV con el siguiente formato:
               </p>
               <div style={{ 
                 backgroundColor: '#f9fafb', 
@@ -997,10 +997,15 @@ export default function AdminBulkEmailPage() {
                 fontSize: '0.875rem',
                 fontFamily: 'monospace'
               }}>
-                <div>email,source</div>
-                <div>ejemplo@email.com,manual</div>
-                <div>usuario@test.com,registration</div>
+                <div>email</div>
+                <div>ejemplo@email.com</div>
+                <div>usuario@test.com</div>
+                <div>admin@empresa.com</div>
               </div>
+              <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '1rem' }}>
+                <strong>Nota:</strong> El archivo debe contener solo una columna con emails. 
+                Todos los emails importados se marcarán automáticamente como "importados".
+              </p>
               
               <div style={{ marginBottom: '1rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
