@@ -858,8 +858,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
   };
 
-  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento) - Cache bust
+  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento) - Cache bust v2
   const loadSeguimientoAlerts = async () => {
+    console.log('🔄 Cargando alertas de seguimiento - versión actualizada');
     setLoadingAlerts(true);
     try {
       // ✅ CAMBIO: Usar API global para datos consistentes
