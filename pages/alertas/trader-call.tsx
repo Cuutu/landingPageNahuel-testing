@@ -1712,7 +1712,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       return;
     }
 
-    if (!partialSaleAlert.id) {
+    if (!partialSaleAlert._id && !partialSaleAlert.id) {
       console.error('❌ La alerta no tiene ID válido:', partialSaleAlert);
       alert('❌ Error: La alerta no tiene ID válido');
       return;
@@ -1744,8 +1744,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     try {
       setPartialSaleLoading(true);
-      console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, partialSaleAlert.id);
+      const alertId = partialSaleAlert._id || partialSaleAlert.id;
+      console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, alertId);
       console.log('🔍 Datos de la alerta:', {
+        _id: partialSaleAlert._id,
         id: partialSaleAlert.id,
         symbol: partialSaleAlert.symbol,
         entryPrice: partialSaleAlert.entryPrice
@@ -1769,7 +1771,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
 
       const requestData = {
-        alertId: partialSaleAlert.id,
+        alertId: alertId,
         percentage: sellPercentage,
         priceRange: {
           min: priceMin,
