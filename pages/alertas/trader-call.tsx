@@ -2444,10 +2444,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     </div>
                     <div className={styles.alertDetail}>
                       <span>P&L:</span>
-                      <strong className={alert.profit >= 0 ? styles.profit : styles.loss}>
-                        <span>${alert.profit.toFixed(2)}</span>
-                        <span className={alert.profit >= 0 ? styles.profitArrow : styles.lossArrow}>
-                          {alert.profit >= 0 ? '↗' : '↘'}
+                      <strong className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profit : styles.loss}>
+                        <span>${(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}</span>
+                        <span className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profitArrow : styles.lossArrow}>
+                          {(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? '↗' : '↘'}
                         </span>
                       </strong>
                     </div>
@@ -2737,8 +2737,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 </div>
                 <div className={styles.alertDetail}>
                   <span>P&L:</span>
-                  <strong className={alert.profit >= 0 ? styles.profit : styles.loss}>
-                    <span>{alert.profit}</span>
+                  <strong className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profit : styles.loss}>
+                    <span>${(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}</span>
                   </strong>
                 </div>
               </div>
