@@ -755,8 +755,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       let type = 'alert';
       
       if (alert.status === 'ACTIVE') {
-        const currentPrice = parseFloat(String(alert.currentPrice || '0').replace('$', ''));
-        const entryPrice = parseFloat(String(alert.entryPrice || '0').replace('$', ''));
+        const currentPrice = typeof alert.currentPrice === 'string' 
+          ? parseFloat(alert.currentPrice.replace('$', ''))
+          : Number(alert.currentPrice) || 0;
+        const entryPrice = typeof alert.entryPrice === 'string' 
+          ? parseFloat(alert.entryPrice.replace('$', ''))
+          : Number(alert.entryPrice) || 0;
         const currentPnL = entryPrice > 0 
           ? ((currentPrice - entryPrice) / entryPrice * 100).toFixed(2)
           : '0.00';
@@ -767,7 +771,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         const profit = parseFloat(profitString) || 0;
         message = `${alert.symbol} cerrado: ${profit > 0 ? '+' : ''}${profit.toFixed(2)}% ${profit > 0 ? 'ganancia' : 'pérdida'} #${alert.symbol}`;
       } else {
-        const entryPriceFormatted = String(alert.entryPrice || '0').replace('$', '');
+        const entryPriceFormatted = typeof alert.entryPrice === 'string' 
+          ? alert.entryPrice.replace('$', '')
+          : String(alert.entryPrice || '0');
         message = `Nueva alerta: ${alert.symbol} ${alert.action} a $${entryPriceFormatted} #${alert.symbol}`;
       }
 
@@ -1632,9 +1638,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     setEditAlert({
       symbol: alert.symbol || '',
       action: alert.action || 'BUY',
-      entryPrice: alert.entryPrice ? alert.entryPrice.replace('$', '') : '',
-      stopLoss: alert.stopLoss ? alert.stopLoss.replace('$', '') : '',
-      takeProfit: alert.takeProfit ? alert.takeProfit.replace('$', '') : '',
+      entryPrice: alert.entryPrice ? (typeof alert.entryPrice === 'string' ? alert.entryPrice.replace('$', '') : String(alert.entryPrice)) : '',
+      stopLoss: alert.stopLoss ? (typeof alert.stopLoss === 'string' ? alert.stopLoss.replace('$', '') : String(alert.stopLoss)) : '',
+      takeProfit: alert.takeProfit ? (typeof alert.takeProfit === 'string' ? alert.takeProfit.replace('$', '') : String(alert.takeProfit)) : '',
       analysis: alert.analysis || '',
       availableForPurchase: alert.availableForPurchase || false,
       // ✅ NUEVO: Inicializar campos de liquidez y venta rápida
@@ -1996,7 +2002,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       
       // ✅ CORREGIDO: Usar el precio actual de la alerta en lugar del precio del liquidityMap
       // El precio del liquidityMap puede estar desactualizado
-      const currentPrice = alert?.currentPrice ? parseFloat(alert.currentPrice.replace('$', '')) : d.currentPrice;
+      const currentPrice = alert?.currentPrice ? 
+        (typeof alert.currentPrice === 'string' 
+          ? parseFloat(alert.currentPrice.replace('$', ''))
+          : Number(alert.currentPrice) || 0) 
+        : d.currentPrice;
       
       return {
         id: d.alertId || symbol,
