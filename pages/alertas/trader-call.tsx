@@ -2110,7 +2110,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // Función auxiliar para renderizar el gráfico de torta
   const renderPieChart = (chartSegments: any[]) => (
     <div className={styles.pieChart3D} id="alertsChartContainer">
-      <svg viewBox="0 0 300 300" className={styles.chartSvg3D}>
+      <svg viewBox="0 0 400 400" className={styles.chartSvg3D}>
         {/* Sombra del gráfico para efecto 3D */}
         <defs>
           <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
@@ -2126,21 +2126,21 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </defs>
 
         {/* Fondo del gráfico con efecto 3D */}
-        <circle cx="150" cy="150" r="120" className={styles.chartBackground3D} />
+        <circle cx="200" cy="200" r="160" className={styles.chartBackground3D} />
 
         {/* Segmentos del gráfico 3D */}
         {chartSegments.map((segment, index) => (
           <g key={segment.id} className={styles.chartSegment3D}>
             {/* Sombra del segmento */}
             <path
-              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
               fill={segment.darkColor}
               filter="url(#shadow3D)"
               className={styles.segmentShadow}
             />
             {/* Segmento principal */}
             <path
-              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
               fill={segment.color}
               className={styles.segmentPath3D}
               onMouseEnter={(e) => showTooltip(e, segment)}
@@ -2149,7 +2149,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             />
             {/* Borde del segmento */}
             <path
-              d={describeArc(150, 150, 120, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
               fill="none"
               stroke="#ffffff"
               strokeWidth="2"
@@ -2159,12 +2159,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
             {segment.size > 2 && (
               <text
-                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 80 : 100)}
-                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 80 : 100)}
+                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 110 : 130)}
+                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 110 : 130)}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={segment.size > 5 ? "12" : "10"}
+                fontSize={segment.size > 5 ? "14" : "12"}
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2179,12 +2179,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta alternativa para segmentos muy pequeños */}
             {segment.size <= 2 && segment.size > 0.5 && (
               <text
-                x={150 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 110}
-                y={150 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 110}
+                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 145}
+                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 145}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="9"
+                fontSize="11"
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2200,7 +2200,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         ))}
 
         {/* Círculo central con efecto 3D */}
-        <circle cx="150" cy="150" r="40" className={styles.chartCenter3D} />
+        <circle cx="200" cy="200" r="55" className={styles.chartCenter3D} />
       </svg>
     </div>
   );

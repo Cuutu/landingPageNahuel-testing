@@ -6249,7 +6249,7 @@
 
 .chartSvg3D {
   width: 100%;
-  max-width: 520px;
+  max-width: 720px;
   height: auto;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
   transform: rotateX(12deg) rotateY(-4deg);
@@ -6573,7 +6573,7 @@
 /* Responsive para gráfico 3D */
 @media (max-width: 768px) {
   .chartSvg3D {
-    max-width: 300px;
+    max-width: 420px;
     transform: rotateX(10deg) rotateY(-2deg);
   }
   
@@ -6597,7 +6597,7 @@
 
 @media (max-width: 480px) {
   .chartSvg3D {
-    max-width: 250px;
+    max-width: 350px;
     transform: none;
   }
   
@@ -7776,7 +7776,7 @@
 
 @media (max-width: 640px) {
   .chartSvg3D {
-    max-width: 360px;
+    max-width: 500px;
   }
 }
 
