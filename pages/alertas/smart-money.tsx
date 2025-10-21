@@ -2777,10 +2777,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 </div>
                 <div className={styles.alertDetail}>
                   <span>P&L:</span>
-                  <strong className={alert.profit.includes('+') ? styles.profit : styles.loss}>
-                    <span>{alert.profit}</span>
-                    <span className={alert.profit.includes('+') ? styles.profitArrow : styles.lossArrow}>
-                      {alert.profit.includes('+') ? '↗' : '↘'}
+                  <strong className={alert.profit >= 0 ? styles.profit : styles.loss}>
+                    <span>${alert.profit.toFixed(2)}</span>
+                    <span className={alert.profit >= 0 ? styles.profitArrow : styles.lossArrow}>
+                      {alert.profit >= 0 ? '↗' : '↘'}
                     </span>
                   </strong>
                 </div>
@@ -4114,7 +4114,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <div className={styles.alertInfo}>
                 <p><strong>Precio acción:</strong> {partialSaleAlert.entryPrice}</p>
                 <p><strong>Precio actual:</strong> {partialSaleAlert.currentPrice}</p>
-                <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit?.includes('+') ? styles.profit : styles.loss}>{partialSaleAlert.profit}</span></p>
+                <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit >= 0 ? styles.profit : styles.loss}>${partialSaleAlert.profit?.toFixed(2)}</span></p>
               </div>
 
               {/* ✅ NUEVO: Campo de porcentaje personalizable */}
