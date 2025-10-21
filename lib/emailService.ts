@@ -357,7 +357,7 @@ export function createEmailTemplate({
                                 
                                 <!-- Tip -->
                                 <div style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-                                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; font-weight: 500;">
+                                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; font-weight: 500; text-align: center;">
                                         💡 <strong>Consejo:</strong> Mantente actualizado visitando nuestra plataforma regularmente para no perderte las últimas estrategias de trading.
                                     </p>
                                 </div>
@@ -1226,7 +1226,7 @@ export function createNotificationEmailTemplate({
                                 
                                 <!-- Tip -->
                                 <div style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 8px; padding: 16px; margin: 20px 0;">
-                                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; font-weight: 500;">
+                                    <p style="margin: 0; color: #1e3a8a; font-size: 14px; font-weight: 500; text-align: center;">
                                         💡 <strong>Consejo:</strong> Mantente actualizado visitando nuestra plataforma regularmente para no perderte las últimas estrategias de trading.
                                     </p>
                                 </div>

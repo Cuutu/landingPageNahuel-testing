@@ -36,7 +36,8 @@ const EmailListSchema = new Schema<IEmailList>({
     type: Date
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  autoIndex: true // Mongoose creará índices automáticamente
 });
 
 // Índices para optimizar consultas
