@@ -42,8 +42,6 @@ export default function AdminBulkEmailPage() {
   const [emailListLoading, setEmailListLoading] = useState(false);
   const [showAddEmail, setShowAddEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
-  const [newEmailTags, setNewEmailTags] = useState('');
-  const [newEmailNotes, setNewEmailNotes] = useState('');
   const [emailStats, setEmailStats] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSource, setFilterSource] = useState('all');
@@ -98,15 +96,13 @@ export default function AdminBulkEmailPage() {
     }
 
     try {
-      const response = await fetch('/api/admin/email-list/add', {
+      const response = await fetch('/api/admin/email-list', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: newEmail,
-          tags: newEmailTags ? newEmailTags.split(',').map(tag => tag.trim()) : [],
-          notes: newEmailNotes
+          email: newEmail
         }),
       });
 
@@ -115,8 +111,6 @@ export default function AdminBulkEmailPage() {
       if (response.ok) {
         toast.success(data.message);
         setNewEmail('');
-        setNewEmailTags('');
-        setNewEmailNotes('');
         setShowAddEmail(false);
         fetchEmailList(); // Recargar lista
       } else {
@@ -609,31 +603,6 @@ export default function AdminBulkEmailPage() {
                             style={{ width: '100%', maxWidth: '400px' }}
                           />
                         </div>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                            Tags (opcional)
-                          </label>
-                          <input
-                            type="text"
-                            value={newEmailTags}
-                            onChange={(e) => setNewEmailTags(e.target.value)}
-                            placeholder="tag1, tag2, tag3"
-                            className={styles.searchInput}
-                            style={{ width: '100%', maxWidth: '400px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                            Notas (opcional)
-                          </label>
-                          <textarea
-                            value={newEmailNotes}
-                            onChange={(e) => setNewEmailNotes(e.target.value)}
-                            placeholder="Notas sobre este email..."
-                            className={styles.searchInput}
-                            style={{ width: '100%', maxWidth: '400px', minHeight: '60px' }}
-                          />
-                        </div>
                         <div style={{ display: 'flex', gap: '1rem' }}>
                           <button
                             onClick={addEmail}
@@ -757,7 +726,6 @@ export default function AdminBulkEmailPage() {
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Email</th>
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Fuente</th>
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Agregado</th>
-                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Tags</th>
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid var(--border)' }}>Estado</th>
                                 <th style={{ padding: '1rem', textAlign: 'center', borderBottom: '1px solid var(--border)' }}>Acciones</th>
                               </tr>
@@ -767,11 +735,6 @@ export default function AdminBulkEmailPage() {
                                 <tr key={emailItem._id} style={{ borderBottom: '1px solid var(--border)' }}>
                                   <td style={{ padding: '1rem' }}>
                                     <div style={{ fontWeight: '500' }}>{emailItem.email}</div>
-                                    {emailItem.notes && (
-                                      <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
-                                        {emailItem.notes}
-                                      </div>
-                                    )}
                                   </td>
                                   <td style={{ padding: '1rem' }}>
                                     <span style={{
@@ -788,28 +751,6 @@ export default function AdminBulkEmailPage() {
                                   </td>
                                   <td style={{ padding: '1rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                                     {new Date(emailItem.addedAt).toLocaleDateString('es-ES')}
-                                  </td>
-                                  <td style={{ padding: '1rem' }}>
-                                    {emailItem.tags && emailItem.tags.length > 0 ? (
-                                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                                        {emailItem.tags.map((tag: string, index: number) => (
-                                          <span
-                                            key={index}
-                                            style={{
-                                              padding: '0.125rem 0.375rem',
-                                              backgroundColor: 'var(--bg-secondary)',
-                                              borderRadius: '12px',
-                                              fontSize: '0.75rem',
-                                              color: 'var(--text-secondary)'
-                                            }}
-                                          >
-                                            {tag}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>-</span>
-                                    )}
                                   </td>
                                   <td style={{ padding: '1rem' }}>
                                     <span style={{
@@ -912,9 +853,9 @@ export default function AdminBulkEmailPage() {
                 fontSize: '0.875rem',
                 fontFamily: 'monospace'
               }}>
-                <div>email,source,tags,notes</div>
-                <div>ejemplo@email.com,manual,tag1;tag2,Notas opcionales</div>
-                <div>usuario@test.com,registration,,</div>
+                <div>email,source</div>
+                <div>ejemplo@email.com,manual</div>
+                <div>usuario@test.com,registration</div>
               </div>
               
               <div style={{ marginBottom: '1rem' }}>

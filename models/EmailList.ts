@@ -6,8 +6,7 @@ export interface IEmailList extends Document {
   addedAt: Date;
   isActive: boolean;
   lastUsed?: Date; // Última vez que se usó para envío masivo
-  tags?: string[]; // Tags opcionales para categorizar emails
-  notes?: string; // Notas opcionales
+  // Campos removidos: tags y notes ya no se usan
 }
 
 const EmailListSchema = new Schema<IEmailList>({
@@ -35,15 +34,6 @@ const EmailListSchema = new Schema<IEmailList>({
   },
   lastUsed: {
     type: Date
-  },
-  tags: [{
-    type: String,
-    trim: true
-  }],
-  notes: {
-    type: String,
-    trim: true,
-    maxlength: 500
   }
 }, {
   timestamps: true
@@ -58,9 +48,7 @@ EmailListSchema.index({ addedAt: -1 });
 // Método estático para agregar email si no existe
 EmailListSchema.statics.addEmailIfNotExists = async function(
   email: string, 
-  source: 'manual' | 'registration' | 'import' = 'registration',
-  tags?: string[],
-  notes?: string
+  source: 'manual' | 'registration' | 'import' = 'registration'
 ) {
   try {
     // Verificar si el email ya existe
@@ -71,8 +59,6 @@ EmailListSchema.statics.addEmailIfNotExists = async function(
       if (!existingEmail.isActive) {
         existingEmail.isActive = true;
         existingEmail.source = source;
-        if (tags) existingEmail.tags = tags;
-        if (notes) existingEmail.notes = notes;
         await existingEmail.save();
         return { email: existingEmail, wasAdded: false, wasReactivated: true };
       }
@@ -82,9 +68,7 @@ EmailListSchema.statics.addEmailIfNotExists = async function(
     // Crear nuevo email
     const newEmail = new this({
       email: email.toLowerCase().trim(),
-      source,
-      tags,
-      notes
+      source
     });
 
     await newEmail.save();
@@ -96,14 +80,10 @@ EmailListSchema.statics.addEmailIfNotExists = async function(
 };
 
 // Método estático para obtener emails activos
-EmailListSchema.statics.getActiveEmails = async function(tags?: string[]) {
+EmailListSchema.statics.getActiveEmails = async function() {
   const query: any = { isActive: true };
   
-  if (tags && tags.length > 0) {
-    query.tags = { $in: tags };
-  }
-  
-  return await this.find(query, 'email source addedAt tags notes').sort({ addedAt: -1 });
+  return await this.find(query, 'email source addedAt').sort({ addedAt: -1 });
 };
 
 // Método estático para marcar emails como usados

@@ -132,7 +132,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
  */
 async function handlePost(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const { email, tags, notes, source = 'manual' } = req.body;
+    const { email, source = 'manual' } = req.body;
 
     if (!email) {
       return res.status(400).json({ error: 'Email es requerido' });
@@ -149,9 +149,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse) {
     // Agregar email si no existe
     const result = await (EmailList as any).addEmailIfNotExists(
       email,
-      source,
-      tags,
-      notes
+      source
     );
 
     console.log('📧 [EMAIL LIST] Resultado:', {
