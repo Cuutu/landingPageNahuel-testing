@@ -2444,10 +2444,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     </div>
                     <div className={styles.alertDetail}>
                       <span>P&L:</span>
-                      <strong className={alert.profit.includes('+') ? styles.profit : styles.loss}>
-                        <span>{alert.profit}</span>
-                        <span className={alert.profit.includes('+') ? styles.profitArrow : styles.lossArrow}>
-                          {alert.profit.includes('+') ? '↗' : '↘'}
+                      <strong className={alert.profit >= 0 ? styles.profit : styles.loss}>
+                        <span>${alert.profit.toFixed(2)}</span>
+                        <span className={alert.profit >= 0 ? styles.profitArrow : styles.lossArrow}>
+                          {alert.profit >= 0 ? '↗' : '↘'}
                         </span>
                       </strong>
                     </div>
