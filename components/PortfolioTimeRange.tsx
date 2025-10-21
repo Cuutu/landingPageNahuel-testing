@@ -23,10 +23,7 @@ interface PortfolioStats {
   totalAlerts: number;
   closedAlerts: number;
   winRate: number;
-  portfolioReturn: number;
   sp500Return: number;
-  relativeReturn: number;
-  outperformance: number;
   baseValue: number;
 }
 
@@ -180,10 +177,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
         totalAlerts: 0,
         closedAlerts: 0,
         winRate: 0,
-        portfolioReturn: 0,
         sp500Return: 0,
-        relativeReturn: 0,
-        outperformance: 0,
         baseValue: 10000
       };
     }
@@ -194,10 +188,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       totalAlerts: baseStats.totalAlerts || 0,
       closedAlerts: baseStats.closedAlerts || 0,
       winRate: baseStats.winRate || 0,
-      portfolioReturn: baseStats.portfolioReturn || 0,
       sp500Return: baseStats.sp500Return || 0,
-      relativeReturn: baseStats.relativeReturn || 0,
-      outperformance: baseStats.outperformance || 0,
       baseValue: baseStats.baseValue || 10000
     };
   };
@@ -327,10 +318,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
               </h4>
               <div className={styles.explanationBox}>
                 <p><strong>P&L Total:</strong> Ganancia/pérdida absoluta en dólares</p>
-                <p><strong>Rendimiento Portfolio:</strong> % de ganancia/pérdida sobre capital inicial (${portfolioStats.baseValue.toLocaleString()})</p>
-                <p><strong>Rendimiento S&P 500:</strong> % de cambio del índice en el mismo período</p>
-                <p><strong>Rendimiento Relativo:</strong> Cuánto mejor/peor fue el portfolio vs S&P 500</p>
-                <p><strong>Outperformance:</strong> Diferencia absoluta entre portfolio y S&P 500</p>
+                <p><strong>Rendimiento S&P 500:</strong> % de rendimiento del portfolio comparado con el índice S&P 500</p>
               </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>
@@ -340,27 +328,9 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Rendimiento Portfolio:</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.portfolioReturn >= 0 ? styles.positive : styles.negative}`}>
-                    {portfolioStats.portfolioReturn.toFixed(2)}%
-                  </span>
-                </div>
-                <div className={styles.globalStatItem}>
                   <span className={styles.globalStatLabel}>Rendimiento S&P 500:</span>
                   <span className={`${styles.globalStatValue} ${portfolioStats.sp500Return >= 0 ? styles.positive : styles.negative}`}>
                     {portfolioStats.sp500Return.toFixed(2)}%
-                  </span>
-                </div>
-                <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Rendimiento Relativo:</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.relativeReturn >= 0 ? styles.positive : styles.negative}`}>
-                    {portfolioStats.relativeReturn >= 0 ? '+' : ''}{portfolioStats.relativeReturn.toFixed(2)}%
-                  </span>
-                </div>
-                <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Outperformance:</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.outperformance >= 0 ? styles.positive : styles.negative}`}>
-                    {portfolioStats.outperformance >= 0 ? '+' : ''}{portfolioStats.outperformance.toFixed(2)}%
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>

@@ -59,10 +59,7 @@ interface PortfolioEvolutionResponse {
     totalAlerts: number;
     closedAlerts: number;
     winRate: number;
-    portfolioReturn: number;
     sp500Return: number;
-    relativeReturn: number;
-    outperformance: number;
     baseValue: number;
   };
   error?: string;
@@ -188,24 +185,12 @@ export default async function handler(
     const sp500Return = sp500Data.length > 0 && sp500Data[0].value > 0 ? 
       ((sp500Data[sp500Data.length - 1].value - sp500Data[0].value) / sp500Data[0].value) * 100 : 0;
     
-    // Rendimiento del portafolio basado en el mismo período que el S&P 500
-    const portfolioReturn = baseValue > 0 ? (totalProfit / baseValue) * 100 : 0;
-    
-    // Rendimiento relativo: cuánto mejor/peor fue el portafolio vs S&P 500
-    const relativeReturn = portfolioReturn - sp500Return;
-    
-    // Outperformance: diferencia absoluta
-    const outperformance = relativeReturn;
-
     const stats = {
       totalProfit: Number(totalProfit.toFixed(2)),
       totalAlerts,
       closedAlerts: closedAlerts.length,
       winRate: Number(winRate.toFixed(1)),
-      portfolioReturn: Number(portfolioReturn.toFixed(2)),
       sp500Return: Number(sp500Return.toFixed(2)),
-      relativeReturn: Number(relativeReturn.toFixed(2)),
-      outperformance: Number(outperformance.toFixed(2)),
       baseValue: baseValue
     };
 
