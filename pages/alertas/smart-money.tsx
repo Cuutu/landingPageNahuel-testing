@@ -1657,7 +1657,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   // ✅ NUEVO: Función para ejecutar venta con rango de precios
   const executeSellWithRange = async () => {
-    if (!partialSaleAlert) return;
+    if (!partialSaleAlert) {
+      console.error('❌ No hay alerta seleccionada para la venta');
+      alert('❌ No hay alerta seleccionada para la venta');
+      return;
+    }
+
+    if (!partialSaleAlert.id) {
+      console.error('❌ La alerta no tiene ID válido:', partialSaleAlert);
+      alert('❌ Error: La alerta no tiene ID válido');
+      return;
+    }
 
     // Validaciones
     if (!sellPriceMin || !sellPriceMax) {
@@ -1686,6 +1696,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     try {
       setPartialSaleLoading(true);
       console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, partialSaleAlert.id);
+      console.log('🔍 Datos de la alerta:', {
+        id: partialSaleAlert.id,
+        symbol: partialSaleAlert.symbol,
+        entryPrice: partialSaleAlert.entryPrice
+      });
 
       let finalImageUrl: string | undefined = sellEmailImageUrl;
       
@@ -1704,22 +1719,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         }
       }
 
+      const requestData = {
+        alertId: partialSaleAlert.id,
+        percentage: sellPercentage,
+        priceRange: {
+          min: priceMin,
+          max: priceMax
+        },
+        tipo: 'SmartMoney',
+        emailMessage: sellEmailMessage || undefined,
+        emailImageUrl: finalImageUrl || undefined
+      };
+
+      console.log('📤 Enviando datos al API:', requestData);
+
       const response = await fetch('/api/admin/partial-sale', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          alertId: partialSaleAlert.id,
-          percentage: sellPercentage,
-          priceRange: {
-            min: priceMin,
-            max: priceMax
-          },
-          tipo: 'SmartMoney',
-          emailMessage: sellEmailMessage || undefined,
-          emailImageUrl: finalImageUrl || undefined
-        }),
+        body: JSON.stringify(requestData),
       });
 
       const result = await response.json();

@@ -248,9 +248,11 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                       <div className="font-medium">
                         {operation.ticker}
                       </div>
-                      <div className="text-sm opacity-75">
-                        {operation.alertSymbol}
-                      </div>
+                      {operation.alertSymbol && operation.alertSymbol !== operation.ticker && (
+                        <div className="text-sm opacity-75">
+                          {operation.alertSymbol}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td>
