@@ -809,7 +809,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
   };
 
-  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento)
+  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento) - Cache bust
   const loadSeguimientoAlerts = async () => {
     setLoadingAlerts(true);
     try {
