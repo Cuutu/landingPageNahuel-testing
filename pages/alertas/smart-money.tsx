@@ -1338,8 +1338,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // ✅ NUEVO: Función para subir imagen a Cloudinary
   const uploadImageToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', 'alert_images'); // Asegúrate de que este preset existe en Cloudinary
+    formData.append('image', file); // Cambiado de 'file' a 'image' para coincidir con el API
 
     const response = await fetch('/api/upload/image', {
       method: 'POST',
@@ -1347,11 +1346,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     });
 
     if (!response.ok) {
-      throw new Error('Error al subir la imagen');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Error al subir la imagen');
     }
 
     const data = await response.json();
-    return data.secure_url;
+    if (!data.success) {
+      throw new Error(data.error || 'Error al subir la imagen');
+    }
+    
+    return data.data.secure_url;
   };
 
   const confirmCloseAction = async () => {
