@@ -319,6 +319,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
               <div className={styles.explanationBox}>
                 <p><strong>P&L Total:</strong> Ganancia/pérdida absoluta en dólares</p>
                 <p><strong>Rendimiento S&P 500:</strong> % de rendimiento del portfolio comparado con el índice S&P 500</p>
+                <p><strong>Win Rate:</strong> Porcentaje de alertas cerradas que resultaron en ganancia (basado en alertas cerradas, no en profit)</p>
               </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>
