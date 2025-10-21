@@ -62,8 +62,7 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
       limit = '50', 
       source, 
       search, 
-      active = 'true',
-      tags 
+      active = 'true'
     } = req.query;
 
     const pageNum = parseInt(page as string);
@@ -84,17 +83,11 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse) {
     if (search) {
       filters.email = { $regex: search, $options: 'i' };
     }
-    
-    if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : [tags];
-      filters.tags = { $in: tagArray };
-    }
 
     console.log('🔍 [EMAIL LIST] Filtros aplicados:', filters);
 
     // Obtener emails con paginación
     const emails = await EmailList.find(filters)
-      .populate('addedBy', 'name email')
       .sort({ addedAt: -1 })
       .skip(skip)
       .limit(limitNum);
