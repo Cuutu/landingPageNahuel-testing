@@ -58,6 +58,14 @@ const Footer: React.FC = () => {
             </ul>
           </div>
 
+          {/* Indicadores */}
+          <div className={styles.linkColumn}>
+            <h4 className={styles.columnTitle}>Indicadores</h4>
+            <ul className={styles.linkList}>
+              <li><Link href="/mediasmovilesautomaticas" className={styles.footerLink}>Medias Móviles Automáticas</Link></li>
+            </ul>
+          </div>
+
           {/* Recursos */}
           <div className={styles.linkColumn}>
             <h4 className={styles.columnTitle}>Recursos</h4>

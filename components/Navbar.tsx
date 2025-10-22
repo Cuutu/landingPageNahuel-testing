@@ -75,8 +75,11 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       ],
     },
     {
-      label: 'Recursos',
-      href: '/recursos',
+      label: 'Asesorías',
+      href: '/asesorias',
+      dropdown: [
+        { label: 'Consultorio Financiero', href: '/asesorias/consultorio-financiero' },
+      ],
     },
     {
       label: 'Indicadores',
@@ -86,11 +89,8 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       ],
     },
     {
-      label: 'Asesorías',
-      href: '/asesorias',
-      dropdown: [
-        { label: 'Consultorio Financiero', href: '/asesorias/consultorio-financiero' },
-      ],
+      label: 'Recursos',
+      href: '/recursos',
     },
   ];
 

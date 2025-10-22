@@ -226,11 +226,11 @@ const IndicadoresPage: React.FC = () => {
             >
               <div className={styles.heroText}>
                 <h1 className={styles.heroTitle}>
-                  Indicadores de Trading
+                  Indicadores Profesionales
                 </h1>
                 <p className={styles.heroDescription}>
-                  Herramientas profesionales para potenciar tu análisis técnico en TradingView.
-                  Accedé a los mismos indicadores que uso en mis servicios de suscripción.
+                  Herramientas avanzadas para TradingView que uso en mis servicios profesionales.
+                  Accedé a los mismos indicadores que potencian Trader Call y Smart Money.
                 </p>
                 <button
                   className={styles.heroButton}
@@ -251,7 +251,7 @@ const IndicadoresPage: React.FC = () => {
               <div className={styles.heroVideo}>
                 <div className={styles.videoPlayer}>
                   <YouTubePlayer
-                    videoId="dQw4w9WgXcQ"
+                    videoId="0NpdClGWaY8"
                     title="Indicadores de Trading - Introducción"
                     autoplay={false}
                     muted={true}
@@ -372,9 +372,6 @@ const IndicadoresPage: React.FC = () => {
             >
               <Link href="/mediasmovilesautomaticas" className={styles.ctaButton}>
                 Medias Móviles Automáticas &gt;
-              </Link>
-              <Link href="/alertas" className={styles.ctaButton}>
-                Ver Alertas &gt;
               </Link>
             </motion.div>
           </div>

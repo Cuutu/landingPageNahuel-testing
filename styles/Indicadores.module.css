@@ -206,14 +206,16 @@
   font-size: 2.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: var(--text-primary);
+  color: #1f2937 !important;
+  line-height: 1.2;
 }
 
 .sectionSubtitle {
   text-align: center;
   font-size: 1.1rem;
-  color: var(--text-secondary);
+  color: #6b7280 !important;
   margin-bottom: 3rem;
+  line-height: 1.6;
 }
 
 .servicesGrid {
