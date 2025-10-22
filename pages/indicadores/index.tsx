@@ -188,7 +188,7 @@ const IndicadoresPage: React.FC = () => {
       ],
       href: '/mediasmovilesautomaticas',
       backgroundColor: '#7c3aed',
-      buttonTextColor: '#a855f7',
+      buttonTextColor: '#a855f7', 
       tag: 'TradingView',
       videoId: 'dQw4w9WgXcQ'
     }
