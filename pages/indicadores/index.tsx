@@ -124,7 +124,7 @@ const IndicatorService: React.FC<IndicatorServiceProps> = ({
       whileHover={{ scale: 1.02, y: -5 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Video Player */}
+      {/* Video Player con Overlay */}
       <div className={styles.videoPlayerContainer}>
         <YouTubePlayer
           videoId={videoId}
@@ -134,15 +134,18 @@ const IndicatorService: React.FC<IndicatorServiceProps> = ({
           loop={false}
           className={styles.videoPlayer}
         />
+
+        {/* Overlay con información */}
+        <div className={styles.videoOverlay}>
+          <div className={styles.videoInfo}>
+            <h3 className={styles.videoTitle}>{title}</h3>
+            <span className={styles.videoTag}>{tag}</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className={styles.serviceContent}>
-        <div className={styles.serviceHeader}>
-          <h3 className={styles.serviceTitle}>{title}</h3>
-          <span className={styles.serviceTag}>{tag}</span>
-        </div>
-
         <p className={styles.serviceDescription}>{description}</p>
 
         <ul className={styles.featureList}>
