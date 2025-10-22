@@ -100,10 +100,11 @@ export default function YouTubePlayer({
         onLoad={handleLoad}
         onError={handleError}
         className={styles.iframe}
-        style={{ 
+        style={{
           display: isLoading ? 'none' : 'block',
           width: '100%',
-          height: '100%'
+          height: '100%',
+          borderRadius: '16px 16px 0 0'
         }}
       />
     </div>

@@ -19,10 +19,10 @@ const YouTubeAutoCarousel: React.FC = () => {
   const [currentVideo, setCurrentVideo] = React.useState(0);
 
   const videos = [
-    { id: '0NpdClGWaY8', title: 'Video 1' },
-    { id: 'jl3lUCIluAs', title: 'Video 2' },
-    { id: '_AMDVmj9_jw', title: 'Video 3' },
-    { id: 'sUktp76givU', title: 'Video 4' }
+    { id: '0NpdClGWaY8', title: 'Indicadores de Trading - Introducción' },
+    { id: 'jl3lUCIluAs', title: 'Medias Móviles en TradingView' },
+    { id: '_AMDVmj9_jw', title: 'Análisis Técnico Avanzado' },
+    { id: 'sUktp76givU', title: 'Estrategias de Trading' }
   ];
 
   React.useEffect(() => {
@@ -193,7 +193,7 @@ const IndicadoresPage: React.FC = () => {
       backgroundColor: '#7c3aed',
       buttonTextColor: '#a855f7', 
       tag: 'TradingView',
-      videoId: 'dQw4w9WgXcQ'
+      videoId: '0NpdClGWaY8'
     }
   ];
 
