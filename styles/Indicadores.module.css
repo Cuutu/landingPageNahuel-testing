@@ -1,0 +1,1033 @@
+.main {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+/* Hero Section */
+.hero {
+  background: #7c3aed;
+  padding: 6rem 0;
+  position: relative;
+  overflow: hidden;
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+}
+
+/* Video de fondo */
+.heroVideoBackground {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.heroVideoBackground :global(.background-video-container) {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
+  z-index: 0 !important;
+}
+
+.heroVideoBackground :global(.background-video) {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.4) 0%, rgba(99, 102, 241, 0.4) 50%, rgba(79, 70, 229, 0.4) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.heroContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+}
+
+.heroText {
+  color: white;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.heroDescription {
+  font-size: 1.1rem;
+  opacity: 0.95;
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.heroButton {
+  background: #7c3aed;
+  color: white;
+  border: 1px solid white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.heroButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.heroVideo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.videoPlayer {
+  width: 100%;
+  max-width: 400px;
+  background: #374151;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.videoPlaceholder {
+  height: 250px;
+  background: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.playIcon {
+  color: white;
+  font-size: 3rem;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+}
+
+.playIcon:hover {
+  transform: scale(1.1);
+}
+
+.videoControls {
+  padding: 1rem;
+  background: #1f2937;
+}
+
+.currentTime {
+  color: white;
+  font-size: 0.875rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: #4b5563;
+  border-radius: 2px;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+
+.progressFill {
+  width: 30%;
+  height: 100%;
+  background: #ef4444;
+  border-radius: 2px;
+}
+
+.controlButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.controlBtn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.controlBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.totalTime {
+  color: white;
+  font-size: 0.875rem;
+  margin-left: auto;
+}
+
+/* Services Section */
+.services {
+  padding: 6rem 0;
+  background: var(--bg-secondary);
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: var(--text-primary);
+}
+
+.sectionSubtitle {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin-bottom: 3rem;
+}
+
+.servicesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin: 0 auto;
+  align-items: stretch;
+}
+
+.serviceCard {
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  min-height: 600px;
+}
+
+.serviceCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+/* Video Player Container */
+.videoPlayerContainer {
+  background: #374151;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  height: 200px;
+}
+
+.videoPlayerContainer .videoPlayer {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 16px 16px 0 0;
+}
+
+/* Main Content */
+.serviceContent {
+  padding: 2rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.serviceHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.serviceTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+.serviceTag {
+  background: #7c3aed;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.serviceDescription {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.95;
+  line-height: 1.6;
+  color: white;
+}
+
+.featureList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem 0;
+  text-align: left;
+  flex-grow: 1;
+}
+
+.featureItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: white;
+}
+
+.checkmark {
+  color: #10b981;
+  font-weight: bold;
+  margin-right: 0.75rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.trialOffer {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  color: white;
+  font-weight: 500;
+}
+
+.serviceButton {
+  display: inline-block;
+  background: white;
+  color: inherit;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: 1px solid white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  align-self: flex-start;
+}
+
+.serviceButton:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+}
+
+.buttonContainer {
+  margin-top: auto;
+  padding-top: 1rem;
+  position: relative;
+  z-index: 5;
+}
+
+/* Stats Section */
+.stats {
+  padding: 4rem 0;
+  background: #222222;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+  text-align: center;
+  background: linear-gradient(90deg, #7c3aed 0%, #8b5cf6 50%, #6366f1 100%);
+  padding: 3rem 0;
+  border-radius: 0;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin: 0;
+}
+
+.statItem {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.statNumber {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.statLabel {
+  font-size: 1.1rem;
+  color: white;
+  font-weight: 500;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  opacity: 0.95;
+  line-height: 1.2;
+}
+
+/* CTA Section */
+.cta {
+  padding: 6rem 0;
+  background: #1a1a1a;
+  text-align: center;
+  color: white;
+  position: relative;
+}
+
+.cta::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #7c3aed;
+}
+
+.ctaContent {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.ctaTitle {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.3;
+  color: white;
+}
+
+.ctaDescription {
+  font-size: 1.2rem;
+  margin-bottom: 3rem;
+  opacity: 0.9;
+  color: white;
+  line-height: 1.5;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.ctaButton {
+  background: transparent;
+  color: white;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  border: 2px solid white;
+  transition: all 0.3s ease;
+  font-size: 1.1rem;
+}
+
+.ctaButton:hover {
+  background: white;
+  color: #1a1a1a;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero {
+    padding: 4rem 0;
+    min-height: 70vh;
+  }
+
+  .heroContent {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+
+  .heroDescription {
+    font-size: 1rem;
+  }
+
+  .videoPlayer {
+    max-width: 350px;
+  }
+
+  .servicesGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .serviceCard {
+    min-height: 500px;
+  }
+
+  .videoScreen {
+    height: 150px;
+  }
+
+  .serviceContent {
+    padding: 1.5rem;
+  }
+
+  .serviceTitle {
+    font-size: 1.3rem;
+  }
+
+  .serviceTag {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    padding: 2rem 1.5rem;
+  }
+
+  .statNumber {
+    font-size: 2.5rem;
+  }
+
+  .statLabel {
+    font-size: 1rem;
+  }
+
+  .ctaTitle {
+    font-size: 2rem;
+  }
+
+  .ctaDescription {
+    font-size: 1rem;
+  }
+
+  .ctaButtons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .ctaButton {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .youtubeBanner {
+    padding: 3rem 0;
+  }
+
+  .bannerContent {
+    flex-direction: column;
+    gap: 2rem;
+    text-align: center;
+  }
+
+  .bannerTitle {
+    font-size: 2rem;
+  }
+
+  .bannerSubtitle {
+    font-size: 1.8rem;
+  }
+
+  .bannerDescription {
+    font-size: 1rem;
+  }
+
+  .navArrow {
+    font-size: 2.5rem;
+    min-width: 60px;
+  }
+
+  .videoPlayer {
+    max-width: 350px;
+  }
+
+  .videoScreen {
+    height: 200px;
+  }
+
+  .videoControls {
+    padding: 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .controlBtn {
+    font-size: 0.9rem;
+    padding: 0.4rem;
+  }
+
+  .container {
+    padding: 0 1rem;
+  }
+  .youtubeSection { padding: 4rem 0; }
+  .youtubeContent { grid-template-columns: 1fr; gap: 2rem; text-align: center; }
+  .youtubeTitle { font-size: 2rem; }
+  .youtubeDescription { font-size: 1.1rem; }
+  .youtubeAutoCarousel { height: 250px; }
+}
+
+@media (max-width: 480px) {
+  .hero {
+    padding: 3rem 0;
+  }
+
+  .heroTitle {
+    font-size: 2rem;
+  }
+
+  .heroDescription {
+    font-size: 0.95rem;
+  }
+
+  .videoPlayer {
+    max-width: 300px;
+  }
+
+  .videoPlaceholder {
+    height: 200px;
+  }
+
+  .sectionTitle {
+    font-size: 2rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+  }
+
+  .statNumber {
+    font-size: 2.2rem;
+  }
+
+  .statLabel {
+    font-size: 0.9rem;
+  }
+
+  .serviceCard {
+    min-height: 450px;
+  }
+
+  .videoScreen {
+    height: 120px;
+  }
+
+  .serviceContent {
+    padding: 1rem;
+  }
+
+  .serviceTitle {
+    font-size: 1.2rem;
+  }
+
+  .serviceDescription {
+    font-size: 0.8rem;
+  }
+
+  .featureItem {
+    font-size: 0.8rem;
+  }
+
+  .trialOffer {
+    font-size: 0.8rem;
+  }
+
+  .serviceButton {
+    font-size: 0.8rem;
+    padding: 0.6rem 1.2rem;
+  }
+
+  .ctaTitle {
+    font-size: 1.8rem;
+  }
+
+  .ctaDescription {
+    font-size: 0.9rem;
+  }
+
+  .ctaButtons {
+    gap: 1rem;
+  }
+
+  .ctaButton {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+
+  .youtubeBanner {
+    padding: 2rem 0;
+  }
+
+  .bannerTitle {
+    font-size: 1.6rem;
+  }
+
+  .bannerSubtitle {
+    font-size: 1.4rem;
+  }
+
+  .bannerDescription {
+    font-size: 0.9rem;
+  }
+
+  .navArrow {
+    font-size: 2rem;
+    min-width: 50px;
+    padding: 0.5rem;
+  }
+
+  .videoPlayer {
+    max-width: 300px;
+  }
+
+  .videoScreen {
+    height: 180px;
+  }
+
+  .videoControls {
+    padding: 0.6rem;
+    gap: 0.3rem;
+  }
+
+  .controlBtn {
+    font-size: 0.8rem;
+    padding: 0.3rem;
+  }
+
+  .currentTime, .totalTime {
+    font-size: 0.8rem;
+    min-width: 30px;
+  }
+  .youtubeTitle { font-size: 1.75rem; }
+  .youtubeDescription { font-size: 1rem; }
+  .youtubeAutoCarousel { height: 200px; }
+}
+
+/* YouTube Section - alineado con Entrenamientos */
+.youtubeSection {
+  padding: 6rem 0;
+  background: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+  color: white;
+}
+
+.youtubeContent {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+.youtubeText { text-align: left; }
+.youtubeTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: white;
+  line-height: 1.2;
+}
+.youtubeDescription {
+  font-size: 1.25rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+.youtubeCarousel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.youtubeAutoCarousel {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  height: 300px;
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.youtubeVideoFrame { width: 100%; height: 100%; position: relative; }
+.youtubeVideoPlayer { width: 100%; height: 100%; border-radius: 1rem; }
+
+/* Controles e indicadores del carrusel de YouTube */
+.youtubeArrowLeft,
+.youtubeArrowRight {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+  color: white;
+}
+
+.youtubeArrowLeft { left: 10px; }
+.youtubeArrowRight { right: 10px; }
+
+.youtubeArrowLeft:hover,
+.youtubeArrowRight:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.youtubeIndicators {
+  position: absolute;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.5rem;
+  z-index: 10;
+}
+
+.youtubeIndicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.youtubeIndicatorActive {
+  background: white;
+  transform: scale(1.2);
+}
+
+.navArrow {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 3rem;
+  cursor: pointer;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+  min-width: 80px;
+}
+
+.navArrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.arrowIcon {
+  font-weight: bold;
+  line-height: 1;
+}
+
+.bannerContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  gap: 4rem;
+  flex: 1;
+}
+
+.bannerText {
+  color: white;
+  flex: 1;
+  max-width: 500px;
+}
+
+.bannerTitle {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.bannerSubtitle {
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
+}
+
+.bannerDescription {
+  font-size: 1.2rem;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.bannerDescription em {
+  font-style: italic;
+  font-weight: 600;
+}
+
+.bannerVideo {
+  flex: 1;
+  max-width: 500px;
+  display: flex;
+  justify-content: center;
+}
+
+.videoPlayer {
+  background: #1a1a1a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  max-width: 450px;
+}
+
+.videoScreen {
+  height: 250px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.playIcon {
+  font-size: 4rem;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.playIcon:hover {
+  transform: scale(1.1);
+  color: #7c3aed;
+}
+
+.videoControls {
+  background: #2a2a2a;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.controlLeft, .controlRight {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.progressSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.currentTime, .totalTime {
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-width: 35px;
+}
+
+.progressBar {
+  flex: 1;
+  height: 4px;
+  background: #555;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: #7c3aed;
+  width: 30%;
+  border-radius: 2px;
+}
+
+.controlBtn {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+/* Estilos específicos para video de fondo en móviles */
+@media (max-width: 768px) {
+  .heroVideoBackground {
+    /* Optimización para video de fondo en móviles */
+    object-fit: cover;
+    object-position: center;
+  }
+}

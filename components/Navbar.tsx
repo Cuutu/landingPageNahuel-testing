@@ -75,15 +75,22 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       ],
     },
     {
+      label: 'Recursos',
+      href: '/recursos',
+    },
+    {
+      label: 'Indicadores',
+      href: '/indicadores',
+      dropdown: [
+        { label: 'Medias Móviles Automáticas', href: '/mediasmovilesautomaticas' },
+      ],
+    },
+    {
       label: 'Asesorías',
       href: '/asesorias',
       dropdown: [
         { label: 'Consultorio Financiero', href: '/asesorias/consultorio-financiero' },
       ],
-    },
-    {
-      label: 'Recursos',
-      href: '/recursos',
     },
   ];
 
