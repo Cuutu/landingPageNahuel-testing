@@ -5,7 +5,7 @@ import { getSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { CheckCircle, ArrowRight, Users, TrendingUp, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle, ArrowRight, Users, TrendingUp, Clock, ChevronLeft, ChevronRight, BarChart3, Target, Zap } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import YouTubePlayer from '@/components/YouTubePlayer';
@@ -270,14 +270,22 @@ const IndicadoresPage: React.FC = () => {
         {/* Services Section */}
         <section className={styles.services}>
           <div className={styles.container}>
-            <motion.h2
-              className={styles.sectionTitle}
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+            <motion.div
+              className={styles.titleContainer}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
             >
-              Nuestros Indicadores
-            </motion.h2>
+              <div className={styles.titleIcons}>
+                <BarChart3 className={styles.titleIcon} />
+                <Target className={styles.titleIcon} />
+                <Zap className={styles.titleIcon} />
+              </div>
+              <h2 className={styles.sectionTitle}>
+                Nuestros Indicadores
+              </h2>
+            </motion.div>
             <p className={styles.sectionSubtitle}>
               Herramientas profesionales para análisis técnico avanzado
             </p>
