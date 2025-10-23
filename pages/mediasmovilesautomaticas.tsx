@@ -19,26 +19,33 @@ export default function MediasMovilesAutomaticasPage() {
       await signIn('google');
       return;
     }
+    
+    setIsProcessing(true);
+    setErrorMessage('');
+    
     try {
-      setIsProcessing(true);
-      setErrorMessage('');
-      const res = await fetch('/api/payments/mercadopago/create-indicator-checkout', {
+      // Usar el mismo endpoint que Swing Trading
+      const response = await fetch('/api/monthly-training-subscriptions/create-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          product: 'MediasMovilesAutomaticas'
+          trainingType: 'MediasMovilesAutomaticas',
+          subscriptionMonth: new Date().getMonth() + 1, // Mes actual
+          subscriptionYear: new Date().getFullYear() // Año actual
         })
       });
-      const data = await res.json();
-      if (!res.ok || !data?.success) {
-        throw new Error(data?.error || 'No se pudo iniciar el checkout');
+      
+      const data = await response.json();
+      
+      if (data.success && (data.checkoutUrl || data.sandboxInitPoint)) {
+        window.location.href = data.checkoutUrl || data.sandboxInitPoint;
+      } else {
+        setErrorMessage(data.error || 'Error al procesar el pago');
+        setIsProcessing(false);
       }
-      window.location.href = data.checkoutUrl;
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error desconocido';
-      setErrorMessage(msg);
+    } catch (error) {
+      console.error('Error:', error);
+      setErrorMessage('Error al procesar el pago. Inténtalo nuevamente.');
       setIsProcessing(false);
     }
   };

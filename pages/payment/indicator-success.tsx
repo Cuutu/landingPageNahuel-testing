@@ -59,6 +59,11 @@ export default function IndicatorSuccessPage() {
       setSubmitMessage(data.message);
       setTradingViewUser('');
       
+      // Redirigir al formulario de Google Forms después de 3 segundos
+      setTimeout(() => {
+        window.location.href = 'https://docs.google.com/forms/d/e/1FAIpQLSc_cddpfII-pibgEJsmcaWTrQchUgkKwLq0bQO1asATYQ6AeA/viewform?usp=preview';
+      }, 3000);
+      
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Error desconocido';
       setErrorMessage(message);
@@ -112,10 +117,14 @@ export default function IndicatorSuccessPage() {
                 <div className={styles.nextSteps}>
                   <h3>Próximos pasos:</h3>
                   <ol>
-                    <li>Revisa tu email para confirmación</li>
-                    <li>En menos de 24 horas recibirás el acceso</li>
+                    <li>Serás redirigido automáticamente al formulario de asesoramiento</li>
+                    <li>Completa el formulario para continuar con tu plan de inversión</li>
+                    <li>En menos de 24 horas recibirás el acceso al indicador</li>
                     <li>Busca el indicador en "Requiere invitación" en TradingView</li>
                   </ol>
+                  <div className={styles.redirectNotice}>
+                    <p>🔄 Redirigiendo al formulario en 3 segundos...</p>
+                  </div>
                 </div>
               </div>
             ) : (
