@@ -270,22 +270,15 @@ const IndicadoresPage: React.FC = () => {
         {/* Services Section */}
         <section className={styles.services}>
           <div className={styles.container}>
-            <motion.div
-              className={styles.titleContainer}
+            <motion.h2
+              className={styles.sectionTitle}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className={styles.titleIcons}>
-                <BarChart3 className={styles.titleIcon} />
-                <Target className={styles.titleIcon} />
-                <Zap className={styles.titleIcon} />
-              </div>
-              <h2 className={styles.sectionTitle}>
-                Nuestros Indicadores
-              </h2>
-            </motion.div>
+              Nuestros Indicadores
+            </motion.h2>
             <p className={styles.sectionSubtitle}>
               Herramientas profesionales para análisis técnico avanzado
             </p>
