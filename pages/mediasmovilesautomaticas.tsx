@@ -24,21 +24,19 @@ export default function MediasMovilesAutomaticasPage() {
     setErrorMessage('');
     
     try {
-      // Usar el mismo endpoint que Swing Trading
-      const response = await fetch('/api/monthly-training-subscriptions/create-checkout', {
+      // Usar el endpoint específico para indicadores
+      const response = await fetch('/api/payments/mercadopago/create-indicator-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          trainingType: 'MediasMovilesAutomaticas',
-          subscriptionMonth: new Date().getMonth() + 1, // Mes actual
-          subscriptionYear: new Date().getFullYear() // Año actual
+          product: 'MediasMovilesAutomaticas'
         })
       });
       
       const data = await response.json();
       
-      if (data.success && (data.checkoutUrl || data.sandboxInitPoint)) {
-        window.location.href = data.checkoutUrl || data.sandboxInitPoint;
+      if (data.success && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
       } else {
         setErrorMessage(data.error || 'Error al procesar el pago');
         setIsProcessing(false);
