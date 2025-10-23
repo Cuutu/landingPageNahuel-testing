@@ -279,9 +279,6 @@ const IndicadoresPage: React.FC = () => {
             >
               Nuestros Indicadores
             </motion.h2>
-            <p className={styles.sectionSubtitle}>
-              Herramientas profesionales para análisis técnico avanzado
-            </p>
 
             <div className={styles.servicesGrid}>
               {indicatorServices.map((service, index) => (
