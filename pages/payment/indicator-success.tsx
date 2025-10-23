@@ -19,6 +19,11 @@ export default function IndicatorSuccessPage() {
     if (router.query.reference) {
       setPaymentReference(router.query.reference as string);
     }
+    
+    // Redirigir automáticamente al formulario de Google Forms
+    setTimeout(() => {
+      window.location.href = 'https://docs.google.com/forms/d/e/1FAIpQLSc_cddpfII-pibgEJsmcaWTrQchUgkKwLq0bQO1asATYQ6AeA/viewform?usp=preview';
+    }, 2000); // Redirigir después de 2 segundos
   }, [router.query.reference]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -107,7 +112,15 @@ export default function IndicatorSuccessPage() {
             <div className={styles.successHeader}>
               <div className={styles.successIcon}>✅</div>
               <h1>¡Pago Exitoso!</h1>
-              <p>Tu pago fue procesado correctamente. Ahora necesitamos tu usuario de TradingView para habilitar tu acceso.</p>
+              <p>Tu pago fue procesado correctamente. Serás redirigido automáticamente al formulario de asesoramiento.</p>
+            </div>
+
+            <div className={styles.redirectMessage}>
+              <h2>🔄 Redirigiendo al formulario...</h2>
+              <p>En unos segundos serás llevado al formulario de asesoramiento financiero para continuar con tu plan de inversión.</p>
+              <div className={styles.redirectNotice}>
+                <p>⏰ Redirigiendo en 2 segundos...</p>
+              </div>
             </div>
 
             {submitMessage ? (

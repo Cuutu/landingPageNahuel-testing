@@ -186,6 +186,28 @@
   font-size: 16px;
 }
 
+.redirectMessage {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.redirectMessage h2 {
+  color: #60a5fa;
+  margin: 0 0 12px;
+  font-size: 24px;
+}
+
+.redirectMessage p {
+  color: #e8eaf1;
+  margin: 0 0 20px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
 .infoBox {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
