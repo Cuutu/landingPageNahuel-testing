@@ -3,7 +3,6 @@ import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
 
 interface ServiceMetrics {
-  totalReturn: number;
   totalReturnPercent: number;
   activeAlerts: number;
   closedAlerts: number;
@@ -105,14 +104,10 @@ function calculateServiceMetrics(alerts: any[], period: string): ServiceMetrics 
   const winningAlerts = closedAlerts.filter(alert => alert.profit > 0);
   const losingAlerts = closedAlerts.filter(alert => alert.profit <= 0);
 
-  // Calcular rendimientos
+  // Calcular rendimiento porcentual promedio
   const totalReturnPercent = closedAlerts.length > 0
     ? closedAlerts.reduce((sum, alert) => sum + (alert.profit || 0), 0) / closedAlerts.length
     : 0;
-
-  // Simular un capital inicial de $10,000 para calcular retorno total
-  const initialCapital = 10000;
-  const totalReturn = initialCapital * (totalReturnPercent / 100);
 
   // Calcular métricas adicionales
   const winRate = closedAlerts.length > 0
@@ -133,7 +128,6 @@ function calculateServiceMetrics(alerts: any[], period: string): ServiceMetrics 
   const worstTrade = profits.length > 0 ? Math.min(...profits) : 0;
 
   return {
-    totalReturn: parseFloat(totalReturn.toFixed(2)),
     totalReturnPercent: parseFloat(totalReturnPercent.toFixed(2)),
     activeAlerts,
     closedAlerts: closedAlerts.length,

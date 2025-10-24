@@ -20,8 +20,8 @@ export interface SP500Data {
 }
 
 export interface ServicePerformanceData {
-  totalReturn: number;
   totalReturnPercent: number;
+  relativePerformanceVsSP500: number;
   activeAlerts: number;
   closedAlerts: number;
   winningAlerts: number;
@@ -29,10 +29,11 @@ export interface ServicePerformanceData {
   winRate: number;
   averageGain: number;
   averageLoss: number;
+  totalTrades: number;
   period: string;
 }
 
-export function useSP500Performance(period: string = '30d') {
+export function useSP500Performance(period: string = '30d', serviceType: 'TraderCall' | 'SmartMoney' = 'TraderCall') {
   const [sp500Data, setSp500Data] = useState<SP500Data | null>(null);
   const [serviceData, setServiceData] = useState<ServicePerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,9 +65,14 @@ export function useSP500Performance(period: string = '30d') {
 
       const serviceMetrics = await response.json();
 
+      // Calcular rendimiento relativo vs S&P500
+      const sp500Return = sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0;
+      const relativePerformanceVsSP500 = sp500Return === 0 ? 0 : 
+        ((serviceMetrics.totalReturnPercent - sp500Return) / Math.abs(sp500Return)) * 100;
+
       const serviceData: ServicePerformanceData = {
-        totalReturn: serviceMetrics.totalReturn,
         totalReturnPercent: serviceMetrics.totalReturnPercent,
+        relativePerformanceVsSP500: parseFloat(relativePerformanceVsSP500.toFixed(2)),
         activeAlerts: serviceMetrics.activeAlerts,
         closedAlerts: serviceMetrics.closedAlerts,
         winningAlerts: serviceMetrics.winningAlerts,
@@ -74,6 +80,7 @@ export function useSP500Performance(period: string = '30d') {
         winRate: serviceMetrics.winRate,
         averageGain: serviceMetrics.averageGain,
         averageLoss: serviceMetrics.averageLoss,
+        totalTrades: serviceMetrics.totalTrades,
         period: selectedPeriod
       };
 
@@ -86,8 +93,8 @@ export function useSP500Performance(period: string = '30d') {
 
       // Fallback a datos simulados si hay error
       const fallbackData: ServicePerformanceData = {
-        totalReturn: 1250,
         totalReturnPercent: 12.5,
+        relativePerformanceVsSP500: 0, // Se calculará cuando se tengan datos del SP500
         activeAlerts: 8,
         closedAlerts: 25,
         winningAlerts: 16,
@@ -95,6 +102,7 @@ export function useSP500Performance(period: string = '30d') {
         winRate: 64.0,
         averageGain: 8.5,
         averageLoss: 5.2,
+        totalTrades: 33,
         period: selectedPeriod
       };
       setServiceData(fallbackData);

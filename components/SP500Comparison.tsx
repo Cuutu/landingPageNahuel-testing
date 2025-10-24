@@ -5,6 +5,7 @@ import styles from './SP500Comparison.module.css';
 
 interface SP500ComparisonProps {
   className?: string;
+  serviceType?: 'TraderCall' | 'SmartMoney';
 }
 
 // Constantes para mejor mantenibilidad
@@ -21,9 +22,9 @@ const PERFORMANCE_COLORS = {
   negative: '#EF4444'
 } as const;
 
-const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => {
+const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', serviceType = 'TraderCall' }) => {
   const [selectedPeriod, setSelectedPeriod] = useState('30d');
-  const { sp500Data, serviceData, loading, error, refreshData } = useSP500Performance(selectedPeriod);
+  const { sp500Data, serviceData, loading, error, refreshData } = useSP500Performance(selectedPeriod, serviceType);
 
   const handlePeriodChange = (period: string) => {
     setSelectedPeriod(period);
@@ -49,6 +50,9 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
     const sign = value >= 0 ? '+' : '';
     return `${sign}${value.toFixed(2)}%`;
   };
+
+  // Usar el rendimiento relativo calculado en el hook
+  const relativePerformance = serviceData?.relativePerformanceVsSP500 ?? 0;
 
   // Estados de loading y error
   if (loading) {
@@ -170,14 +174,14 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
             <div className={styles.cardIcon} aria-hidden="true">
               <TrendingUp size={16} />
             </div>
-            <div>
-              <h4 className={styles.cardTitle}>
-                Mi Servicio
-              </h4>
-              <p className={styles.cardSubtitle}>
-                Actualizado
-              </p>
-            </div>
+             <div>
+               <h4 className={styles.cardTitle}>
+                 {serviceType}
+               </h4>
+               <p className={styles.cardSubtitle}>
+                 Rendimiento del período
+               </p>
+             </div>
           </div>
           
           <div>
@@ -189,6 +193,122 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '' }) => 
                   className={`${styles.performanceValue} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}
                 >
                   {formatPercentage(serviceData?.totalReturnPercent ?? 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Relative Performance Card */}
+        <div className={`${styles.card} ${styles.relativeCard}`} role="article" aria-label="Rendimiento relativo vs S&P 500">
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon} aria-hidden="true">
+              <BarChart3 size={16} />
+            </div>
+            <div>
+              <h4 className={styles.cardTitle}>
+                Rendimiento Relativo
+              </h4>
+              <p className={styles.cardSubtitle}>
+                vs S&P 500
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Comparación relativa</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                {getPerformanceIcon(relativePerformance)}
+                <span
+                  className={`${styles.performanceValue} ${getPerformanceClass(relativePerformance)}`}
+                >
+                  {formatPercentage(relativePerformance)}
+                </span>
+              </div>
+               <div className={styles.relativeExplanation}>
+                 {relativePerformance > 0 ? (
+                   <span className={styles.positiveExplanation}>
+                     {serviceType} rindió {Math.abs(relativePerformance).toFixed(1)}% más que el S&P 500
+                   </span>
+                 ) : relativePerformance < 0 ? (
+                   <span className={styles.negativeExplanation}>
+                     {serviceType} rindió {Math.abs(relativePerformance).toFixed(1)}% menos que el S&P 500
+                   </span>
+                 ) : (
+                   <span className={styles.neutralExplanation}>
+                     Rendimiento equivalente al S&P 500
+                   </span>
+                 )}
+               </div>
+            </div>
+          </div>
+        </div>
+
+         {/* Win Rate Card */}
+         <div className={`${styles.card} ${styles.winRateCard}`} role="article" aria-label={`Win Rate del servicio ${serviceType}`}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon} aria-hidden="true">
+              <TrendingUp size={16} />
+            </div>
+            <div>
+              <h4 className={styles.cardTitle}>
+                Win Rate
+              </h4>
+              <p className={styles.cardSubtitle}>
+                Trades ganadores
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Proporción de trades exitosos</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                <span
+                  className={`${styles.performanceValue} ${styles.winRateValue}`}
+                >
+                  {serviceData?.winRate?.toFixed(1) ?? '0.0'}%
+                </span>
+              </div>
+              <div className={styles.winRateDetails}>
+                <span className={styles.winRateExplanation}>
+                  {serviceData?.winningAlerts ?? 0} de {serviceData?.closedAlerts ?? 0} trades ganadores
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Total Alerts Card */}
+        <div className={`${styles.card} ${styles.totalAlertsCard}`} role="article" aria-label="Total de alertas de compra ejecutadas">
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon} aria-hidden="true">
+              <BarChart3 size={16} />
+            </div>
+            <div>
+              <h4 className={styles.cardTitle}>
+                Total de Alertas
+              </h4>
+              <p className={styles.cardSubtitle}>
+                Alertas de compra
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Alertas ejecutadas en el período</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                <span
+                  className={`${styles.performanceValue} ${styles.totalAlertsValue}`}
+                >
+                  {serviceData?.totalTrades ?? 0}
+                </span>
+              </div>
+              <div className={styles.totalAlertsDetails}>
+                <span className={styles.totalAlertsExplanation}>
+                  Alertas de compra efectivamente ejecutadas
                 </span>
               </div>
             </div>
