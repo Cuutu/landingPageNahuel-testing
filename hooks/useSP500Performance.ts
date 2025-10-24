@@ -57,7 +57,7 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
       // Obtener métricas reales del servicio desde la base de datos
-      const response = await fetch(`/api/performance/service-performance?period=${selectedPeriod}&tipo=TraderCall`);
+      const response = await fetch(`/api/performance/service-performance?period=${selectedPeriod}&tipo=${serviceType}`);
 
       if (!response.ok) {
         throw new Error('Error al obtener métricas del servicio');
