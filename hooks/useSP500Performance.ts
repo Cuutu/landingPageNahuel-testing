@@ -65,10 +65,14 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
 
       const serviceMetrics = await response.json();
 
-      // Calcular rendimiento relativo vs S&P500
+      // Calcular rendimiento relativo vs S&P500 usando la fórmula correcta
       const sp500Return = sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0;
-      const relativePerformanceVsSP500 = sp500Return === 0 ? 0 : 
-        ((serviceMetrics.totalReturnPercent - sp500Return) / Math.abs(sp500Return)) * 100;
+      let relativePerformanceVsSP500 = 0;
+      
+      if (sp500Return !== 0) {
+        // Fórmula: ((Trader Call − S&P500) / S&P500) × 100
+        relativePerformanceVsSP500 = ((serviceMetrics.totalReturnPercent - sp500Return) / sp500Return) * 100;
+      }
       
       console.log('Debug SP500 Performance:', {
         serviceReturn: serviceMetrics.totalReturnPercent,

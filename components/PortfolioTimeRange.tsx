@@ -182,13 +182,22 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       };
     }
     
-    // Usar estadísticas del API que ya incluyen comparación con S&P 500
+    // Calcular rendimiento relativo vs S&P 500 usando la fórmula correcta
+    const traderCallReturn = performance.percentage; // Rendimiento del portfolio
+    const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500
+    
+    // Fórmula: ((Trader Call − S&P500) / S&P500) × 100
+    let relativePerformanceVsSP500 = 0;
+    if (sp500Return !== 0) {
+      relativePerformanceVsSP500 = ((traderCallReturn - sp500Return) / sp500Return) * 100;
+    }
+    
     return {
       totalProfit: baseStats.totalProfit || 0,
       totalAlerts: baseStats.totalAlerts || 0,
       closedAlerts: baseStats.closedAlerts || 0,
       winRate: baseStats.winRate || 0,
-      sp500Return: baseStats.sp500Return || 0,
+      sp500Return: relativePerformanceVsSP500, // Ahora es el rendimiento relativo
       baseValue: baseStats.baseValue || 10000
     };
   };
@@ -317,21 +326,15 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                 Estadísticas Generales
               </h4>
               <div className={styles.explanationBox}>
-                <p><strong>P&L Total:</strong> Ganancia/pérdida absoluta en dólares</p>
-                <p><strong>Rendimiento S&P 500:</strong> % de rendimiento del portfolio comparado con el índice S&P 500</p>
-                <p><strong>Win Rate:</strong> Porcentaje de alertas cerradas que resultaron en ganancia (basado en alertas cerradas, no en profit)</p>
+                <p><strong>Rendimiento vs S&P 500:</strong> Comparación relativa del rendimiento del portfolio respecto al índice S&P 500. Fórmula: ((Trader Call − S&P500) / S&P500) × 100</p>
+                <p><strong>Win Rate:</strong> Proporción de operaciones ganadoras sobre el total de operaciones ejecutadas. Fórmula: (Cantidad de trades ganadores / Cantidad total de trades) × 100</p>
+                <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio Trader Call en el rango de fechas seleccionado</p>
               </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>P&L Total (USD):</span>
-                  <span className={`${styles.globalStatValue} ${portfolioStats.totalProfit >= 0 ? styles.positive : styles.negative}`}>
-                    ${portfolioStats.totalProfit.toFixed(2)}
-                  </span>
-                </div>
-                <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Rendimiento S&P 500:</span>
+                  <span className={styles.globalStatLabel}>Rendimiento vs S&P 500:</span>
                   <span className={`${styles.globalStatValue} ${portfolioStats.sp500Return >= 0 ? styles.positive : styles.negative}`}>
-                    {portfolioStats.sp500Return.toFixed(2)}%
+                    {portfolioStats.sp500Return >= 0 ? '+' : ''}{portfolioStats.sp500Return.toFixed(2)}%
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
@@ -341,9 +344,9 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                   </span>
                 </div>
                 <div className={styles.globalStatItem}>
-                  <span className={styles.globalStatLabel}>Alertas Cerradas:</span>
+                  <span className={styles.globalStatLabel}>Total de Alertas:</span>
                   <span className={styles.globalStatValue}>
-                    {portfolioStats.closedAlerts} / {portfolioStats.totalAlerts}
+                    {portfolioStats.closedAlerts}
                   </span>
                 </div>
               </div>

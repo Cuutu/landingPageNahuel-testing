@@ -193,6 +193,12 @@
   margin-bottom: 2rem;
 }
 
+.singleCardContainer {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
 .card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
   border-radius: 16px;
