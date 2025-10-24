@@ -2072,21 +2072,21 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </defs>
 
         {/* Fondo del gráfico con efecto 3D */}
-        <circle cx="200" cy="200" r="160" className={styles.chartBackground3D} />
+        <circle cx="200" cy="200" r="180" className={styles.chartBackground3D} />
 
         {/* Segmentos del gráfico 3D */}
         {chartSegments.map((segment, index) => (
           <g key={segment.id} className={styles.chartSegment3D}>
             {/* Sombra del segmento */}
             <path
-              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
               fill={segment.darkColor}
               filter="url(#shadow3D)"
               className={styles.segmentShadow}
             />
             {/* Segmento principal */}
             <path
-              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
               fill={segment.color}
               className={styles.segmentPath3D}
               onMouseEnter={(e) => showTooltip(e, segment)}
@@ -2095,7 +2095,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             />
             {/* Borde del segmento */}
             <path
-              d={describeArc(200, 200, 160, segment.startAngle, segment.endAngle)}
+              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
               fill="none"
               stroke="#ffffff"
               strokeWidth="2"
@@ -2105,12 +2105,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
             {segment.size > 2 && (
               <text
-                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 110 : 130)}
-                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 110 : 130)}
+                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 130 : 150)}
+                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 130 : 150)}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={segment.size > 5 ? "14" : "12"}
+                fontSize={segment.size > 5 ? "16" : "14"}
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2125,12 +2125,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta alternativa para segmentos muy pequeños */}
             {segment.size <= 2 && segment.size > 0.5 && (
               <text
-                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 145}
-                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 145}
+                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 165}
+                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 165}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="11"
+                fontSize="12"
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2617,7 +2617,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       if (entry) entry.textContent = formatPrice(segment.entryPrice ?? liq?.entryPrice);
       if (current) current.textContent = formatPrice(segment.currentPrice ?? liq?.currentPrice);
       if (pnl) {
-        pnl.textContent = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
+        // Mostrar ganancia desde precio de entrada y porcentaje del gráfico
+        const profitText = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
+        const percentageText = `${segment.size.toFixed(1)}% del gráfico`;
+        pnl.innerHTML = `
+          <div style="margin-bottom: 4px;">
+            <strong>Ganancia:</strong> ${profitText}
+          </div>
+          <div>
+            <strong>Representa:</strong> ${percentageText}
+          </div>
+        `;
         pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
       }
       // Ocultar elementos adicionales del tooltip - solo mostrar Entrada, Actual y P&L
