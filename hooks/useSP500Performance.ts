@@ -69,6 +69,12 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
       const sp500Return = sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0;
       const relativePerformanceVsSP500 = sp500Return === 0 ? 0 : 
         ((serviceMetrics.totalReturnPercent - sp500Return) / Math.abs(sp500Return)) * 100;
+      
+      console.log('Debug SP500 Performance:', {
+        serviceReturn: serviceMetrics.totalReturnPercent,
+        sp500Return,
+        relativePerformance: relativePerformanceVsSP500
+      });
 
       const serviceData: ServicePerformanceData = {
         totalReturnPercent: serviceMetrics.totalReturnPercent,
