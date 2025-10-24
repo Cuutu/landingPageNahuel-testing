@@ -343,7 +343,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
       )}
 
       <div className={styles.chartContainer}>
-        <ResponsiveContainer width="100%" height={500}>
+        <ResponsiveContainer width="100%" height={560}>
           <PieChart>
             <Pie
               data={chartData}
@@ -353,7 +353,8 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
               label={({ name, percent }: { name: string; percent: number }) => 
                 `${name} ${(percent * 100).toFixed(0)}%`
               }
-              outerRadius={160}
+              innerRadius={70}
+              outerRadius={200}
               fill="#8884d8"
               dataKey="value"
               onMouseEnter={(data: ChartSegment) => setHoveredSegment(data.symbol)}

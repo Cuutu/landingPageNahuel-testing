@@ -6091,7 +6091,9 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 2rem 0;
+  margin: 2rem auto;
+  width: 100%;
+  max-width: 900px;
   perspective: 1000px;
   background: #0b0f17;
   border: 1px solid #1f2937;
@@ -6101,7 +6103,7 @@
 
 .chartSvg3D {
   width: 100%;
-  max-width: 720px;
+  max-width: 100%;
   height: auto;
   filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.3));
   transform: rotateX(12deg) rotateY(-4deg);
