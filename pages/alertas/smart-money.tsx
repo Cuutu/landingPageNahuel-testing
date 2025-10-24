@@ -2056,7 +2056,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // Función auxiliar para renderizar el gráfico de torta
   const renderPieChart = (chartSegments: any[]) => (
     <div className={styles.pieChart3D} id="alertsChartContainer">
-      <svg viewBox="0 0 400 400" className={styles.chartSvg3D}>
+      <svg viewBox="0 0 500 500" className={styles.chartSvg3D}>
         {/* Sombra del gráfico para efecto 3D */}
         <defs>
           <filter id="shadow3D" x="-50%" y="-50%" width="200%" height="200%">
@@ -2072,21 +2072,21 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </defs>
 
         {/* Fondo del gráfico con efecto 3D */}
-        <circle cx="200" cy="200" r="180" className={styles.chartBackground3D} />
+        <circle cx="250" cy="250" r="200" className={styles.chartBackground3D} />
 
         {/* Segmentos del gráfico 3D */}
         {chartSegments.map((segment, index) => (
           <g key={segment.id} className={styles.chartSegment3D}>
             {/* Sombra del segmento */}
             <path
-              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
+              d={describeArc(250, 250, 200, segment.startAngle, segment.endAngle)}
               fill={segment.darkColor}
               filter="url(#shadow3D)"
               className={styles.segmentShadow}
             />
             {/* Segmento principal */}
             <path
-              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
+              d={describeArc(250, 250, 200, segment.startAngle, segment.endAngle)}
               fill={segment.color}
               className={styles.segmentPath3D}
               onMouseEnter={(e) => showTooltip(e, segment)}
@@ -2095,7 +2095,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             />
             {/* Borde del segmento */}
             <path
-              d={describeArc(200, 200, 180, segment.startAngle, segment.endAngle)}
+              d={describeArc(250, 250, 200, segment.startAngle, segment.endAngle)}
               fill="none"
               stroke="#ffffff"
               strokeWidth="2"
@@ -2105,12 +2105,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
             {segment.size > 2 && (
               <text
-                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 130 : 150)}
-                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 130 : 150)}
+                x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
+                y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize={segment.size > 5 ? "16" : "14"}
+                fontSize={segment.size > 5 ? "18" : "16"}
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2125,12 +2125,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {/* Etiqueta alternativa para segmentos muy pequeños */}
             {segment.size <= 2 && segment.size > 0.5 && (
               <text
-                x={200 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 165}
-                y={200 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 165}
+                x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
+                y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185}
                 className={styles.segmentLabel}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                fontSize="12"
+                fontSize="14"
                 fontWeight="bold"
                 fill="#ffffff"
                 filter="url(#shadow3D)"
@@ -2146,7 +2146,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         ))}
 
         {/* Círculo central con efecto 3D */}
-        <circle cx="200" cy="200" r="55" className={styles.chartCenter3D} />
+        <circle cx="250" cy="250" r="60" className={styles.chartCenter3D} />
       </svg>
     </div>
   );
@@ -2653,12 +2653,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const padding = 12;
       const container = document.getElementById('alertsChartContainer') as HTMLElement | null;
       const rect = container?.getBoundingClientRect();
-      const scaleX = rect ? (rect.width / 300) : 1;
-      const scaleY = rect ? (rect.height / 300) : 1;
+      const scaleX = rect ? (rect.width / 500) : 1; // Actualizado para el nuevo viewBox
+      const scaleY = rect ? (rect.height / 500) : 1; // Actualizado para el nuevo viewBox
       const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
-      const r = 110;
-      const svgAnchorX = 150 + Math.cos(angleRad) * r;
-      const svgAnchorY = 150 + Math.sin(angleRad) * r;
+      const r = 120; // Ajustado para el nuevo radio
+      const svgAnchorX = 200 + Math.cos(angleRad) * r; // Ajustado para el nuevo centro
+      const svgAnchorY = 200 + Math.sin(angleRad) * r; // Ajustado para el nuevo centro
       let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
       let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
       const isRight = Math.cos(angleRad) >= 0;
@@ -4324,6 +4324,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           </div>
         </div>
       )}
+
+      {/* Tooltip para el gráfico de torta */}
+      <div id="chartTooltipDashboard" className={styles.chartTooltip} style={{ display: 'none' }}>
+        <div className={styles.tooltipSymbol}></div>
+        <div className={styles.tooltipAction}></div>
+        <div className={styles.tooltipEntry}></div>
+        <div className={styles.tooltipCurrent}></div>
+        <div className={styles.tooltipPnl}></div>
+        <div className={styles.tooltipStatus}></div>
+        <div className={styles.tooltipLiquidity}></div>
+        <div className={styles.tooltipShares}></div>
+        <div className={styles.tooltipRealized}></div>
+      </div>
     </div>
   );
 };
