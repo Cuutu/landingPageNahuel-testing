@@ -46,7 +46,7 @@
   font-weight: 400;
 }
 
-/* Grid de tarjetas 3x3 */
+/* Grid de tarjetas 3x2 */
 .cardsGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

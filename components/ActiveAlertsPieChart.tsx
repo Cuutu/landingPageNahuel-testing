@@ -162,16 +162,21 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   };
   const getProfitColor = (value: number) => (value >= 0 ? '#10B981' : '#EF4444');
 
-  // ✅ NUEVO: Tooltip con peso en cartera
+  // ✅ NUEVO: Tooltip mejorado con más detalles de la alerta
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload as ChartSegment;
       const totalValue = chartData.reduce((sum, seg) => sum + (seg.value || 0), 0);
       const portfolioWeight = totalValue > 0 ? ((data.value || 0) / totalValue) * 100 : 0;
       
+      // Buscar la alerta original para obtener más detalles
+      const originalAlert = alerts?.find(alert => alert.symbol === data.symbol);
+      
       return (
         <div className={styles.tooltip}>
-          <div className={styles.tooltipTitle}>{data.symbol}</div>
+          <div className={styles.tooltipTitle}>
+            {data.symbol} - {data.action} {data.tipo}
+          </div>
           <div className={styles.tooltipContent}>
             <p><strong>Peso en cartera: {portfolioWeight.toFixed(1)}%</strong></p>
             {data.allocatedAmount !== undefined && (
@@ -180,6 +185,26 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
                 <p>Shares: {formatShares(data.shares)}</p>
                 <p>P&L realizado: {formatCurrency(data.realizedProfitLoss)}</p>
                 <p>Rentabilidad: <span style={{ color: getProfitColor(data.profit) }}>{formatPercentage(data.profit)}</span></p>
+              </>
+            )}
+            {originalAlert && (
+              <>
+                <hr className={styles.tooltipDivider} />
+                <p><strong>Detalles de la alerta:</strong></p>
+                <p>Acción: <span style={{ color: data.action === 'BUY' ? '#10B981' : '#EF4444' }}>{data.action}</span></p>
+                <p>Tipo: {data.tipo}</p>
+                {originalAlert.entryPriceRange && (
+                  <p>Rango entrada: {formatCurrency(originalAlert.entryPriceRange.min)} - {formatCurrency(originalAlert.entryPriceRange.max)}</p>
+                )}
+                {originalAlert.currentPrice && (
+                  <p>Precio actual: {formatCurrency(originalAlert.currentPrice)}</p>
+                )}
+                {originalAlert.stopLoss && (
+                  <p>Stop Loss: {formatCurrency(originalAlert.stopLoss)}</p>
+                )}
+                {originalAlert.takeProfit && (
+                  <p>Take Profit: {formatCurrency(originalAlert.takeProfit)}</p>
+                )}
               </>
             )}
           </div>
@@ -318,7 +343,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
       )}
 
       <div className={styles.chartContainer}>
-        <ResponsiveContainer width="100%" height={400}>
+        <ResponsiveContainer width="100%" height={500}>
           <PieChart>
             <Pie
               data={chartData}
@@ -328,7 +353,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
               label={({ name, percent }: { name: string; percent: number }) => 
                 `${name} ${(percent * 100).toFixed(0)}%`
               }
-              outerRadius={120}
+              outerRadius={160}
               fill="#8884d8"
               dataKey="value"
               onMouseEnter={(data: ChartSegment) => setHoveredSegment(data.symbol)}

@@ -31,7 +31,7 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Grid de tarjetas 3x3 */}
+          {/* Grid de tarjetas 3x2 */}
           <div className={styles.cardsGrid}>
             {/* Fila 1 */}
             <div className={styles.linkCard}>
@@ -80,27 +80,6 @@ const Footer: React.FC = () => {
               </ul>
             </div>
 
-            {/* Fila 3 - Espacios vacíos para completar la grilla 3x3 */}
-            <div className={styles.linkCard}>
-              <h4 className={styles.cardTitle}>Próximamente</h4>
-              <ul className={styles.linkList}>
-                <li><span className={styles.comingSoon}>Más servicios</span></li>
-              </ul>
-            </div>
-
-            <div className={styles.linkCard}>
-              <h4 className={styles.cardTitle}>Próximamente</h4>
-              <ul className={styles.linkList}>
-                <li><span className={styles.comingSoon}>Más servicios</span></li>
-              </ul>
-            </div>
-
-            <div className={styles.linkCard}>
-              <h4 className={styles.cardTitle}>Próximamente</h4>
-              <ul className={styles.linkList}>
-                <li><span className={styles.comingSoon}>Más servicios</span></li>
-              </ul>
-            </div>
           </div>
         </div>
 
