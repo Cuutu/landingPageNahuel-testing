@@ -65,7 +65,7 @@ export default function MonthlyTrainingsAdmin() {
     description: '',
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    maxStudents: 10,
+    maxStudents: 15,
     price: 0,
     classes: [] as TrainingClass[]
   });
@@ -100,7 +100,7 @@ export default function MonthlyTrainingsAdmin() {
       description: '',
       month: new Date().getMonth() + 1,
       year: selectedYear,
-      maxStudents: 10,
+      maxStudents: 15,
       price: 0,
       classes: []
     });

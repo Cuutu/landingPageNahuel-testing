@@ -127,7 +127,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           year: group.year,
           monthName: getMonthName(group.month),
           price: firstSub.paymentAmount,
-          maxStudents: 10,
+          maxStudents: 15,
           totalPaidStudents: group.subscriptions.length,
           students: group.subscriptions.map((sub: any) => ({
             userId: sub.userId,

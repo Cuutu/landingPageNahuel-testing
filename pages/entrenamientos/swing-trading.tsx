@@ -893,21 +893,6 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                   </div>
                 </div>
                 
-                {/* Selector de meses para suscripción mensual */}
-                {!monthlyAccess?.hasAccess && !isEnrolled && (
-                  <MonthlyTrainingSelector
-                    trainingType="SwingTrading"
-                    onMonthSelect={handleMonthSelect}
-                    selectedMonth={selectedMonth}
-                    selectedYear={selectedYear}
-                    disabled={isProcessingPayment}
-                    onSubscribe={(month, year) => {
-                      setSelectedMonth(month);
-                      setSelectedYear(year);
-                      handleEnroll();
-                    }}
-                  />
-                )}
                 
                 {/* Mostrar estado de acceso mensual */}
                 {monthlyAccess?.hasAccess && (
@@ -1335,6 +1320,33 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
             </motion.div>
           </div>
         </section>
+
+        {/* Selector de meses para suscripción mensual */}
+        {!monthlyAccess?.hasAccess && !isEnrolled && (
+          <section className={styles.monthSelectorSection}>
+            <div className={styles.container}>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+              >
+                <MonthlyTrainingSelector
+                  trainingType="SwingTrading"
+                  onMonthSelect={handleMonthSelect}
+                  selectedMonth={selectedMonth}
+                  selectedYear={selectedYear}
+                  disabled={isProcessingPayment}
+                  onSubscribe={(month, year) => {
+                    setSelectedMonth(month);
+                    setSelectedYear(year);
+                    handleEnroll();
+                  }}
+                />
+              </motion.div>
+            </div>
+          </section>
+        )}
 
         {/* Calendario de Clases */}
         <section className={styles.calendarSection}>

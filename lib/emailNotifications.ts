@@ -881,6 +881,7 @@ export async function sendPaymentSuccessEmail(
               ` : ''}
             </div>
             
+            ${paymentDetails.service !== 'ConsultorioFinanciero' ? `
             <div class="next-steps">
               <h3>🚀 ¿Qué sigue ahora?</h3>
               ${['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) ? `
@@ -908,6 +909,7 @@ export async function sendPaymentSuccessEmail(
                 </ul>
               ` : ''}
             </div>
+            ` : ''}
             
             ${['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) ? `
               <a href="${process.env.NEXTAUTH_URL}/alertas" class="cta-button">Ir a las Alertas</a>

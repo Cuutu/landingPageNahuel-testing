@@ -31,57 +31,76 @@ const Footer: React.FC = () => {
             </p>
           </div>
 
-          {/* Alertas */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Alertas</h4>
-            <ul className={styles.linkList}>
-              <li><Link href="/alertas/trader-call" className={styles.footerLink}>Trader Call</Link></li>
-              <li><Link href="/alertas/smart-money" className={styles.footerLink}>Smart Money</Link></li>
+          {/* Grid de tarjetas 3x3 */}
+          <div className={styles.cardsGrid}>
+            {/* Fila 1 */}
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Alertas</h4>
+              <ul className={styles.linkList}>
+                <li><Link href="/alertas/trader-call" className={styles.footerLink}>Trader Call</Link></li>
+                <li><Link href="/alertas/smart-money" className={styles.footerLink}>Smart Money</Link></li>
+              </ul>
+            </div>
 
-            </ul>
-          </div>
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Entrenamientos</h4>
+              <ul className={styles.linkList}>
+                <li><Link href="/entrenamientos/swing-trading" className={styles.footerLink}>Swing Trading</Link></li>
+              </ul>
+            </div>
 
-          {/* Entrenamientos */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Entrenamientos</h4>
-            <ul className={styles.linkList}>
-              <li><Link href="/entrenamientos/swing-trading" className={styles.footerLink}>Swing Trading</Link></li>
-            </ul>
-          </div>
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Asesorías</h4>
+              <ul className={styles.linkList}>
+                <li><Link href="/asesorias/consultorio-financiero" className={styles.footerLink}>Consultorio Financiero</Link></li>
+              </ul>
+            </div>
 
-          {/* Asesorías */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Asesorías</h4>
-            <ul className={styles.linkList}>
-              <li><Link href="/asesorias/consultorio-financiero" className={styles.footerLink}>Consultorio Financiero</Link></li>
+            {/* Fila 2 */}
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Indicadores</h4>
+              <ul className={styles.linkList}>
+                <li><Link href="/mediasmovilesautomaticas" className={styles.footerLink}>Medias Móviles Automáticas</Link></li>
+              </ul>
+            </div>
 
-            </ul>
-          </div>
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Recursos</h4>
+              <ul className={styles.linkList}>
+                <li><Link href="/recursos#tradingview-descuento" className={styles.footerLink}>TradingView</Link></li>
+                <li><Link href="/recursos#biblioteca-inversor" className={styles.footerLink}>Biblioteca del inversor</Link></li>
+                <li><Link href="/recursos#informacion-traders" className={styles.footerLink}>Información para Traders</Link></li>
+              </ul>
+            </div>
 
-          {/* Indicadores */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Indicadores</h4>
-            <ul className={styles.linkList}>
-              <li><Link href="/mediasmovilesautomaticas" className={styles.footerLink}>Medias Móviles Automáticas</Link></li>
-            </ul>
-          </div>
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Empresa</h4>
+              <ul className={styles.linkList}>
+                <li><button onClick={openContactModal} className={styles.footerButton}>Contacto</button></li>
+              </ul>
+            </div>
 
-          {/* Recursos */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Recursos</h4>
-            <ul className={styles.linkList}>
-              <li><Link href="/recursos#tradingview-descuento" className={styles.footerLink}>TradingView</Link></li>
-              <li><Link href="/recursos#biblioteca-inversor" className={styles.footerLink}>Biblioteca del inversor</Link></li>
-              <li><Link href="/recursos#informacion-traders" className={styles.footerLink}>Información para Traders</Link></li>
-            </ul>
-          </div>
+            {/* Fila 3 - Espacios vacíos para completar la grilla 3x3 */}
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Próximamente</h4>
+              <ul className={styles.linkList}>
+                <li><span className={styles.comingSoon}>Más servicios</span></li>
+              </ul>
+            </div>
 
-          {/* Empresa */}
-          <div className={styles.linkColumn}>
-            <h4 className={styles.columnTitle}>Empresa</h4>
-            <ul className={styles.linkList}>
-              <li><button onClick={openContactModal} className={styles.footerButton}>Contacto</button></li>
-            </ul>
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Próximamente</h4>
+              <ul className={styles.linkList}>
+                <li><span className={styles.comingSoon}>Más servicios</span></li>
+              </ul>
+            </div>
+
+            <div className={styles.linkCard}>
+              <h4 className={styles.cardTitle}>Próximamente</h4>
+              <ul className={styles.linkList}>
+                <li><span className={styles.comingSoon}>Más servicios</span></li>
+              </ul>
+            </div>
           </div>
         </div>
 

@@ -2024,32 +2024,31 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // Agregar segmento de liquidez disponible
+    // Agregar segmento de liquidez disponible para que la suma sea 100%
     const available = Math.max((totalBase || 0) - totalAllocated, 0);
-    if (available > 0) {
-      const liqStart = cumulativeAngle;
-      const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
-      chartSegments.push({
-        id: 'LIQ-SEG',
-        symbol: 'LIQUIDEZ',
-        profit: 0,
-        status: 'ACTIVE',
-        entryPrice: 0,
-        currentPrice: 0,
-        stopLoss: 0,
-        takeProfit: 0,
-        action: 'BUY',
-        date: '',
-        analysis: '',
-        allocatedAmount: available,
-        color: '#9CA3AF',
-        darkColor: '#9CA3AF80',
-        size: (available / (totalBase || 1)) * 100,
-        startAngle: liqStart,
-        endAngle: liqEnd,
-        centerAngle: (liqStart + liqEnd) / 2,
-      } as any);
-    }
+    // Siempre agregar el segmento de liquidez, incluso si es 0, para mostrar la composición completa
+    const liqStart = cumulativeAngle;
+    const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
+    chartSegments.push({
+      id: 'LIQ-SEG',
+      symbol: 'LIQUIDEZ',
+      profit: 0,
+      status: 'ACTIVE',
+      entryPrice: 0,
+      currentPrice: 0,
+      stopLoss: 0,
+      takeProfit: 0,
+      action: 'BUY',
+      date: '',
+      analysis: '',
+      allocatedAmount: available,
+      color: '#9CA3AF',
+      darkColor: '#9CA3AF80',
+      size: (available / (totalBase || 1)) * 100,
+      startAngle: liqStart,
+      endAngle: liqEnd,
+      centerAngle: (liqStart + liqEnd) / 2,
+    } as any);
 
     return chartSegments;
   };
@@ -2484,7 +2483,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     )}
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>Fecha:</span>
-                      <strong>{alert.date}</strong>
+                      <strong>{new Date(alert.date).toLocaleDateString('es-ES', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        timeZone: 'America/Argentina/Buenos_Aires'
+                      })}</strong>
                     </div>
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>Participación:</span>

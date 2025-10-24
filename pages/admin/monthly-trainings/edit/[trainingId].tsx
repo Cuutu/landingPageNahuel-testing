@@ -73,7 +73,7 @@ export default function EditMonthlyTraining() {
     description: '',
     month: new Date().getMonth() + 1,
     year: new Date().getFullYear(),
-    maxStudents: 10,
+    maxStudents: 15,
     price: 0,
     status: 'draft' as MonthlyTraining['status'],
     registrationOpenDate: '',

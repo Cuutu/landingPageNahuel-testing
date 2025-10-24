@@ -50,8 +50,8 @@ export default function PaymentSuccess() {
       'CashFlow': { url: '/alertas/cashflow', text: 'Ir a mis alertas' },
       'SwingTrading': { url: '/entrenamientos/swing-trading', text: 'Ir a mis entrenamientos' },
       'DowJones': { url: '/entrenamientos/dow-jones', text: 'Ir a mis entrenamientos' },
-      'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Ver mis asesorías' },
-      'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Ver mis asesorías' }
+      'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Volver' },
+      'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Volver' }
     };
     
     return actionButtons[service] || { url: '/', text: 'Ir al inicio' };
@@ -248,7 +248,7 @@ export default function PaymentSuccess() {
 
           <div className={styles.supportInfo}>
             <p className={styles.supportMessage}>
-              Necesitas ayuda. soporte@lozanonahuel.com
+              Necesitas ayuda? soporte@lozanonahuel.com
             </p>
           </div>
         </div>

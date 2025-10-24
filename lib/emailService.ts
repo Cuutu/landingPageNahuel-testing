@@ -1341,7 +1341,6 @@ export function createSubscriptionConfirmationTemplate(details: {
       </div>
 
       <p>Podés acceder desde aquí:</p>
-      <p><a href="${svc.url}" style="display:inline-block;background:#10b981;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none;font-weight:600;">Ir a ${svc.name}</a></p>
     `,
     notificationType: 'success',
     urgency: 'normal',

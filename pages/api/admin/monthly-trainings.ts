@@ -157,7 +157,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       description,
       month,
       year,
-      maxStudents = 10,
+      maxStudents = 15,
       price,
       classes
     } = req.body;

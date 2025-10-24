@@ -167,11 +167,11 @@ const ContactForm: React.FC<ContactFormProps> = ({ isOpen, onClose }) => {
         setShowSuccessPopup(true);
         setLastSubmissionTime(Date.now());
         
-        // Cerrar el modal después de 3 segundos
+        // Cerrar el modal después de 10 segundos
         setTimeout(() => {
           setShowSuccessPopup(false);
           onClose();
-        }, 3000);
+        }, 10000);
       } else {
         throw new Error(data.error || 'Error al enviar el mensaje');
       }

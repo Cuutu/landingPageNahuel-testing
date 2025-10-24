@@ -40,7 +40,7 @@ interface MonthlyTrainingDocument extends Document {
   year: number;
   
   // Configuración
-  maxStudents: number; // Máximo 10 estudiantes
+  maxStudents: number; // Máximo 15 estudiantes
   price: number; // Precio del pack mensual en pesos argentinos
   
   // Rango de verificación para pagos exitosos
@@ -118,7 +118,7 @@ const monthlyTrainingSchema = new Schema<MonthlyTrainingDocument>({
   year: { type: Number, required: true },
   
   // Configuración
-  maxStudents: { type: Number, required: true, default: 20 },
+  maxStudents: { type: Number, required: true, default: 15 },
   price: { type: Number, required: true },
   
   // Rango de verificación para pagos exitosos

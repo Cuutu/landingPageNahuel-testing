@@ -97,13 +97,19 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         setChartData([]);
         return;
       }
-      const chartSegments: ChartSegment[] = activeAlerts.map((alert, index) => {
-        const profitValue = Math.abs(alert.profit || 0);
+      
+      // Filtrar solo alertas activas con liquidez asignada
+      const activeAlertsWithLiquidity = activeAlerts.filter(alert => {
+        const liquidity = liquidityMap?.[alert.symbol];
+        return liquidity && liquidity.allocatedAmount > 0;
+      });
+
+      const chartSegments: ChartSegment[] = activeAlertsWithLiquidity.map((alert, index) => {
         const liquidity = liquidityMap?.[alert.symbol];
         const allocated = Number(liquidity?.allocatedAmount || 0);
         return {
           name: alert.symbol,
-          value: allocated > 0 ? allocated : 1,
+          value: allocated, // Usar el monto asignado directamente
           symbol: alert.symbol,
           profit: alert.profit || 0,
           action: alert.action,
@@ -117,31 +123,31 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
       });
 
       // Agregar segmento de Liquidez disponible para que la torta sume 100%
-      if (typeof totalLiquidity === 'number') {
+      if (typeof totalLiquidity === 'number' && totalLiquidity > 0) {
         const allocatedSum = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
         const available = Math.max(totalLiquidity - allocatedSum, 0);
-        if (available > 0) {
-          chartSegments.push({
-            name: 'Liquidez',
-            value: available,
-            symbol: 'LIQUIDEZ',
-            profit: 0,
-            action: 'BUY',
-            tipo: 'SmartMoney',
-            color: '#9CA3AF',
-            darkColor: '#9CA3AF80',
-            allocatedAmount: undefined,
-            shares: undefined,
-            realizedProfitLoss: undefined,
-          } as ChartSegment);
-        }
+        
+        // Siempre agregar el segmento de liquidez, incluso si es 0, para mostrar la composición completa
+        chartSegments.push({
+          name: 'Liquidez',
+          value: available,
+          symbol: 'LIQUIDEZ',
+          profit: 0,
+          action: 'BUY',
+          tipo: 'SmartMoney',
+          color: '#9CA3AF',
+          darkColor: '#9CA3AF80',
+          allocatedAmount: available,
+          shares: undefined,
+          realizedProfitLoss: undefined,
+        } as ChartSegment);
       }
 
       setChartData(chartSegments);
     } else {
       setChartData([]);
     }
-  }, [alerts, liquidityMap]);
+  }, [alerts, liquidityMap, totalLiquidity]);
 
   // ✅ Formateadores
   const formatCurrency = (n?: number) => {
@@ -156,20 +162,24 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   };
   const getProfitColor = (value: number) => (value >= 0 ? '#10B981' : '#EF4444');
 
-  // ✅ NUEVO: Tooltip con liquidez
+  // ✅ NUEVO: Tooltip con peso en cartera
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload as ChartSegment;
+      const totalValue = chartData.reduce((sum, seg) => sum + (seg.value || 0), 0);
+      const portfolioWeight = totalValue > 0 ? ((data.value || 0) / totalValue) * 100 : 0;
+      
       return (
         <div className={styles.tooltip}>
           <div className={styles.tooltipTitle}>{data.symbol}</div>
           <div className={styles.tooltipContent}>
-            <p>Profit: <span style={{ color: getProfitColor(data.profit) }}>{formatPercentage(data.profit)}</span></p>
+            <p><strong>Peso en cartera: {portfolioWeight.toFixed(1)}%</strong></p>
             {data.allocatedAmount !== undefined && (
               <>
-                <p>Liquidez asignada: {formatCurrency(data.allocatedAmount)}</p>
+                <p>Monto asignado: {formatCurrency(data.allocatedAmount)}</p>
                 <p>Shares: {formatShares(data.shares)}</p>
                 <p>P&L realizado: {formatCurrency(data.realizedProfitLoss)}</p>
+                <p>Rentabilidad: <span style={{ color: getProfitColor(data.profit) }}>{formatPercentage(data.profit)}</span></p>
               </>
             )}
           </div>
@@ -180,16 +190,20 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   };
 
   const CustomLegend = ({ payload }: any) => {
+    const totalValue = chartData.reduce((sum, seg) => sum + (seg.value || 0), 0);
+    
     return (
       <div className={styles.legend}>
         {payload?.map((entry: any, index: number) => {
           const data = entry?.payload as ChartSegment;
+          const portfolioWeight = totalValue > 0 ? ((data.value || 0) / totalValue) * 100 : 0;
+          
           return (
             <div key={index} className={styles.legendItem}>
               <span className={styles.legendColor} style={{ backgroundColor: data.color }} />
               <span className={styles.legendText}>{data.symbol}</span>
-              <span className={styles.legendProfit} style={{ color: getProfitColor(data.profit) }}>
-                {formatPercentage(data.profit)}
+              <span className={styles.legendWeight} style={{ color: '#374151', fontWeight: '600' }}>
+                {portfolioWeight.toFixed(1)}%
               </span>
               {data.allocatedAmount !== undefined && (
                 <span className={styles.legendExtra}>
@@ -345,7 +359,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         <div className={styles.infoItem}>
           <Info size={14} />
           <span>
-            El tamaño de cada segmento representa la liquidez asignada a la alerta. Si hay liquidez asignada, el tooltip muestra el monto y P&L.
+            <strong>Composición de cartera:</strong> El tamaño de cada segmento representa el peso en cartera (porcentaje del total). La liquidez disponible se incluye como un instrumento más para que la suma total sea 100%.
           </span>
         </div>
       </div>
