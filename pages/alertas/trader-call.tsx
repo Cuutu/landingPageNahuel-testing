@@ -1141,23 +1141,46 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     return () => clearInterval(interval);
   }, [realAlerts, lastPriceUpdate, updatePrices]);
 
-  // ✅ OPTIMIZADO: Cargar liquidez una sola vez y cachear
+  // ✅ MEJORADO: Cargar liquidez con mejor manejo de errores y logging
   const loadLiquidity = async () => {
     try {
+      console.log('🔄 [LIQUIDITY] Iniciando carga de liquidez para TraderCall...');
+      
       // Agregar timestamp para evitar cache del browser
       const timestamp = new Date().getTime();
       const res = await fetch(`/api/liquidity?pool=TraderCall&_t=${timestamp}`);
+      
       if (res.ok) {
         const json = await res.json();
-        const map: Record<string, any> = {};
-        (json.liquidity?.distributions || []).forEach((d: any) => {
-          map[d.symbol] = d;
+        console.log('✅ [LIQUIDITY] Respuesta de API recibida:', {
+          success: json.success,
+          hasLiquidity: !!json.liquidity,
+          totalLiquidity: json.liquidity?.totalLiquidity,
+          distributionsCount: json.liquidity?.distributions?.length || 0
         });
-        setLiquidityMap(map);
-        setLiquidityTotal(Number(json.liquidity?.totalLiquidity || 0));
+        
+        if (json.success && json.liquidity) {
+          const map: Record<string, any> = {};
+          (json.liquidity?.distributions || []).forEach((d: any) => {
+            map[d.symbol] = d;
+            console.log(`📊 [LIQUIDITY] Distribución cargada: ${d.symbol} - $${d.allocatedAmount}`);
+          });
+          
+          setLiquidityMap(map);
+          setLiquidityTotal(Number(json.liquidity?.totalLiquidity || 0));
+          
+          console.log('✅ [LIQUIDITY] Datos de liquidez cargados exitosamente:', {
+            mapKeys: Object.keys(map).length,
+            totalLiquidity: json.liquidity?.totalLiquidity
+          });
+        } else {
+          console.warn('⚠️ [LIQUIDITY] Respuesta de API sin datos de liquidez');
+        }
+      } else {
+        console.error('❌ [LIQUIDITY] Error en respuesta de API:', res.status, res.statusText);
       }
     } catch (e) {
-      console.log('Error cargando liquidez:', e);
+      console.error('❌ [LIQUIDITY] Error cargando liquidez:', e);
     }
   };
 
@@ -1167,6 +1190,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       loadLiquidity();
     }
   }, [liquidityMap]);
+
+  // ✅ NUEVO: Recargar liquidez automáticamente si no se carga correctamente
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (Object.keys(liquidityMap).length === 0 && liquidityTotal === 0) {
+        console.log('🔄 [LIQUIDITY] Reintentando carga de liquidez después de 3 segundos...');
+        loadLiquidity();
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [liquidityMap, liquidityTotal]);
 
   // Función para obtener precio individual de una acción (modal crear alerta)
   const fetchStockPrice = async (symbol: string) => {
@@ -1999,8 +2034,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   };
 
   // Funciones de renderizado
-  // Función auxiliar para crear datos del gráfico de torta
+  // ✅ MEJORADO: Función auxiliar para crear datos del gráfico de torta con logging
   const createPieChartData = (alerts: any[]) => {
+    console.log('📊 [PIE CHART] Creando datos del gráfico de torta...', {
+      alertsCount: alerts.length,
+      liquidityMapKeys: Object.keys(liquidityMap || {}).length,
+      liquidityTotal: liquidityTotal
+    });
+
     // Paleta de colores dinámicos para cada alerta
     const colorPalette = [
       '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
@@ -2012,11 +2053,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const activeDistributions = Object.values(liquidityMap || {})
       .filter((d: any) => d && d.allocatedAmount > 0);
 
+    console.log('📊 [PIE CHART] Distribuciones activas encontradas:', activeDistributions.length);
+
     // ✅ CORREGIDO: Filtrar solo distribuciones de alertas ACTIVAS
     const activeDistributionsWithActiveAlerts = activeDistributions.filter((d: any) => {
       const alert = (realAlerts || []).find((a: any) => a.symbol === d.symbol);
-      return alert && alert.status === 'ACTIVE';
+      const isActive = alert && alert.status === 'ACTIVE';
+      if (isActive) {
+        console.log(`✅ [PIE CHART] Alerta activa encontrada: ${d.symbol} - $${d.allocatedAmount}`);
+      }
+      return isActive;
     });
+
+    console.log('📊 [PIE CHART] Distribuciones con alertas activas:', activeDistributionsWithActiveAlerts.length);
 
     // Mapear distribuciones a segmentos (solo símbolos con liquidez asignada y alertas activas)
     const chartData = activeDistributionsWithActiveAlerts.map((d: any, index: number) => {
@@ -2101,6 +2150,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       endAngle: liqEnd,
       centerAngle: (liqStart + liqEnd) / 2,
     } as any);
+
+    // ✅ NUEVO: Logging final de los segmentos creados
+    console.log('📊 [PIE CHART] Segmentos finales creados:', {
+      totalSegments: chartSegments.length,
+      segments: chartSegments.map(s => ({
+        symbol: s.symbol,
+        size: s.size,
+        allocatedAmount: s.allocatedAmount
+      }))
+    });
 
     // Si no hay distribuciones ni totalLiquidity, no hay segmentos
     return chartSegments;
@@ -2205,9 +2264,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   );
 
   const renderDashboard = () => {
-    // Obtener datos para el gráfico de torta (solo alertas activas)
+    // ✅ MEJORADO: Obtener datos para el gráfico de torta con mejor manejo de errores
     const alertasActivas = realAlerts.filter(alert => alert.status === 'ACTIVE');
-    const chartSegments = createPieChartData(alertasActivas);
+    
+    // ✅ NUEVO: Verificar si los datos de liquidez están cargados
+    const liquidityLoaded = Object.keys(liquidityMap).length > 0 || liquidityTotal > 0;
+    const hasActiveAlerts = alertasActivas.length > 0;
+    
+    // ✅ NUEVO: Crear datos del gráfico solo si tenemos datos de liquidez
+    const chartSegments = liquidityLoaded ? createPieChartData(alertasActivas) : [];
+    
+    // ✅ NUEVO: Determinar el estado del gráfico
+    const showChart = liquidityLoaded && hasActiveAlerts && chartSegments.length > 0;
+    const showLoading = !liquidityLoaded && hasActiveAlerts;
+    const showEmpty = !hasActiveAlerts;
 
     return (
       <div className={styles.dashboardContent}>
@@ -2285,17 +2355,51 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.chartSection}>
           <div className={styles.chartHeader}>
             <h3>📊 Distribución de Alertas Activas</h3>
+            {/* ✅ NUEVO: Botón de recarga para debug */}
+            <button 
+              onClick={() => loadLiquidity()} 
+              className={styles.refreshButton}
+              style={{ marginLeft: '10px', padding: '5px 10px', fontSize: '12px' }}
+            >
+              🔄 Recargar
+            </button>
           </div>
           <div className={styles.dashboardChartContainer}>
-            {chartSegments.length > 0 ? (
+            {showChart ? (
               <div className={styles.simpleChartLayout}>
                 {renderPieChart(chartSegments)}
               </div>
-            ) : (
+            ) : showLoading ? (
+              <div className={styles.emptyChartState}>
+                <div className={styles.emptyChartIcon}>⏳</div>
+                <h4>Cargando datos de liquidez...</h4>
+                <p>Por favor espera mientras se cargan los datos del gráfico.</p>
+                <button 
+                  onClick={() => loadLiquidity()} 
+                  className={styles.refreshButton}
+                  style={{ marginTop: '10px' }}
+                >
+                  🔄 Reintentar
+                </button>
+              </div>
+            ) : showEmpty ? (
               <div className={styles.emptyChartState}>
                 <div className={styles.emptyChartIcon}>📊</div>
                 <h4>No hay alertas activas</h4>
                 <p>Las alertas aparecerán aquí cuando sean creadas por el administrador.</p>
+              </div>
+            ) : (
+              <div className={styles.emptyChartState}>
+                <div className={styles.emptyChartIcon}>❌</div>
+                <h4>Error cargando datos</h4>
+                <p>No se pudieron cargar los datos de liquidez. Intenta recargar la página.</p>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className={styles.refreshButton}
+                  style={{ marginTop: '10px' }}
+                >
+                  🔄 Recargar página
+                </button>
               </div>
             )}
           </div>
