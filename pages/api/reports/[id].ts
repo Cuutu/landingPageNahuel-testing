@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Manejar actualización de informe (PUT)
     if (req.method === 'PUT') {
-      const { title, content, category, isPublished } = req.body;
+      const { title, content, isPublished, images } = req.body;
 
       // Validar datos requeridos
       if (!title || !content) {
@@ -60,8 +60,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         {
           title: title.trim(),
           content: content.trim(),
-          category: category || 'general',
           isPublished: isPublished !== undefined ? isPublished : true,
+          images: images || [],
           updatedAt: new Date()
         },
         { new: true, runValidators: true }

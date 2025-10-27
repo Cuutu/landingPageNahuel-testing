@@ -95,10 +95,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   const [editFormData, setEditFormData] = useState({
     title: '',
     content: '',
-    category: 'general',
     isPublished: true
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [editImages, setEditImages] = useState<any[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const handleBack = () => {
     router.back();
@@ -109,9 +110,9 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setEditFormData({
       title: report.title,
       content: report.content,
-      category: report.category,
       isPublished: report.isPublished
     });
+    setEditImages(report.images || []);
     setShowEditModal(true);
   };
 
@@ -136,7 +137,12 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(editFormData),
+        body: JSON.stringify({
+          title: editFormData.title,
+          content: editFormData.content,
+          isPublished: editFormData.isPublished,
+          images: editImages
+        }),
       });
 
       if (response.ok) {
@@ -164,9 +170,66 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setEditFormData({
       title: '',
       content: '',
-      category: 'general',
       isPublished: true
     });
+    setEditImages([]);
+  };
+
+  // Funciones para manejo de imágenes en edición
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch('/api/upload/image', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Error subiendo imagen');
+        }
+
+        return await response.json();
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      setEditImages(prev => [...prev, ...uploadedImages]);
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      alert('Error subiendo imágenes');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setEditImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveImageUp = (index: number) => {
+    if (index > 0) {
+      setEditImages(prev => {
+        const newImages = [...prev];
+        [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+        return newImages;
+      });
+    }
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index < editImages.length - 1) {
+      setEditImages(prev => {
+        const newImages = [...prev];
+        [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+        return newImages;
+      });
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -475,10 +538,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 {/* Contenido principal del informe - AHORA PRIMERO */}
                 <div className={styles.reportContent}>
                   <h2>📋 Contenido Principal del Informe</h2>
-                  <div 
-                    className={styles.content}
-                    dangerouslySetInnerHTML={{ __html: report.content }}
-                  />
+                  <div className={styles.content}>
+                    {report.content.split('\n').map((line, index) => (
+                      <p key={index}>{line}</p>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Navegación de artículos - AHORA DESPUÉS */}
@@ -543,10 +607,11 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                       <h3 className={styles.articleTitle}>
                         Artículo {publishedArticles[currentArticleIndex].order}: {publishedArticles[currentArticleIndex].title}
                       </h3>
-                      <div 
-                        className={styles.articleContent}
-                        dangerouslySetInnerHTML={{ __html: publishedArticles[currentArticleIndex].content }}
-                      />
+                      <div className={styles.articleContent}>
+                        {publishedArticles[currentArticleIndex].content.split('\n').map((line, index) => (
+                          <p key={index}>{line}</p>
+                        ))}
+                      </div>
                       <div className={styles.articleMeta}>
                         <span>Publicado: {formatDate(publishedArticles[currentArticleIndex].createdAt)}</span>
                       </div>
@@ -924,21 +989,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label htmlFor="category">Categoría</label>
-                <select
-                  id="category"
-                  name="category"
-                  value={editFormData.category}
-                  onChange={handleEditFormChange}
-                  className={styles.formSelect}
-                >
-                  <option value="general">General</option>
-                  <option value="trader-call">Trader Call</option>
-                  <option value="smart-money">Smart Money</option>
-                  <option value="cash-flow">Cash Flow</option>
-                </select>
-              </div>
 
               <div className={styles.formGroup}>
                 <label htmlFor="content">Contenido del Informe</label>
@@ -951,6 +1001,76 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   placeholder="Escribe el contenido del informe aquí..."
                   rows={10}
                 />
+              </div>
+
+              {/* Sección de imágenes */}
+              <div className={styles.formGroup}>
+                <label>Imágenes del Informe</label>
+                <div className={styles.imageUploadSection}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className={styles.imageUploadInput}
+                    id="imageUpload"
+                  />
+                  <label htmlFor="imageUpload" className={styles.imageUploadButton}>
+                    {uploadingImages ? (
+                      <>
+                        <div className={styles.spinner}></div>
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        📸 Agregar Imágenes
+                      </>
+                    )}
+                  </label>
+                </div>
+
+                {/* Lista de imágenes */}
+                {editImages.length > 0 && (
+                  <div className={styles.editImagesList}>
+                    {editImages.map((image, index) => (
+                      <div key={index} className={styles.editImageItem}>
+                        <img 
+                          src={image.thumbnailUrl || image.url} 
+                          alt={`Imagen ${index + 1}`}
+                          className={styles.editImagePreview}
+                        />
+                        <div className={styles.editImageActions}>
+                          <button
+                            onClick={() => moveImageUp(index)}
+                            disabled={index === 0}
+                            className={styles.imageActionButton}
+                            title="Mover arriba"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => moveImageDown(index)}
+                            disabled={index === editImages.length - 1}
+                            className={styles.imageActionButton}
+                            title="Mover abajo"
+                          >
+                            ↓
+                          </button>
+                          <button
+                            onClick={() => removeImage(index)}
+                            className={styles.imageActionButton}
+                            title="Eliminar"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <div className={styles.editImageOrder}>
+                          {index + 1}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>
