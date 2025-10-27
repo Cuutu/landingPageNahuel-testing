@@ -656,8 +656,9 @@
 
 .galleryThumbnail {
   width: 100%;
-  height: 100px;
-  object-fit: cover;
+  height: auto;
+  min-height: 100px;
+  object-fit: contain;
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
@@ -996,7 +997,7 @@
   }
   
   .galleryThumbnail {
-    height: 80px;
+    min-height: 80px;
   }
   
   .heroSection {
@@ -1421,8 +1422,9 @@
 
 .imageThumbnail img {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  min-height: 200px;
+  object-fit: contain;
   cursor: pointer;
   transition: all 0.3s ease;
 }

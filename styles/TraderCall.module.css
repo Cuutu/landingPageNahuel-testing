@@ -3587,7 +3587,7 @@
   max-width: 100%;
   max-height: 300px;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .reportText {
@@ -3716,8 +3716,9 @@
 
 .imageThumbnail img {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
+  height: auto;
+  min-height: 150px;
+  object-fit: contain;
 }
 
 .imageCaption {
@@ -4281,7 +4282,7 @@
 .previewImage {
   width: 100%;
   max-height: 300px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease;
@@ -4391,8 +4392,9 @@
 
 .previewThumbnail {
   width: 100%;
-  height: 120px;
-  object-fit: cover;
+  height: auto;
+  min-height: 120px;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -5258,7 +5260,7 @@
   width: 100%;
   height: auto;
   max-height: 400px;
-  object-fit: cover;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -5386,8 +5388,9 @@
 
 .imageThumbnail img {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
+  height: auto;
+  min-height: 150px;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -5782,7 +5785,7 @@
   width: 100%;
   height: auto;
   border-radius: 8px;
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .stickyImageTitle {
@@ -6153,8 +6156,9 @@
 
 .informeCover img {
   width: 100%;
-  height: 200px;
-  object-fit: cover;
+  height: auto;
+  min-height: 200px;
+  object-fit: contain;
   transition: transform 0.3s ease;
 }
 
@@ -8363,7 +8367,7 @@
   width: 100%;
   height: auto;
   max-height: 150px;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
