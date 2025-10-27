@@ -1190,7 +1190,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         optimizedImageUrl = getCloudinaryImageUrl(reportDoc.coverImage.public_id, {
           width: 800,
           height: 600,
-          crop: 'fill',
+          crop: 'scale',
           format: 'webp'
         });
       } catch (error) {
@@ -1210,13 +1210,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             optimizedUrl: getCloudinaryImageUrl(img.public_id, {
               width: 800,
               height: 600,
-              crop: 'fill',
+              crop: 'scale',
               format: 'webp'
             }),
             thumbnailUrl: getCloudinaryImageUrl(img.public_id, {
               width: 300,
               height: 200,
-              crop: 'fill',
+              crop: 'scale',
               format: 'webp'
             })
           }));

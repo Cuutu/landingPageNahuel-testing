@@ -46,7 +46,7 @@ export async function uploadImageToCloudinary(
       resource_type: 'image',
       public_id: `${Date.now()}_${fileName.replace(/\.[^/.]+$/, "")}`,
       overwrite: true,
-      quality: 'auto',
+      quality: 100,
     };
 
     if (folder) {
@@ -114,7 +114,7 @@ export function getCloudinaryImageUrl(
   const {
     width,
     height,
-    crop = 'fill',
+    crop = 'scale',
     quality = 'auto',
     format,
     gravity = 'auto'
