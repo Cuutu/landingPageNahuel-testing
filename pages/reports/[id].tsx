@@ -113,7 +113,19 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
       content: report.content,
       isPublished: report.isPublished
     });
-    setEditImages(report.images || []);
+    // Convertir las imágenes del reporte al formato CloudinaryImage
+    const cloudinaryImages: CloudinaryImage[] = (report.images || []).map((img: any) => ({
+      public_id: img.public_id || `temp_${Date.now()}_${Math.random()}`,
+      url: img.url,
+      secure_url: img.optimizedUrl || img.url,
+      width: img.width || 0,
+      height: img.height || 0,
+      format: img.format || 'jpg',
+      bytes: img.bytes || 0,
+      caption: img.caption,
+      order: img.order
+    }));
+    setEditImages(cloudinaryImages);
     setShowEditModal(true);
   };
 
