@@ -1704,33 +1704,8 @@
 }
 
 /* ===== GESTIÓN DE IMÁGENES EN EDICIÓN ===== */
-.imageUploadSection {
+.imageUploader {
   margin-bottom: 1rem;
-}
-
-.imageUploadInput {
-  display: none;
-}
-
-.imageUploadButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 12px;
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-}
-
-.imageUploadButton:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
 .editImagesList {

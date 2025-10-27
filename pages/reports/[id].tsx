@@ -5,6 +5,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft,
@@ -98,7 +99,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     isPublished: true
   });
   const [isUpdating, setIsUpdating] = useState(false);
-  const [editImages, setEditImages] = useState<any[]>([]);
+  const [editImages, setEditImages] = useState<CloudinaryImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
   const handleBack = () => {
@@ -176,40 +177,24 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   };
 
   // Funciones para manejo de imágenes en edición
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploadingImages(true);
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const response = await fetch('/api/upload/image', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error('Error subiendo imagen');
-        }
-
-        return await response.json();
-      });
-
-      const uploadedImages = await Promise.all(uploadPromises);
-      setEditImages(prev => [...prev, ...uploadedImages]);
-    } catch (error) {
-      console.error('Error uploading images:', error);
-      alert('Error subiendo imágenes');
-    } finally {
-      setUploadingImages(false);
-    }
+  const handleImageUploaded = (image: CloudinaryImage) => {
+    setEditImages(prev => [...prev, image]);
+    setUploadingImages(false);
+    console.log('✅ Imagen adicional agregada:', image.public_id);
   };
 
-  const removeImage = (index: number) => {
-    setEditImages(prev => prev.filter((_, i) => i !== index));
+  const handleUploadStart = () => {
+    setUploadingImages(true);
+  };
+
+  const handleUploadError = (error: string) => {
+    console.error('❌ Error subiendo imagen:', error);
+    alert(`Error subiendo imagen: ${error}`);
+    setUploadingImages(false);
+  };
+
+  const removeImage = (publicId: string) => {
+    setEditImages(prev => prev.filter(img => img.public_id !== publicId));
   };
 
   const moveImageUp = (index: number) => {
@@ -1006,36 +991,25 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               {/* Sección de imágenes */}
               <div className={styles.formGroup}>
                 <label>Imágenes del Informe</label>
-                <div className={styles.imageUploadSection}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className={styles.imageUploadInput}
-                    id="imageUpload"
-                  />
-                  <label htmlFor="imageUpload" className={styles.imageUploadButton}>
-                    {uploadingImages ? (
-                      <>
-                        <div className={styles.spinner}></div>
-                        Subiendo...
-                      </>
-                    ) : (
-                      <>
-                        📸 Agregar Imágenes
-                      </>
-                    )}
-                  </label>
-                </div>
+                
+                {/* Componente ImageUploader */}
+                <ImageUploader
+                  onImageUploaded={handleImageUploaded}
+                  onUploadStart={handleUploadStart}
+                  onError={handleUploadError}
+                  multiple={true}
+                  maxFiles={10}
+                  buttonText="📸 Agregar Imágenes"
+                  className={styles.imageUploader}
+                />
 
                 {/* Lista de imágenes */}
                 {editImages.length > 0 && (
                   <div className={styles.editImagesList}>
                     {editImages.map((image, index) => (
-                      <div key={index} className={styles.editImageItem}>
+                      <div key={image.public_id} className={styles.editImageItem}>
                         <img 
-                          src={image.thumbnailUrl || image.url} 
+                          src={image.secure_url} 
                           alt={`Imagen ${index + 1}`}
                           className={styles.editImagePreview}
                         />
@@ -1057,7 +1031,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                             ↓
                           </button>
                           <button
-                            onClick={() => removeImage(index)}
+                            onClick={() => removeImage(image.public_id)}
                             className={styles.imageActionButton}
                             title="Eliminar"
                           >
