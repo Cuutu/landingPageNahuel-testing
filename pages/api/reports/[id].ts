@@ -7,7 +7,7 @@ import User from '../../../models/User';
 import { getCloudinaryImageUrl } from '../../../lib/cloudinary';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'GET') {
+  if (req.method !== 'GET' && req.method !== 'PUT') {
     return res.status(405).json({ message: 'Método no permitido' });
   }
 
@@ -26,6 +26,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ message: 'ID del informe requerido' });
     }
 
+    // Verificar que el usuario sea administrador para operaciones PUT
+    if (req.method === 'PUT') {
+      const user = await User.findOne({ email: session.user.email }).select('role');
+      if (!user || user.role !== 'admin') {
+        return res.status(403).json({ message: 'Solo administradores pueden editar informes' });
+      }
+    }
+
     console.log('📖 Obteniendo informe:', id);
 
     // Buscar el informe por ID
@@ -37,7 +45,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: 'Informe no encontrado' });
     }
 
-    // Verificar que el informe esté publicado
+    // Manejar actualización de informe (PUT)
+    if (req.method === 'PUT') {
+      const { title, content, category, isPublished } = req.body;
+
+      // Validar datos requeridos
+      if (!title || !content) {
+        return res.status(400).json({ message: 'Título y contenido son requeridos' });
+      }
+
+      // Actualizar el informe
+      const updatedReport = await Report.findByIdAndUpdate(
+        id,
+        {
+          title: title.trim(),
+          content: content.trim(),
+          category: category || 'general',
+          isPublished: isPublished !== undefined ? isPublished : true,
+          updatedAt: new Date()
+        },
+        { new: true, runValidators: true }
+      ).populate('author', 'name email image');
+
+      if (!updatedReport) {
+        return res.status(404).json({ message: 'Informe no encontrado para actualizar' });
+      }
+
+      console.log('✅ Informe actualizado exitosamente:', updatedReport.title);
+
+      return res.status(200).json({
+        success: true,
+        message: 'Informe actualizado exitosamente',
+        data: {
+          report: updatedReport
+        }
+      });
+    }
+
+    // Verificar que el informe esté publicado (solo para GET)
     if (!report.isPublished) {
       return res.status(403).json({ message: 'Informe no disponible' });
     }

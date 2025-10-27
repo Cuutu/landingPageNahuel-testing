@@ -17,7 +17,10 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  List
+  List,
+  Edit,
+  Save,
+  X
 } from 'lucide-react';
 import styles from '@/styles/ReportView.module.css';
 import dbConnect from '@/lib/mongodb';
@@ -86,9 +89,84 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   const [showStickyModal, setShowStickyModal] = useState(false);
   const [currentStickyImageIndex, setCurrentStickyImageIndex] = useState(0);
   const [isScrolledPastImages, setIsScrolledPastImages] = useState(false);
+  
+  // Estados para edición de informe
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    content: '',
+    category: 'general',
+    isPublished: true
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleBack = () => {
     router.back();
+  };
+
+  // Funciones para edición de informe
+  const openEditModal = () => {
+    setEditFormData({
+      title: report.title,
+      content: report.content,
+      category: report.category,
+      isPublished: report.isPublished
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    setEditFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  const handleUpdateReport = async () => {
+    if (!editFormData.title.trim() || !editFormData.content.trim()) {
+      alert('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/reports/${report._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editFormData),
+      });
+
+      if (response.ok) {
+        const updatedReport = await response.json();
+        // Actualizar el estado local del reporte
+        Object.assign(report, updatedReport.data.report);
+        setShowEditModal(false);
+        alert('Informe actualizado exitosamente');
+        // Recargar la página para mostrar los cambios
+        router.reload();
+      } else {
+        const error = await response.json();
+        alert(`Error al actualizar el informe: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating report:', error);
+      alert('Error al actualizar el informe');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditFormData({
+      title: '',
+      content: '',
+      category: 'general',
+      isPublished: true
+    });
   };
 
   const formatDate = (dateString: string) => {
@@ -369,6 +447,18 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   </div>
                 )}
               </div>
+
+              {/* Botón de editar para administradores */}
+              {userRole === 'admin' && (
+                <div className={styles.adminActions}>
+                  <button 
+                    onClick={openEditModal}
+                    className={styles.editReportButton}
+                  >
+                    ✏️ Editar Informe
+                  </button>
+                </div>
+              )}
             </div>
           </motion.section>
 
@@ -801,6 +891,107 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   {report.images[currentImageIndex].caption}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de edición de informe */}
+      {showEditModal && (
+        <div className={styles.editModal}>
+          <div className={styles.editModalContent}>
+            <div className={styles.editModalHeader}>
+              <h2>✏️ Editar Informe</h2>
+              <button 
+                onClick={closeEditModal}
+                className={styles.closeEditModal}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className={styles.editForm}>
+              <div className={styles.formGroup}>
+                <label htmlFor="title">Título del Informe</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={editFormData.title}
+                  onChange={handleEditFormChange}
+                  className={styles.formInput}
+                  placeholder="Ingresa el título del informe"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="category">Categoría</label>
+                <select
+                  id="category"
+                  name="category"
+                  value={editFormData.category}
+                  onChange={handleEditFormChange}
+                  className={styles.formSelect}
+                >
+                  <option value="general">General</option>
+                  <option value="trader-call">Trader Call</option>
+                  <option value="smart-money">Smart Money</option>
+                  <option value="cash-flow">Cash Flow</option>
+                </select>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="content">Contenido del Informe</label>
+                <textarea
+                  id="content"
+                  name="content"
+                  value={editFormData.content}
+                  onChange={handleEditFormChange}
+                  className={styles.formTextarea}
+                  placeholder="Escribe el contenido del informe aquí..."
+                  rows={10}
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    name="isPublished"
+                    checked={editFormData.isPublished}
+                    onChange={handleEditFormChange}
+                    className={styles.checkbox}
+                  />
+                  <span>Publicar informe</span>
+                </label>
+              </div>
+
+              <div className={styles.editModalActions}>
+                <button
+                  onClick={closeEditModal}
+                  className={styles.cancelButton}
+                  disabled={isUpdating}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleUpdateReport}
+                  className={styles.saveButton}
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? (
+                    <>
+                      <div className={styles.spinner}></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={20} />
+                      Guardar Cambios
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>
