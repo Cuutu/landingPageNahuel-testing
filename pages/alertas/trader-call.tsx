@@ -2743,12 +2743,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const padding = 12;
       const container = document.getElementById('alertsChartContainer') as HTMLElement | null;
       const rect = container?.getBoundingClientRect();
-      const scaleX = rect ? (rect.width / 500) : 1; // Actualizado para el nuevo viewBox
-      const scaleY = rect ? (rect.height / 500) : 1; // Actualizado para el nuevo viewBox
+      const scaleX = rect ? (rect.width / 500) : 1; // viewBox 0 0 500 500
+      const scaleY = rect ? (rect.height / 500) : 1; // viewBox 0 0 500 500
       const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
-      const r = 120; // Ajustado para el nuevo radio
-      const svgAnchorX = 200 + Math.cos(angleRad) * r; // Ajustado para el nuevo centro
-      const svgAnchorY = 200 + Math.sin(angleRad) * r; // Ajustado para el nuevo centro
+      // Centro real del SVG es (250,250) y el radio visual ~200; anclamos un poco dentro
+      const r = 160;
+      const svgAnchorX = 250 + Math.cos(angleRad) * r;
+      const svgAnchorY = 250 + Math.sin(angleRad) * r;
       let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
       let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
       const isRight = Math.cos(angleRad) >= 0;
