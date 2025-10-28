@@ -212,6 +212,16 @@ const useDashboardSections = () => {
       ]
     },
     {
+      id: 'indicators',
+      title: 'Usuarios de Indicadores',
+      description: 'Gestiona usuarios que compraron el servicio de indicadores. Envía notificaciones de alta y verifica datos de TradingView.',
+      icon: <Target size={32} />,
+      color: 'from-teal-500 to-cyan-500',
+      links: [
+        { label: 'Ver Usuarios de Indicadores', href: '/admin/indicators-users', icon: <Users size={16} /> }
+      ]
+    },
+    {
       id: 'pricing',
       title: 'Gestión de Precios',
       description: 'Administra todos los precios del sitio web de forma centralizada. Configura precios de alertas, entrenamientos y asesorías, aplica descuentos y cambia divisas en tiempo real.',
