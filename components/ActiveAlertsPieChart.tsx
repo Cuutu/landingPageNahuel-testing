@@ -369,7 +369,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
                 />
               ))}
             </Pie>
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip content={<CustomTooltip />} wrapperStyle={{ zIndex: 2000 }} />
             <Legend content={<CustomLegend />} />
           </PieChart>
         </ResponsiveContainer>
