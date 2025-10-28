@@ -13,7 +13,7 @@ const notifySchema = z.object({
   paymentId: z.string().min(1, 'ID de pago es requerido'),
   userEmail: z.string().email('Email inválido'),
   userName: z.string().min(1, 'Nombre es requerido'),
-  tradingViewUser: z.string().optional()
+  tradingViewUser: z.string().nullable().optional()
 });
 
 /**

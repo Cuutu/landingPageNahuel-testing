@@ -866,14 +866,20 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       // No es crítico, el pago ya está procesado
     }
 
-    // Procesar pago de indicador - enviar notificación al admin
+    // Procesar pago de indicador - enviar notificación al admin (idempotente)
     if (isIndicator) {
       console.log('📊 Procesando pago de indicador:', service);
       
       try {
-        const adminEmail = process.env.ADMIN_EMAIL;
-        if (adminEmail) {
-          const { sendEmail } = await import('@/lib/emailService');
+        // Verificar si ya se envió la notificación al admin
+        if (!payment.metadata) payment.metadata = {};
+        
+        if (payment.metadata.adminIndicatorPaymentNotified) {
+          console.log('ℹ️ Notificación de admin para indicador ya enviada previamente.');
+        } else {
+          const adminEmail = process.env.ADMIN_EMAIL;
+          if (adminEmail) {
+            const { sendEmail } = await import('@/lib/emailService');
           
           const html = `
             <!DOCTYPE html>
@@ -943,13 +949,19 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             </html>
           `;
           
-          await sendEmail({
-            to: adminEmail,
-            subject: `🎯 Nuevo Pago de Indicador - ${user.name || user.email}`,
-            html
-          });
-          
-          console.log('✅ Notificación de admin enviada para pago de indicador');
+            await sendEmail({
+              to: adminEmail,
+              subject: `🎯 Nuevo Pago de Indicador - ${user.name || user.email}`,
+              html
+            });
+            
+            // Marcar como notificado para evitar duplicados
+            payment.metadata.adminIndicatorPaymentNotified = true;
+            payment.metadata.adminIndicatorPaymentNotifiedAt = new Date();
+            await payment.save();
+            
+            console.log('✅ Notificación de admin enviada para pago de indicador');
+          }
         }
       } catch (adminError) {
         console.error('❌ Error enviando notificación al admin:', adminError);
