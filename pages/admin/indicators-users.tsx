@@ -317,7 +317,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                 {filteredUsers.map((indicatorUser, index) => (
                   <motion.div
                     key={indicatorUser.paymentId}
-                    className={`${styles.userCard} ${!indicatorUser.tradingViewUser ? styles.noDataCard : ''}`}
+                    className={styles.userCard}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -333,15 +333,10 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                     </div>
 
                     <div className={styles.userCardBody}>
-                      {indicatorUser.tradingViewUser ? (
+                      {indicatorUser.tradingViewUser && (
                         <div className={styles.dataRow}>
                           <strong>Usuario TradingView:</strong>
                           <span className={styles.tradingViewUser}>{indicatorUser.tradingViewUser}</span>
-                        </div>
-                      ) : (
-                        <div className={styles.noDataWarning}>
-                          <AlertCircle size={20} />
-                          <span>El usuario no ha enviado su usuario de TradingView</span>
                         </div>
                       )}
 
