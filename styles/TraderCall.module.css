@@ -377,7 +377,7 @@
   border-radius: 8px;
   padding: 1rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  z-index: 9999;
   min-width: 250px;
   pointer-events: none;
 }
@@ -1607,7 +1607,7 @@
   border-radius: 8px;
   padding: 1.5rem;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .dashboardChartLayout {
@@ -1623,6 +1623,7 @@
   align-items: center;
   min-height: 400px;
   width: 100%;
+  overflow: visible;
 }
 
 .chartLegend {
