@@ -13,7 +13,7 @@ const notifySchema = z.object({
   paymentId: z.string().min(1, 'ID de pago es requerido'),
   userEmail: z.string().email('Email inválido'),
   userName: z.string().min(1, 'Nombre es requerido'),
-  tradingViewUser: z.string().min(1, 'Usuario de TradingView es requerido')
+  tradingViewUser: z.string().optional()
 });
 
 /**
@@ -60,13 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Verificar que ya haya enviado el formulario
-    if (!payment.metadata?.tradingViewUser) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'El usuario no ha enviado su usuario de TradingView' 
-      });
-    }
+    // Ya no requerimos el usuario de TradingView como obligatorio
 
     // Crear template HTML profesional para el email
     const html = `
@@ -201,14 +195,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               <p>Te confirmamos que tu acceso al indicador ha sido habilitado correctamente.</p>
             </div>
             
+            ${tradingViewUser ? `
             <div class="highlight-box">
               <p>🎯 Tu usuario de TradingView ha sido configurado: <strong>${tradingViewUser}</strong></p>
             </div>
+            ` : `
+            <div class="highlight-box">
+              <p>🎯 Tu acceso ha sido habilitado. El indicador ya está disponible en tu cuenta de TradingView.</p>
+            </div>
+            `}
 
             <div class="instructions">
               <h3>📋 Cómo acceder a tu indicador:</h3>
               <ol>
-                <li>Inicia sesión en TradingView en tu cuenta: <span class="tradingview-user">${tradingViewUser}</span></li>
+                ${tradingViewUser ? `<li>Inicia sesión en TradingView en tu cuenta: <span class="tradingview-user">${tradingViewUser}</span></li>` : `<li>Inicia sesión en tu cuenta de TradingView</li>`}
                 <li>Dirígete a la sección "Productos" y abre los "Supergráficos"</li>
                 <li>En el apartado de "Indicadores", busca "Requiere invitación"</li>
                 <li>Allí encontrarás el indicador "Medias Móviles Automáticas"</li>
@@ -234,7 +234,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             <div class="info-box">
               <h3>📊 Detalles de tu compra:</h3>
               <p><strong>Servicio:</strong> Medias Móviles Automáticas</p>
-              <p><strong>Usuario TradingView:</strong> ${tradingViewUser}</p>
+              ${tradingViewUser ? `<p><strong>Usuario TradingView:</strong> ${tradingViewUser}</p>` : ''}
               <p><strong>Fecha de alta:</strong> ${new Date().toLocaleString('es-AR')}</p>
               <p><strong>Email de contacto:</strong> ${userEmail}</p>
             </div>

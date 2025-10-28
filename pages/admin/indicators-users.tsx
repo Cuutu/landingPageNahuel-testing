@@ -49,7 +49,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
   const [indicatorUsers, setIndicatorUsers] = useState<IndicatorUser[]>([]);
   const [notifyingUser, setNotifyingUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterSubmitted, setFilterSubmitted] = useState<'all' | 'submitted' | 'not-submitted'>('all');
+  const [filterSubmitted, setFilterSubmitted] = useState<'all' | 'new' | 'without-notification' | 'notified'>('all');
 
   const fetchIndicatorUsers = async () => {
     try {
@@ -75,11 +75,6 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
   }, []);
 
   const handleNotifyUser = async (paymentId: string, userEmail: string, userName: string, tradingViewUser?: string) => {
-    if (!tradingViewUser) {
-      toast.error('El usuario no ha enviado su usuario de TradingView');
-      return;
-    }
-
     if (!confirm(`¿Enviar notificación de alta a ${userName}?`)) {
       return;
     }
@@ -133,11 +128,14 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
       }
     }
 
-    // Filtro por formulario enviado
-    if (filterSubmitted === 'submitted' && !user.formSubmitted) {
+    // Filtro por estado de notificación
+    if (filterSubmitted === 'new' && (user as any).notificationSent) {
       return false;
     }
-    if (filterSubmitted === 'not-submitted' && user.formSubmitted) {
+    if (filterSubmitted === 'without-notification' && (user as any).notificationSent) {
+      return false;
+    }
+    if (filterSubmitted === 'notified' && !(user as any).notificationSent) {
       return false;
     }
 
@@ -146,8 +144,8 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
   const stats = {
     total: indicatorUsers.length,
-    withData: indicatorUsers.filter(u => u.tradingViewUser).length,
-    withoutData: indicatorUsers.filter(u => !u.tradingViewUser).length,
+    newUsers: indicatorUsers.filter(u => !(u as any).notificationSent).length,
+    withoutNotification: indicatorUsers.filter(u => !(u as any).notificationSent).length,
     notified: indicatorUsers.filter(u => (u as any).notificationSent).length
   };
 
@@ -222,11 +220,11 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                 transition={{ delay: 0.2 }}
               >
                 <div className={styles.statIcon}>
-                  <CheckCircle size={24} className={styles.iconGreen} />
+                  <UserIcon size={24} className={styles.iconYellow} />
                 </div>
                 <div className={styles.statInfo}>
-                  <h3>{stats.withData}</h3>
-                  <p>Con Datos TradingView</p>
+                  <h3>{stats.newUsers}</h3>
+                  <p>Usuarios Nuevos</p>
                 </div>
               </motion.div>
 
@@ -240,8 +238,8 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                   <AlertCircle size={24} className={styles.iconOrange} />
                 </div>
                 <div className={styles.statInfo}>
-                  <h3>{stats.withoutData}</h3>
-                  <p>Sin Datos TradingView</p>
+                  <h3>{stats.withoutNotification}</h3>
+                  <p>Sin Notificar</p>
                 </div>
               </motion.div>
 
@@ -279,19 +277,25 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                   onClick={() => setFilterSubmitted('all')}
                   className={`${styles.filterButton} ${filterSubmitted === 'all' ? styles.active : ''}`}
                 >
-                  Todos ({stats.total})
+                  Total usuarios ({stats.total})
                 </button>
                 <button
-                  onClick={() => setFilterSubmitted('submitted')}
-                  className={`${styles.filterButton} ${filterSubmitted === 'submitted' ? styles.active : ''}`}
+                  onClick={() => setFilterSubmitted('new')}
+                  className={`${styles.filterButton} ${filterSubmitted === 'new' ? styles.active : ''}`}
                 >
-                  Con Datos ({stats.withData})
+                  Nuevos ({stats.newUsers})
                 </button>
                 <button
-                  onClick={() => setFilterSubmitted('not-submitted')}
-                  className={`${styles.filterButton} ${filterSubmitted === 'not-submitted' ? styles.active : ''}`}
+                  onClick={() => setFilterSubmitted('without-notification')}
+                  className={`${styles.filterButton} ${filterSubmitted === 'without-notification' ? styles.active : ''}`}
                 >
-                  Sin Datos ({stats.withoutData})
+                  Sin notificar ({stats.withoutNotification})
+                </button>
+                <button
+                  onClick={() => setFilterSubmitted('notified')}
+                  className={`${styles.filterButton} ${filterSubmitted === 'notified' ? styles.active : ''}`}
+                >
+                  Notificados ({stats.notified})
                 </button>
               </div>
             </div>
@@ -377,7 +381,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                           indicatorUser.userName,
                           indicatorUser.tradingViewUser
                         )}
-                        disabled={!indicatorUser.tradingViewUser || notifyingUser === indicatorUser.paymentId}
+                        disabled={(indicatorUser as any).notificationSent || notifyingUser === indicatorUser.paymentId}
                         className={styles.notifyButton}
                       >
                         {notifyingUser === indicatorUser.paymentId ? (

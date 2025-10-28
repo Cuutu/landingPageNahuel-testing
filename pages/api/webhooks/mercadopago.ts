@@ -287,6 +287,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     const isSubscription = ['TraderCall', 'SmartMoney', 'CashFlow'].includes(service);
     const isTraining = ['SwingTrading', 'DowJones'].includes(service);
     const isBooking = externalRef && externalRef.startsWith('booking_');
+    const isIndicator = service === 'MediasMovilesAutomaticas';
     const isMonthlyTrainingSubscription = externalRef && externalRef.startsWith('MTS_');
 
     if (isSubscription) {
@@ -863,6 +864,96 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     } catch (notificationError) {
       console.error('❌ Error creando notificación de pago:', notificationError);
       // No es crítico, el pago ya está procesado
+    }
+
+    // Procesar pago de indicador - enviar notificación al admin
+    if (isIndicator) {
+      console.log('📊 Procesando pago de indicador:', service);
+      
+      try {
+        const adminEmail = process.env.ADMIN_EMAIL;
+        if (adminEmail) {
+          const { sendEmail } = await import('@/lib/emailService');
+          
+          const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <meta charset="utf-8">
+              <title>Nuevo Pago de Indicador</title>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+                .content { background: #f8f9fa; padding: 20px; border-radius: 0 0 8px 8px; }
+                .info-box { background: white; padding: 15px; border-radius: 6px; margin: 10px 0; border-left: 4px solid #3b82f6; }
+                .label { font-weight: bold; color: #555; }
+                .value { color: #333; }
+                .footer { text-align: center; margin-top: 20px; color: #666; font-size: 14px; }
+                .action-button { display: inline-block; background: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin-top: 15px; }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>🎯 Nuevo Pago de Indicador</h1>
+                  <p>Servicio: Medias Móviles Automáticas</p>
+                </div>
+                
+                <div class="content">
+                  <div class="info-box">
+                    <div class="label">👤 Usuario:</div>
+                    <div class="value">${user.name || 'Usuario desconocido'}</div>
+                  </div>
+                  
+                  <div class="info-box">
+                    <div class="label">📧 Email:</div>
+                    <div class="value">${user.email}</div>
+                  </div>
+                  
+                  <div class="info-box">
+                    <div class="label">💰 Monto:</div>
+                    <div class="value">$${amount} ${currency}</div>
+                  </div>
+                  
+                  <div class="info-box">
+                    <div class="label">📅 Fecha:</div>
+                    <div class="value">${new Date().toLocaleString('es-AR')}</div>
+                  </div>
+                  
+                  <div class="info-box">
+                    <div class="label">🆔 ID de Pago:</div>
+                    <div class="value">${payment._id}</div>
+                  </div>
+                  
+                  <div style="text-align: center; margin-top: 20px;">
+                    <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/admin/indicators-users" class="action-button">Ver en Dashboard</a>
+                  </div>
+                  
+                  <p style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 6px; color: #856404;">
+                    <strong>⚠️ Acción requerida:</strong> El usuario completará un formulario de Google para enviar su usuario de TradingView. Ve al dashboard para gestionar el proceso de alta.
+                  </p>
+                </div>
+                
+                <div class="footer">
+                  <p>Este email fue generado automáticamente desde el sistema de pagos.</p>
+                </div>
+              </div>
+            </body>
+            </html>
+          `;
+          
+          await sendEmail({
+            to: adminEmail,
+            subject: `🎯 Nuevo Pago de Indicador - ${user.name || user.email}`,
+            html
+          });
+          
+          console.log('✅ Notificación de admin enviada para pago de indicador');
+        }
+      } catch (adminError) {
+        console.error('❌ Error enviando notificación al admin:', adminError);
+      }
     }
 
     console.log('✅ Pago procesado exitosamente:', paymentInfo.id);
