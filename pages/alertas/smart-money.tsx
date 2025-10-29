@@ -2165,7 +2165,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             />
             {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
             {segment.size > 2 && (
-              <g className={styles.segmentLabelGroup}>
+              <>
+                {/* Símbolo siempre visible */}
                 <text
                   x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
                   y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
@@ -2183,29 +2184,32 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 >
                   {segment.symbol}
                 </text>
-                {/* Porcentaje del segmento */}
-                <text
-                  x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
-                  y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170) + 20}
-                  className={styles.segmentLabel}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize={segment.size > 5 ? "14" : "12"}
-                  fontWeight="bold"
-                  fill="#ffffff"
-                  filter="url(#shadow3D)"
-                  style={{
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                    pointerEvents: 'none'
-                  }}
-                >
-                  {segment.size.toFixed(1)}%
-                </text>
-              </g>
+                {/* Porcentaje del segmento - solo visible en hover */}
+                <g className={styles.segmentLabelGroup}>
+                  <text
+                    x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
+                    y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170) + 20}
+                    className={styles.segmentLabel}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize={segment.size > 5 ? "14" : "12"}
+                    fontWeight="bold"
+                    fill="#ffffff"
+                    filter="url(#shadow3D)"
+                    style={{
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    {segment.size.toFixed(1)}%
+                  </text>
+                </g>
+              </>
             )}
             {/* Etiqueta alternativa para segmentos muy pequeños */}
             {segment.size <= 2 && segment.size > 0.5 && (
-              <g className={styles.segmentLabelGroup}>
+              <>
+                {/* Símbolo siempre visible */}
                 <text
                   x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
                   y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185}
@@ -2223,25 +2227,27 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 >
                   {segment.symbol}
                 </text>
-                {/* Porcentaje del segmento pequeño */}
-                <text
-                  x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
-                  y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185 + 16}
-                  className={styles.segmentLabel}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="10"
-                  fontWeight="bold"
-                  fill="#ffffff"
-                  filter="url(#shadow3D)"
-                  style={{
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                    pointerEvents: 'none'
-                  }}
-                >
-                  {segment.size.toFixed(1)}%
-                </text>
-              </g>
+                {/* Porcentaje del segmento pequeño - solo visible en hover */}
+                <g className={styles.segmentLabelGroup}>
+                  <text
+                    x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
+                    y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185 + 16}
+                    className={styles.segmentLabel}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fontSize="10"
+                    fontWeight="bold"
+                    fill="#ffffff"
+                    filter="url(#shadow3D)"
+                    style={{
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
+                      pointerEvents: 'none'
+                    }}
+                  >
+                    {segment.size.toFixed(1)}%
+                  </text>
+                </g>
+              </>
             )}
           </g>
         ))}
