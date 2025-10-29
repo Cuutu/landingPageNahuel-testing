@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
+import { verifyAdminAPI } from '@/lib/adminAuth';
 import dbConnect from '@/lib/mongodb';
 import TrainingDate from '@/models/TrainingDate';
 import Training from '@/models/Training';
@@ -72,13 +73,10 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
       });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    // Verificación centralizada de admin
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { date, time, title } = req.body;
@@ -201,13 +199,9 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, trainingType
       });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { id, date, time, title } = req.body;
@@ -329,13 +323,9 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse, trainingT
       });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { id } = req.body;

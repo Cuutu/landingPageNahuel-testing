@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
+import { verifyAdminAPI } from '@/lib/adminAuth';
 import dbConnect from '@/lib/mongodb';
 import AdvisoryDate from '@/models/AdvisoryDate';
 
@@ -118,21 +119,14 @@ async function handleGet(req: NextApiRequest, res: NextApiResponse, advisoryType
 async function handlePost(req: NextApiRequest, res: NextApiResponse, advisoryType: string) {
   try {
     const session = await getServerSession(req, res, authOptions);
-    
     if (!session?.user?.email) {
-      return res.status(401).json({
-        success: false,
-        error: 'No autorizado'
-      });
+      return res.status(401).json({ success: false, error: 'No autorizado' });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    // Verificar rol admin centrado
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { date, time, title, description } = req.body;
@@ -182,21 +176,13 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, advisoryTyp
 async function handlePut(req: NextApiRequest, res: NextApiResponse, advisoryType: string) {
   try {
     const session = await getServerSession(req, res, authOptions);
-    
     if (!session?.user?.email) {
-      return res.status(401).json({
-        success: false,
-        error: 'No autorizado'
-      });
+      return res.status(401).json({ success: false, error: 'No autorizado' });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { id, date, time, title, description } = req.body;
@@ -250,21 +236,13 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, advisoryType
 async function handleDelete(req: NextApiRequest, res: NextApiResponse, advisoryType: string) {
   try {
     const session = await getServerSession(req, res, authOptions);
-    
     if (!session?.user?.email) {
-      return res.status(401).json({
-        success: false,
-        error: 'No autorizado'
-      });
+      return res.status(401).json({ success: false, error: 'No autorizado' });
     }
 
-    // Verificar si es admin
-    const adminEmails = ['joaquinperez028@gmail.com', 'franco.l.varela99@gmail.com'];
-    if (!adminEmails.includes(session.user.email)) {
-      return res.status(403).json({
-        success: false,
-        error: 'Permisos insuficientes'
-      });
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ success: false, error: adminCheck.error || 'Permisos insuficientes' });
     }
 
     const { id } = req.body;
