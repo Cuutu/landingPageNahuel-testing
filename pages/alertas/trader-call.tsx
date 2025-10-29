@@ -1872,6 +1872,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const handleSaveEditAlert = async () => {
     if (!editingAlert) return;
 
+    // ✅ CORREGIDO: Verificar que tengamos un ID válido
+    const alertId = editingAlert.id || editingAlert._id;
+    if (!alertId) {
+      alert('❌ Error: No se pudo identificar la alerta a editar');
+      return;
+    }
+
     try {
       setEditLoading(true);
 
@@ -1897,7 +1904,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
 
       console.log('🔄 Guardando cambios de alerta:', {
-        alertId: editingAlert.id,
+        alertId: alertId,
         changes: editAlert
       });
 
@@ -1905,7 +1912,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const liquidityAmount = editAlert.liquidityPercentage > 0 ? (liquidityTotal * editAlert.liquidityPercentage / 100) : 0;
       
       console.log('🔍 [DEBUG] Datos de edición con liquidez:', {
-        alertId: editingAlert.id,
+        alertId: alertId,
         liquidityPercentage: editAlert.liquidityPercentage,
         liquidityAmount,
         quickSellPercentage: editAlert.quickSellPercentage,
@@ -1919,7 +1926,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         },
         credentials: 'same-origin',
         body: JSON.stringify({
-          alertId: editingAlert.id,
+          alertId: alertId,
           symbol: editAlert.symbol,
           action: editAlert.action,
           entryPrice: parseFloat(editAlert.entryPrice),
@@ -2567,7 +2574,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     <div className={styles.alertDetail}>
                       <span>P&L:</span>
                       <strong className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profit : styles.loss}>
-                        <span>${(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}</span>
+                        <span>{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? '+' : ''}{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}%</span>
                         <span className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profitArrow : styles.lossArrow}>
                           {(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? '↗' : '↘'}
                         </span>
@@ -2844,7 +2851,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 <div className={styles.alertDetail}>
                   <span>P&L:</span>
                   <strong className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profit : styles.loss}>
-                    <span>${(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}</span>
+                    <span>{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? '+' : ''}{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}%</span>
                   </strong>
                 </div>
               </div>
@@ -3092,27 +3099,35 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     };
 
-    // Solo hacer scroll al bottom cuando se envía un mensaje NUEVO por el usuario
+    // ✅ CORREGIDO: Control más preciso del scroll para evitar múltiples saltos
     const [previousMessageCount, setPreviousMessageCount] = useState(0);
+    const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
     
     useEffect(() => {
-      // Solo hacer scroll si se agregó un mensaje nuevo (no al cargar inicialmente)
-      if (messages.length > previousMessageCount && previousMessageCount > 0 && !loading) {
+      // Solo hacer scroll si:
+      // 1. Se agregó un mensaje nuevo (length aumentó)
+      // 2. Ya no está cargando
+      // 3. Ya hicimos el scroll inicial
+      if (messages.length > previousMessageCount && !loading && hasInitiallyScrolled) {
         setTimeout(() => {
           scrollToBottom();
         }, 100);
       }
       setPreviousMessageCount(messages.length);
-    }, [messages.length, previousMessageCount, loading]);
+    }, [messages.length, previousMessageCount, loading, hasInitiallyScrolled]);
 
-    // Hacer scroll automático al cargar los mensajes por primera vez
+    // ✅ CORREGIDO: Hacer scroll solo UNA VEZ al cargar inicialmente
     useEffect(() => {
-      if (messages.length > 0 && !loading) {
-        setTimeout(() => {
+      if (messages.length > 0 && !loading && !hasInitiallyScrolled) {
+        // Esperar a que el DOM esté completamente renderizado
+        const timer = setTimeout(() => {
           scrollToBottom();
-        }, 200); // Un poco más de delay para asegurar que el DOM esté listo
+          setHasInitiallyScrolled(true);
+        }, 300);
+        
+        return () => clearTimeout(timer);
       }
-    }, [loading]); // Solo cuando termine de cargar
+    }, [messages.length, loading, hasInitiallyScrolled]);
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
@@ -4177,7 +4192,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <div className={styles.alertInfo}>
                 <p><strong>Precio acción:</strong> {partialSaleAlert.entryPrice}</p>
                 <p><strong>Precio actual:</strong> {partialSaleAlert.currentPrice}</p>
-                <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit >= 0 ? styles.profit : styles.loss}>${partialSaleAlert.profit?.toFixed(2)}</span></p>
+                <p><strong>P&L actual:</strong> <span className={partialSaleAlert.profit >= 0 ? styles.profit : styles.loss}>{partialSaleAlert.profit >= 0 ? '+' : ''}{partialSaleAlert.profit?.toFixed(2)}%</span></p>
               </div>
 
               {/* ✅ NUEVO: Campo de porcentaje personalizable */}
