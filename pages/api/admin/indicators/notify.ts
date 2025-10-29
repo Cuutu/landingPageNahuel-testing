@@ -152,6 +152,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             color: #555;
             font-size: 15px;
           }
+          .signature { 
+            margin-top: 10px;
+            color: #333;
+            font-weight: 600;
+          }
           .footer { 
             text-align: center; 
             padding: 20px; 
@@ -192,28 +197,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <div class="content">
             <div class="info-box">
               <h3>👋 ¡Hola ${userName}!</h3>
-              <p>Te confirmamos que tu acceso al indicador ha sido habilitado correctamente.</p>
+              <p>Hola, ¿cómo estás? Te confirmo la recepción de tu compra del Indicador Medias Móviles Automáticas. 🚀</p>
             </div>
             
             ${tradingViewUser ? `
             <div class="highlight-box">
-              <p>🎯 Tu usuario de TradingView ha sido configurado: <strong>${tradingViewUser}</strong></p>
+              <p>🎯 Ya podés empezar a usar tu Indicador con el usuario que nos proporcionaste: <strong>${tradingViewUser}</strong></p>
             </div>
             ` : `
             <div class="highlight-box">
-              <p>🎯 Tu acceso ha sido habilitado. El indicador ya está disponible en tu cuenta de TradingView.</p>
+              <p>🎯 Ya podés empezar a usar tu Indicador con el usuario que nos proporcionaste.</p>
             </div>
             `}
 
             <div class="instructions">
-              <h3>📋 Cómo acceder a tu indicador:</h3>
+              <h3>📌 Para encontrar el indicador en tu cuenta de TradingView:</h3>
               <ol>
-                ${tradingViewUser ? `<li>Inicia sesión en TradingView en tu cuenta: <span class="tradingview-user">${tradingViewUser}</span></li>` : `<li>Inicia sesión en tu cuenta de TradingView</li>`}
-                <li>Dirígete a la sección "Productos" y abre los "Supergráficos"</li>
-                <li>En el apartado de "Indicadores", busca "Requiere invitación"</li>
-                <li>Allí encontrarás el indicador "Medias Móviles Automáticas"</li>
-                <li>Puedes hacer clic en la "estrella" para agregarlo a favoritos</li>
-                <li>¡Listo! Ya puedes usar el indicador en tus gráficos</li>
+                ${tradingViewUser ? `<li>Ingresá a TradingView con tu usuario autorizado: <span class="tradingview-user">${tradingViewUser}</span></li>` : `<li>Ingresá a TradingView con tu usuario autorizado.</li>`}
+                <li>Abrí un gráfico cualquiera.</li>
+                <li>En el menú superior, hacé clic en “Indicadores”.</li>
+                <li>Dentro de la pestaña “Requiere invitación” vas a ver el indicador Medias Móviles Automáticas.</li>
+                <li>Hacé clic y se agregará automáticamente a tu gráfico.</li>
               </ol>
             </div>
 
@@ -222,13 +226,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             </div>
 
             <div class="info-box">
-              <h3>💡 Recordatorios importantes:</h3>
-              <ul style="margin: 0; padding-left: 20px; color: #555;">
-                <li>El indicador funciona en gráficos diarios y semanales</li>
-                <li>Puedes usarlo con cualquier plan de TradingView</li>
-                <li>Tu acceso es <strong>vitalicio</strong> - no expira</li>
-                <li>Si tienes dudas, escribinos a: lozanonahuel@gmail.com</li>
-              </ul>
+              <h3>⚠️ Tené en cuenta</h3>
+              <p>Si ya tenés otros indicadores en el gráfico y superás la cantidad máxima permitida según tu plan de TradingView, vas a necesitar eliminar uno para poder añadir el Indicador Medias Móviles Automáticas.</p>
             </div>
 
             <div class="info-box">
@@ -237,6 +236,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               ${tradingViewUser ? `<p><strong>Usuario TradingView:</strong> ${tradingViewUser}</p>` : ''}
               <p><strong>Fecha de alta:</strong> ${new Date().toLocaleString('es-AR')}</p>
               <p><strong>Email de contacto:</strong> ${userEmail}</p>
+            </div>
+
+            <div class="info-box">
+              <p>Ante cualquier inconveniente con la instalación o el acceso, escribime y lo resolvemos de inmediato.</p>
+              <p class="signature">¡Gracias por tu confianza y que lo disfrutes!<br/>Abrazo,<br/>Nahuel</p>
             </div>
           </div>
           
