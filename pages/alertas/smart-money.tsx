@@ -2287,14 +2287,24 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.chartSection}>
           <div className={styles.chartHeader}>
             <h3>📊 Distribución de Alertas Activas</h3>
-            {/* ✅ NUEVO: Botón de recarga para debug */}
-            <button 
-              onClick={() => loadLiquidity()} 
-              className={styles.refreshButton}
-              style={{ marginLeft: '10px', padding: '5px 10px', fontSize: '12px' }}
-            >
-              🔄 Recargar
-            </button>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              {/* ✅ Botón para ir a seguimiento */}
+              <button 
+                onClick={() => setActiveTab('seguimiento')} 
+                className={styles.viewAllButton}
+                style={{ padding: '5px 12px', fontSize: '12px' }}
+              >
+                📈 Ir a alertas
+              </button>
+              {/* ✅ Botón de recarga para debug */}
+              <button 
+                onClick={() => loadLiquidity()} 
+                className={styles.refreshButton}
+                style={{ padding: '5px 10px', fontSize: '12px' }}
+              >
+                🔄 Recargar
+              </button>
+            </div>
           </div>
           <div className={styles.dashboardChartContainer}>
             {showChart ? (
