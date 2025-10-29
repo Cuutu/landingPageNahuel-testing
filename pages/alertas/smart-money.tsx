@@ -1899,8 +1899,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       if (response.ok && result.success) {
         console.log('✅ Alerta editada exitosamente:', result.alert);
 
-        // Recargar alertas para mostrar cambios
-        await loadAlerts();
+        // ✅ CORREGIDO: Recargar AMBAS listas para evitar duplicados
+        // Si cambió el estado de availableForPurchase, la alerta debe moverse entre secciones
+        await Promise.all([
+          loadVigentesAlerts(),
+          loadSeguimientoAlerts()
+        ]);
 
         // Cerrar modal
         setShowEditAlert(false);
@@ -3146,33 +3150,29 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     // ✅ CORREGIDO: Control más preciso del scroll para evitar múltiples saltos
     const [previousMessageCount, setPreviousMessageCount] = useState(0);
-    const [hasInitiallyScrolled, setHasInitiallyScrolled] = useState(false);
+    const [isReady, setIsReady] = useState(false);
     
     useEffect(() => {
-      // Solo hacer scroll si:
-      // 1. Se agregó un mensaje nuevo (length aumentó)
-      // 2. Ya no está cargando
-      // 3. Ya hicimos el scroll inicial
-      if (messages.length > previousMessageCount && !loading && hasInitiallyScrolled) {
+      // Solo hacer scroll si se agregó un mensaje nuevo después de la carga inicial
+      if (messages.length > previousMessageCount && isReady) {
         setTimeout(() => {
           scrollToBottom();
         }, 100);
       }
       setPreviousMessageCount(messages.length);
-    }, [messages.length, previousMessageCount, loading, hasInitiallyScrolled]);
+    }, [messages.length, previousMessageCount, isReady]);
 
-    // ✅ CORREGIDO: Hacer scroll solo UNA VEZ al cargar inicialmente
+    // ✅ CORREGIDO: Scroll instantáneo al cargar, ANTES de mostrar el contenido
     useEffect(() => {
-      if (messages.length > 0 && !loading && !hasInitiallyScrolled) {
-        // Esperar a que el DOM esté completamente renderizado
-        const timer = setTimeout(() => {
-          scrollToBottom();
-          setHasInitiallyScrolled(true);
-        }, 300);
-        
-        return () => clearTimeout(timer);
+      if (messages.length > 0 && !loading && !isReady) {
+        // Hacer scroll inmediatamente de forma síncrona
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+        // Marcar como listo para mostrar
+        setIsReady(true);
       }
-    }, [messages.length, loading, hasInitiallyScrolled]);
+    }, [messages.length, loading, isReady]);
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
@@ -3344,7 +3344,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             </div>
           </div>
           
-          <div className={styles.chatMainFull} ref={chatContainerRef}>
+          <div 
+            className={styles.chatMainFull} 
+            ref={chatContainerRef}
+            style={{ opacity: isReady ? 1 : 0, transition: 'opacity 0.15s ease-in' }}
+          >
             {messages.length === 0 ? (
               <div className={styles.emptyChat}>
                 <div className={styles.emptyChatIcon}>💬</div>
@@ -3547,63 +3551,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
               </p>
             </div>
-
-            {/* ✅ NUEVO: Sección de Asignación de Liquidez */}
-            <div className={styles.inputGroup}>
-              <label>💰 Asignar Liquidez</label>
-              <div className={styles.liquidityButtons}>
-                {[0, 5, 10, 15, 20].map(percentage => (
-                  <button
-                    key={percentage}
-                    type="button"
-                    className={`${styles.liquidityButton} ${editAlert.liquidityPercentage === percentage ? styles.liquidityButtonActive : ''}`}
-                    onClick={() => setEditAlert(prev => ({ ...prev, liquidityPercentage: percentage }))}
-                  >
-                    {percentage}%
-                    {percentage > 0 && (
-                      <span className={styles.liquidityAmount}>
-                        ${(liquidityTotal * percentage / 100).toLocaleString()}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              <p className={styles.inputDescription}>
-                Selecciona un porcentaje de tu liquidez disponible (${liquidityTotal.toLocaleString()}) para asignar a esta alerta
-              </p>
-            </div>
-
-            {/* ✅ NUEVO: Sección de Venta Rápida */}
-            {editingAlert && liquidityMap[editingAlert.symbol] && (
-              <div className={styles.inputGroup}>
-                <label>⚡ Venta Rápida</label>
-                <div className={styles.quickSellButtons}>
-                  <button
-                    type="button"
-                    className={`${styles.quickSellButton} ${editAlert.quickSellPercentage === 25 ? styles.quickSellButtonActive : ''}`}
-                    onClick={() => setEditAlert(prev => ({ ...prev, quickSellPercentage: 25 }))}
-                  >
-                    Vender 25%
-                    <span className={styles.quickSellInfo}>
-                      {Math.floor(liquidityMap[editingAlert.symbol].shares * 0.25)} acciones
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.quickSellButton} ${editAlert.quickSellPercentage === 50 ? styles.quickSellButtonActive : ''}`}
-                    onClick={() => setEditAlert(prev => ({ ...prev, quickSellPercentage: 50 }))}
-                  >
-                    Vender 50%
-                    <span className={styles.quickSellInfo}>
-                      {Math.floor(liquidityMap[editingAlert.symbol].shares * 0.5)} acciones
-                    </span>
-                  </button>
-                </div>
-                <p className={styles.inputDescription}>
-                  Venta rápida de un porcentaje de las acciones adquiridas en esta alerta
-                </p>
-              </div>
-            )}
           </div>
 
           <div className={styles.modalFooter}>
