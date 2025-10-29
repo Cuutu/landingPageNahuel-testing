@@ -52,41 +52,68 @@ export default async function handler(
 
     await dbConnect();
 
-    // Determinar owner por ADMIN_EMAIL para evitar buscar el usuario cada request de cliente
-    const adminEmail = process.env.ADMIN_EMAIL;
-    if (!adminEmail) {
-      return res.status(500).json({ success: false, error: 'ADMIN_EMAIL no configurado' });
-    }
-
-    const adminUser = await User.findOne({ email: adminEmail }).select('_id').lean();
-    if (!adminUser || Array.isArray(adminUser)) {
-      return res.status(404).json({ success: false, error: 'Admin no encontrado' });
-    }
-
-    // Consultar solo campos necesarios y en modo lean para menor overhead
-    const liquidityDoc: any = await Liquidity.findOne({ createdBy: (adminUser as any)._id, pool })
+    // ✅ CAMBIO: Obtener TODAS las liquidez del pool, sin importar quién las creó
+    const liquidityDocs: any[] = await Liquidity.find({ pool })
       .select({ totalLiquidity: 1, distributions: 1 })
       .lean();
 
-    const payload = !liquidityDoc
-      ? { totalLiquidity: 0, distributions: [] as any[] }
-      : {
-          totalLiquidity: liquidityDoc.totalLiquidity || 0,
-          distributions: (liquidityDoc.distributions || [])
-            .filter((d: any) => d.isActive)
-            .map((d: any) => ({
-              alertId: d.alertId,
-              symbol: d.symbol,
-              allocatedAmount: d.allocatedAmount,
-              shares: d.shares,
-              entryPrice: d.entryPrice,
-              currentPrice: d.currentPrice,
-              profitLoss: d.profitLoss || 0,
-              profitLossPercentage: d.profitLossPercentage || 0,
-              realizedProfitLoss: d.realizedProfitLoss || 0,
-              isActive: d.isActive,
-            })),
-        };
+    console.log(`📊 [PUBLIC LIQUIDITY] Documentos de liquidez encontrados para ${pool}:`, liquidityDocs.length);
+
+    // Combinar todas las distribuciones de todos los admins
+    const allDistributions: any[] = [];
+    let totalLiquiditySum = 0;
+
+    liquidityDocs.forEach((doc) => {
+      totalLiquiditySum += doc.totalLiquidity || 0;
+      const activeDistributions = (doc.distributions || [])
+        .filter((d: any) => d.isActive)
+        .map((d: any) => ({
+          alertId: d.alertId,
+          symbol: d.symbol,
+          allocatedAmount: d.allocatedAmount,
+          shares: d.shares,
+          entryPrice: d.entryPrice,
+          currentPrice: d.currentPrice,
+          profitLoss: d.profitLoss || 0,
+          profitLossPercentage: d.profitLossPercentage || 0,
+          realizedProfitLoss: d.realizedProfitLoss || 0,
+          isActive: d.isActive,
+        }));
+      allDistributions.push(...activeDistributions);
+    });
+
+    // Consolidar distribuciones por símbolo (sumar si hay duplicados)
+    const distributionMap = new Map<string, any>();
+    allDistributions.forEach((dist) => {
+      if (distributionMap.has(dist.symbol)) {
+        const existing = distributionMap.get(dist.symbol);
+        // Sumar cantidades y shares
+        existing.allocatedAmount += dist.allocatedAmount;
+        existing.shares += dist.shares;
+        // Recalcular promedios ponderados para precios
+        const totalShares = existing.shares;
+        existing.entryPrice = ((existing.entryPrice * (totalShares - dist.shares)) + (dist.entryPrice * dist.shares)) / totalShares;
+        existing.currentPrice = ((existing.currentPrice * (totalShares - dist.shares)) + (dist.currentPrice * dist.shares)) / totalShares;
+        existing.profitLoss += dist.profitLoss;
+        existing.realizedProfitLoss += (dist.realizedProfitLoss || 0);
+        distributionMap.set(dist.symbol, existing);
+      } else {
+        distributionMap.set(dist.symbol, { ...dist });
+      }
+    });
+
+    const consolidatedDistributions = Array.from(distributionMap.values());
+
+    console.log(`📊 [PUBLIC LIQUIDITY] Distribuciones consolidadas:`, {
+      totalLiquidity: totalLiquiditySum,
+      distributionsCount: consolidatedDistributions.length,
+      symbols: consolidatedDistributions.map(d => d.symbol)
+    });
+
+    const payload = {
+      totalLiquidity: totalLiquiditySum,
+      distributions: consolidatedDistributions
+    };
 
     // Guardar en cache
     liquidityCache[pool] = { expiresAt: Date.now() + CACHE_TTL_MS, payload };

@@ -1148,30 +1148,30 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       
       // Agregar timestamp para evitar cache del browser
       const timestamp = new Date().getTime();
-      const res = await fetch(`/api/liquidity?pool=TraderCall&_t=${timestamp}`);
+      const res = await fetch(`/api/liquidity/public?pool=TraderCall&_t=${timestamp}`);
       
       if (res.ok) {
         const json = await res.json();
         console.log('✅ [LIQUIDITY] Respuesta de API recibida:', {
           success: json.success,
-          hasLiquidity: !!json.liquidity,
-          totalLiquidity: json.liquidity?.totalLiquidity,
-          distributionsCount: json.liquidity?.distributions?.length || 0
+          hasData: !!json.data,
+          totalLiquidity: json.data?.totalLiquidity,
+          distributionsCount: json.data?.distributions?.length || 0
         });
         
-        if (json.success && json.liquidity) {
+        if (json.success && json.data) {
           const map: Record<string, any> = {};
-          (json.liquidity?.distributions || []).forEach((d: any) => {
+          (json.data?.distributions || []).forEach((d: any) => {
             map[d.symbol] = d;
             console.log(`📊 [LIQUIDITY] Distribución cargada: ${d.symbol} - $${d.allocatedAmount}`);
           });
           
           setLiquidityMap(map);
-          setLiquidityTotal(Number(json.liquidity?.totalLiquidity || 0));
+          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
           
           console.log('✅ [LIQUIDITY] Datos de liquidez cargados exitosamente:', {
             mapKeys: Object.keys(map).length,
-            totalLiquidity: json.liquidity?.totalLiquidity
+            totalLiquidity: json.data?.totalLiquidity
           });
         } else {
           console.warn('⚠️ [LIQUIDITY] Respuesta de API sin datos de liquidez');
