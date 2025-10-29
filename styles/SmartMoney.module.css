@@ -305,6 +305,82 @@
   pointer-events: none;
 }
 
+/* Tooltip simplificado para gráfico de tortas */
+.chartTooltipSimple {
+  position: fixed;
+  display: none;
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(59, 130, 246, 0.2);
+  z-index: 10000;
+  min-width: 180px;
+  pointer-events: none;
+  animation: tooltipFadeIn 0.2s ease;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tooltipSimpleSymbol {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.tooltipSimpleDivider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  margin: 0.5rem 0;
+}
+
+.tooltipSimpleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0.4rem 0;
+  font-size: 0.9rem;
+}
+
+.tooltipSimpleLabel {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.tooltipSimpleValue {
+  color: #fff;
+  font-weight: 600;
+  text-align: right;
+}
+
+.profitPositive {
+  color: #10b981 !important;
+}
+
+.profitNegative {
+  color: #ef4444 !important;
+}
+
+.tooltipSimpleLiquidity {
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  width: 100%;
+}
+
 .tooltipContent {
   color: white;
 }

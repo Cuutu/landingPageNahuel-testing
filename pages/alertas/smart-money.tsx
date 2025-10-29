@@ -2163,17 +2163,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               opacity="0.3"
               className={styles.segmentBorder}
             />
-            {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
-            {segment.size > 2 && (
+            {/* Etiqueta del símbolo - Solo mostrar si el segmento es grande (>8%) */}
+            {segment.size > 8 && (
               <>
-                {/* Símbolo siempre visible */}
+                {/* Símbolo visible solo para segmentos grandes */}
                 <text
-                  x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
-                  y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
+                  x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 150}
+                  y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 150}
                   className={styles.segmentLabel}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fontSize={segment.size > 5 ? "18" : "16"}
+                  fontSize="18"
                   fontWeight="bold"
                   fill="#ffffff"
                   filter="url(#shadow3D)"
@@ -2184,69 +2184,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 >
                   {segment.symbol}
                 </text>
-                {/* Porcentaje del segmento - solo visible en hover */}
-                <g className={styles.segmentLabelGroup}>
-                  <text
-                    x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
-                    y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170) + 20}
-                    className={styles.segmentLabel}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={segment.size > 5 ? "14" : "12"}
-                    fontWeight="bold"
-                    fill="#ffffff"
-                    filter="url(#shadow3D)"
-                    style={{
-                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    {segment.size.toFixed(1)}%
-                  </text>
-                </g>
-              </>
-            )}
-            {/* Etiqueta alternativa para segmentos muy pequeños */}
-            {segment.size <= 2 && segment.size > 0.5 && (
-              <>
-                {/* Símbolo siempre visible */}
-                <text
-                  x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
-                  y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185}
-                  className={styles.segmentLabel}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fontSize="14"
-                  fontWeight="bold"
-                  fill="#ffffff"
-                  filter="url(#shadow3D)"
-                  style={{
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                    pointerEvents: 'none'
-                  }}
-                >
-                  {segment.symbol}
-                </text>
-                {/* Porcentaje del segmento pequeño - solo visible en hover */}
-                <g className={styles.segmentLabelGroup}>
-                  <text
-                    x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
-                    y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185 + 16}
-                    className={styles.segmentLabel}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="10"
-                    fontWeight="bold"
-                    fill="#ffffff"
-                    filter="url(#shadow3D)"
-                    style={{
-                      textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-                      pointerEvents: 'none'
-                    }}
-                  >
-                    {segment.size.toFixed(1)}%
-                  </text>
-                </g>
               </>
             )}
           </g>
@@ -2748,93 +2685,59 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   const showTooltip = (event: React.MouseEvent, segment: any) => {
     const liq = (liquidityMap as any)?.[segment.symbol];
-    const tooltip = (document.getElementById('chartTooltip') as HTMLElement) || (document.getElementById('chartTooltipDashboard') as HTMLElement);
-    if (tooltip) {
-      const symbol = tooltip.querySelector(`.${styles.tooltipSymbol}`) as HTMLElement;
-      const action = tooltip.querySelector(`.${styles.tooltipAction}`) as HTMLElement;
-      const entry = tooltip.querySelector(`.${styles.tooltipEntry}`) as HTMLElement;
-      const current = tooltip.querySelector(`.${styles.tooltipCurrent}`) as HTMLElement;
-      const pnl = tooltip.querySelector(`.${styles.tooltipPnl}`) as HTMLElement;
-      const status = tooltip.querySelector(`.${styles.tooltipStatus}`) as HTMLElement;
-      const liqEl = tooltip.querySelector(`.${styles.tooltipLiquidity}`) as HTMLElement;
-      const sharesEl = tooltip.querySelector(`.${styles.tooltipShares}`) as HTMLElement;
-      const realizedEl = tooltip.querySelector(`.${styles.tooltipRealized}`) as HTMLElement;
-
-      if (symbol) symbol.textContent = segment.symbol;
-      if (action) {
-        action.textContent = segment.action;
-        action.className = `${styles.tooltipAction} ${segment.action === 'BUY' ? styles.buyAction : styles.sellAction}`;
-      }
-      const formatPrice = (v: any) => typeof v === 'number' ? `$${Number(v).toFixed(2)}` : (v ?? '-');
-      if (entry) entry.textContent = formatPrice(segment.entryPrice ?? liq?.entryPrice);
-      if (current) current.textContent = formatPrice(segment.currentPrice ?? liq?.currentPrice);
-      if (pnl) {
-        // Mostrar ganancia desde precio de entrada y porcentaje del gráfico
-        const profitText = `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%`;
-        const percentageText = `${segment.size.toFixed(1)}% del gráfico`;
-        pnl.innerHTML = `
-          <div style="margin-bottom: 4px;">
-            <strong>Ganancia:</strong> ${profitText}
-          </div>
-          <div>
-            <strong>Representa:</strong> ${percentageText}
-          </div>
-        `;
-        pnl.className = `${styles.tooltipPnl} ${segment.profit >= 0 ? styles.profit : styles.loss}`;
-      }
-      // Ocultar elementos adicionales del tooltip - solo mostrar Entrada, Actual y P&L
-      if (status) {
-        status.style.display = 'none';
-      }
-      if (action && action.parentElement) {
-        action.parentElement.style.display = 'none';
-      }
-      const formatMoneyShort = (n: number) => {
-        const abs = Math.abs(n);
-        if (abs >= 1_000_000) return `$${(n/1_000_000).toFixed(1)}M`;
-        if (abs >= 1_000) return `$${(n/1_000).toFixed(1)}k`;
-        return `$${n.toFixed(2)}`;
-      };
-      if (liqEl) liqEl.style.display = 'none';
-      if (sharesEl) sharesEl.style.display = 'none';
-      if (realizedEl) realizedEl.style.display = 'none';
-
-      // Posicionamiento anclado al segmento
-      const tooltipWidth = 260; // coincide con CSS
-      const tooltipHeight = 180; // aprox
-      const padding = 12;
-      const container = document.getElementById('alertsChartContainer') as HTMLElement | null;
-      const rect = container?.getBoundingClientRect();
-      const scaleX = rect ? (rect.width / 500) : 1; // viewBox 0 0 500 500
-      const scaleY = rect ? (rect.height / 500) : 1; // viewBox 0 0 500 500
-      const angleRad = (segment.centerAngle - 90) * Math.PI / 180;
-      // Centro real del SVG es (250,250) y el radio visual ~200; anclamos un poco dentro
-      const r = 160;
-      const svgAnchorX = 250 + Math.cos(angleRad) * r;
-      const svgAnchorY = 250 + Math.sin(angleRad) * r;
-      let x = (rect?.left || 0) + svgAnchorX * scaleX + window.scrollX;
-      let y = (rect?.top || 0) + svgAnchorY * scaleY + window.scrollY;
-      const isRight = Math.cos(angleRad) >= 0;
-      x += isRight ? 16 : -(tooltipWidth + 16);
-      y -= tooltipHeight / 2;
-      const vpW = window.innerWidth;
-      const vpH = window.innerHeight;
-      if (x + tooltipWidth + padding > vpW + window.scrollX) x = vpW + window.scrollX - tooltipWidth - padding;
-      if (x < window.scrollX + padding) x = window.scrollX + padding;
-      if (y + tooltipHeight + padding > vpH + window.scrollY) y = vpH + window.scrollY - tooltipHeight - padding;
-      if (y < window.scrollY + padding) y = window.scrollY + padding;
-
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${x}px`;
-      tooltip.style.top = `${y}px`;
+    
+    // Crear o actualizar tooltip simplificado
+    let tooltip = document.getElementById('chartTooltipSimple') as HTMLElement;
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'chartTooltipSimple';
+      tooltip.className = styles.chartTooltipSimple;
+      document.body.appendChild(tooltip);
     }
+
+    // Contenido del tooltip simplificado con P&L
+    const percentageText = `${segment.size.toFixed(1)}%`;
+    const profitText = segment.symbol !== 'LIQUIDEZ' ? 
+      `${segment.profit >= 0 ? '+' : ''}${segment.profit.toFixed(2)}%` : 
+      'Disponible';
+    
+    const profitClass = segment.profit >= 0 ? styles.profitPositive : styles.profitNegative;
+    
+    tooltip.innerHTML = `
+      <div class="${styles.tooltipSimpleSymbol}">${segment.symbol}</div>
+      <div class="${styles.tooltipSimpleDivider}"></div>
+      <div class="${styles.tooltipSimpleRow}">
+        <span class="${styles.tooltipSimpleLabel}">Del gráfico:</span>
+        <span class="${styles.tooltipSimpleValue}">${percentageText}</span>
+      </div>
+      ${segment.symbol !== 'LIQUIDEZ' ? `
+        <div class="${styles.tooltipSimpleRow}">
+          <span class="${styles.tooltipSimpleLabel}">P&L:</span>
+          <span class="${styles.tooltipSimpleValue} ${profitClass}">${profitText}</span>
+        </div>
+      ` : `
+        <div class="${styles.tooltipSimpleRow}">
+          <span class="${styles.tooltipSimpleLiquidity}">${profitText}</span>
+        </div>
+      `}
+    `;
+
+    // Posicionar tooltip cerca del cursor
+    const mouseX = event.clientX;
+    const mouseY = event.clientY;
+    
+    tooltip.style.display = 'block';
+    tooltip.style.left = `${mouseX + 15}px`;
+    tooltip.style.top = `${mouseY + 15}px`;
   };
 
   const hideTooltip = () => {
     const tooltip1 = document.getElementById('chartTooltip') as HTMLElement;
     const tooltip2 = document.getElementById('chartTooltipDashboard') as HTMLElement;
+    const tooltipSimple = document.getElementById('chartTooltipSimple') as HTMLElement;
     if (tooltip1) tooltip1.style.display = 'none';
     if (tooltip2) tooltip2.style.display = 'none';
+    if (tooltipSimple) tooltipSimple.style.display = 'none';
   };
 
   const renderAlertasVigentes = () => {
