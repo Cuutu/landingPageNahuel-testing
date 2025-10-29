@@ -6226,6 +6226,15 @@
   transition: all 0.3s ease;
 }
 
+.segmentLabelGroup {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.chartSegment3D:hover .segmentLabelGroup {
+  opacity: 1;
+}
+
 .chartCenter3D {
   fill: var(--bg-secondary);
   stroke: var(--primary-color);

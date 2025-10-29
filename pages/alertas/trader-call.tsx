@@ -2216,7 +2216,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             />
             {/* Etiqueta del símbolo - Mejorada para porcentajes pequeños */}
             {segment.size > 2 && (
-              <g>
+              <g className={styles.segmentLabelGroup}>
                 <text
                   x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
                   y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * (segment.size > 5 ? 150 : 170)}
@@ -2256,7 +2256,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             )}
             {/* Etiqueta alternativa para segmentos muy pequeños */}
             {segment.size <= 2 && segment.size > 0.5 && (
-              <g>
+              <g className={styles.segmentLabelGroup}>
                 <text
                   x={250 + Math.cos((segment.centerAngle - 90) * Math.PI / 180) * 185}
                   y={250 + Math.sin((segment.centerAngle - 90) * Math.PI / 180) * 185}
