@@ -4402,7 +4402,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <div className={styles.modalActions}>
                 <button 
                   className={styles.clearFilters} 
-                  onClick={() => setShowPartialSaleModal(false)}
+                  onClick={() => setShowPartialSaleModal(false)} 
                   disabled={partialSaleLoading}
                 >
                   Cancelar
