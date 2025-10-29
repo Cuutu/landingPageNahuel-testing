@@ -2448,9 +2448,31 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const renderSeguimientoAlertas = () => {
     // Mostrar TODAS las alertas activas para seguimiento (tanto marcadas como desmarcadas)
     // Los clientes deben poder seguir cualquier alerta que hayan comprado
-    const alertasEnSeguimiento = realAlerts.filter(alert => 
-      alert.status === 'ACTIVE'
-    );
+    // ✅ NUEVO: Incluir alertas descartadas del día actual
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    
+    const alertasEnSeguimiento = realAlerts.filter(alert => {
+      // ✅ CORREGIDO: Excluir TODAS las alertas que están disponibles para compra (sin importar el tipo)
+      // Esas alertas deben aparecer SOLO en "Alertas Vigentes"
+      if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
+        return false;
+      }
+
+      // Incluir alertas activas que NO estén marcadas como disponibles para compra
+      if (alert.status === 'ACTIVE') {
+        return true;
+      }
+
+      // Incluir alertas descartadas del día actual
+      if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
+        const descartadaAt = new Date(alert.descartadaAt);
+        return descartadaAt >= startOfDay && descartadaAt <= endOfDay;
+      }
+
+      return false;
+    });
     
     return (
       <div className={styles.seguimientoContent}>

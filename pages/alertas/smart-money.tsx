@@ -2403,11 +2403,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     
     const alertasEnSeguimiento = realAlerts.filter(alert => {
-      // Excluir alertas de rango que están disponibles para compra (esas van en "Alertas vigentes")
-      if (alert.status === 'ACTIVE' && alert.tipoAlerta === 'rango' && alert.availableForPurchase === true) {
+      // ✅ CORREGIDO: Excluir TODAS las alertas que están disponibles para compra (sin importar el tipo)
+      // Esas alertas deben aparecer SOLO en "Alertas Vigentes"
+      if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
         return false;
       }
 
+      // Incluir alertas activas que NO estén marcadas como disponibles para compra
       if (alert.status === 'ACTIVE') {
         return true;
       }
