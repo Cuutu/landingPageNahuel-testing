@@ -761,16 +761,12 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             bookingUser.name || bookingUser.email,
             {
               type: serviceType,
-              date: startDate.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
+              date: eventResult.formattedDate || startDate.toLocaleDateString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                 timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
               }),
-              time: startDate.toLocaleTimeString('es-ES', {
-                hour: '2-digit',
-                minute: '2-digit',
+              time: eventResult.formattedTime || startDate.toLocaleTimeString('es-ES', {
+                hour: '2-digit', minute: '2-digit',
                 timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
               }),
               duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),

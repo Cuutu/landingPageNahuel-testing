@@ -42,6 +42,9 @@ interface GoogleMeetData {
     code?: string;
     errors?: any;
   };
+  // Información útil para emails
+  formattedDate?: string;
+  formattedTime?: string;
 }
 
 /**
@@ -299,6 +302,13 @@ export async function createTrainingEvent(
 
     // Crear evento con Google Meet automáticamente
     const meetData = await createGoogleMeetForEvent(calendar, event, calendarId);
+    // Adjuntar fecha/hora formateadas para reusar en emails
+    meetData.formattedDate = new Intl.DateTimeFormat('es-ES', {
+      timeZone: timezone, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).format(startDate);
+    meetData.formattedTime = new Intl.DateTimeFormat('es-ES', {
+      timeZone: timezone, hour: '2-digit', minute: '2-digit'
+    }).format(startDate);
     
     if (meetData.success && meetData.meetLink) {
       console.log('✅ Evento de entrenamiento creado con Google Meet:', meetData.meetLink);
@@ -392,6 +402,13 @@ export async function createAdvisoryEvent(
     // Crear evento con Google Meet automáticamente
     console.log('🔗 Iniciando creación de evento con Google Meet...');
     const meetData = await createGoogleMeetForEvent(calendar, event, calendarId);
+    // Adjuntar fecha/hora formateadas para reusar en emails
+    meetData.formattedDate = new Intl.DateTimeFormat('es-ES', {
+      timeZone: timezone, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).format(startDate);
+    meetData.formattedTime = new Intl.DateTimeFormat('es-ES', {
+      timeZone: timezone, hour: '2-digit', minute: '2-digit'
+    }).format(startDate);
     
     if (meetData.success && meetData.meetLink) {
       console.log('✅ Evento de asesoría creado con Google Meet:', meetData.meetLink);
