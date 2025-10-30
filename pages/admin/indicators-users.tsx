@@ -99,7 +99,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
         // Remover del listado inmediatamente tras notificar
         setIndicatorUsers(prev => prev.filter(user => user.paymentId !== paymentId));
       } else {
-        toast.error(data.error || 'Error al enviar notificación');
+        toast.error(data.error || 'Error al enviar notificación.');
       }
     } catch (error) {
       console.error('Error sending notification:', error);
