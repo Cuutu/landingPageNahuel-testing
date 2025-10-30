@@ -698,6 +698,9 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         
         // Crear evento en Google Calendar
         let googleEventId = null;
+        // Declarar eventResult fuera del try para que esté disponible en el scope del envío de emails
+        let eventResult: any = null;
+        
         try {
           console.log('📅 Intentando crear evento en Google Calendar...');
           console.log('📅 Datos del evento:', {
@@ -710,7 +713,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           const { createAdvisoryEvent } = await import('@/lib/googleCalendar');
           console.log('✅ Función createAdvisoryEvent importada correctamente');
           
-          const eventResult = await createAdvisoryEvent(
+          eventResult = await createAdvisoryEvent(
             bookingUser.email,
             serviceType,
             startDate,

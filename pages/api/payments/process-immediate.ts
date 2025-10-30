@@ -373,10 +373,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         await newBooking.save();
         logger.info('IMMEDIATE booking saved', { module: 'payments', step: 'booking_saved', bookingId: newBooking._id.toString() });
 
+        // Declarar eventResult fuera del try para que esté disponible en el scope del envío de emails
+        let eventResult: any = null;
+
         // Calendar + Meet
         try {
           const { createAdvisoryEvent } = await importCalendar();
-          const eventResult = await createAdvisoryEvent(
+          eventResult = await createAdvisoryEvent(
             bookingUser.email,
             serviceType,
             startDate,

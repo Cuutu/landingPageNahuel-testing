@@ -261,19 +261,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Definir nombre del evento
       const eventName = serviceType || (type === 'training' ? 'Entrenamiento de Trading' : 'Asesoría Financiera');
 
-              // Crear evento con Google Meet automáticamente en el calendario del admin
-        try {
-          console.log('📅 Intentando crear evento con Google Meet en Google Calendar...');
-          console.log('🔑 Variables de entorno disponibles:', {
-            hasAdminAccessToken: !!process.env.ADMIN_GOOGLE_ACCESS_TOKEN,
-            hasAdminRefreshToken: !!process.env.ADMIN_GOOGLE_REFRESH_TOKEN,
-            hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
-            hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-            calendarId: process.env.GOOGLE_CALENDAR_ID,
-            timezone: process.env.GOOGLE_CALENDAR_TIMEZONE
-          });
-          
-          let meetData;
+      // Declarar meetData fuera del try para que esté disponible en el scope del envío de emails
+      let meetData: any = null;
+
+      // Crear evento con Google Meet automáticamente en el calendario del admin
+      try {
+        console.log('📅 Intentando crear evento con Google Meet en Google Calendar...');
+        console.log('🔑 Variables de entorno disponibles:', {
+          hasAdminAccessToken: !!process.env.ADMIN_GOOGLE_ACCESS_TOKEN,
+          hasAdminRefreshToken: !!process.env.ADMIN_GOOGLE_REFRESH_TOKEN,
+          hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+          hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+          calendarId: process.env.GOOGLE_CALENDAR_ID,
+          timezone: process.env.GOOGLE_CALENDAR_TIMEZONE
+        });
           
           if (type === 'training') {
             console.log('🏋️ Creando evento de entrenamiento con Google Meet...');
