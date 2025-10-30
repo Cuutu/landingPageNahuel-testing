@@ -343,21 +343,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         console.log('📧 Enviando notificaciones por email...');
         
-        // Formatear fecha y hora para los emails
+        // Formatear fecha y hora para los emails usando la MISMA lógica que createAdvisoryEvent
         const tz = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
-        const formattedDate = startDateTime.toLocaleDateString('es-ES', {
+        
+        // Si tenemos meetData con formattedDate/formattedTime, usarlos directamente
+        // Si no, usar la misma lógica que createAdvisoryEvent usa
+        const formattedDate = meetData?.formattedDate || new Intl.DateTimeFormat('es-ES', {
+          timeZone: tz,
           weekday: 'long',
           day: 'numeric',
           month: 'long',
-          year: 'numeric',
-          timeZone: tz
-        });
+          year: 'numeric'
+        }).format(startDateTime);
         
-        const formattedTime = startDateTime.toLocaleTimeString('es-ES', {
+        const formattedTime = meetData?.formattedTime || new Intl.DateTimeFormat('es-ES', {
+          timeZone: tz,
           hour: '2-digit',
-          minute: '2-digit',
-          timeZone: tz
-        });
+          minute: '2-digit'
+        }).format(startDateTime);
 
         const emailDetails = {
           type: eventName,

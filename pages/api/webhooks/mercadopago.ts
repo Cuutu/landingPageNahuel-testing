@@ -756,19 +756,29 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           
           // Preparar detalles con MeetLink si está disponible
           const meetLinkForUser = (typeof googleEventId === 'string') ? undefined : undefined;
+          // Usar la misma lógica de formateo que createAdvisoryEvent
+          const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+          const formattedDate = eventResult.formattedDate || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezone,
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }).format(startDate);
+          
+          const formattedTime = eventResult.formattedTime || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(startDate);
+          
           await sendAdvisoryConfirmationEmail(
             bookingUser.email,
             bookingUser.name || bookingUser.email,
             {
               type: serviceType,
-              date: eventResult.formattedDate || startDate.toLocaleDateString('es-ES', {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
-              }),
-              time: eventResult.formattedTime || startDate.toLocaleTimeString('es-ES', {
-                hour: '2-digit', minute: '2-digit',
-                timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
-              }),
+              date: formattedDate,
+              time: formattedTime,
               duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
               price: amount,
               meetLink: (await Booking.findById(newBooking._id))?.meetingLink
@@ -788,21 +798,29 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           const { sendAdminNotificationEmail } = await import('@/lib/emailNotifications');
           console.log('✅ Función sendAdminNotificationEmail importada correctamente');
           
+          // Usar la misma lógica de formateo que createAdvisoryEvent para el admin también
+          const timezoneForAdmin = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+          const adminFormattedDate = eventResult?.formattedDate || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezoneForAdmin,
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }).format(startDate);
+          
+          const adminFormattedTime = eventResult?.formattedTime || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezoneForAdmin,
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(startDate);
+          
           const adminNotificationData = {
             userEmail: bookingUser.email,
             userName: bookingUser.name || bookingUser.email,
             type: 'advisory' as const,
             serviceType: serviceType,
-            date: startDate.toLocaleDateString('es-ES', {
-              weekday: 'long',
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            }),
-            time: startDate.toLocaleTimeString('es-ES', {
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
+            date: adminFormattedDate,
+            time: adminFormattedTime,
             duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
             price: amount,
             meetLink: (await Booking.findById(newBooking._id))?.meetingLink

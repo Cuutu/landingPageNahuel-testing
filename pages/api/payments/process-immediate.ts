@@ -398,13 +398,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Emails
         try {
           const { sendAdvisoryConfirmationEmail, sendAdminNotificationEmail } = await importEmails();
+          
+          // Usar la misma lógica de formateo que createAdvisoryEvent
+          const timezone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+          const formattedDate = eventResult?.formattedDate || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezone,
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }).format(startDate);
+          
+          const formattedTime = eventResult?.formattedTime || new Intl.DateTimeFormat('es-ES', {
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(startDate);
+          
           await sendAdvisoryConfirmationEmail(
             bookingUser.email,
             bookingUser.name || bookingUser.email,
             {
               type: serviceType,
-              date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
-              time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
+              date: formattedDate,
+              time: formattedTime,
               duration: reservationData?.duration || 60,
               price: payment.amount,
               meetLink: (await Booking.findById(newBooking._id))?.meetingLink
@@ -415,8 +432,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             userName: bookingUser.name || bookingUser.email,
             type: 'advisory',
             serviceType,
-            date: startDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Argentina/Buenos_Aires' }),
-            time: startDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Argentina/Buenos_Aires' }),
+            date: formattedDate,
+            time: formattedTime,
             duration: reservationData?.duration || 60,
             price: payment.amount,
             meetLink: (await Booking.findById(newBooking._id))?.meetingLink

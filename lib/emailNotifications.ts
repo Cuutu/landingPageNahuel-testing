@@ -381,23 +381,23 @@ export async function sendBookingConfirmationEmail(
   try {
     console.log('📧 Enviando email de confirmación de reserva a:', userEmail);
 
-    // Usar zona horaria configurable para mostrar fecha/hora al usuario
-    const timeZone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo';
+    // Usar la MISMA lógica de formateo que createAdvisoryEvent
+    const timeZone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
 
     const advisoryDetails = {
       type: serviceType,
-      date: startDate.toLocaleDateString('es-ES', {
+      date: new Intl.DateTimeFormat('es-ES', {
+        timeZone: timeZone,
         weekday: 'long',
-        year: 'numeric',
-        month: 'long',
         day: 'numeric',
-        timeZone
-      }),
-      time: startDate.toLocaleTimeString('es-ES', {
+        month: 'long',
+        year: 'numeric'
+      }).format(startDate),
+      time: new Intl.DateTimeFormat('es-ES', {
+        timeZone: timeZone,
         hour: '2-digit',
-        minute: '2-digit',
-        timeZone
-      }),
+        minute: '2-digit'
+      }).format(startDate),
       duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
       price: amount
     };
