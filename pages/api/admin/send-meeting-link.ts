@@ -53,14 +53,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
       });
     };
 
     const formatTime = (date: Date) => {
       return new Date(date).toLocaleTimeString('es-ES', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
       });
     };
 

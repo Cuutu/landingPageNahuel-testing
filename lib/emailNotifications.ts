@@ -381,17 +381,22 @@ export async function sendBookingConfirmationEmail(
   try {
     console.log('📧 Enviando email de confirmación de reserva a:', userEmail);
 
+    // Usar zona horaria configurable para mostrar fecha/hora al usuario
+    const timeZone = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo';
+
     const advisoryDetails = {
       type: serviceType,
       date: startDate.toLocaleDateString('es-ES', {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone
       }),
       time: startDate.toLocaleTimeString('es-ES', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone
       }),
       duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
       price: amount

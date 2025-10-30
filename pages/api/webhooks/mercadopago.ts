@@ -765,11 +765,13 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
+                timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
               }),
               time: startDate.toLocaleTimeString('es-ES', {
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
+                timeZone: (process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Montevideo')
               }),
               duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
               price: amount,
