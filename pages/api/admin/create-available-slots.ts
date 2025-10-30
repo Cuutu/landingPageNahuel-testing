@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
+import { verifyAdminAPI } from '@/lib/adminAuth';
 import dbConnect from '@/lib/mongodb';
 import AvailableSlot from '@/models/AvailableSlot';
 
@@ -15,12 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Verificar autenticación y permisos de admin
     const session = await getServerSession(req, res, authOptions);
-    
-    if (!session || session.user?.email !== 'joaquinperez028@gmail.com') {
-      return res.status(403).json({ 
-        error: 'Acceso denegado',
-        message: 'Solo el administrador puede crear horarios' 
-      });
+    if (!session?.user?.email) {
+      return res.status(401).json({ error: 'No autorizado', message: 'Debes iniciar sesión' });
+    }
+
+    const adminCheck = await verifyAdminAPI(req, res);
+    if (!adminCheck.isAdmin) {
+      return res.status(403).json({ error: 'Acceso denegado', message: adminCheck.error || 'Se requieren permisos de administrador' });
     }
 
     await dbConnect();

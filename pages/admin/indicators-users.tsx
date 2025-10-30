@@ -96,16 +96,10 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
       if (data.success) {
         toast.success('Notificación enviada exitosamente');
-        // Actualizar estado local
-        setIndicatorUsers(prev => 
-          prev.map(user => 
-            user.paymentId === paymentId 
-              ? { ...user, notificationSent: true }
-              : user
-          )
-        );
+        // Remover del listado inmediatamente tras notificar
+        setIndicatorUsers(prev => prev.filter(user => user.paymentId !== paymentId));
       } else {
-        toast.error(data.error || 'Error al enviar notificación');
+        toast.error(data.error || 'Error al enviar notificación.');
       }
     } catch (error) {
       console.error('Error sending notification:', error);

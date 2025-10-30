@@ -48,6 +48,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .sort({ userEmail: 1, createdAt: -1 })
       .limit(5000);
 
+    // Helper para motivo más descriptivo
+    const formatReason = (payment: any): string => {
+      const service = String(payment.service || '').trim();
+      const type = String(payment.metadata?.type || '').toLowerCase();
+
+      // Indicadores
+      if (service === 'MediasMovilesAutomaticas') return 'indicador';
+
+      // Consultas financieras
+      if (service === 'ConsultorioFinanciero') return 'consulta financiera';
+
+      // Entrenamientos
+      if (service === 'SwingTrading') return 'entrenamiento swing trading';
+
+      // Alertas: TraderCall / SmartMoney
+      if (service === 'TraderCall' || service === 'SmartMoney') {
+        const servicio = service === 'TraderCall' ? 'tradercall' : 'smartmoney';
+        if (type === 'subscription') return `suscripción ${servicio}`;
+        if (type === 'one-time') return `alerta ${servicio}`;
+        return servicio; // fallback breve
+      }
+
+      // Fallbacks
+      return payment.metadata?.reason || payment.metadata?.type || service || 'pago';
+    };
+
     // Procesar pagos del modelo Payment
     const processedPayments = payments.map(payment => ({
       id: payment._id.toString(),
@@ -63,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       expiryDate: payment.expiryDate,
       paymentMethod: 'MercadoPago',
       mercadopagoPaymentId: payment.mercadopagoPaymentId,
-      reason: payment.metadata?.reason || payment.metadata?.type || payment.service,
+      reason: formatReason(payment),
       source: 'payment' // Indicador de origen
     }));
 
