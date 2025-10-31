@@ -486,27 +486,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               {/* Título */}
               <h1 className={styles.title}>{report.title}</h1>
 
-              {/* Meta información */}
-              <div className={styles.metaInfo}>
-                <div className={styles.metaItem}>
-                  <UserIcon size={16} />
-                  <span>{report.author.name}</span>
-                </div>
-                <div className={styles.metaItem}>
-                  <Calendar size={16} />
-                  <span>{formatDate(report.publishedAt)}</span>
-                </div>
-                <div className={styles.metaItem}>
-                  <Eye size={16} />
-                  <span>{report.views} vistas</span>
-                </div>
-                {publishedArticles.length > 0 && (
-                  <div className={styles.metaItem}>
-                    <BookOpen size={16} />
-                    <span>{publishedArticles.length} artículo{publishedArticles.length !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-              </div>
+              {/* Meta información - OCULTA */}
 
               {/* Botón de editar para administradores */}
               {userRole === 'admin' && (
@@ -535,11 +515,10 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 {/* Contenido principal del informe - AHORA PRIMERO */}
                 <div className={styles.reportContent}>
                   <h2>📋 Contenido Principal del Informe</h2>
-                  <div className={styles.content}>
-                    {report.content.split('\n').map((line, index) => (
-                      <p key={index}>{line}</p>
-                    ))}
-                  </div>
+                  <div 
+                    className={styles.content}
+                    dangerouslySetInnerHTML={{ __html: report.content }}
+                  />
                 </div>
 
                 {/* Navegación de artículos - AHORA DESPUÉS */}
@@ -604,11 +583,10 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                       <h3 className={styles.articleTitle}>
                         Artículo {publishedArticles[currentArticleIndex].order}: {publishedArticles[currentArticleIndex].title}
                       </h3>
-                      <div className={styles.articleContent}>
-                        {publishedArticles[currentArticleIndex].content.split('\n').map((line, index) => (
-                          <p key={index}>{line}</p>
-                        ))}
-                      </div>
+                      <div 
+                        className={styles.articleContent}
+                        dangerouslySetInnerHTML={{ __html: publishedArticles[currentArticleIndex].content }}
+                      />
                       <div className={styles.articleMeta}>
                         <span>Publicado: {formatDate(publishedArticles[currentArticleIndex].createdAt)}</span>
                       </div>

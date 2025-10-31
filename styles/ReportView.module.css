@@ -655,13 +655,15 @@
 }
 
 .galleryThumbnail {
-  width: 100%;
+  width: 70%;
   height: auto;
   min-height: 100px;
   object-fit: contain;
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
+  margin: 0 auto;
+  display: block;
 }
 
 .galleryItem:hover .galleryThumbnail {
@@ -766,15 +768,18 @@
 }
 
 .modalImage {
-  width: 100vw;
-  height: 100vh;
+  max-width: 70vw;
+  max-height: 70vh;
+  width: auto;
+  height: auto;
   object-fit: contain;
   border-radius: 0;
   box-shadow: none;
   transition: all 0.3s ease;
   border: none;
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
+  display: block;
 }
 
 .modalImage:hover {
@@ -915,8 +920,10 @@
   }
 
   .modalImage {
-    width: 100vw;
-    height: 100vh;
+    max-width: 70vw;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
   }
 
   .closeImageModal {
@@ -1040,8 +1047,10 @@
   }
 
   .modalImage {
-    width: 100vw;
-    height: 100vh;
+    max-width: 90vw;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
   }
 
   .closeImageModal {
