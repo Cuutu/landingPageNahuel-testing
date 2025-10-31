@@ -1842,11 +1842,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         return;
       }
 
-      if (!editAlert.entryPrice || parseFloat(editAlert.entryPrice) <= 0) {
-        alert('❌ El precio de entrada debe ser mayor a 0');
-        return;
-      }
-
       if (!editAlert.stopLoss || parseFloat(editAlert.stopLoss) <= 0) {
         alert('❌ El stop loss debe ser mayor a 0');
         return;
@@ -3548,36 +3543,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 value={editAlert.symbol}
                 onChange={(e) => setEditAlert(prev => ({ ...prev, symbol: e.target.value }))}
                 className={styles.input}
-              />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Precio Acción</label>
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Precio acción"
-                value={editAlert.entryPrice}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, entryPrice: e.target.value }))}
-                readOnly={!!editAlert.entryPrice && editAlert.entryPrice !== ''}
-                className={styles.input}
+                readOnly
+                disabled
                 style={{
-                  backgroundColor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  cursor: (!!editAlert.entryPrice && editAlert.entryPrice !== '') ? 'not-allowed' : 'text'
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  cursor: 'not-allowed',
+                  opacity: 0.7
                 }}
               />
-            </div>
-
-            <div className={styles.inputGroup}>
-              <label>Acción</label>
-              <select
-                value={editAlert.action}
-                onChange={(e) => setEditAlert(prev => ({ ...prev, action: e.target.value }))}
-                className={styles.select}
-              >
-                <option value="BUY">BUY (Compra)</option>
-                <option value="SELL">SELL (Venta)</option>
-              </select>
+              <small style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                El símbolo no se puede cambiar una vez creada la alerta
+              </small>
             </div>
 
             <div className={styles.inputGroup}>
