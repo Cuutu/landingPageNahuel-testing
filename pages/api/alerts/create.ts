@@ -203,15 +203,19 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-      // ✅ MODIFICADO: Lógica diferente para alertas de compra vs venta
-      if (action === 'BUY') {
-        // Para alertas de COMPRA: usar el precio mínimo como currentPrice inicial
-        alertData.currentPrice = precioMinimo;
-        console.log(`📊 Alerta de COMPRA con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMinimo} (P&L: 0%)`);
-      } else if (action === 'SELL') {
-        // ✅ NUEVO: Para alertas de VENTA: usar el precio máximo como currentPrice inicial
-        alertData.currentPrice = precioMaximo;
-        console.log(`📊 Alerta de VENTA con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${precioMaximo} (P&L: 0%)`);
+      // ✅ CORREGIDO: Usar precio real del mercado o promedio del rango para P&L correcto
+      // Si se obtuvo el precio actual del mercado y está dentro del rango, usarlo
+      // Si no, usar el promedio del rango para un P&L más realista
+      // Nota: precioMinimo y precioMaximo ya están validados en el if anterior (líneas 135-140)
+      if (currentMarketPrice && precioMinimo && precioMaximo && currentMarketPrice > precioMinimo && currentMarketPrice < precioMaximo) {
+        // Precio del mercado está dentro del rango, usarlo
+        alertData.currentPrice = currentMarketPrice;
+        console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${currentMarketPrice} (precio real del mercado, P&L: 0%)`);
+      } else {
+        // Usar promedio del rango para un cálculo de P&L más justo
+        const averagePrice = ((precioMinimo || 0) + (precioMaximo || 0)) / 2;
+        alertData.currentPrice = averagePrice;
+        console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${averagePrice} (promedio del rango, P&L: 0%)`);
       }
       
       // ✅ NUEVO: Establecer horario de cierre por defecto a 17:30 para alertas de rango
