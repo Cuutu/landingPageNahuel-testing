@@ -42,7 +42,8 @@ import {
   ExternalLink,
   Loader,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import styles from '@/styles/SmartMoney.module.css';
 import { useRouter } from 'next/router';
@@ -3166,6 +3167,58 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     };
 
+    // Función para convertir URLs en enlaces clicables
+    const linkifyText = (text: string) => {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      const parts = text.split(urlRegex);
+      
+      return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+          return (
+            <a 
+              key={index} 
+              href={part} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              style={{ 
+                color: '#4a9eff', 
+                textDecoration: 'underline',
+                wordBreak: 'break-all'
+              }}
+            >
+              {part}
+            </a>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      });
+    };
+
+    // Función para borrar mensaje (solo admin)
+    const deleteMessage = async (messageId: string) => {
+      if (!confirm('¿Estás seguro de eliminar este mensaje?')) return;
+      
+      try {
+        const response = await fetch(`/api/chat/messages?messageId=${messageId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          const updatedMessages = messages.filter(m => m._id !== messageId);
+          setMessages(updatedMessages);
+          
+          // Actualizar cache local
+          localStorage.setItem('smart-money-chat-messages', JSON.stringify(updatedMessages));
+          localStorage.setItem('smart-money-chat-timestamp', Date.now().toString());
+        } else {
+          alert('Error al eliminar mensaje');
+        }
+      } catch (error) {
+        console.error('Error eliminando mensaje:', error);
+        alert('Error al eliminar mensaje');
+      }
+    };
+
     // ✅ CORREGIDO: Control más preciso del scroll para evitar múltiples saltos
     const [previousMessageCount, setPreviousMessageCount] = useState(0);
     const [isReady, setIsReady] = useState(false);
@@ -3396,12 +3449,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                           <div className={styles.replyLine}></div>
                           <div className={styles.replyContent}>
                             <span className={styles.replyUser}>{msg.replyTo.userName}</span>
-                            <span className={styles.replyText}>{msg.replyTo.message}</span>
+                            <span className={styles.replyText}>{linkifyText(msg.replyTo.message)}</span>
                           </div>
                         </div>
                       )}
                       
-                      <div className={styles.messageText}>{msg.message}</div>
+                      <div className={styles.messageText}>{linkifyText(msg.message)}</div>
                     </div>
                     
                     <div className={styles.messageActions}>
@@ -3412,6 +3465,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         <Reply size={14} />
                         Responder
                       </button>
+                      {userRole === 'admin' && (
+                        <button 
+                          className={styles.deleteButton}
+                          onClick={() => deleteMessage(msg._id)}
+                          title="Eliminar mensaje"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
