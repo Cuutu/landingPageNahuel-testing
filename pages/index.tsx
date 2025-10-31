@@ -931,7 +931,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                   </motion.a>
 
                   <motion.a
-                    href="https://bullmarketus.com/"
+                    href="https://www.bullmarketbrokers.com/"
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.empresaLogo}

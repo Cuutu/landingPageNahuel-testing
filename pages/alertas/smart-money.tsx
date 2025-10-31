@@ -1242,7 +1242,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   };
 
   const handleCreateAlert = async () => {
-    if (!newAlert.symbol || !stockPrice) {
+    // Validación: Solo requerir stockPrice para alertas de precio específico
+    if (!newAlert.symbol || (newAlert.tipoAlerta === 'precio' && !stockPrice)) {
       alert('Por favor completa todos los campos obligatorios');
       return;
     }
@@ -3707,34 +3708,38 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   onChange={(e) => setNewAlert(prev => ({ ...prev, symbol: e.target.value }))}
                   className={styles.input}
                 />
-                <button
-                  onClick={() => fetchStockPrice(newAlert.symbol)}
-                  disabled={!newAlert.symbol || priceLoading}
-                  className={styles.getPriceButton}
-                >
-                  {priceLoading ? 'Cargando...' : 'Obtener Precio'}
-                </button>
+                {newAlert.tipoAlerta !== 'rango' && (
+                  <button
+                    onClick={() => fetchStockPrice(newAlert.symbol)}
+                    disabled={!newAlert.symbol || priceLoading}
+                    className={styles.getPriceButton}
+                  >
+                    {priceLoading ? 'Cargando...' : 'Obtener Precio'}
+                  </button>
+                )}
               </div>
             </div>
 
-            <div className={styles.inputGroup}>
-              <label>Precio Acción</label>
-              <div className={styles.priceInputContainer}>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Precio acción"
-                  value={stockPrice || ''}
-                  onChange={(e) => setStockPrice(parseFloat(e.target.value) || null)}
-                  readOnly={!!stockPrice && stockPrice !== null}
-                  className={styles.input}
-                  style={{
-                    backgroundColor: (!!stockPrice && stockPrice !== null) ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                    cursor: (!!stockPrice && stockPrice !== null) ? 'not-allowed' : 'text'
-                  }}
-                />
+            {newAlert.tipoAlerta !== 'rango' && (
+              <div className={styles.inputGroup}>
+                <label>Precio Acción</label>
+                <div className={styles.priceInputContainer}>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Precio acción"
+                    value={stockPrice || ''}
+                    onChange={(e) => setStockPrice(parseFloat(e.target.value) || null)}
+                    readOnly={!!stockPrice && stockPrice !== null}
+                    className={styles.input}
+                    style={{
+                      backgroundColor: (!!stockPrice && stockPrice !== null) ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+                      cursor: (!!stockPrice && stockPrice !== null) ? 'not-allowed' : 'text'
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Campo Acción - OCULTO - Siempre BUY */}
             <div className={styles.inputGroup} style={{ display: 'none' }}>

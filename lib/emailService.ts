@@ -461,7 +461,7 @@ export function generateReportEmailTemplate(
       
       <div style="margin: 8px 0 16px;">
         <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Título</div>
-        <div style="font-size: 14px; color: #111827; font-weight: 700;">${notification.metadata?.reportTitle || notification.title || 'Nuevo Informe'}</div>
+        <div style="font-size: 14px; color: #111827; font-weight: 700;">${notification.metadata?.reportTitle || 'Nuevo Informe'}</div>
       </div>
       
       <table role="presentation" width="100%" cellspacing="0" cellpadding="8" border="0">
@@ -627,8 +627,8 @@ export function generateAlertEmailTemplate(
         <h3 style="margin: 0 0 15px; font-size: 18px; color: #1e293b; font-weight: 600;">
           📊 Detalles de la Alerta
         </h3>
-        <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
-          ${notification.message}
+        <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6; white-space: pre-wrap;">
+          ${notification.message.replace(/\n/g, '<br>')}
         </p>
         ${imageBlock}
         ${alertDetails}

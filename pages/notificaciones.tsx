@@ -41,6 +41,33 @@ interface PaginationInfo {
   hasMore: boolean;
 }
 
+// Helper function para convertir URLs en links clicables
+const linkifyText = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            color: '#00ff88',
+            textDecoration: 'underline',
+            wordBreak: 'break-all'
+          }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 export default function NotificacionesPage() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -341,7 +368,7 @@ export default function NotificacionesPage() {
 
                       {/* Message */}
                       <div className={styles.cardBody}>
-                        <p className={styles.notificationMessage}>{notification.message}</p>
+                        <p className={styles.notificationMessage}>{linkifyText(notification.message)}</p>
                       </div>
 
                       {/* Action */}

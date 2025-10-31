@@ -103,9 +103,23 @@ export default async function handler(
     if (alerts.length > 0) {
       console.log(`🔄 Actualizando precios para ${alerts.length} alertas antes de devolver datos...`);
       
+      // ✅ VALIDACIÓN: Obtener hora actual para verificar si es después de las 17:30
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const isAfterMarketClose = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
+      
       for (const alert of alerts) {
         if (alert.status === 'ACTIVE' && alert.symbol) {
           try {
+            // ✅ VALIDACIÓN: Para alertas de rango, solo actualizar después de las 17:30
+            const isRangeAlert = alert.tipoAlerta === 'rango' || (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max);
+            
+            if (isRangeAlert && !isAfterMarketClose) {
+              console.log(`⏰ Alerta de rango ${alert.symbol} - No actualizar hasta las 17:30 (hora actual: ${currentHour}:${currentMinute.toString().padStart(2, '0')})`);
+              continue; // Saltar actualización para alertas de rango antes de las 17:30
+            }
+            
             // Obtener precio actual usando la API interna
             const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stock-price?symbol=${alert.symbol}`, {
               headers: {
