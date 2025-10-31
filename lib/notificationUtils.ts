@@ -34,6 +34,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     }
 
     console.log('🔔 [ALERT NOTIFICATION] Grupo de usuarios objetivo:', targetUsers);
+    console.log('🔔 [ALERT NOTIFICATION] Tipo de alerta:', alert.tipo);
+    console.log('🔔 [ALERT NOTIFICATION] Fecha actual:', new Date().toISOString());
 
     // Buscar usuarios con suscripciones activas al servicio específico para validar
     const subscribedUsers = await User.find({
@@ -60,13 +62,31 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           }
         }
       ]
-    }, 'email name');
+    }, 'email name suscripciones subscriptions');
 
     console.log('👥 [ALERT NOTIFICATION] Usuarios suscritos al servicio encontrados:', subscribedUsers.length);
     
     if (subscribedUsers.length === 0) {
       console.log('⚠️ [ALERT NOTIFICATION] No hay usuarios suscritos al servicio:', alert.tipo);
-      return;
+      
+      // Debug: Ver si hay usuarios en la DB
+      const totalUsers = await User.countDocuments();
+      console.log('📊 [ALERT NOTIFICATION] Total usuarios en DB:', totalUsers);
+      
+      // Debug: Ver algunos usuarios y sus suscripciones
+      const sampleUsers = await User.find({}, 'email suscripciones subscriptions').limit(3);
+      console.log('🔍 [ALERT NOTIFICATION] Muestra de usuarios:');
+      sampleUsers.forEach(u => {
+        console.log(`  - ${u.email}:`, {
+          suscripciones: u.suscripciones?.length || 0,
+          subscriptions: u.subscriptions?.length || 0
+        });
+      });
+    } else {
+      console.log('✅ [ALERT NOTIFICATION] Usuarios que recibirán email:');
+      subscribedUsers.forEach(u => {
+        console.log(`  - ${u.email}`);
+      });
     }
 
     // Buscar plantilla específica para alertas
