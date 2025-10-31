@@ -1,16 +1,10 @@
 .playerContainer {
   position: relative;
   width: 100%;
+  height: 100%;
   background: #000;
   overflow: hidden;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-}
-
-/* Asegurar relación 16:9 si el padre define aspect-ratio */
-.playerContainer::before {
-  content: '';
-  display: block;
-  padding-top: 45%; /* Relación más angosta para que la tarjeta sea más alta */
 }
 
 .playerContainer > .iframe,
