@@ -645,9 +645,7 @@ export function generateAlertEmailTemplate(
       </div>
     `,
     notificationType: 'alert',
-    urgency: 'high',
-    buttonText: notification.actionText || 'Ver Detalles',
-    buttonUrl: notification.actionUrl ? `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}${notification.actionUrl}` : undefined
+    urgency: 'high'
   });
 }
 
