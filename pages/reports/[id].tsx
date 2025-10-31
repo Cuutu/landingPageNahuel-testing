@@ -145,6 +145,12 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
     setIsUpdating(true);
     try {
+      // Actualizar el campo 'order' de cada imagen basándose en su posición actual
+      const imagesWithOrder = editImages.map((img, index) => ({
+        ...img,
+        order: index + 1
+      }));
+
       const response = await fetch(`/api/reports/${report._id}`, {
         method: 'PUT',
         headers: {
@@ -154,7 +160,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
           title: editFormData.title,
           content: editFormData.content,
           isPublished: editFormData.isPublished,
-          images: editImages
+          images: imagesWithOrder
         }),
       });
 

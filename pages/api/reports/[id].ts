@@ -54,6 +54,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ message: 'Título y contenido son requeridos' });
       }
 
+      // Procesar imágenes para asegurar que tengan el campo 'order' correcto
+      let processedImages: any[] = [];
+      if (images && Array.isArray(images)) {
+        processedImages = images.map((img: any, index: number) => ({
+          public_id: img.public_id,
+          url: img.url || img.secure_url,
+          secure_url: img.secure_url || img.url,
+          width: img.width,
+          height: img.height,
+          format: img.format,
+          bytes: img.bytes,
+          caption: img.caption || '',
+          order: img.order || (index + 1) // Usar el order proporcionado o asignar basado en posición
+        }));
+
+        console.log('📸 Imágenes procesadas con orden:', processedImages.map(img => ({ public_id: img.public_id, order: img.order })));
+      }
+
       // Actualizar el informe
       const updatedReport = await Report.findByIdAndUpdate(
         id,
@@ -61,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           title: title.trim(),
           content: content.trim(),
           isPublished: isPublished !== undefined ? isPublished : true,
-          images: images || [],
+          images: processedImages,
           updatedAt: new Date()
         },
         { new: true, runValidators: true }

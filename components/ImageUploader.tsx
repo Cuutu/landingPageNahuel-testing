@@ -16,6 +16,7 @@ export interface CloudinaryImage {
 interface ImageUploaderProps {
   onImageUploaded: (image: CloudinaryImage) => void;
   onUploadStart?: () => void;
+  onUploadComplete?: () => void;
   onUploadProgress?: (progress: number) => void;
   onError?: (error: string) => void;
   maxFiles?: number;
@@ -29,6 +30,7 @@ interface ImageUploaderProps {
 export default function ImageUploader({
   onImageUploaded,
   onUploadStart,
+  onUploadComplete,
   onUploadProgress,
   onError,
   maxFiles = 5,
@@ -100,6 +102,9 @@ export default function ImageUploader({
         
         onImageUploaded(uploadedImage);
       }
+      
+      // Llamar al callback de completado después de subir todas las imágenes
+      onUploadComplete?.();
     } catch (error) {
       console.error('❌ Error subiendo imagen:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';

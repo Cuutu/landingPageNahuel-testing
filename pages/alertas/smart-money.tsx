@@ -5036,8 +5036,12 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
 
   const handleImageUploaded = (image: CloudinaryImage) => {
     setImages(prev => [...prev, image]);
-    setUploadingImages(false);  // Asegurar que se actualice el estado
     console.log('✅ Imagen adicional agregada:', image.public_id);
+  };
+
+  const handleUploadComplete = () => {
+    setUploadingImages(false);
+    console.log('✅ Todas las imágenes subidas');
   };
 
 
@@ -5150,7 +5154,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
               <ImageUploader
                 onImageUploaded={handleImageUploaded}
                 onUploadStart={() => setUploadingImages(true)}
-                onUploadProgress={() => {}}
+                onUploadComplete={handleUploadComplete}
                 onError={(error) => {
                   console.error('Error subiendo imagen adicional:', error);
                   alert('Error subiendo imagen: ' + error);
