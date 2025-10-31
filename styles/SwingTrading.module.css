@@ -201,6 +201,7 @@
 .videoContainer {
   width: 100%;
   max-width: 1000px;
+  aspect-ratio: 16/9;
   background: #111;
   border-radius: 16px;
   overflow: hidden;
