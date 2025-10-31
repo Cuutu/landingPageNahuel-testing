@@ -77,11 +77,23 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     
     if (template) {
       // Usar plantilla con variables dinámicas
+      // Determinar el precio a mostrar: priorizar overrides, luego entryPriceRange, luego entryPrice
+      let priceDisplay = 'N/A';
+      if (overrides?.priceRange) {
+        priceDisplay = `${overrides.priceRange.min} - ${overrides.priceRange.max}`;
+      } else if (alert.entryPriceRange?.min && alert.entryPriceRange?.max) {
+        priceDisplay = `${alert.entryPriceRange.min} - ${alert.entryPriceRange.max}`;
+      } else if (overrides?.price != null) {
+        priceDisplay = overrides.price.toString();
+      } else if (alert.entryPrice) {
+        priceDisplay = alert.entryPrice.toString();
+      }
+      
       const variables = {
         alertType: alert.tipo,
         symbol: alert.symbol,
         action: alert.action,
-        price: `${alert.entryPriceRange?.min || 'N/A'} - ${alert.entryPriceRange?.max || 'N/A'}`,
+        price: priceDisplay,
         takeProfit: alert.takeProfit?.toString() || 'N/A',
         stopLoss: alert.stopLoss?.toString() || 'N/A'
       };
@@ -117,7 +129,19 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     } else {
       console.log('🎨 [ALERT NOTIFICATION] Usando notificación manual (sin plantilla)');
       // Crear notificación manual si no hay plantilla
-      const defaultMessage = `${alert.action} ${alert.symbol} en $${alert.entryPriceRange?.min || 'N/A'} - $${alert.entryPriceRange?.max || 'N/A'}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
+      // Determinar el precio a mostrar en el mensaje
+      let priceMessage = 'N/A';
+      if (overrides?.priceRange) {
+        priceMessage = `$${overrides.priceRange.min} - $${overrides.priceRange.max}`;
+      } else if (alert.entryPriceRange?.min && alert.entryPriceRange?.max) {
+        priceMessage = `$${alert.entryPriceRange.min} - $${alert.entryPriceRange.max}`;
+      } else if (overrides?.price != null) {
+        priceMessage = `$${overrides.price}`;
+      } else if (alert.entryPrice) {
+        priceMessage = `$${alert.entryPrice}`;
+      }
+      
+      const defaultMessage = `${alert.action} ${alert.symbol} en ${priceMessage}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
       notification = {
         title: overrides?.title || `🚨 Nueva Alerta ${alert.tipo}`,

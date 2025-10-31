@@ -391,11 +391,25 @@ export default async function handler(
 
     // 🔔 Crear notificación automática (email a suscriptores)
     try {
-      await createAlertNotification(newAlert, {
+      // Preparar parámetros para la notificación según el tipo de alerta
+      const notificationParams: any = {
         message: emailMessage,
-        imageUrl: emailImageUrl || newAlert?.chartImage?.secure_url || newAlert?.chartImage?.url || undefined,
-        price: typeof newAlert.entryPrice === 'number' ? newAlert.entryPrice : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined)
-      });
+        imageUrl: emailImageUrl || newAlert?.chartImage?.secure_url || newAlert?.chartImage?.url || undefined
+      };
+
+      // Si es alerta de rango, pasar priceRange; si no, pasar price
+      if (tipoAlerta === 'rango' && newAlert.entryPriceRange) {
+        notificationParams.priceRange = {
+          min: newAlert.entryPriceRange.min,
+          max: newAlert.entryPriceRange.max
+        };
+      } else if (tipoAlerta === 'precio') {
+        notificationParams.price = typeof newAlert.entryPrice === 'number' 
+          ? newAlert.entryPrice 
+          : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined);
+      }
+
+      await createAlertNotification(newAlert, notificationParams);
       console.log('✅ Notificación automática enviada para alerta:', newAlert._id);
     } catch (notificationError) {
       console.error('❌ Error al enviar notificación automática:', notificationError);

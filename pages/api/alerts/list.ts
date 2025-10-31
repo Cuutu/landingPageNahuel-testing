@@ -195,9 +195,9 @@ export default async function handler(
         // ✅ NUEVO: Sistema de porcentaje de participación
         participationPercentage: alert.participationPercentage || 100,
         originalParticipationPercentage: alert.originalParticipationPercentage || 100,
-        // ✅ NUEVO: Campos para mostrar rangos originales
-        precioMinimo: alert.precioMinimo ? Number(alert.precioMinimo).toFixed(2) : null,
-        precioMaximo: alert.precioMaximo ? Number(alert.precioMaximo).toFixed(2) : null,
+        // ✅ NUEVO: Campos para mostrar rangos originales - usar entryPriceRange como fallback
+        precioMinimo: alert.precioMinimo ? Number(alert.precioMinimo).toFixed(2) : (alert.entryPriceRange?.min ? Number(alert.entryPriceRange.min).toFixed(2) : null),
+        precioMaximo: alert.precioMaximo ? Number(alert.precioMaximo).toFixed(2) : (alert.entryPriceRange?.max ? Number(alert.entryPriceRange.max).toFixed(2) : null),
         // ✅ NUEVO: Campos para rango de venta parcial
         sellRangeMin: alert.sellRangeMin ? Number(alert.sellRangeMin).toFixed(2) : null,
         sellRangeMax: alert.sellRangeMax ? Number(alert.sellRangeMax).toFixed(2) : null,

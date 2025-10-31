@@ -2861,7 +2861,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     fontWeight: '600'
                   }}>Precio Entrada:</span>
                   <div style={{ marginTop: '4px' }}>
-                    {alert.tipoAlerta === 'rango' ? (
+                    {(alert.tipoAlerta === 'rango' || alert.hasRange) && (alert.precioMinimo && alert.precioMaximo) ? (
                       <div style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -2876,11 +2876,27 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         <span style={{ color: '#60a5fa' }}>-</span>
                         <span className="sensitivePrice">{alert.precioMaximo}</span>
                       </div>
+                    ) : alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') ? (
+                      // Si entryPrice viene formateado como rango desde el API
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <span className="sensitivePrice" style={{
+                          fontSize: '1.1em',
+                          color: '#f3f4f6'
+                        }}>{alert.entryPrice}</span>
+                      </div>
                     ) : (
                       <strong className="sensitivePrice" style={{
                         fontSize: '1.1em',
                         color: '#f3f4f6'
-                      }}>{alert.entryPrice}</strong>
+                      }}>{alert.entryPrice || '$0.00'}</strong>
                     )}
                   </div>
                 </div>

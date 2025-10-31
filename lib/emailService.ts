@@ -588,10 +588,17 @@ export function generateAlertEmailTemplate(
             <div style="font-size: 16px; color: ${notification.metadata.alertAction === 'BUY' ? '#22c55e' : '#ef4444'}; font-weight: 700;">${notification.metadata.alertAction}</div>
           </div>
         ` : ''}
-        ${notification.metadata.alertPrice ? `
-          <div style="text-align: center; min-width: 80px;">
+        ${notification.metadata.alertPrice || notification.metadata.priceRange ? `
+          <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Precio</div>
-            <div style="font-size: 16px; color: #1e293b; font-weight: 700;">$${notification.metadata.alertPrice}</div>
+            <div style="font-size: 16px; color: #1e293b; font-weight: 700;">
+              ${notification.metadata.priceRange 
+                ? `$${Number(notification.metadata.priceRange.min).toFixed(2)} - $${Number(notification.metadata.priceRange.max).toFixed(2)}`
+                : (typeof notification.metadata.alertPrice === 'string' && notification.metadata.alertPrice.includes('-')
+                  ? `$${notification.metadata.alertPrice.split('-').map((p: string) => Number(p.trim()).toFixed(2)).join(' - $')}`
+                  : `$${notification.metadata.alertPrice}`)
+              }
+            </div>
           </div>
         ` : ''}
       </div>

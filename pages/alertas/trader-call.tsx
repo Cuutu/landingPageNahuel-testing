@@ -2851,14 +2851,56 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               </div>
               
               <div className={styles.alertDetails}>
-                <div className={styles.alertDetail}>
-                  <span>Precio Entrada:</span>
-                  <div className={`${alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') ? styles.priceRange : ''}`}>
-                    <strong className="sensitivePrice">
-                      {alert.entryPrice}
-                    </strong>
-                    {alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') && (
-                      <span className={styles.rangeIndicator}>RANGO</span>
+                <div className={styles.alertDetail} style={{
+                  background: 'rgba(55, 65, 81, 0.5)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '8px'
+                }}>
+                  <span style={{
+                    fontSize: '0.85em',
+                    color: '#9ca3af',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    fontWeight: '600'
+                  }}>Precio Entrada:</span>
+                  <div style={{ marginTop: '4px' }}>
+                    {(alert.tipoAlerta === 'rango' || alert.hasRange) && (alert.precioMinimo && alert.precioMaximo) ? (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <span style={{ color: '#60a5fa' }}>$</span>
+                        <span className="sensitivePrice">{alert.precioMinimo}</span>
+                        <span style={{ color: '#60a5fa' }}>-</span>
+                        <span className="sensitivePrice">{alert.precioMaximo}</span>
+                      </div>
+                    ) : alert.entryPrice && typeof alert.entryPrice === 'string' && alert.entryPrice.includes(' / ') ? (
+                      // Si entryPrice viene formateado como rango desde el API
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: 'rgba(59, 130, 246, 0.1)',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <span className="sensitivePrice" style={{
+                          fontSize: '1.1em',
+                          color: '#f3f4f6'
+                        }}>{alert.entryPrice}</span>
+                      </div>
+                    ) : (
+                      <strong className="sensitivePrice" style={{
+                        fontSize: '1.1em',
+                        color: '#f3f4f6'
+                      }}>{alert.entryPrice || '$0.00'}</strong>
                     )}
                   </div>
                 </div>

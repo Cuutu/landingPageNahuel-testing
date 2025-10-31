@@ -50,8 +50,9 @@ export default function PaymentSuccess() {
       'CashFlow': { url: '/alertas/cashflow', text: 'Ir a mis alertas' },
       'SwingTrading': { url: '/entrenamientos/swing-trading', text: 'Ir a mis entrenamientos' },
       'DowJones': { url: '/entrenamientos/dow-jones', text: 'Ir a mis entrenamientos' },
-      'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Volver' },
-      'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Volver' }
+      'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Ir a consultorio financiero' },
+      'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Ir a consultorio financiero' },
+      'ConsultorioFinanciero': { url: '/asesorias/consultorio-financiero', text: 'Ir a consultorio financiero' }
     };
     
     return actionButtons[service] || { url: '/', text: 'Ir al inicio' };
