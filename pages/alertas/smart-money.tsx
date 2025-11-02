@@ -3152,6 +3152,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [initialLoading, setInitialLoading] = useState(true); // Nueva estado para carga inicial
     const [replyingTo, setReplyingTo] = useState<any>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -3241,7 +3242,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
-      fetchMessages();
+      // Esperar 2 segundos antes de empezar a cargar para evitar movimientos bruscos
+      const timer = setTimeout(() => {
+        fetchMessages();
+      }, 2000);
+
+      return () => clearTimeout(timer);
     }, []);
 
     const fetchMessages = async () => {
@@ -3381,6 +3387,31 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         })}`;
       }
     };
+
+    // Quitar el estado de carga inicial cuando termine la carga real
+    useEffect(() => {
+      if (!loading && initialLoading) {
+        setInitialLoading(false);
+      }
+    }, [loading, initialLoading]);
+
+    if (initialLoading) {
+      return (
+        <div className={styles.comunidadContent}>
+          <div className={styles.chatContainer}>
+            <div className={styles.chatHeader}>
+              <div className={styles.chatTitle}>
+                <h2>💬 Comunidad Smart Money</h2>
+              </div>
+            </div>
+            <div className={styles.loadingChat}>
+              <div className={styles.loadingSpinner}></div>
+              <p>Cargando chat...</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     if (loading) {
       return (
