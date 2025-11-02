@@ -215,6 +215,13 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setEditImages(prev => prev.filter(img => img.public_id !== publicId));
   };
 
+  // Función para actualizar el caption de una imagen en edición
+  const updateImageCaption = (publicId: string, caption: string) => {
+    setEditImages(prev => prev.map(img => 
+      img.public_id === publicId ? { ...img, caption } : img
+    ));
+  };
+
   const moveImageUp = (index: number) => {
     if (index > 0) {
       setEditImages(prev => {
@@ -1036,6 +1043,28 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                         </div>
                         <div className={styles.editImageOrder}>
                           {index + 1}
+                        </div>
+                        {/* Campo para título/caption de la imagen */}
+                        <div style={{ marginTop: '0.75rem', width: '100%' }}>
+                          <label htmlFor={`edit-caption-${image.public_id}`} style={{ fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block', color: 'var(--text-muted)' }}>
+                            Título de la imagen:
+                          </label>
+                          <input
+                            id={`edit-caption-${image.public_id}`}
+                            type="text"
+                            value={image.caption || ''}
+                            onChange={(e) => updateImageCaption(image.public_id, e.target.value)}
+                            placeholder="Ej: Gráfico de tendencia alcista"
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              color: '#ffffff',
+                              fontSize: '0.875rem'
+                            }}
+                          />
                         </div>
                       </div>
                     ))}

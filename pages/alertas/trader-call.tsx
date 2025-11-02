@@ -4975,6 +4975,13 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
   const [images, setImages] = useState<CloudinaryImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
+  // Función para actualizar el caption de una imagen
+  const updateImageCaption = (publicId: string, caption: string) => {
+    setImages(prev => prev.map(img => 
+      img.public_id === publicId ? { ...img, caption } : img
+    ));
+  };
+
 
   // Debug: monitorear cambios en formData
   React.useEffect(() => {
@@ -5177,6 +5184,30 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                           >
                             ×
                           </button>
+                        </div>
+                        {/* Campo para título/caption de la imagen */}
+                        <div className={styles.imageCaptionInput}>
+                          <label htmlFor={`caption-${image.public_id}`} style={{ fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block', color: 'var(--text-muted)' }}>
+                            Título de la imagen:
+                          </label>
+                          <input
+                            id={`caption-${image.public_id}`}
+                            type="text"
+                            value={image.caption || ''}
+                            onChange={(e) => updateImageCaption(image.public_id, e.target.value)}
+                            placeholder="Ej: Gráfico de tendencia alcista"
+                            className={styles.captionInput}
+                            style={{
+                              width: '100%',
+                              padding: '0.5rem',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(255, 255, 255, 0.1)',
+                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                              color: '#ffffff',
+                              fontSize: '0.875rem',
+                              marginTop: '0.5rem'
+                            }}
+                          />
                         </div>
                       </div>
                     ))}
