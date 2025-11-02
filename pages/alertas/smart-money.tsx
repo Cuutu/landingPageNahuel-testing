@@ -3215,24 +3215,29 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     };
 
-    // Control simplificado del scroll para evitar parpadeo
+    // Control preciso del scroll para evitar movimientos innecesarios
     const [hasLoaded, setHasLoaded] = useState(false);
+    const previousMessageCount = useRef(0);
 
     useEffect(() => {
-      // Una vez cargado, hacer scroll inicial
+      // Solo hacer scroll al final si se agregaron mensajes nuevos (no en carga inicial)
+      if (hasLoaded && messages.length > previousMessageCount.current) {
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
+      }
+      previousMessageCount.current = messages.length;
+    }, [messages.length, hasLoaded]);
+
+    // Scroll inicial solo cuando termina de cargar por primera vez
+    useEffect(() => {
       if (!loading && !hasLoaded && messages.length > 0) {
         setTimeout(() => {
           scrollToBottom();
         }, 100);
         setHasLoaded(true);
       }
-      // Scroll automático para mensajes nuevos
-      else if (hasLoaded && messages.length > 0) {
-        setTimeout(() => {
-          scrollToBottom();
-        }, 100);
-      }
-    }, [messages.length, loading, hasLoaded]);
+    }, [loading, hasLoaded, messages.length]);
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
