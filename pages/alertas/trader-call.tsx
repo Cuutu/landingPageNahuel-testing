@@ -3148,8 +3148,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     );
   };
 
-  // Componente separado para el Chat de Comunidad
-  const CommunityChat = () => {
+  // Componente separado para el Chat de Comunidad (memoizado para evitar parpadeo)
+  const CommunityChat = React.memo(() => {
     const [message, setMessage] = useState('');
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -3216,31 +3216,24 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     };
 
-    // ✅ CORREGIDO: Control más preciso del scroll para evitar múltiples saltos
-    const [previousMessageCount, setPreviousMessageCount] = useState(0);
-    const [isReady, setIsReady] = useState(false);
-    
+    // Control simplificado del scroll para evitar parpadeo
+    const [hasLoaded, setHasLoaded] = useState(false);
+
     useEffect(() => {
-      // Solo hacer scroll si se agregó un mensaje nuevo después de la carga inicial
-      if (messages.length > previousMessageCount && isReady) {
+      // Una vez cargado, hacer scroll inicial
+      if (!loading && !hasLoaded && messages.length > 0) {
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
+        setHasLoaded(true);
+      }
+      // Scroll automático para mensajes nuevos
+      else if (hasLoaded && messages.length > 0) {
         setTimeout(() => {
           scrollToBottom();
         }, 100);
       }
-      setPreviousMessageCount(messages.length);
-    }, [messages.length, previousMessageCount, isReady]);
-
-    // ✅ CORREGIDO: Scroll instantáneo al cargar, ANTES de mostrar el contenido
-    useEffect(() => {
-      if (messages.length > 0 && !loading && !isReady) {
-        // Hacer scroll inmediatamente de forma síncrona
-        if (chatContainerRef.current) {
-          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-        }
-        // Marcar como listo para mostrar
-        setIsReady(true);
-      }
-    }, [messages.length, loading, isReady]);
+    }, [messages.length, loading, hasLoaded]);
 
     // Cargar mensajes existentes al montar el componente
     useEffect(() => {
@@ -3412,10 +3405,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             </div>
           </div>
           
-          <div 
-            className={styles.chatMainFull} 
+          <div
+            className={styles.chatMainFull}
             ref={chatContainerRef}
-            style={{ opacity: isReady ? 1 : 0, transition: 'opacity 0.15s ease-in' }}
+            style={{ opacity: loading ? 0 : 1, transition: 'opacity 0.3s ease-in' }}
           >
             {messages.length === 0 ? (
               <div className={styles.emptyChat}>
@@ -3513,7 +3506,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </div>
       </div>
     );
-  };
+  });
 
   // Modal para editar alerta existente
   const renderEditAlertModal = () => {
