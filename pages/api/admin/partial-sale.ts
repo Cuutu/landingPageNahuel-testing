@@ -430,7 +430,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           imageUrl: emailImageUrl || undefined,
           title: `Venta Parcial - ${alert.symbol}`,
           action: 'SELL',
-          priceRange: notificationPriceRange || undefined
+          priceRange: notificationPriceRange || undefined,
+          soldPercentage: percentage // ✅ NUEVO: Pasar el porcentaje vendido
         });
         
         console.log(`✅ Notificación de venta parcial enviada exitosamente para ${alert.symbol}`);

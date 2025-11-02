@@ -9,7 +9,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 /**
  * Crea notificación automática cuando se crea una alerta
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number } }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number }): Promise<void> {
   try {
     await dbConnect();
     
@@ -143,7 +143,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertService: alert.tipo,
           automatic: true,
           imageUrl: finalImageUrl,
-          priceRange: overrides?.priceRange || null
+          priceRange: overrides?.priceRange || null,
+          liquidityPercentage: overrides?.liquidityPercentage || null,
+          soldPercentage: overrides?.soldPercentage || null
         }
       };
     } else {
@@ -183,7 +185,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertService: alert.tipo,
           automatic: true,
           imageUrl: finalImageUrl,
-          priceRange: overrides?.priceRange || null
+          priceRange: overrides?.priceRange || null,
+          liquidityPercentage: overrides?.liquidityPercentage || null,
+          soldPercentage: overrides?.soldPercentage || null
         }
       };
     }
@@ -990,7 +994,7 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number } }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
@@ -1000,6 +1004,8 @@ export async function notifyAlertSubscribers(
     price: options.price,
     action: options.action,
     title: options.title,
-    priceRange: options.priceRange
+    priceRange: options.priceRange,
+    liquidityPercentage: options.liquidityPercentage,
+    soldPercentage: options.soldPercentage
   });
 } 

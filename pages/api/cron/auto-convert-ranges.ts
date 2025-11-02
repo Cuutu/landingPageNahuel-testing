@@ -161,6 +161,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         
         console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango ${oldEntryRange} - Convirtiendo a precio fijo`);
 
+        // ✅ NUEVO: Verificar si el precio está dentro del rango de venta ANTES de descontar participación
+        let shouldDiscountParticipation = false;
+        let sellRangeMin = 0;
+        let sellRangeMax = 0;
+        
+        if (hasSellRange) {
+          sellRangeMin = alert.sellRangeMin || 0;
+          sellRangeMax = alert.sellRangeMax || 0;
+          
+          // Solo descontar participación si el precio está dentro del rango de venta
+          if (closePrice >= sellRangeMin && closePrice <= sellRangeMax) {
+            shouldDiscountParticipation = true;
+            console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango de venta $${sellRangeMin}-$${sellRangeMax} - Se descontará participación`);
+          } else {
+            console.log(`⚠️ ${alert.symbol}: Precio $${closePrice} está FUERA del rango de venta $${sellRangeMin}-$${sellRangeMax} - NO se descontará participación`);
+          }
+        }
+
         // Preparar campos para actualizar
         const updateFields: any = {};
         const unsetFields: any = {};
@@ -174,11 +192,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           unsetFields.precioMaximo = 1;
         }
         
-        // Convertir rango de venta si existe
-        if (hasSellRange) {
+        // Convertir rango de venta si existe (solo si el precio está en el rango)
+        if (hasSellRange && shouldDiscountParticipation) {
           updateFields.sellPrice = closePrice;
           unsetFields.sellRangeMin = 1;
           unsetFields.sellRangeMax = 1;
+          
+          // ✅ NUEVO: Descontar participación solo si el precio está en el rango
+          // Buscar información de venta parcial para obtener el porcentaje a descontar
+          const liquidityData = alert.liquidityData || {};
+          const partialSales = liquidityData.partialSales || [];
+          
+          // Si hay una venta parcial pendiente con rango, usar ese porcentaje
+          const pendingSale = partialSales.find((sale: any) => 
+            sale.priceRange && 
+            sale.priceRange.min === sellRangeMin && 
+            sale.priceRange.max === sellRangeMax &&
+            !sale.executed
+          );
+          
+          if (pendingSale && pendingSale.percentage) {
+            // Ya existe una venta parcial configurada, solo marcar como ejecutada
+            console.log(`✅ ${alert.symbol}: Venta parcial de ${pendingSale.percentage}% ya estaba configurada - Solo marcando como ejecutada`);
+            // La participación ya fue descontada cuando se creó la venta parcial
+          } else {
+            console.log(`⚠️ ${alert.symbol}: No hay venta parcial pendiente para este rango - NO se descuenta participación automáticamente`);
+          }
+        } else if (hasSellRange && !shouldDiscountParticipation) {
+          // Si el precio NO está en el rango de venta, NO descontar participación
+          // Solo limpiar el rango pero mantener la participación
+          console.log(`⚠️ ${alert.symbol}: Precio fuera del rango de venta - Limpiando rango pero MANTENIENDO participación`);
+          unsetFields.sellRangeMin = 1;
+          unsetFields.sellRangeMax = 1;
+          // NO actualizar sellPrice porque la venta no se ejecutó
         }
 
         // Actualizar en una sola operación
