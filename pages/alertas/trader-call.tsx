@@ -3389,6 +3389,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     };
 
+    // Unificar estados de carga para evitar parpadeo del spinner
+    const isShowingLoading = initialLoading || loading;
+
     // Quitar el estado de carga inicial cuando termine la carga real
     useEffect(() => {
       if (!loading && initialLoading) {
@@ -3396,25 +3399,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     }, [loading, initialLoading]);
 
-    if (initialLoading) {
-      return (
-        <div className={styles.comunidadContent}>
-          <div className={styles.chatContainer}>
-            <div className={styles.chatHeader}>
-              <div className={styles.chatTitle}>
-                <h2>💬 Comunidad Trader Call</h2>
-              </div>
-            </div>
-            <div className={styles.loadingChat}>
-              <div className={styles.loadingSpinner}></div>
-              <p>Cargando chat...</p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    if (loading) {
+    if (isShowingLoading) {
       return (
         <div className={styles.comunidadContent}>
           <div className={styles.chatContainer}>
