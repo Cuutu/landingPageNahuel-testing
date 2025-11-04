@@ -48,6 +48,7 @@ import {
 import styles from '@/styles/TraderCall.module.css';
 import { useRouter } from 'next/router';
 import { calculateDaysRemaining, calculateDaysSinceSubscription } from '../../utils/dateUtils';
+import { htmlToText } from '../../lib/textUtils';
 import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
@@ -597,6 +598,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [selectedReport, setSelectedReport] = useState<any>(null);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showCreateReportModal, setShowCreateReportModal] = useState(false);
+  const [showEditReportModal, setShowEditReportModal] = useState(false);
+  const [editingReport, setEditingReport] = useState<any>(null);
   const [creatingReport, setCreatingReport] = useState(false);
   const [userRole, setUserRole] = React.useState<string>('');
   const [refreshingActivity, setRefreshingActivity] = useState(false);
@@ -1045,6 +1048,61 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       alert('Error al crear el informe: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       console.log('🔄 Finalizando creación de informe...');
+      setCreatingReport(false);
+    }
+  };
+
+  const handleEditReportClick = (report: any) => {
+    console.log('✏️ Editando informe:', report.title);
+    setEditingReport(report);
+    setShowEditReportModal(true);
+  };
+
+  const handleEditReport = async (formData: any) => {
+    if (!editingReport) return;
+
+    setCreatingReport(true);
+    try {
+      console.log('📝 Editando informe:', editingReport._id || editingReport.id);
+
+      const response = await fetch(`/api/reports/${editingReport._id || editingReport.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          category: 'trader-call' // Mantener categoría Trader Call
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Informe editado exitosamente:', result);
+        const updatedReport = result.data.report;
+
+        // Actualizar el informe en la lista
+        setInformes(prev => prev.map(report =>
+          (report._id || report.id) === (editingReport._id || editingReport.id) ? updatedReport : report
+        ));
+
+        // Si el informe que se está viendo es el que se editó, actualizarlo
+        if (selectedReport && (selectedReport._id || selectedReport.id) === (editingReport._id || editingReport.id)) {
+          setSelectedReport(updatedReport);
+        }
+
+        setShowEditReportModal(false);
+        setEditingReport(null);
+        alert('Informe actualizado exitosamente.');
+      } else {
+        const errorData = await response.json();
+        console.error('❌ Error del servidor:', errorData);
+        alert(`Error: ${errorData.message || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('❌ Error al editar informe:', error);
+      alert('Error al editar el informe: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
       setCreatingReport(false);
     }
   };
@@ -4172,16 +4230,30 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </div>
       )}
       {showCreateReportModal && (
-        <CreateReportModal 
+        <CreateReportModal
           onClose={() => setShowCreateReportModal(false)}
           onSubmit={handleCreateReport}
           loading={creatingReport}
         />
       )}
+      {showEditReportModal && editingReport && (
+        <CreateReportModal
+          onClose={() => {
+            setShowEditReportModal(false);
+            setEditingReport(null);
+          }}
+          onSubmit={handleEditReport}
+          loading={creatingReport}
+          initialData={editingReport}
+          isEdit={true}
+        />
+      )}
       {showReportModal && selectedReport && (
-        <ReportViewModal 
+        <ReportViewModal
           report={selectedReport}
           onClose={closeReportModal}
+          onEdit={handleEditReportClick}
+          userRole={userRole}
         />
       )}
 
@@ -4446,9 +4518,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 };
 
 // Componente para modal de visualización de informes mejorado
-const ReportViewModal = ({ report, onClose }: {
+const ReportViewModal = ({ report, onClose, onEdit, userRole }: {
   report: any;
   onClose: () => void;
+  onEdit?: (report: any) => void;
+  userRole?: string;
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -4634,13 +4708,25 @@ const ReportViewModal = ({ report, onClose }: {
                 )}
               </div>
             </div>
-            <button 
-              className={styles.closeModal}
-              onClick={onClose}
-              aria-label="Cerrar modal"
-            >
-              ×
-            </button>
+            <div className={styles.modalActions}>
+              {userRole === 'admin' && onEdit && (
+                <button
+                  className={styles.editButton}
+                  onClick={() => onEdit(report)}
+                  aria-label="Editar informe"
+                  title="Editar informe"
+                >
+                  ✏️ Editar
+                </button>
+              )}
+              <button
+                className={styles.closeModal}
+                onClick={onClose}
+                aria-label="Cerrar modal"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           <div className={styles.reportContent}>
@@ -4956,11 +5042,13 @@ const ReportViewModal = ({ report, onClose }: {
   );
 };
 
-// Componente para modal de creación de informes
-const CreateReportModal = ({ onClose, onSubmit, loading }: {
+// Componente para modal de creación/edición de informes
+const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = false }: {
   onClose: () => void;
   onSubmit: (data: any) => void;
   loading: boolean;
+  initialData?: any;
+  isEdit?: boolean;
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -4974,6 +5062,39 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
 
   const [images, setImages] = useState<CloudinaryImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+
+  // Cargar datos iniciales cuando se edita
+  React.useEffect(() => {
+    if (isEdit && initialData) {
+      console.log('📝 Cargando datos para edición:', initialData.title);
+      setFormData({
+        title: initialData.title || '',
+        type: initialData.type || 'text',
+        category: initialData.category || 'trader-call',
+        content: htmlToText(initialData.content || ''), // Convertir HTML a texto plano
+        isFeature: initialData.isFeature || false,
+        publishedAt: initialData.publishedAt ?
+          new Date(initialData.publishedAt).toISOString().split('T')[0] :
+          new Date().toISOString().split('T')[0],
+        status: initialData.status || 'published'
+      });
+
+      // Cargar imágenes si existen
+      if (initialData.images && Array.isArray(initialData.images)) {
+        setImages(initialData.images.map((img: any) => ({
+          public_id: img.public_id,
+          url: img.url || img.secure_url,
+          secure_url: img.secure_url || img.url,
+          width: img.width,
+          height: img.height,
+          format: img.format,
+          bytes: img.bytes,
+          caption: img.caption || '',
+          order: img.order || 0
+        })));
+      }
+    }
+  }, [isEdit, initialData]);
 
   // Función para actualizar el caption de una imagen
   const updateImageCaption = (publicId: string, caption: string) => {
@@ -5052,7 +5173,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.createReportModal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
-          <h2>Crear Nuevo Informe Trader Call</h2>
+          <h2>{isEdit ? 'Editar Informe Trader Call' : 'Crear Nuevo Informe Trader Call'}</h2>
           <button 
             className={styles.closeModal}
             onClick={onClose}
@@ -5232,7 +5353,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading }: {
                 className={styles.submitButton}
                 disabled={loading || uploadingImages}
               >
-                {loading ? 'Creando...' : uploadingImages ? 'Subiendo...' : 'Crear Informe'}
+                {loading ? (isEdit ? 'Actualizando...' : 'Creando...') : uploadingImages ? 'Subiendo...' : (isEdit ? 'Actualizar Informe' : 'Crear Informe')}
               </button>
           </div>
         </form>
