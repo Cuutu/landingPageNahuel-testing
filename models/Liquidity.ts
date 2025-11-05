@@ -19,6 +19,7 @@ export interface ILiquidityDistribution {
 
 export interface ILiquidity extends Document {
   _id: string;
+  initialLiquidity: number;  // ✅ NUEVO: Liquidez inicial base asignada por el admin
   totalLiquidity: number;
   availableLiquidity: number;
   distributedLiquidity: number;
@@ -54,6 +55,7 @@ const LiquidityDistributionSchema = new Schema({
 }, { timestamps: true });
 
 const LiquiditySchema = new Schema({
+  initialLiquidity: { type: Number, default: 0, min: 0 },  // ✅ NUEVO: Liquidez inicial base
   totalLiquidity: { type: Number, required: true, min: 0 },
   availableLiquidity: { type: Number, required: true, min: 0 },
   distributedLiquidity: { type: Number, default: 0, min: 0 },

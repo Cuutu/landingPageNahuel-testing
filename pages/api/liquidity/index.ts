@@ -85,11 +85,25 @@ export default async function handler(
 
       let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
       if (liquidity) {
-        liquidity.totalLiquidity = totalLiquidity;
-        liquidity.availableLiquidity = totalLiquidity - liquidity.distributedLiquidity;
+        // ✅ NUEVO: Cuando se actualiza el total desde admin, se PISA la liquidez inicial
+        // El valor ingresado es la nueva liquidez inicial
+        liquidity.initialLiquidity = totalLiquidity;
+        
+        // ✅ NUEVO: Recalcular totalLiquidity como inicial + ganancias/pérdidas actuales
+        // Primero recalculamos las ganancias/pérdidas para tener el valor actualizado
+        liquidity.recalculateDistributions();
+        const currentProfitLoss = liquidity.totalProfitLoss || 0;
+        
+        // El total es la inicial más las ganancias/pérdidas
+        liquidity.totalLiquidity = liquidity.initialLiquidity + currentProfitLoss;
+        
+        // Recalcular disponibilidad
+        liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
+        
         await liquidity.save();
       } else {
         liquidity = await Liquidity.create({
+          initialLiquidity: totalLiquidity,  // ✅ NUEVO: Guardar liquidez inicial
           totalLiquidity,
           availableLiquidity: totalLiquidity,
           distributedLiquidity: 0,

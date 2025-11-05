@@ -58,6 +58,7 @@ export default async function handler(
     // Obtener TODAS las liquidez del pool
     const liquidityDocs: any[] = await Liquidity.find({ pool })
       .select({ 
+        initialLiquidity: 1,  // ✅ NUEVO: Incluir liquidez inicial
         totalLiquidity: 1, 
         availableLiquidity: 1, 
         distributedLiquidity: 1,
@@ -78,8 +79,10 @@ export default async function handler(
     let gananciaTotalSum = 0;
 
     liquidityDocs.forEach((doc) => {
-      // La liquidez inicial es la liquidez total menos las ganancias/pérdidas
-      const liquidezInicial = doc.totalLiquidity - (doc.totalProfitLoss || 0);
+      // ✅ NUEVO: Usar initialLiquidity si existe, sino calcular como antes (retrocompatibilidad)
+      const liquidezInicial = (doc.initialLiquidity !== undefined && doc.initialLiquidity !== null)
+        ? doc.initialLiquidity
+        : (doc.totalLiquidity - (doc.totalProfitLoss || 0));
       liquidezInicialSum += liquidezInicial;
       
       liquidezTotalSum += doc.totalLiquidity || 0;
