@@ -83,27 +83,15 @@ export default async function handler(
         return res.status(400).json({ success: false, error: "La liquidez total debe ser mayor a 0" });
       }
 
-      let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
-      if (liquidity) {
-        // ✅ NUEVO: Cuando se actualiza el total desde admin, se PISA la liquidez inicial
-        // El valor ingresado es la nueva liquidez inicial
-        liquidity.initialLiquidity = totalLiquidity;
-        
-        // ✅ NUEVO: Recalcular totalLiquidity como inicial + ganancias/pérdidas actuales
-        // Primero recalculamos las ganancias/pérdidas para tener el valor actualizado
-        liquidity.recalculateDistributions();
-        const currentProfitLoss = liquidity.totalProfitLoss || 0;
-        
-        // El total es la inicial más las ganancias/pérdidas
-        liquidity.totalLiquidity = liquidity.initialLiquidity + currentProfitLoss;
-        
-        // Recalcular disponibilidad
-        liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
-        
-        await liquidity.save();
-      } else {
+      // ✅ NUEVO: Actualizar TODOS los documentos de liquidez del pool, no solo el del admin
+      // Esto asegura que la liquidez inicial se actualice globalmente para el pool
+      const liquidityDocs = await Liquidity.find({ pool });
+      let liquidity: any;
+      
+      if (liquidityDocs.length === 0) {
+        // Si no hay documentos, crear uno para el admin
         liquidity = await Liquidity.create({
-          initialLiquidity: totalLiquidity,  // ✅ NUEVO: Guardar liquidez inicial
+          initialLiquidity: totalLiquidity,
           totalLiquidity,
           availableLiquidity: totalLiquidity,
           distributedLiquidity: 0,
@@ -113,7 +101,35 @@ export default async function handler(
           createdBy: user._id,
           pool
         });
+      } else {
+        // Actualizar TODOS los documentos del pool
+        const updatePromises = liquidityDocs.map(async (liquidityDoc) => {
+          // ✅ NUEVO: Cuando se actualiza el total desde admin, se PISA la liquidez inicial
+          // El valor ingresado es la nueva liquidez inicial
+          liquidityDoc.initialLiquidity = totalLiquidity;
+          
+          // ✅ NUEVO: Recalcular totalLiquidity como inicial + ganancias/pérdidas actuales
+          // Primero recalculamos las ganancias/pérdidas para tener el valor actualizado
+          liquidityDoc.recalculateDistributions();
+          const currentProfitLoss = liquidityDoc.totalProfitLoss || 0;
+          
+          // El total es la inicial más las ganancias/pérdidas
+          liquidityDoc.totalLiquidity = liquidityDoc.initialLiquidity + currentProfitLoss;
+          
+          // Recalcular disponibilidad
+          liquidityDoc.availableLiquidity = liquidityDoc.totalLiquidity - liquidityDoc.distributedLiquidity;
+          
+          return liquidityDoc.save();
+        });
+        
+        await Promise.all(updatePromises);
+        
+        // Usar el primer documento para la respuesta (o el del admin si existe)
+        liquidity = liquidityDocs.find(doc => doc.createdBy.toString() === user._id.toString()) || liquidityDocs[0];
       }
+      
+      // ✅ NOTA: El cache del summary se invalida automáticamente después de 30s
+      // Los datos ya están actualizados en la base de datos
 
       return res.status(200).json({
         success: true,
