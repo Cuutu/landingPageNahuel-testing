@@ -5419,38 +5419,35 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                   <div className={styles.imagesGrid}>
                     {images.map((image, index) => (
                       <div key={image.public_id} className={styles.imagePreviewItem} style={{ position: 'relative' }}>
-                        <div className={styles.imageOrderBadge} style={{
+                        <div style={{
                           position: 'absolute',
                           top: '5px',
                           left: '5px',
-                          backgroundColor: 'rgba(139, 92, 246, 0.9)',
-                          color: 'white',
-                          borderRadius: '50%',
-                          width: '25px',
-                          height: '25px',
                           display: 'flex',
+                          flexDirection: 'column',
                           alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '0.875rem',
-                          fontWeight: 'bold',
-                          zIndex: 10
-                        }}>
-                          {index + 1}
-                        </div>
-                        <img 
-                          src={image.secure_url} 
-                          alt={`Imagen adicional ${index + 1}`}
-                          className={styles.previewThumbnail}
-                        />
-                        <div className={styles.imagePreviewActions} style={{
-                          display: 'flex',
-                          flexDirection: 'row',
                           gap: '4px',
-                          position: 'absolute',
-                          top: '5px',
-                          right: '5px',
                           zIndex: 10
                         }}>
+                          <div className={styles.imageOrderBadge} style={{
+                            backgroundColor: 'rgba(139, 92, 246, 0.9)',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '25px',
+                            height: '25px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.875rem',
+                            fontWeight: 'bold'
+                          }}>
+                            {index + 1}
+                          </div>
+                          <div className={styles.imagePreviewActions} style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px'
+                          }}>
                           {/* Botones de reordenar */}
                           {index > 0 && (
                             <button 
@@ -5524,7 +5521,13 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                           >
                             ×
                           </button>
+                          </div>
                         </div>
+                        <img 
+                          src={image.secure_url} 
+                          alt={`Imagen adicional ${index + 1}`}
+                          className={styles.previewThumbnail}
+                        />
                         {/* Campo para título/caption de la imagen */}
                         <div className={styles.imageCaptionInput}>
                           <label htmlFor={`caption-${image.public_id}`} style={{ fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block', color: 'var(--text-muted)' }}>
