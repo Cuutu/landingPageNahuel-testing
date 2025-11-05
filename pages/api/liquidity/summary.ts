@@ -64,7 +64,9 @@ export default async function handler(
         distributedLiquidity: 1,
         totalProfitLoss: 1,
         totalProfitLossPercentage: 1,
-        distributions: 1 
+        distributions: 1,
+        updatedAt: 1,  // ✅ NUEVO: Para ordenar por fecha de actualización
+        createdAt: 1   // ✅ NUEVO: Fallback si no hay updatedAt
       })
       .lean();
 
@@ -78,13 +80,30 @@ export default async function handler(
     let liquidezDistribuidaSum = 0;
     let gananciaTotalSum = 0;
 
+    // ✅ NUEVO: La liquidez inicial es UN SOLO valor global por pool, no se suma
+    // Usar el valor del documento más reciente que tenga initialLiquidity definido
+    let liquidezInicialGlobal = 0;
+    const docsWithInitialLiquidity = liquidityDocs.filter(doc => 
+      doc.initialLiquidity !== undefined && doc.initialLiquidity !== null && doc.initialLiquidity > 0
+    );
+    
+    if (docsWithInitialLiquidity.length > 0) {
+      // Usar el valor más reciente (por updatedAt) o el primer documento encontrado
+      const sortedByUpdate = [...docsWithInitialLiquidity].sort((a, b) => 
+        new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+      );
+      liquidezInicialGlobal = sortedByUpdate[0].initialLiquidity;
+    } else {
+      // Fallback: calcular desde el primer documento si no hay initialLiquidity definido
+      if (liquidityDocs.length > 0) {
+        const firstDoc = liquidityDocs[0];
+        liquidezInicialGlobal = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
+      }
+    }
+    
+    // ✅ CORREGIDO: Sumar los totales, disponibles, distribuidos y ganancias de TODOS los documentos
+    // Pero la liquidez inicial es UN SOLO valor global (no se suma)
     liquidityDocs.forEach((doc) => {
-      // ✅ NUEVO: Usar initialLiquidity si existe, sino calcular como antes (retrocompatibilidad)
-      const liquidezInicial = (doc.initialLiquidity !== undefined && doc.initialLiquidity !== null)
-        ? doc.initialLiquidity
-        : (doc.totalLiquidity - (doc.totalProfitLoss || 0));
-      liquidezInicialSum += liquidezInicial;
-      
       liquidezTotalSum += doc.totalLiquidity || 0;
       liquidezDisponibleSum += doc.availableLiquidity || 0;
       liquidezDistribuidaSum += doc.distributedLiquidity || 0;
@@ -129,13 +148,13 @@ export default async function handler(
 
     const consolidatedDistributions = Array.from(distributionMap.values());
 
-    // Calcular porcentaje de ganancia
-    const gananciaPorcentaje = liquidezInicialSum > 0 
-      ? (gananciaTotalSum / liquidezInicialSum) * 100 
+    // Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
+    const gananciaPorcentaje = liquidezInicialGlobal > 0 
+      ? (gananciaTotalSum / liquidezInicialGlobal) * 100 
       : 0;
 
     console.log(`📊 [LIQUIDITY SUMMARY] Resumen calculado para ${pool}:`, {
-      liquidezInicial: liquidezInicialSum,
+      liquidezInicial: liquidezInicialGlobal,  // ✅ Valor único global, no suma
       liquidezTotal: liquidezTotalSum,
       liquidezDisponible: liquidezDisponibleSum,
       liquidezDistribuida: liquidezDistribuidaSum,
@@ -145,7 +164,7 @@ export default async function handler(
     });
 
     const payload = {
-      liquidezInicial: liquidezInicialSum,
+      liquidezInicial: liquidezInicialGlobal,  // ✅ Valor único global
       liquidezTotal: liquidezTotalSum,
       liquidezDisponible: liquidezDisponibleSum,
       liquidezDistribuida: liquidezDistribuidaSum,
