@@ -1052,10 +1052,53 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
   };
 
-  const handleEditReportClick = (report: any) => {
+  const handleEditReportClick = async (report: any) => {
     console.log('✏️ Editando informe:', report.title);
-    setEditingReport(report);
-    setShowEditReportModal(true);
+    
+    // Obtener el informe completo desde la API para asegurar que tenemos el contenido completo
+    try {
+      const reportId = report._id || report.id;
+      if (!reportId) {
+        console.error('❌ No se pudo obtener el ID del informe');
+        alert('Error: No se pudo identificar el informe a editar');
+        return;
+      }
+
+      console.log('📥 Obteniendo informe completo desde API:', reportId);
+      const response = await fetch(`/api/reports/${reportId}`, {
+        method: 'GET',
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const fullReport = result.data?.report;
+        
+        if (fullReport) {
+          console.log('✅ Informe completo obtenido:', {
+            title: fullReport.title,
+            contentLength: fullReport.content?.length || 0,
+            hasContent: !!fullReport.content
+          });
+          
+          setEditingReport(fullReport);
+          setShowEditReportModal(true);
+        } else {
+          console.error('❌ No se encontró el informe en la respuesta');
+          alert('Error: No se pudo cargar el informe completo');
+        }
+      } else {
+        console.error('❌ Error al obtener informe:', response.status);
+        // Si falla, intentar con el reporte que ya tenemos
+        setEditingReport(report);
+        setShowEditReportModal(true);
+      }
+    } catch (error) {
+      console.error('❌ Error al obtener informe completo:', error);
+      // Si falla, intentar con el reporte que ya tenemos
+      setEditingReport(report);
+      setShowEditReportModal(true);
+    }
   };
 
   const handleEditReport = async (formData: any) => {
@@ -5066,12 +5109,45 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
   // Cargar datos iniciales cuando se edita
   React.useEffect(() => {
     if (isEdit && initialData) {
-      console.log('📝 Cargando datos para edición:', initialData.title);
+      console.log('📝 Cargando datos para edición:', {
+        title: initialData.title,
+        contentLength: initialData.content?.length || 0,
+        contentPreview: initialData.content?.substring(0, 100) || 'sin contenido',
+        hasContent: !!initialData.content
+      });
+      
+      // Resetear el formulario primero
+      setFormData({
+        title: '',
+        type: 'text',
+        category: 'trader-call',
+        content: '',
+        isFeature: false,
+        publishedAt: new Date().toISOString().split('T')[0],
+        status: 'published'
+      });
+      
+      // Convertir HTML a texto plano
+      const originalContent = initialData.content || '';
+      console.log('🔍 Contenido original (primeros 200 caracteres):', originalContent.substring(0, 200));
+      
+      const plainTextContent = htmlToText(originalContent);
+      
+      console.log('🔄 Conversión HTML a texto:', {
+        originalLength: originalContent.length,
+        convertedLength: plainTextContent.length,
+        originalPreview: originalContent.substring(0, 200),
+        convertedPreview: plainTextContent.substring(0, 200),
+        hasTags: /<[^>]+>/.test(originalContent),
+        hasTagsAfter: /<[^>]+>/.test(plainTextContent)
+      });
+      
+      // Actualizar el formulario con los datos convertidos
       setFormData({
         title: initialData.title || '',
         type: initialData.type || 'text',
         category: initialData.category || 'trader-call',
-        content: htmlToText(initialData.content || ''), // Convertir HTML a texto plano
+        content: plainTextContent, // Convertir HTML a texto plano
         isFeature: initialData.isFeature || false,
         publishedAt: initialData.publishedAt ?
           new Date(initialData.publishedAt).toISOString().split('T')[0] :
@@ -5092,7 +5168,21 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
           caption: img.caption || '',
           order: img.order || 0
         })));
+      } else {
+        setImages([]);
       }
+    } else if (!isEdit) {
+      // Resetear formulario cuando se cierra o se abre para crear nuevo
+      setFormData({
+        title: '',
+        type: 'text',
+        category: 'trader-call',
+        content: '',
+        isFeature: false,
+        publishedAt: new Date().toISOString().split('T')[0],
+        status: 'published'
+      });
+      setImages([]);
     }
   }, [isEdit, initialData]);
 
