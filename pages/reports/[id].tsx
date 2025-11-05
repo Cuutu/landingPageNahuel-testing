@@ -27,6 +27,7 @@ import styles from '@/styles/ReportView.module.css';
 import dbConnect from '@/lib/mongodb';
 import Report from '@/models/Report';
 import User from '@/models/User';
+import { htmlToText, textToHtml } from '@/lib/textUtils';
 
 interface Article {
   _id: string;
@@ -108,9 +109,19 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
   // Funciones para edición de informe
   const openEditModal = () => {
+    // Convertir el contenido HTML a texto plano para edición
+    const plainTextContent = htmlToText(report.content || '');
+    
+    console.log('🔄 Abriendo modal de edición:', {
+      title: report.title,
+      contentLength: report.content?.length || 0,
+      plainTextLength: plainTextContent.length,
+      contentPreview: plainTextContent.substring(0, 100)
+    });
+    
     setEditFormData({
       title: report.title,
-      content: report.content,
+      content: plainTextContent, // Usar texto plano en lugar de HTML
       isPublished: report.isPublished
     });
     // Convertir las imágenes del reporte al formato CloudinaryImage
@@ -145,6 +156,16 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
     setIsUpdating(true);
     try {
+      // Convertir el contenido de texto plano a HTML antes de enviar
+      const htmlContent = textToHtml(editFormData.content);
+      
+      console.log('📤 Enviando actualización:', {
+        title: editFormData.title,
+        plainTextLength: editFormData.content.length,
+        htmlContentLength: htmlContent.length,
+        htmlPreview: htmlContent.substring(0, 100)
+      });
+      
       // Actualizar el campo 'order' de cada imagen basándose en su posición actual
       const imagesWithOrder = editImages.map((img, index) => ({
         ...img,
@@ -158,7 +179,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
         },
         body: JSON.stringify({
           title: editFormData.title,
-          content: editFormData.content,
+          content: htmlContent, // Enviar HTML en lugar de texto plano
           isPublished: editFormData.isPublished,
           images: imagesWithOrder
         }),
