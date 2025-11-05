@@ -14,16 +14,26 @@ export function htmlToText(html: string): string {
     try {
       // Crear un elemento temporal en el DOM
       const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = html;
       
-      // Obtener el texto sin etiquetas HTML
-      let text = tempDiv.textContent || tempDiv.innerText || '';
+      // Pre-procesar el HTML para preservar saltos de línea
+      let processedHtml = html
+        // Agregar saltos de línea antes de cerrar párrafos y divs
+        .replace(/<\/p>/gi, '\n\n</p>')
+        .replace(/<\/div>/gi, '\n</div>')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/h[1-6]>/gi, '\n\n</h1>')
+        .replace(/<\/li>/gi, '\n</li>');
       
-      // Limpiar espacios y saltos de línea múltiples
+      tempDiv.innerHTML = processedHtml;
+      
+      // Obtener el texto preservando la estructura
+      let text = tempDiv.innerText || tempDiv.textContent || '';
+      
+      // Limpiar espacios excesivos pero preservar saltos de línea intencionales
       text = text
-        .replace(/\n\s*\n\s*\n+/g, '\n\n') // Máximo 2 saltos consecutivos
+        .replace(/\n{3,}/g, '\n\n') // Máximo 2 saltos consecutivos
         .replace(/[ \t]+/g, ' ') // Múltiples espacios a uno solo
-        .replace(/^\s+|\s+$/gm, '') // Trim cada línea
+        .replace(/^\s+$/gm, '') // Líneas con solo espacios
         .trim();
       
       // Limpiar el elemento temporal
@@ -38,15 +48,20 @@ export function htmlToText(html: string): string {
   // Método 2: Fallback usando regex (para SSR o si falla el método 1)
   let text = html
     // Primero convertir saltos de línea HTML a saltos de línea reales
+    // Importante: agregar doble salto para párrafos
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<p[^>]*>/gi, '')
     .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n')
     .replace(/<\/div>/gi, '\n')
-    .replace(/<\/h[1-6]>/gi, '\n')
+    .replace(/<div[^>]*>/gi, '')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<h[1-6][^>]*>/gi, '')
     .replace(/<\/li>/gi, '\n')
+    .replace(/<li[^>]*>/gi, '• ')
     .replace(/<\/ul>/gi, '\n')
+    .replace(/<ul[^>]*>/gi, '')
     .replace(/<\/ol>/gi, '\n')
-    .replace(/<\/tr>/gi, '\n')
-    .replace(/<\/td>/gi, '\t')
+    .replace(/<ol[^>]*>/gi, '')
     // Remover TODAS las etiquetas HTML restantes
     .replace(/<[^>]+>/g, '')
     // Decodificar entidades HTML
@@ -59,10 +74,10 @@ export function htmlToText(html: string): string {
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, '/')
     .replace(/&apos;/g, "'")
-    // Limpiar espacios y saltos de línea múltiples
-    .replace(/\n\s*\n\s*\n+/g, '\n\n') // Máximo 2 saltos consecutivos
+    // Limpiar espacios excesivos pero preservar estructura
+    .replace(/\n{3,}/g, '\n\n') // Máximo 2 saltos consecutivos
     .replace(/[ \t]+/g, ' ') // Múltiples espacios a uno solo
-    .replace(/^\s+|\s+$/gm, '') // Trim cada línea
+    .replace(/^\s+$/gm, '') // Líneas con solo espacios
     .trim();
   
   return text;
@@ -75,26 +90,29 @@ export function htmlToText(html: string): string {
 export function textToHtml(text: string): string {
   if (!text) return '';
 
-  return text
+  // Dividir el texto en párrafos (separados por doble salto de línea)
+  const paragraphs = text
+    .split(/\n\n+/)
+    .filter(p => p.trim() !== '');
+
+  // Procesar cada párrafo
+  const htmlParagraphs = paragraphs.map(paragraph => {
     // Codificar entidades HTML
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
-    // Convertir saltos de línea dobles a párrafos
-    .replace(/\n\n+/g, '</p><p>')
+    let encoded = paragraph
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    
     // Convertir saltos de línea simples a <br>
-    .replace(/\n/g, '<br>')
-    // Envolver en etiquetas <p> si no están ya
-    .replace(/^/, '<p>')
-    .replace(/$/, '</p>')
-    // Limpiar párrafos vacíos
-    .replace(/<p><\/p>/g, '')
-    .replace(/<p><br><\/p>/g, '')
-    // Limpiar etiquetas <p> vacías al final
-    .replace(/<p>$/, '')
-    .replace(/^<\/p>/, '');
+    encoded = encoded.replace(/\n/g, '<br>');
+    
+    // Envolver en etiquetas <p>
+    return `<p>${encoded}</p>`;
+  });
+
+  return htmlParagraphs.join('');
 }
 
 /**

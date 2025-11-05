@@ -48,7 +48,7 @@ import {
 import styles from '@/styles/SmartMoney.module.css';
 import { useRouter } from 'next/router';
 import { calculateDaysRemaining, calculateDaysSinceSubscription } from '../../utils/dateUtils';
-import { htmlToText } from '../../lib/textUtils';
+import { htmlToText, textToHtml } from '../../lib/textUtils';
 import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
@@ -959,13 +959,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const handleCreateReport = async (formData: any) => {
     setCreatingReport(true);
     try {
+      // Convertir el contenido de texto plano a HTML antes de enviar
+      const dataToSend = {
+        ...formData,
+        content: textToHtml(formData.content || ''), // Convertir texto plano a HTML
+        category: 'smart-money' // Asignar categoría Smart Money
+      };
+
       console.log('📤 Enviando datos del informe:', {
-        title: formData.title,
-        type: formData.type,
-        category: formData.category,
-        readTime: formData.readTime,
-        hasArticles: !!formData.articles,
-        articlesCount: formData.articles?.length || 0
+        title: dataToSend.title,
+        type: dataToSend.type,
+        category: dataToSend.category,
+        readTime: dataToSend.readTime,
+        hasArticles: !!dataToSend.articles,
+        articlesCount: dataToSend.articles?.length || 0
       });
       
       const response = await fetch('/api/reports/create', {
@@ -973,10 +980,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData, 
-          category: 'smart-money' // Asignar categoría Smart Money
-        }),
+        body: JSON.stringify(dataToSend),
       });
 
       console.log('📡 Respuesta recibida del servidor:', response.status);
@@ -1059,15 +1063,25 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     try {
       console.log('📝 Editando informe:', editingReport._id || editingReport.id);
 
+      // Convertir el contenido de texto plano a HTML antes de enviar
+      const dataToSend = {
+        ...formData,
+        content: textToHtml(formData.content || ''), // Convertir texto plano a HTML
+        category: 'smart-money' // Mantener categoría Smart Money
+      };
+
+      console.log('📤 Enviando datos para actualizar:', {
+        title: dataToSend.title,
+        contentLength: dataToSend.content?.length || 0,
+        contentPreview: dataToSend.content?.substring(0, 100)
+      });
+
       const response = await fetch(`/api/reports/${editingReport._id || editingReport.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          category: 'smart-money' // Mantener categoría Smart Money
-        }),
+        body: JSON.stringify(dataToSend),
       });
 
       if (response.ok) {
