@@ -502,6 +502,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [priceLoading, setPriceLoading] = useState(false);
   const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
   const [liquidityTotal, setLiquidityTotal] = useState<number>(0);
+  
+  // ✅ NUEVO: Estado para el resumen completo de liquidez
+  const [liquiditySummary, setLiquiditySummary] = useState({
+    liquidezInicial: 0,
+    liquidezTotal: 0,
+    liquidezDisponible: 0,
+    liquidezDistribuida: 0,
+    ganancia: 0,
+    gananciaPorcentaje: 0
+  });
 
   // Estados para edición de alertas
   const [showEditAlert, setShowEditAlert] = useState(false);
@@ -1212,18 +1222,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // ✅ MEJORADO: Cargar liquidez con mejor manejo de errores y logging
   const loadLiquidity = async () => {
     try {
-      console.log('🔄 [LIQUIDITY] Iniciando carga de liquidez para SmartMoney...');
+      console.log('🔄 [LIQUIDITY] Iniciando carga de resumen de liquidez para SmartMoney...');
       
       // Agregar timestamp para evitar cache del browser
       const timestamp = new Date().getTime();
-      const res = await fetch(`/api/liquidity/public?pool=SmartMoney&_t=${timestamp}`);
+      const res = await fetch(`/api/liquidity/summary?pool=SmartMoney&_t=${timestamp}`);
       
       if (res.ok) {
         const json = await res.json();
         console.log('✅ [LIQUIDITY] Respuesta de API recibida:', {
           success: json.success,
           hasData: !!json.data,
-          totalLiquidity: json.data?.totalLiquidity,
+          liquidezTotal: json.data?.liquidezTotal,
           distributionsCount: json.data?.distributions?.length || 0
         });
         
@@ -1235,11 +1245,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           });
           
           setLiquidityMap(map);
-          setLiquidityTotal(Number(json.data?.totalLiquidity || 0));
+          // ✅ NUEVO: Usar liquidez total del nuevo resumen
+          setLiquidityTotal(Number(json.data?.liquidezTotal || 0));
           
-          console.log('✅ [LIQUIDITY] Datos de liquidez cargados exitosamente:', {
+          // ✅ NUEVO: Guardar todos los datos del resumen para mostrar en la UI
+          setLiquiditySummary({
+            liquidezInicial: json.data.liquidezInicial || 0,
+            liquidezTotal: json.data.liquidezTotal || 0,
+            liquidezDisponible: json.data.liquidezDisponible || 0,
+            liquidezDistribuida: json.data.liquidezDistribuida || 0,
+            ganancia: json.data.ganancia || 0,
+            gananciaPorcentaje: json.data.gananciaPorcentaje || 0
+          });
+          
+          console.log('✅ [LIQUIDITY] Resumen de liquidez cargado exitosamente:', {
             mapKeys: Object.keys(map).length,
-            totalLiquidity: json.data?.totalLiquidity
+            liquidezInicial: json.data.liquidezInicial,
+            liquidezTotal: json.data.liquidezTotal,
+            liquidezDisponible: json.data.liquidezDisponible,
+            liquidezDistribuida: json.data.liquidezDistribuida,
+            ganancia: json.data.ganancia
           });
         } else {
           console.warn('⚠️ [LIQUIDITY] Respuesta de API sin datos de liquidez');
@@ -2114,7 +2139,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     console.log('📊 [PIE CHART] Creando datos del gráfico de torta...', {
       alertsCount: alerts.length,
       liquidityMapKeys: Object.keys(liquidityMap || {}).length,
-      liquidityTotal: liquidityTotal
+      liquidityTotal: liquidityTotal,
+      liquiditySummary: liquiditySummary
     });
 
     // Paleta de colores dinámicos para cada alerta
@@ -2179,7 +2205,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     // Calcular el tamaño de cada segmento basado en la liquidez asignada
     const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
-    const totalBase = (liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalAllocated;
+    // ✅ NUEVO: Usar liquidezTotal del resumen (que incluye ganancias/pérdidas) como base
+    // Si no hay resumen, usar liquidityTotal antiguo o totalAllocated como fallback
+    const totalBase = (liquiditySummary.liquidezTotal && liquiditySummary.liquidezTotal > 0) 
+      ? liquiditySummary.liquidezTotal 
+      : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalAllocated);
     let cumulativeAngle = 0;
     const chartSegments = chartData.map((alert) => {
       const segmentBase = Math.abs(alert.allocatedAmount || 0);
@@ -2198,8 +2228,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // Agregar segmento de liquidez disponible para que la suma sea 100%
-    const available = Math.max((totalBase || 0) - totalAllocated, 0);
+    // ✅ NUEVO: Usar liquidezDisponible directamente del resumen (más preciso)
+    // Si no hay resumen, calcular como diferencia entre totalBase y totalAllocated
+    const available = (liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
+      ? Math.max(liquiditySummary.liquidezDisponible, 0)
+      : Math.max((totalBase || 0) - totalAllocated, 0);
     // Siempre agregar el segmento de liquidez, incluso si es 0, para mostrar la composición completa
     const liqStart = cumulativeAngle;
     const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
@@ -3950,9 +3983,55 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             {userRole === 'admin' && (
               <div className={styles.inputGroup}>
                 <label>💰 Asignar Liquidez</label>
-                <p className={styles.liquidityDescription}>
-                  Tienes <strong>${liquidityTotal.toFixed(2)}</strong> de liquidez disponible
-                </p>
+                
+                {/* ✅ NUEVO: Resumen completo de liquidez */}
+                <div className={styles.liquiditySummary} style={{
+                  backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                  border: '1px solid rgba(139, 92, 246, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', fontSize: '0.875rem' }}>
+                    <div>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>💰 Liquidez Inicial:</span>
+                      <br />
+                      <strong style={{ color: '#8B5CF6' }}>${liquiditySummary.liquidezInicial.toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>📊 Liquidez Total:</span>
+                      <br />
+                      <strong style={{ color: liquiditySummary.liquidezTotal >= liquiditySummary.liquidezInicial ? '#10B981' : '#EF4444' }}>
+                        ${liquiditySummary.liquidezTotal.toFixed(2)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>💵 Disponible:</span>
+                      <br />
+                      <strong style={{ color: '#06B6D4' }}>${liquiditySummary.liquidezDisponible.toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>🎯 Distribuida:</span>
+                      <br />
+                      <strong style={{ color: '#F59E0B' }}>${liquiditySummary.liquidezDistribuida.toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        {liquiditySummary.ganancia >= 0 ? '📈' : '📉'} Ganancia:
+                      </span>
+                      <br />
+                      <strong style={{ color: liquiditySummary.ganancia >= 0 ? '#10B981' : '#EF4444' }}>
+                        {liquiditySummary.ganancia >= 0 ? '+' : ''}${liquiditySummary.ganancia.toFixed(2)}
+                        {liquiditySummary.gananciaPorcentaje !== 0 && (
+                          <span style={{ fontSize: '0.75rem', marginLeft: '4px' }}>
+                            ({liquiditySummary.gananciaPorcentaje >= 0 ? '+' : ''}{liquiditySummary.gananciaPorcentaje.toFixed(1)}%)
+                          </span>
+                        )}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
                 <div className={styles.liquiditySelector}>
                   {[0, 5, 10, 15, 20].map((percentage) => (
                     <button
@@ -3963,14 +4042,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     >
                       <span className={styles.liquidityPercentage}>{percentage}%</span>
                       <span className={styles.liquidityAmount}>
-                        ${((liquidityTotal * percentage) / 100).toFixed(2)}
+                        ${((liquiditySummary.liquidezTotal * percentage) / 100).toFixed(2)}
                       </span>
                     </button>
                   ))}
                 </div>
                 {newAlert.liquidityPercentage > 0 && (
                   <div className={styles.liquidityPreview}>
-                    💡 Se asignarán <strong>${((liquidityTotal * newAlert.liquidityPercentage) / 100).toFixed(2)}</strong> ({newAlert.liquidityPercentage}% del total)
+                    💡 Se asignarán <strong>${((liquiditySummary.liquidezTotal * newAlert.liquidityPercentage) / 100).toFixed(2)}</strong> ({newAlert.liquidityPercentage}% del total)
                   </div>
                 )}
               </div>

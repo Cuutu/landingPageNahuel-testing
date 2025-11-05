@@ -33,6 +33,28 @@ interface LiquidityData {
   }>;
 }
 
+// ✅ NUEVO: Interface para el resumen completo de liquidez
+interface LiquiditySummary {
+  liquidezInicial: number;
+  liquidezTotal: number;
+  liquidezDisponible: number;
+  liquidezDistribuida: number;
+  ganancia: number;
+  gananciaPorcentaje: number;
+  distributions: Array<{
+    alertId: string;
+    symbol: string;
+    allocatedAmount: number;
+    shares: number;
+    entryPrice: number;
+    currentPrice: number;
+    profitLoss: number;
+    profitLossPercentage: number;
+    realizedProfitLoss?: number;
+    isActive: boolean;
+  }>;
+}
+
 async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...options,
@@ -60,6 +82,9 @@ const AdminLiquidityPage: React.FC = () => {
   const [liquidity, setLiquidity] = useState<LiquidityData | null>(null);
   const [newTotal, setNewTotal] = useState<string>('');
   const [selectedPool, setSelectedPool] = useState<'TraderCall' | 'SmartMoney'>('TraderCall');
+  
+  // ✅ NUEVO: Estado para el resumen completo de liquidez
+  const [liquiditySummary, setLiquiditySummary] = useState<LiquiditySummary | null>(null);
 
   // Listas de alertas activas por tipo
   const [smartAlerts, setSmartAlerts] = useState<SimpleAlert[]>([]);
@@ -95,9 +120,17 @@ const AdminLiquidityPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
+      // Cargar datos de liquidez tradicionales (para compatibilidad)
       const resp = await fetchJSON<{ success: boolean; liquidity: LiquidityData }>(`/api/liquidity?pool=${selectedPool}`);
       setLiquidity(resp.liquidity);
       setNewTotal(String(resp.liquidity.totalLiquidity || ''));
+      
+      // ✅ NUEVO: Cargar resumen completo de liquidez
+      const summaryResp = await fetchJSON<{ success: boolean; data: LiquiditySummary }>(`/api/liquidity/summary?pool=${selectedPool}`);
+      if (summaryResp.success && summaryResp.data) {
+        setLiquiditySummary(summaryResp.data);
+        console.log('📊 [ADMIN] Resumen de liquidez cargado:', summaryResp.data);
+      }
     } catch (e: any) {
       setError(e.message);
       toast?.error(e.message);
@@ -178,6 +211,17 @@ const AdminLiquidityPage: React.FC = () => {
         { method: 'POST', body: JSON.stringify({ totalLiquidity, pool: selectedPool }) }
       );
       setLiquidity(resp.liquidity);
+      
+      // ✅ NUEVO: Recargar también el resumen después de actualizar
+      try {
+        const summaryResp = await fetchJSON<{ success: boolean; data: LiquiditySummary }>(`/api/liquidity/summary?pool=${selectedPool}`);
+        if (summaryResp.success && summaryResp.data) {
+          setLiquiditySummary(summaryResp.data);
+        }
+      } catch (summaryError) {
+        console.warn('Error recargando resumen de liquidez:', summaryError);
+      }
+      
       toast?.success('Liquidez actualizada');
     } catch (e: any) {
       setError(e.message);
@@ -365,8 +409,99 @@ const AdminLiquidityPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Resumen */}
-        {liquidity && (
+        {/* ✅ NUEVO: Resumen completo con los 5 conceptos de liquidez */}
+        {liquiditySummary ? (
+          <div style={{ marginBottom: '24px' }}>
+            <h3 style={{ color: '#fff', marginBottom: '16px', fontSize: '1.25rem', fontWeight: '600' }}>
+              📊 Resumen de Liquidez - {selectedPool}
+            </h3>
+            <div className={styles.grid} style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }}>
+              {card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  💰 Liquidez Inicial
+                </div>
+                <div className={styles.value} style={{ color: '#8B5CF6', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  ${liquiditySummary.liquidezInicial.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  Valor base asignado
+                </div>
+              </>)}
+              
+              {card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📊 Liquidez Total
+                </div>
+                <div className={styles.value} style={{ 
+                  color: liquiditySummary.liquidezTotal >= liquiditySummary.liquidezInicial ? '#10B981' : '#EF4444',
+                  fontSize: '1.5rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  ${liquiditySummary.liquidezTotal.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  Inicial + Ganancias/Pérdidas
+                </div>
+              </>)}
+              
+              {card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  💵 Disponible
+                </div>
+                <div className={styles.value} style={{ color: '#06B6D4', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  ${liquiditySummary.liquidezDisponible.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  No asignado a alertas
+                </div>
+              </>)}
+              
+              {card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🎯 Distribuida
+                </div>
+                <div className={styles.value} style={{ color: '#F59E0B', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  ${liquiditySummary.liquidezDistribuida.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  Asignado a alertas
+                </div>
+              </>)}
+              
+              {card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {liquiditySummary.ganancia >= 0 ? '📈' : '📉'} Ganancia
+                </div>
+                <div className={styles.value} style={{ 
+                  color: liquiditySummary.ganancia >= 0 ? '#10B981' : '#EF4444',
+                  fontSize: '1.5rem', 
+                  fontWeight: 'bold' 
+                }}>
+                  {liquiditySummary.ganancia >= 0 ? '+' : ''}${liquiditySummary.ganancia.toFixed(2)}
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  {liquiditySummary.gananciaPorcentaje !== 0 && (
+                    <>({liquiditySummary.gananciaPorcentaje >= 0 ? '+' : ''}{liquiditySummary.gananciaPorcentaje.toFixed(1)}%)</>
+                  )}
+                  {liquiditySummary.gananciaPorcentaje === 0 && 'Sin cambios'}
+                </div>
+              </>)}
+              
+              {liquidity && card(<>
+                <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📊 % Restante
+                </div>
+                <div className={styles.value} style={{ color: '#A855F7', fontSize: '1.5rem', fontWeight: 'bold' }}>
+                  {remainingPct.toFixed(2)}%
+                </div>
+                <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
+                  Por distribuir
+                </div>
+              </>)}
+            </div>
+          </div>
+        ) : liquidity && (
+          // Fallback al resumen anterior si no hay datos del nuevo resumen
           <div className={styles.grid}>
             {card(<>
               <div className={styles.label}>Liquidez Total ({selectedPool})</div>
