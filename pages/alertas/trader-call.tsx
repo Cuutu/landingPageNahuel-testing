@@ -5419,7 +5419,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                   <h4>Imágenes Adicionales ({images.length}/5)</h4>
                   <div className={styles.imagesGrid}>
                     {images.map((image, index) => (
-                      <div key={image.public_id} className={styles.imagePreviewItem}>
+                      <div key={image.public_id} className={styles.imagePreviewItem} style={{ position: 'relative' }}>
                         <div className={styles.imageOrderBadge} style={{
                           position: 'absolute',
                           top: '5px',
@@ -5434,7 +5434,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                           justifyContent: 'center',
                           fontSize: '0.875rem',
                           fontWeight: 'bold',
-                          zIndex: 1
+                          zIndex: 10
                         }}>
                           {index + 1}
                         </div>
@@ -5445,10 +5445,12 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                         />
                         <div className={styles.imagePreviewActions} style={{
                           display: 'flex',
+                          flexDirection: 'row',
                           gap: '4px',
                           position: 'absolute',
                           top: '5px',
-                          right: '5px'
+                          right: '5px',
+                          zIndex: 10
                         }}>
                           {/* Botones de reordenar */}
                           {index > 0 && (
@@ -5464,7 +5466,13 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                                 color: 'white',
                                 cursor: 'pointer',
                                 padding: '4px 8px',
-                                fontSize: '0.875rem'
+                                fontSize: '0.875rem',
+                                minWidth: '28px',
+                                height: '28px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 1
                               }}
                             >
                               ↑
@@ -5483,7 +5491,13 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                                 color: 'white',
                                 cursor: 'pointer',
                                 padding: '4px 8px',
-                                fontSize: '0.875rem'
+                                fontSize: '0.875rem',
+                                minWidth: '28px',
+                                height: '28px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 1
                               }}
                             >
                               ↓
@@ -5500,7 +5514,13 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                               color: 'white',
                               cursor: 'pointer',
                               padding: '4px 8px',
-                              fontSize: '0.875rem'
+                              fontSize: '0.875rem',
+                              minWidth: '28px',
+                              height: '28px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              lineHeight: 1
                             }}
                           >
                             ×
