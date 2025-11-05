@@ -5225,11 +5225,16 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
       return;
     }
 
-    // Preparar datos con imágenes de Cloudinary
+    // Preparar datos con imágenes de Cloudinary con orden correcto
+    const imagesWithOrder = images.map((img, index) => ({
+      ...img,
+      order: index + 1 // Asignar orden basado en la posición actual
+    }));
+    
     const submitData = {
       ...formData,
       publishedAt: new Date(formData.publishedAt),
-      images: images
+      images: imagesWithOrder
     };
 
     // Debug: mostrar qué datos se están enviando
@@ -5270,6 +5275,25 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
 
   const removeImage = (publicId: string) => {
     setImages(prev => prev.filter(img => img.public_id !== publicId));
+  };
+
+  // Funciones para reordenar imágenes
+  const moveImageUp = (index: number) => {
+    if (index <= 0) return;
+    setImages(prev => {
+      const newImages = [...prev];
+      [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+      return newImages;
+    });
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index >= images.length - 1) return;
+    setImages(prev => {
+      const newImages = [...prev];
+      [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+      return newImages;
+    });
   };
 
   return (
@@ -5395,16 +5419,88 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                   <div className={styles.imagesGrid}>
                     {images.map((image, index) => (
                       <div key={image.public_id} className={styles.imagePreviewItem}>
+                        <div className={styles.imageOrderBadge} style={{
+                          position: 'absolute',
+                          top: '5px',
+                          left: '5px',
+                          backgroundColor: 'rgba(139, 92, 246, 0.9)',
+                          color: 'white',
+                          borderRadius: '50%',
+                          width: '25px',
+                          height: '25px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '0.875rem',
+                          fontWeight: 'bold',
+                          zIndex: 1
+                        }}>
+                          {index + 1}
+                        </div>
                         <img 
                           src={image.secure_url} 
                           alt={`Imagen adicional ${index + 1}`}
                           className={styles.previewThumbnail}
                         />
-                        <div className={styles.imagePreviewActions}>
+                        <div className={styles.imagePreviewActions} style={{
+                          display: 'flex',
+                          gap: '4px',
+                          position: 'absolute',
+                          top: '5px',
+                          right: '5px'
+                        }}>
+                          {/* Botones de reordenar */}
+                          {index > 0 && (
+                            <button 
+                              type="button" 
+                              onClick={() => moveImageUp(index)}
+                              className={styles.reorderButton}
+                              title="Mover arriba"
+                              style={{
+                                backgroundColor: 'rgba(59, 130, 246, 0.9)',
+                                border: 'none',
+                                borderRadius: '4px',
+                                color: 'white',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              ↑
+                            </button>
+                          )}
+                          {index < images.length - 1 && (
+                            <button 
+                              type="button" 
+                              onClick={() => moveImageDown(index)}
+                              className={styles.reorderButton}
+                              title="Mover abajo"
+                              style={{
+                                backgroundColor: 'rgba(59, 130, 246, 0.9)',
+                                border: 'none',
+                                borderRadius: '4px',
+                                color: 'white',
+                                cursor: 'pointer',
+                                padding: '4px 8px',
+                                fontSize: '0.875rem'
+                              }}
+                            >
+                              ↓
+                            </button>
+                          )}
                           <button 
                             type="button" 
                             onClick={() => removeImage(image.public_id)}
                             className={styles.removeImageButton}
+                            style={{
+                              backgroundColor: 'rgba(239, 68, 68, 0.9)',
+                              border: 'none',
+                              borderRadius: '4px',
+                              color: 'white',
+                              cursor: 'pointer',
+                              padding: '4px 8px',
+                              fontSize: '0.875rem'
+                            }}
                           >
                             ×
                           </button>

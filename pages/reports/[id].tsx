@@ -221,6 +221,25 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setUploadingImages(false);
     console.log('✅ Imagen adicional agregada:', image.public_id);
   };
+  
+  // Funciones para reordenar imágenes
+  const moveImageUp = (index: number) => {
+    if (index <= 0) return;
+    setEditImages(prev => {
+      const newImages = [...prev];
+      [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
+      return newImages;
+    });
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index >= editImages.length - 1) return;
+    setEditImages(prev => {
+      const newImages = [...prev];
+      [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
+      return newImages;
+    });
+  };
 
   const handleUploadStart = () => {
     setUploadingImages(true);
@@ -241,26 +260,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     setEditImages(prev => prev.map(img => 
       img.public_id === publicId ? { ...img, caption } : img
     ));
-  };
-
-  const moveImageUp = (index: number) => {
-    if (index > 0) {
-      setEditImages(prev => {
-        const newImages = [...prev];
-        [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
-        return newImages;
-      });
-    }
-  };
-
-  const moveImageDown = (index: number) => {
-    if (index < editImages.length - 1) {
-      setEditImages(prev => {
-        const newImages = [...prev];
-        [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
-        return newImages;
-      });
-    }
   };
 
   const formatDate = (dateString: string) => {
