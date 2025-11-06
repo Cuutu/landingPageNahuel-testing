@@ -257,7 +257,7 @@ const AlertasPage: React.FC = () => {
                 >
                   Accedé a señales precisas y actualizaciones periódicas para operar en los mercados. 
                   Elegí la estrategia que mejor se ajuste a tus objetivos y mejorá tus probabilidades de éxito.
-                </p>
+                </motion.p>
                 <button 
                   className={styles.heroButton}
                   onClick={() => {
