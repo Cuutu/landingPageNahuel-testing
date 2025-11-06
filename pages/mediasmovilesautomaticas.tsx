@@ -1,11 +1,100 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { signIn, useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import YouTubePlayer from '@/components/YouTubePlayer';
+import BackgroundVideo from '@/components/BackgroundVideo';
 import { usePricing } from '@/hooks/usePricing';
 import styles from '@/styles/MediasMovilesAutomaticas.module.css';
+
+/**
+ * Componente de carousel automático para videos de YouTube
+ */
+const YouTubeAutoCarousel: React.FC = () => {
+  const [currentVideo, setCurrentVideo] = useState(0);
+  
+  const videos = [
+    {
+      id: '0NpdClGWaY8',
+      title: 'Video 1'
+    },
+    {
+      id: 'jl3lUCIluAs',
+      title: 'Video 2'
+    },
+    {
+      id: '_AMDVmj9_jw',
+      title: 'Video 3'
+    },
+    {
+      id: 'sUktp76givU',
+      title: 'Video 4'
+    }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentVideo((prev) => (prev + 1) % videos.length);
+    }, 5000); // Cambia cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [videos.length]);
+
+  const goToPrevious = () => {
+    setCurrentVideo((prev) => (prev - 1 + videos.length) % videos.length);
+  };
+
+  const goToNext = () => {
+    setCurrentVideo((prev) => (prev + 1) % videos.length);
+  };
+
+  return (
+    <div className={styles.youtubeAutoCarousel}>
+      <button 
+        onClick={goToPrevious}
+        className={styles.youtubeArrowLeft}
+        aria-label="Video anterior"
+      >
+        <ChevronLeft size={24} />
+      </button>
+      
+      <div className={styles.youtubeVideoFrame}>
+        <iframe
+          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          title={videos[currentVideo].title}
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className={styles.youtubeVideoPlayer}
+        />
+      </div>
+      
+      <button 
+        onClick={goToNext}
+        className={styles.youtubeArrowRight}
+        aria-label="Siguiente video"
+      >
+        <ChevronRight size={24} />
+      </button>
+
+      <div className={styles.youtubeIndicators}>
+        {videos.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentVideo(index)}
+            className={`${styles.youtubeIndicator} ${
+              index === currentVideo ? styles.youtubeIndicatorActive : ''
+            }`}
+            aria-label={`Ver video ${index + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function MediasMovilesAutomaticasPage() {
   // Landing page para el indicador de Medias Móviles Automáticas
@@ -64,15 +153,14 @@ export default function MediasMovilesAutomaticasPage() {
         {/* Hero */}
         <section className={styles.hero}>
           {/* Video Background */}
-          <video
+          <BackgroundVideo
+            videoSrc="/logos/DiseñoWeb-LozanoNahuel-Alertas-TraderCall.mp4"
             className={styles.heroVideoBackground}
-            autoPlay
-            muted
-            loop
-            playsInline
-          >
-            <source src="/logos/DiseñoWeb-LozanoNahuel-Alertas-TraderCall.mp4" type="video/mp4" />
-          </video>
+            autoPlay={true}
+            muted={true}
+            loop={true}
+            showControls={false}
+          />
           
           <div className={styles.container}>
             <motion.div
@@ -122,6 +210,26 @@ export default function MediasMovilesAutomaticasPage() {
                   Pago único • Acceso vitalicio en TradingView
                 </motion.p>
               </div>
+              
+              {/* Video Player en el Hero */}
+              <motion.div 
+                className={styles.heroVideo}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <div className={styles.videoContainer}>
+                  <YouTubePlayer
+                    videoId="dQw4w9WgXcQ"
+                    title="Medias Móviles Automáticas - Video"
+                    autoplay={false}
+                    muted={true}
+                    loop={false}
+                    controls={true}
+                    className={styles.videoPlayer}
+                  />
+                </div>
+              </motion.div>
             </motion.div>
           </div>
         </section>
@@ -327,6 +435,32 @@ export default function MediasMovilesAutomaticasPage() {
                 <summary>¿Seguís con dudas?</summary>
                 <p>Escribime un correo electrónico a la siguiente casilla para resolver las dudas que te puedan surgir: lozanonahuel@gmail.com</p>
               </details>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Sección YouTube Community */}
+        <section className={styles.youtubeSection}>
+          <div className={styles.container}>
+            <motion.div 
+              className={styles.youtubeContent}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className={styles.youtubeText}>
+                <h2 className={styles.youtubeTitle}>
+                  ¡Sumate a nuestra comunidad en YouTube!
+                </h2>
+                <p className={styles.youtubeDescription}>
+                  No te pierdas nuestros últimos videos
+                </p>
+              </div>
+              
+              <div className={styles.youtubeCarousel}>
+                <YouTubeAutoCarousel />
+              </div>
             </motion.div>
           </div>
         </section>

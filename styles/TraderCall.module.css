@@ -7290,6 +7290,12 @@
   position: relative;
 }
 
+.youtubeCarousel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .youtubeAutoCarousel {
   position: relative;
   display: flex;

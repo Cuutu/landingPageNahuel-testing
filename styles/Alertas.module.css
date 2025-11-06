@@ -803,12 +803,25 @@
   max-width: 500px;
   height: 300px;
   border-radius: 1rem;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  margin: 0 auto;
 }
 
-.youtubeVideoFrame { width: 100%; height: 100%; position: relative; }
-.youtubeVideoPlayer { width: 100%; height: 100%; border-radius: 1rem; }
+.youtubeVideoFrame {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.youtubeVideoPlayer {
+  width: 100%;
+  height: 100%;
+  border-radius: 1rem;
+  border: none;
+}
 
 /* Controles e indicadores del carrusel de YouTube */
 .youtubeArrowLeft,
