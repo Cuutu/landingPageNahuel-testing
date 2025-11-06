@@ -18,9 +18,10 @@ import styles from '@/styles/OperationsTable.module.css';
 interface OperationsTableProps {
   system: 'TraderCall' | 'SmartMoney';
   className?: string;
+  refreshTrigger?: number; // Cuando cambia, refresca las operaciones
 }
 
-const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '' }) => {
+const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '', refreshTrigger = 0 }) => {
   const { 
     operations, 
     summary, 
@@ -40,6 +41,13 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   useEffect(() => {
     fetchOperations(system);
   }, [system, fetchOperations]);
+
+  // Refrescar cuando cambia el refreshTrigger
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchOperations(system);
+    }
+  }, [refreshTrigger, system, fetchOperations]);
 
   const filteredOperations = operations
     .filter(op => {
@@ -281,26 +289,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         </table>
       </div>
 
-      {/* Resumen por ticker */}
-      {summary.length > 0 && (
-        <div className={styles.tickerSummary}>
-          <h3>
-            Resumen por Activo
-          </h3>
-          <div className={styles.summaryGrid}>
-            {summary.map((item) => (
-              <div key={item._id} className={styles.summaryCard}>
-                <h4>{item._id}</h4>
-                <p>{item.totalOperations} operaciones</p>
-                <p>Cantidad: {item.totalQuantity.toFixed(2)}</p>
-                <p>Monto Total: {formatCurrency(item.totalAmount)}</p>
-                <p>Precio Promedio: {formatCurrency(item.avgPrice)}</p>
-                <p>Última Operación: {formatDate(item.lastOperation)}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

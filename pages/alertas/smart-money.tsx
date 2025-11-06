@@ -551,6 +551,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [additionalImages, setAdditionalImages] = useState<CloudinaryImage[]>([]);
   const [uploadingChart, setUploadingChart] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  
+  // Estado para refrescar operaciones
+  const [refreshOperationsTrigger, setRefreshOperationsTrigger] = useState(0);
   const [realAlerts, setRealAlerts] = useState<any[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [updatingPrices, setUpdatingPrices] = useState(false);
@@ -1458,6 +1461,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setEmailImage(null);
         setShowCreateAlert(false);
         
+        // Refrescar operaciones después de crear alerta (que crea una operación de compra automáticamente)
+        setRefreshOperationsTrigger(prev => prev + 1);
+        
         alert('¡Alerta de Smart Money creada exitosamente!');
       } else {
         const error = await response.json();
@@ -1573,7 +1579,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         })
       });
       const result = await response.json();
-      if (response.ok && result.success) { await loadAlerts(); alert('✅ ¡Posición cerrada exitosamente!'); }
+      if (response.ok && result.success) { 
+        await loadAlerts();
+        // Refrescar operaciones después de cerrar posición (debería crear una operación de venta)
+        setRefreshOperationsTrigger(prev => prev + 1);
+        alert('✅ ¡Posición cerrada exitosamente!'); 
+      }
       else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
     } catch (error) {
       console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
@@ -1941,6 +1952,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setTimeout(async () => {
           await loadLiquidity();
         }, 500); // Esperar 500ms para que la DB se actualice
+        
+        // Refrescar operaciones después de venta parcial (que crea una operación de venta automáticamente)
+        setRefreshOperationsTrigger(prev => prev + 1);
         
         // Cerrar modal y limpiar estados
         setShowPartialSaleModal(false);
@@ -4257,7 +4271,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           {activeTab === 'seguimiento' && renderSeguimientoAlertas()}
           {activeTab === 'operaciones' && (
             <div className="p-6">
-              <OperationsTable system="SmartMoney" />
+              <OperationsTable system="SmartMoney" refreshTrigger={refreshOperationsTrigger} />
             </div>
           )}
           {activeTab === 'vigentes' && renderAlertasVigentes()}
