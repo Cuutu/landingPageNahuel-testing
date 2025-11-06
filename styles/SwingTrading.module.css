@@ -193,15 +193,13 @@
 
 /* Video Section */
 .heroVideo {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: relative;
+  width: 100%;
 }
 
 .videoContainer {
   position: relative;
   width: 100%;
-  max-width: 1000px;
   aspect-ratio: 16/9;
   background: #111;
   border-radius: 16px;
@@ -209,18 +207,6 @@
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
-/* Tamaños grandes */
-@media (min-width: 1280px) {
-  .videoContainer {
-    max-width: 1000px;
-  }
-}
-
-@media (min-width: 1536px) {
-  .videoContainer {
-    max-width: 1000px;
-  }
-}
 
 .videoPlayer {
   position: absolute;
