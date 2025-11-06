@@ -1510,7 +1510,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setShowCreateAlert(false);
         
         // Refrescar operaciones después de crear alerta (que crea una operación de compra automáticamente)
-        setRefreshOperationsTrigger(prev => prev + 1);
+        // Agregar delay para asegurar que la operación se guarde en la DB
+        setTimeout(() => {
+          setRefreshOperationsTrigger(prev => prev + 1);
+        }, 1000);
         
         alert('¡Alerta de Trader Call creada exitosamente!');
       } else {
@@ -1630,7 +1633,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       if (response.ok && result.success) { 
         await loadAlerts();
         // Refrescar operaciones después de cerrar posición (debería crear una operación de venta)
-        setRefreshOperationsTrigger(prev => prev + 1);
+        // Agregar delay para asegurar que la operación se guarde en la DB
+        setTimeout(() => {
+          setRefreshOperationsTrigger(prev => prev + 1);
+        }, 1000);
         alert('✅ ¡Posición cerrada exitosamente!'); 
       }
       else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
@@ -2002,7 +2008,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         }, 500); // Esperar 500ms para que la DB se actualice
         
         // Refrescar operaciones después de venta parcial (que crea una operación de venta automáticamente)
-        setRefreshOperationsTrigger(prev => prev + 1);
+        // Agregar delay para asegurar que la operación se guarde en la DB
+        setTimeout(() => {
+          setRefreshOperationsTrigger(prev => prev + 1);
+        }, 1000);
         
         // Cerrar modal y limpiar estados
         setShowPartialSaleModal(false);
@@ -4278,6 +4287,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           {activeTab === 'informes' && renderInformes()}
           {activeTab === 'comunidad' && renderComunidad()}
           {activeTab === 'faq' && renderFAQ()}
+          
+          {/* Renderizar OperationsTable siempre para que el refresh funcione, pero ocultarlo */}
+          <div style={{ display: 'none' }}>
+            <OperationsTable system="TraderCall" refreshTrigger={refreshOperationsTrigger} />
+          </div>
         </main>
       </div>
 
