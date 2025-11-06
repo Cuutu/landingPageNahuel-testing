@@ -264,18 +264,24 @@ const AlertasPage: React.FC = () => {
                 </button>
               </div>
               
-              <div className={styles.heroVideo}>
-                <div className={styles.videoPlayer}>
+              <motion.div 
+                className={styles.heroVideo}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+              >
+                <div className={styles.videoContainer}>
                   <YouTubePlayer
                     videoId="dQw4w9WgXcQ"
                     title="Alertas de Trading - Introducción"
                     autoplay={false}
                     muted={true}
                     loop={false}
+                    controls={true}
                     className={styles.videoPlayer}
                   />
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
           </div>
         </section>
