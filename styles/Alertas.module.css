@@ -77,12 +77,15 @@
 
 .heroContent {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.1fr;
   gap: 4rem;
   align-items: center;
   position: relative;
   z-index: 2;
   width: 100%;
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 0 1rem;
 }
 
 .heroText {
@@ -125,9 +128,6 @@
 .heroVideo {
   position: relative;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .videoContainer {
