@@ -11,6 +11,7 @@ interface LiquiditySummaryResponse {
     liquidezDistribuida: number;  // Lo que SÍ está asignado a alertas
     ganancia: number;             // Resultado neto (puede ser positivo o negativo)
     gananciaPorcentaje: number;   // Porcentaje de ganancia sobre la inicial
+    porcentajeRestante: number;   // ✅ NUEVO: % restante = (Distribuida * 100) / Inicial
     distributions: Array<{
       alertId: string;
       symbol: string;
@@ -101,12 +102,13 @@ export default async function handler(
       }
     }
     
-    // ✅ CORREGIDO: Sumar los totales, disponibles, distribuidos y ganancias de TODOS los documentos
-    // Pero la liquidez inicial es UN SOLO valor global (no se suma)
+    // ✅ CORREGIDO: Sumar solo las distribuciones y ganancias de TODOS los documentos
+    // Todos los cálculos se basan en la liquidez inicial GLOBAL
     liquidityDocs.forEach((doc) => {
-      liquidezTotalSum += doc.totalLiquidity || 0;
-      liquidezDisponibleSum += doc.availableLiquidity || 0;
+      // Sumar solo la liquidez distribuida (de todas las distribuciones activas)
       liquidezDistribuidaSum += doc.distributedLiquidity || 0;
+      
+      // Sumar todas las ganancias/pérdidas (realizadas + no realizadas)
       gananciaTotalSum += doc.totalProfitLoss || 0;
 
       const activeDistributions = (doc.distributions || [])
@@ -148,9 +150,21 @@ export default async function handler(
 
     const consolidatedDistributions = Array.from(distributionMap.values());
 
+    // ✅ CORREGIDO: Calcular todo en base a la liquidez inicial GLOBAL
+    // Liquidez Total = Inicial + Ganancias/Pérdidas
+    liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
+    
+    // Liquidez Disponible = Total - Distribuida
+    liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
+
     // Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
     const gananciaPorcentaje = liquidezInicialGlobal > 0 
       ? (gananciaTotalSum / liquidezInicialGlobal) * 100 
+      : 0;
+
+    // ✅ NUEVO: Calcular % restante = (Liquidez distribuida * 100) / Liquidez inicial
+    const porcentajeRestante = liquidezInicialGlobal > 0 
+      ? (liquidezDistribuidaSum * 100) / liquidezInicialGlobal 
       : 0;
 
     console.log(`📊 [LIQUIDITY SUMMARY] Resumen calculado para ${pool}:`, {
@@ -160,6 +174,7 @@ export default async function handler(
       liquidezDistribuida: liquidezDistribuidaSum,
       ganancia: gananciaTotalSum,
       gananciaPorcentaje,
+      porcentajeRestante,
       distributionsCount: consolidatedDistributions.length
     });
 
@@ -170,6 +185,7 @@ export default async function handler(
       liquidezDistribuida: liquidezDistribuidaSum,
       ganancia: gananciaTotalSum,
       gananciaPorcentaje,
+      porcentajeRestante,  // ✅ NUEVO: % restante
       distributions: consolidatedDistributions
     };
 

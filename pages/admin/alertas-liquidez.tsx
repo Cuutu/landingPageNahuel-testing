@@ -41,6 +41,7 @@ interface LiquiditySummary {
   liquidezDistribuida: number;
   ganancia: number;
   gananciaPorcentaje: number;
+  porcentajeRestante: number;  // ✅ NUEVO: % restante
   distributions: Array<{
     alertId: string;
     symbol: string;
@@ -487,12 +488,12 @@ const AdminLiquidityPage: React.FC = () => {
                 </div>
               </>)}
               
-              {liquidity && card(<>
+              {liquiditySummary && card(<>
                 <div className={styles.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   📊 % Restante
                 </div>
                 <div className={styles.value} style={{ color: '#A855F7', fontSize: '1.5rem', fontWeight: 'bold' }}>
-                  {remainingPct.toFixed(2)}%
+                  {liquiditySummary.porcentajeRestante.toFixed(2)}%
                 </div>
                 <div style={{ fontSize: '0.875rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '4px' }}>
                   Por distribuir

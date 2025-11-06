@@ -510,7 +510,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     liquidezDisponible: 0,
     liquidezDistribuida: 0,
     ganancia: 0,
-    gananciaPorcentaje: 0
+    gananciaPorcentaje: 0,
+    porcentajeRestante: 0  // ✅ NUEVO: % restante
   });
 
   // Estados para edición de alertas
@@ -1255,7 +1256,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             liquidezDisponible: json.data.liquidezDisponible || 0,
             liquidezDistribuida: json.data.liquidezDistribuida || 0,
             ganancia: json.data.ganancia || 0,
-            gananciaPorcentaje: json.data.gananciaPorcentaje || 0
+            gananciaPorcentaje: json.data.gananciaPorcentaje || 0,
+            porcentajeRestante: json.data.porcentajeRestante || 0  // ✅ NUEVO: % restante
           });
           
           console.log('✅ [LIQUIDITY] Resumen de liquidez cargado exitosamente:', {
