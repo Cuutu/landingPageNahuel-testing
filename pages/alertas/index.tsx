@@ -241,10 +241,20 @@ const AlertasPage: React.FC = () => {
               transition={{ duration: 0.8 }}
             >
               <div className={styles.heroText}>
-                <h1 className={styles.heroTitle}>
+                <motion.h1 
+                  className={styles.heroTitle}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                >
                   Servicio de Alertas
-                </h1>
-                <p className={styles.heroDescription}>
+                </motion.h1>
+                <motion.p 
+                  className={styles.heroDescription}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.3 }}
+                >
                   Accedé a señales precisas y actualizaciones periódicas para operar en los mercados. 
                   Elegí la estrategia que mejor se ajuste a tus objetivos y mejorá tus probabilidades de éxito.
                 </p>

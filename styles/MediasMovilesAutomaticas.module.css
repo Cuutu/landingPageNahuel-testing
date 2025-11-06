@@ -94,17 +94,11 @@
 }
 
 .title {
-  font-size: 4rem;
-  line-height: 1.1;
-  font-weight: 800;
-  margin: 0 0 16px;
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  line-height: 1.2;
   color: white;
-  letter-spacing: -0.02em;
-  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-  text-shadow: 
-    0 3px 6px rgba(0, 0, 0, 0.8),
-    0 6px 12px rgba(0, 0, 0, 0.6),
-    0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 .subtitle {
@@ -409,6 +403,7 @@
   }
   .featuresGrid { grid-template-columns: 1fr; }
   .title { font-size: 2.5rem; }
+  .heroText { max-width: none; }
   .subtitle { font-size: 1.1rem; }
   .heroCtas {
     flex-direction: column;
