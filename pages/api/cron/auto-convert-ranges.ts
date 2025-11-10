@@ -192,18 +192,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           unsetFields.precioMaximo = 1;
         }
         
-        // Convertir rango de venta si existe (solo si el precio está en el rango)
+        // ✅ EJECUTAR VENTA PROGRAMADA si el precio está en el rango de venta
         if (hasSellRange && shouldDiscountParticipation) {
-          updateFields.sellPrice = closePrice;
-          unsetFields.sellRangeMin = 1;
-          unsetFields.sellRangeMax = 1;
+          console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango de venta $${sellRangeMin}-$${sellRangeMax} - Ejecutando venta programada`);
           
-          // ✅ NUEVO: Descontar participación solo si el precio está en el rango
-          // Buscar información de venta parcial para obtener el porcentaje a descontar
+          // ✅ EJECUTAR VENTA PROGRAMADA: Buscar venta programada pendiente
           const liquidityData = alert.liquidityData || {};
           const partialSales = liquidityData.partialSales || [];
-          
-          // Si hay una venta parcial pendiente con rango, usar ese porcentaje
           const pendingSale = partialSales.find((sale: any) => 
             sale.priceRange && 
             sale.priceRange.min === sellRangeMin && 
@@ -211,20 +206,141 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             !sale.executed
           );
           
-          if (pendingSale && pendingSale.percentage) {
-            // Ya existe una venta parcial configurada, solo marcar como ejecutada
-            console.log(`✅ ${alert.symbol}: Venta parcial de ${pendingSale.percentage}% ya estaba configurada - Solo marcando como ejecutada`);
-            // La participación ya fue descontada cuando se creó la venta parcial
+          if (pendingSale) {
+            try {
+              // ✅ EJECUTAR LA VENTA PROGRAMADA
+              const percentage = pendingSale.percentage || 0;
+              const sharesToSell = pendingSale.sharesToSell || 0;
+              const entryPrice = alert.entryPrice || closePrice;
+              const profitPerShare = closePrice - entryPrice;
+              const liquidityReleased = sharesToSell * closePrice;
+              const realizedProfit = sharesToSell * profitPerShare;
+              
+              // Actualizar la venta como ejecutada
+              pendingSale.executed = true;
+              pendingSale.executedAt = new Date();
+              pendingSale.sellPrice = closePrice; // Precio real de ejecución
+              pendingSale.liquidityReleased = liquidityReleased; // Liquidez real liberada
+              pendingSale.realizedProfit = realizedProfit; // Ganancia real
+              
+              // Actualizar liquidez de la alerta
+              const currentShares = liquidityData.shares || 0;
+              const sharesRemaining = currentShares - sharesToSell;
+              const newAllocatedAmount = sharesRemaining * entryPrice;
+              
+              // Actualizar participación
+              const originalPercentage = alert.originalParticipationPercentage || 100;
+              const newParticipationPercentage = Math.max(0, originalPercentage - percentage);
+              alert.participationPercentage = newParticipationPercentage;
+              
+              // Actualizar liquidez de la alerta
+              alert.liquidityData = {
+                ...liquidityData,
+                allocatedAmount: newAllocatedAmount,
+                shares: sharesRemaining,
+                partialSales: partialSales
+              };
+              
+              // Si se vendió todo, cerrar la alerta
+              if (sharesRemaining <= 0 || alert.participationPercentage <= 0) {
+                alert.status = 'CLOSED';
+                alert.exitPrice = closePrice;
+                alert.exitDate = new Date();
+                alert.exitReason = 'MANUAL';
+                alert.participationPercentage = 0;
+                console.log(`🔒 ${alert.symbol}: Alerta cerrada completamente después de ejecutar venta programada`);
+              }
+              
+              // ✅ ACTUALIZAR SISTEMA DE LIQUIDEZ
+              const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+              const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+              const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+              
+              if (adminUser) {
+                const LiquidityModule = await import('@/models/Liquidity');
+                const Liquidity = LiquidityModule.default;
+                const liquidity = await Liquidity.findOne({ 
+                  createdBy: adminUser._id, 
+                  pool: pool 
+                });
+                
+                if (liquidity) {
+                  const { realized, returnedCash, remainingShares } = liquidity.sellShares(alert._id.toString(), sharesToSell, closePrice);
+                  
+                  // Si se cerró completamente, remover la distribución
+                  if (remainingShares <= 0) {
+                    liquidity.removeDistribution(alert._id.toString());
+                    console.log(`🗑️ ${alert.symbol}: Distribución removida - posición cerrada completamente`);
+                  }
+                  
+                  await liquidity.save();
+                  console.log(`✅ ${alert.symbol}: Sistema de liquidez actualizado - +$${returnedCash.toFixed(2)} liberados`);
+                  
+                  // Registrar operación de venta
+                  try {
+                    const OperationModule = await import('@/models/Operation');
+                    const Operation = OperationModule.default;
+                    
+                    const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+                      .sort({ date: -1 })
+                      .select('balance');
+                    const currentBalance = currentBalanceDoc?.balance || 0;
+                    const newBalance = currentBalance + returnedCash;
+                    
+                    const operation = new Operation({
+                      ticker: alert.symbol.toUpperCase(),
+                      operationType: 'VENTA',
+                      quantity: -sharesToSell,
+                      price: closePrice,
+                      amount: liquidityReleased,
+                      date: new Date(),
+                      balance: newBalance,
+                      alertId: alert._id,
+                      alertSymbol: alert.symbol.toUpperCase(),
+                      system: pool,
+                      createdBy: adminUser._id,
+                      isPartialSale: percentage < 100,
+                      partialSalePercentage: percentage,
+                      originalQuantity: liquidityData.originalShares || currentShares,
+                      liquidityData: {
+                        allocatedAmount: newAllocatedAmount,
+                        shares: sharesRemaining,
+                        entryPrice: entryPrice,
+                        realizedProfit: realizedProfit
+                      },
+                      executedBy: 'SYSTEM',
+                      executionMethod: 'AUTOMATIC',
+                      notes: `Venta programada ejecutada automáticamente (${percentage}%) - ${alert.symbol}`
+                    });
+                    
+                    await operation.save();
+                    console.log(`✅ ${alert.symbol}: Operación de venta programada registrada`);
+                  } catch (operationError) {
+                    console.error(`⚠️ Error registrando operación de venta programada para ${alert.symbol}:`, operationError);
+                  }
+                }
+              }
+              
+              // Limpiar el rango de venta después de ejecutar
+              updateFields.sellPrice = closePrice;
+              unsetFields.sellRangeMin = 1;
+              unsetFields.sellRangeMax = 1;
+              
+              console.log(`✅ ${alert.symbol}: Venta programada ejecutada exitosamente - ${percentage}% vendido a $${closePrice}`);
+            } catch (saleError) {
+              console.error(`❌ Error ejecutando venta programada para ${alert.symbol}:`, saleError);
+            }
           } else {
-            console.log(`⚠️ ${alert.symbol}: No hay venta parcial pendiente para este rango - NO se descuenta participación automáticamente`);
+            console.log(`⚠️ ${alert.symbol}: No se encontró venta programada pendiente para este rango`);
+            // Limpiar el rango aunque no haya venta programada
+            unsetFields.sellRangeMin = 1;
+            unsetFields.sellRangeMax = 1;
           }
         } else if (hasSellRange && !shouldDiscountParticipation) {
-          // Si el precio NO está en el rango de venta, NO descontar participación
-          // Solo limpiar el rango pero mantener la participación
-          console.log(`⚠️ ${alert.symbol}: Precio fuera del rango de venta - Limpiando rango pero MANTENIENDO participación`);
-          unsetFields.sellRangeMin = 1;
-          unsetFields.sellRangeMax = 1;
-          // NO actualizar sellPrice porque la venta no se ejecutó
+          // Si el precio NO está en el rango de venta, NO ejecutar la venta
+          // Mantener el rango y la venta programada para la próxima ejecución del CRON
+          console.log(`⏳ ${alert.symbol}: Precio $${closePrice} está FUERA del rango de venta $${sellRangeMin}-$${sellRangeMax} - Venta programada NO ejecutada (se mantiene programada)`);
+          // NO limpiar el rango - mantener la venta programada
         }
 
         // Actualizar en una sola operación

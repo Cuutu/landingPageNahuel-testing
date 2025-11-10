@@ -271,154 +271,203 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
     
-    // ✅ NUEVO: Guardar el rango de venta en la alerta
-    if (notificationPriceRange) {
+    // ✅ NUEVO: Si hay rango de venta, NO ejecutar la venta inmediatamente
+    // Solo programarla para ejecutarse cuando el precio llegue al rango
+    const hasSellRange = notificationPriceRange && notificationPriceRange.min && notificationPriceRange.max;
+    
+    if (hasSellRange && notificationPriceRange) {
+      // ✅ PROGRAMAR VENTA: Guardar el rango de venta y los datos de la venta programada
       alert.sellRangeMin = notificationPriceRange.min;
       alert.sellRangeMax = notificationPriceRange.max;
-      console.log(`💾 Guardando rango de venta en alerta: $${notificationPriceRange.min} - $${notificationPriceRange.max}`);
-    }
-    
-    // ✅ NUEVO: Guardar información de liquidez mejorada
-    alert.liquidityData = {
-      ...liquidityData,
-      allocatedAmount: newAllocatedAmount,
-      shares: sharesRemaining,
-      // Guardar el monto original para referencia (importante para ventas futuras)
-      originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
-      originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
-      // Guardar el porcentaje de participación original
-      originalParticipationPercentage: alert.originalParticipationPercentage || 100,
-      partialSales: [
-        ...(liquidityData.partialSales || []),
-        {
-          date: new Date(),
-          percentage: percentage,
-          sharesToSell: sharesToSell,
-          sellPrice: sellPrice,
-          liquidityReleased: liquidityReleased,
-          realizedProfit: realizedProfit,
-          executedBy: session.user.email,
-          priceRange: notificationPriceRange || null,
-          emailMessage: emailMessage || null,
-          emailImageUrl: emailImageUrl || null,
-          isCompleteSale: isCompleteSale
-        }
-      ]
-    };
+      console.log(`📅 VENTA PROGRAMADA: Guardando rango de venta en alerta: $${notificationPriceRange.min} - $${notificationPriceRange.max}`);
+      console.log(`⏳ La venta se ejecutará automáticamente cuando el precio llegue al rango (CRON: auto-convert-ranges)`);
+      
+      // ✅ NUEVO: Guardar información de venta programada (NO ejecutada)
+      // NO modificar allocatedAmount ni shares todavía - se mantienen iguales
+      alert.liquidityData = {
+        ...liquidityData,
+        allocatedAmount: allocatedAmount, // Mantener la liquidez asignada
+        shares: shares, // Mantener todas las acciones
+        // Guardar el monto original para referencia (importante para ventas futuras)
+        originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
+        originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
+        // Guardar el porcentaje de participación original
+        originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+        partialSales: [
+          ...(liquidityData.partialSales || []),
+          {
+            date: new Date(),
+            percentage: percentage,
+            sharesToSell: sharesToSell,
+            sellPrice: sellPrice, // Precio estimado, se usará el precio real cuando se ejecute
+            liquidityReleased: liquidityReleased, // Estimado, se calculará cuando se ejecute
+            realizedProfit: realizedProfit, // Estimado, se calculará cuando se ejecute
+            executedBy: session.user.email,
+            priceRange: notificationPriceRange,
+            emailMessage: emailMessage || null,
+            emailImageUrl: emailImageUrl || null,
+            isCompleteSale: isCompleteSale,
+            executed: false, // ✅ NUEVO: Marcar como NO ejecutada
+            scheduledAt: new Date() // ✅ NUEVO: Fecha de programación
+          }
+        ]
+      };
+      
+      // ✅ NO cerrar la alerta ni modificar participación - se mantiene activa
+      console.log(`✅ Venta programada: La alerta seguirá visible hasta que se ejecute la venta en el rango`);
+      console.log(`💰 Liquidez NO liberada todavía - se liberará cuando se ejecute la venta en auto-convert-ranges`);
+      
+    } else {
+      // ✅ SIN RANGO: Ejecutar la venta inmediatamente (comportamiento anterior)
+      console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
+      
+      // ✅ NUEVO: Guardar información de liquidez mejorada
+      alert.liquidityData = {
+        ...liquidityData,
+        allocatedAmount: newAllocatedAmount,
+        shares: sharesRemaining,
+        // Guardar el monto original para referencia (importante para ventas futuras)
+        originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
+        originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
+        // Guardar el porcentaje de participación original
+        originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+        partialSales: [
+          ...(liquidityData.partialSales || []),
+          {
+            date: new Date(),
+            percentage: percentage,
+            sharesToSell: sharesToSell,
+            sellPrice: sellPrice,
+            liquidityReleased: liquidityReleased,
+            realizedProfit: realizedProfit,
+            executedBy: session.user.email,
+            priceRange: null,
+            emailMessage: emailMessage || null,
+            emailImageUrl: emailImageUrl || null,
+            isCompleteSale: isCompleteSale,
+            executed: true, // ✅ Ejecutada inmediatamente
+            executedAt: new Date() // ✅ Fecha de ejecución
+          }
+        ]
+      };
 
-    // Si se vendió todo (100% o situación similar), cerrar la alerta
-    if (sharesRemaining <= 0 || alert.participationPercentage <= 0) {
-      alert.status = 'CLOSED';
-      alert.exitPrice = sellPrice; // Usar el valor numérico, no el string
-      alert.exitDate = new Date();
-      alert.exitReason = 'MANUAL';
-      alert.participationPercentage = 0; // Asegurar que esté en 0
-      console.log(`🔒 Alerta cerrada completamente - participación: ${alert.participationPercentage}%`);
+      // Si se vendió todo (100% o situación similar), cerrar la alerta
+      if (sharesRemaining <= 0 || alert.participationPercentage <= 0) {
+        alert.status = 'CLOSED';
+        alert.exitPrice = sellPrice; // Usar el valor numérico, no el string
+        alert.exitDate = new Date();
+        alert.exitReason = 'MANUAL';
+        alert.participationPercentage = 0; // Asegurar que esté en 0
+        console.log(`🔒 Alerta cerrada completamente - participación: ${alert.participationPercentage}%`);
+      }
     }
 
     await alert.save();
 
-    // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ DIRECTAMENTE
-    try {
-      console.log(`🔄 Actualizando sistema de liquidez para ${tipo}...`);
-      
-      // Buscar directamente en la base de datos
-      const liquidity = await Liquidity.findOne({ 
-        createdBy: user._id, 
-        pool: tipo 
-      });
-      
-      if (liquidity && liquidity.distributions) {
-        // Encontrar y actualizar la distribución correspondiente
-        const distributionIndex = liquidity.distributions.findIndex(
-          (d: any) => d.alertId.toString() === alertId.toString()
-        );
+    // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ SOLO SI NO HAY RANGO (venta inmediata)
+    if (!hasSellRange) {
+      // ✅ ACTUALIZAR EL SISTEMA DE LIQUIDEZ DIRECTAMENTE
+      try {
+        console.log(`🔄 Actualizando sistema de liquidez para ${tipo}...`);
         
-        if (distributionIndex !== -1) {
-          console.log(`📝 Actualizando distribución en índice ${distributionIndex}`);
+        // Buscar directamente en la base de datos
+        const liquidity = await Liquidity.findOne({ 
+          createdBy: user._id, 
+          pool: tipo 
+        });
+        
+        if (liquidity && liquidity.distributions) {
+          // Encontrar y actualizar la distribución correspondiente
+          const distributionIndex = liquidity.distributions.findIndex(
+            (d: any) => d.alertId.toString() === alertId.toString()
+          );
           
-          // ✅ NUEVO: Actualizar la distribución usando el método sellShares del modelo
-          const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, sharesToSell, sellPrice);
-          
-          console.log(`📊 Venta ejecutada en sistema de liquidez:`);
-          console.log(`💰 Ganancia realizada: $${realized.toFixed(2)}`);
-          console.log(`💵 Efectivo devuelto: $${returnedCash.toFixed(2)}`);
-          console.log(`📈 Acciones restantes: ${remainingShares.toFixed(4)}`);
-          
-          // Si se cerró completamente, remover la distribución
-          if (remainingShares <= 0) {
-            liquidity.removeDistribution(alertId);
-            console.log(`🗑️ Distribución removida - posición cerrada completamente`);
-          }
+          if (distributionIndex !== -1) {
+            console.log(`📝 Actualizando distribución en índice ${distributionIndex}`);
+            
+            // ✅ NUEVO: Actualizar la distribución usando el método sellShares del modelo
+            const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, sharesToSell, sellPrice);
+            
+            console.log(`📊 Venta ejecutada en sistema de liquidez:`);
+            console.log(`💰 Ganancia realizada: $${realized.toFixed(2)}`);
+            console.log(`💵 Efectivo devuelto: $${returnedCash.toFixed(2)}`);
+            console.log(`📈 Acciones restantes: ${remainingShares.toFixed(4)}`);
+            
+            // Si se cerró completamente, remover la distribución
+            if (remainingShares <= 0) {
+              liquidity.removeDistribution(alertId);
+              console.log(`🗑️ Distribución removida - posición cerrada completamente`);
+            }
 
-          // ✅ NUEVO: Registrar operación de venta automáticamente
-          try {
-            const OperationModule = await import('@/models/Operation');
-            const Operation = OperationModule.default;
-            
-            // ✅ CORREGIDO: Usar el ADMIN_EMAIL para asegurar que las operaciones se vean en la lista
-            // Esto es importante porque list.ts busca operaciones por ADMIN_EMAIL
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-            const adminUser = await User.findOne({ email: ADMIN_EMAIL });
-            
-            if (!adminUser) {
-              console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
-              throw new Error('Admin user not found');
+            // ✅ NUEVO: Registrar operación de venta automáticamente
+            try {
+              const OperationModule = await import('@/models/Operation');
+              const Operation = OperationModule.default;
+              
+              // ✅ CORREGIDO: Usar el ADMIN_EMAIL para asegurar que las operaciones se vean en la lista
+              // Esto es importante porque list.ts busca operaciones por ADMIN_EMAIL
+              const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+              const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+              
+              if (!adminUser) {
+                console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+                throw new Error('Admin user not found');
+              }
+              
+              // Obtener balance actual del admin para este sistema
+              const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: tipo })
+                .sort({ date: -1 })
+                .select('balance');
+              const currentBalance = currentBalanceDoc?.balance || 0;
+              const newBalance = currentBalance + liquidityReleased;
+
+              const operation = new Operation({
+                ticker: alert.symbol.toUpperCase(),
+                operationType: 'VENTA',
+                quantity: -sharesToSell, // Negativo para ventas
+                price: sellPrice,
+                amount: liquidityReleased,
+                date: new Date(),
+                balance: newBalance,
+                alertId: alert._id,
+                alertSymbol: alert.symbol.toUpperCase(),
+                system: tipo,
+                createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
+                isPartialSale: !isCompleteSale,
+                partialSalePercentage: percentage,
+                originalQuantity: alert.liquidityData?.originalShares || shares,
+                liquidityData: {
+                  allocatedAmount: newAllocatedAmount,
+                  shares: sharesRemaining,
+                  entryPrice: entryPrice,
+                  realizedProfit: realizedProfit
+                },
+                executedBy: session.user.email,
+                executionMethod: 'ADMIN',
+                notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) - ${alert.symbol}`
+              });
+
+              await operation.save();
+              console.log(`✅ Operación de venta registrada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones por $${sellPrice}`);
+            } catch (operationError) {
+              console.error('⚠️ Error registrando operación de venta:', operationError);
+              // No fallar la venta por un error en la operación
             }
             
-            // Obtener balance actual del admin para este sistema
-            const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: tipo })
-              .sort({ date: -1 })
-              .select('balance');
-            const currentBalance = currentBalanceDoc?.balance || 0;
-            const newBalance = currentBalance + liquidityReleased;
-
-            const operation = new Operation({
-              ticker: alert.symbol.toUpperCase(),
-              operationType: 'VENTA',
-              quantity: -sharesToSell, // Negativo para ventas
-              price: sellPrice,
-              amount: liquidityReleased,
-              date: new Date(),
-              balance: newBalance,
-              alertId: alert._id,
-              alertSymbol: alert.symbol.toUpperCase(),
-              system: tipo,
-              createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
-              isPartialSale: !isCompleteSale,
-              partialSalePercentage: percentage,
-              originalQuantity: alert.liquidityData?.originalShares || shares,
-              liquidityData: {
-                allocatedAmount: newAllocatedAmount,
-                shares: sharesRemaining,
-                entryPrice: entryPrice,
-                realizedProfit: realizedProfit
-              },
-              executedBy: session.user.email,
-              executionMethod: 'ADMIN',
-              notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) - ${alert.symbol}`
-            });
-
-            await operation.save();
-            console.log(`✅ Operación de venta registrada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones por $${sellPrice}`);
-          } catch (operationError) {
-            console.error('⚠️ Error registrando operación de venta:', operationError);
-            // No fallar la venta por un error en la operación
+            // Guardar cambios directamente en la base de datos
+            await liquidity.save();
+            
+            console.log(`✅ Sistema de liquidez actualizado: +$${liquidityReleased.toFixed(2)} liberados`);
+            console.log(`💰 Nueva liquidez total: $${liquidity.totalLiquidity.toFixed(2)}`);
+          } else {
+            console.log(`⚠️ No se encontró distribución para actualizar (alertId: ${alertId})`);
           }
-          
-          // Guardar cambios directamente en la base de datos
-          await liquidity.save();
-          
-          console.log(`✅ Sistema de liquidez actualizado: +$${liquidityReleased.toFixed(2)} liberados`);
-          console.log(`💰 Nueva liquidez total: $${liquidity.totalLiquidity.toFixed(2)}`);
         } else {
-          console.log(`⚠️ No se encontró distribución para actualizar (alertId: ${alertId})`);
+          console.log(`⚠️ No se encontró documento de liquidez para actualizar`);
         }
-      } else {
-        console.log(`⚠️ No se encontró documento de liquidez para actualizar`);
+      } catch (error) {
+        console.log('⚠️ Error sincronizando con sistema de liquidez:', error);
       }
-    } catch (error) {
-      console.log('⚠️ Error sincronizando con sistema de liquidez:', error);
     }
 
     // ✅ ENVIAR NOTIFICACIÓN POR EMAIL SI SE ESPECIFICÓ
