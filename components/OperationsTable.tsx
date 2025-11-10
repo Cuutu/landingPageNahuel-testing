@@ -272,9 +272,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     {formatCurrency(operation.price)}
                   </td>
                   <td>
-                    <div className={operation.amount > 0 ? styles.positive : styles.negative}>
-                      {operation.amount > 0 ? '+' : ''}{formatCurrency(operation.amount)}
-                    </div>
+                    {formatCurrency(Math.abs(operation.amount))}
                   </td>
                   <td>
                     {formatDate(operation.date)}
