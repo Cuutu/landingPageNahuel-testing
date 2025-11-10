@@ -827,7 +827,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
   };
 
-  // ✅ NUEVO: Función para cargar todas las alertas (para seguimiento) - Cache bust v2
+  // ✅ Función para cargar TODAS las alertas (para seguimiento) - Todas las alertas aparecen en seguimiento
   const loadSeguimientoAlerts = async () => {
     console.log('🔄 Cargando alertas de seguimiento SmartMoney - versión actualizada');
     setLoadingAlerts(true);
@@ -2565,7 +2565,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // Mostrar TODAS las alertas activas para seguimiento (tanto marcadas como desmarcadas)
+    // ✅ NUEVA LÓGICA: Mostrar TODAS las alertas activas en seguimiento (marcadas y desmarcadas)
+    // Todas las alertas aparecen en Seguimiento, independientemente del checkbox
     // Los clientes deben poder seguir cualquier alerta que hayan comprado
     // ✅ NUEVO: Incluir alertas descartadas del día actual
     const today = new Date();
@@ -2573,13 +2574,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     
     const alertasEnSeguimiento = realAlerts.filter(alert => {
-      // ✅ CORREGIDO: Excluir TODAS las alertas que están disponibles para compra (sin importar el tipo)
-      // Esas alertas deben aparecer SOLO en "Alertas Vigentes"
-      if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
-        return false;
-      }
-
-      // Incluir alertas activas que NO estén marcadas como disponibles para compra
+      // ✅ NUEVA LÓGICA: Incluir TODAS las alertas activas (marcadas y desmarcadas)
+      // Todas las alertas aparecen en Seguimiento
       if (alert.status === 'ACTIVE') {
         return true;
       }
@@ -2598,7 +2594,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.seguimientoHeader}>
           <h2 className={styles.sectionTitle}>🎯 Seguimiento de Alertas</h2>
           <p className={styles.sectionDescription}>
-            Alertas de precio fijo en seguimiento y alertas descartadas del día actual
+            Todas las alertas activas (marcadas y desmarcadas) aparecen aquí para seguimiento
           </p>
           <div className={styles.chartControls}>
             {userRole === 'admin' && (
@@ -2652,7 +2648,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           <div className={styles.emptyState}>
             <div className={styles.emptyIcon}>📊</div>
             <h3>No hay alertas en seguimiento</h3>
-            <p>Las alertas que muevas desde "Alertas Vigentes" aparecerán aquí para su seguimiento.</p>
+            <p>Todas las alertas activas aparecen automáticamente aquí para su seguimiento.</p>
             {userRole === 'admin' && (
               <button 
                 className={styles.createFirstAlertButton}
@@ -3791,8 +3787,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 </span>
               </label>
               <p className={styles.checkboxDescription}>
-                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes)<br/>
-                <strong>Desmarcado:</strong> La alerta se mueve a "Seguimiento" (solo para clientes que ya la compraron)
+                <strong>Marcado:</strong> La alerta aparece en "Alertas Vigentes" (disponible para nuevos clientes) y también en "Seguimiento"<br/>
+                <strong>Desmarcado:</strong> La alerta aparece solo en "Seguimiento" (todas las alertas aparecen en Seguimiento)
               </p>
             </div>
           </div>
