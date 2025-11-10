@@ -865,8 +865,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       } else if (activeTab === 'seguimiento') {
         await loadSeguimientoAlerts();
       } else {
-        // Para dashboard, cargar alertas vigentes por defecto
-        await loadVigentesAlerts();
+        // ✅ CORREGIDO: Para dashboard, cargar TODAS las alertas activas (necesario para el gráfico de torta)
+        // El gráfico necesita todas las alertas activas con liquidez, no solo las vigentes
+        await loadSeguimientoAlerts();
       }
     } catch (error) {
       console.error('Error cargando alertas:', error);

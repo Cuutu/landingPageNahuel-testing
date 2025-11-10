@@ -914,8 +914,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       } else if (activeTab === 'seguimiento') {
         await loadSeguimientoAlerts();
       } else {
-        // Para dashboard, cargar alertas vigentes por defecto
-        await loadVigentesAlerts();
+        // ✅ CORREGIDO: Para dashboard, cargar TODAS las alertas activas (necesario para el gráfico de torta)
+        // El gráfico necesita todas las alertas activas con liquidez, no solo las vigentes
+        await loadSeguimientoAlerts();
       }
     } catch (error) {
       console.error('Error cargando alertas:', error);
@@ -2223,55 +2224,58 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
     ];
 
-    // Construir base desde las asignaciones de liquidez activas
-    const activeDistributions = Object.values(liquidityMap || {})
-      .filter((d: any) => d && d.allocatedAmount > 0);
-
-    console.log('📊 [PIE CHART] Distribuciones activas encontradas:', activeDistributions.length);
-
-    // ✅ CORREGIDO: Filtrar solo distribuciones de alertas ACTIVAS
-    const activeDistributionsWithActiveAlerts = activeDistributions.filter((d: any) => {
-      const alert = (realAlerts || []).find((a: any) => a.symbol === d.symbol);
-      const isActive = alert && alert.status === 'ACTIVE';
-      if (isActive) {
-        console.log(`✅ [PIE CHART] Alerta activa encontrada: ${d.symbol} - $${d.allocatedAmount}`);
+    // ✅ CORREGIDO: Filtrar TODAS las alertas activas con liquidez asignada
+    // Empezar desde las alertas y verificar si tienen liquidez (más confiable)
+    const activeAlertsWithLiquidity = alerts.filter(alert => {
+      const liquidity = liquidityMap?.[alert.symbol];
+      const hasLiquidity = liquidity && liquidity.allocatedAmount > 0;
+      const isActive = alert.status === 'ACTIVE';
+      
+      if (isActive && hasLiquidity) {
+        console.log(`✅ [PIE CHART] Alerta activa con liquidez: ${alert.symbol} - $${liquidity.allocatedAmount}`);
+      } else if (isActive && !hasLiquidity) {
+        console.log(`⚠️ [PIE CHART] Alerta activa SIN liquidez: ${alert.symbol}`);
       }
-      return isActive;
+      
+      return isActive && hasLiquidity;
     });
 
-    console.log('📊 [PIE CHART] Distribuciones con alertas activas:', activeDistributionsWithActiveAlerts.length);
+    console.log('📊 [PIE CHART] Alertas activas con liquidez:', activeAlertsWithLiquidity.length);
 
-    // Mapear distribuciones a segmentos (solo símbolos con liquidez asignada y alertas activas)
-    const chartData = activeDistributionsWithActiveAlerts.map((d: any, index: number) => {
-      const symbol = d.symbol;
-      const allocated = Number(d.allocatedAmount || 0);
-      const alert = (realAlerts || []).find((a: any) => a.symbol === symbol);
-      const profitValue = alert ? (typeof alert.profit === 'string' 
+    // Preparar datos para el gráfico de torta 3D - TODAS las alertas activas con liquidez
+    const chartData = activeAlertsWithLiquidity.map((alert, index) => {
+      const profitValue = typeof alert.profit === 'string' 
         ? parseFloat(alert.profit.replace(/[+%]/g, ''))
-        : Number(alert.profit) || 0) : 0;
+        : Number(alert.profit) || 0;
+      const liquidity = liquidityMap?.[alert.symbol];
+      const allocated = Number(liquidity?.allocatedAmount || 0);
       
-      // ✅ CORREGIDO: Usar el precio actual de la alerta en lugar del precio del liquidityMap
-      // El precio del liquidityMap puede estar desactualizado
-      const currentPrice = alert?.currentPrice ? 
+      // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
+      // El precio actual viene como string con formato "$XX.XX" desde la API
+      const currentPrice = alert.currentPrice ? 
         (typeof alert.currentPrice === 'string' 
           ? parseFloat(alert.currentPrice.replace('$', ''))
           : Number(alert.currentPrice) || 0) 
-        : d.currentPrice;
+        : 0;
       
       return {
-        id: d.alertId || symbol,
-        symbol,
+        id: alert.id || alert._id,
+        symbol: alert.symbol,
         profit: profitValue,
-        status: 'ACTIVE',
-        entryPrice: d.entryPrice,
-        currentPrice: currentPrice, // ✅ Usar precio actualizado de la alerta
-        stopLoss: alert?.stopLoss ?? 0,
-        takeProfit: alert?.takeProfit ?? 0,
-        action: alert?.action ?? 'BUY',
-        date: alert?.date ?? '',
-        analysis: alert?.analysis ?? '',
+        status: alert.status,
+        entryPrice: alert.entryPrice || liquidity?.entryPrice,
+        // ✅ CORREGIDO: Para ventas rápidas, usar precio actual como precio efectivo
+        // Esto asegura que el P&L mostrado sea realista basado en el precio actual del mercado
+        currentPrice: currentPrice, // Precio actual (precio de venta para ventas rápidas)
+        stopLoss: alert.stopLoss,
+        takeProfit: alert.takeProfit,
+        action: alert.action,
+        date: alert.date,
+        analysis: alert.analysis,
         allocatedAmount: allocated,
+        // Color único para cada alerta
         color: colorPalette[index % colorPalette.length],
+        // Color más oscuro para efecto 3D
         darkColor: colorPalette[index % colorPalette.length] + '80'
       };
     });
