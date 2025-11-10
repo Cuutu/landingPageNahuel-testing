@@ -257,25 +257,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)} (${100-percentage}%)`);
     console.log(`💵 Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
     
-    // Actualizar la alerta con los nuevos valores
+    // ✅ NUEVO: Calcular newAllocatedAmount antes del if/else para que esté disponible en ambos casos
     const newAllocatedAmount = sharesRemaining * entryPrice;
-    
-    // ✅ NUEVO: Actualizar el porcentaje de participación correctamente
-    if (isCompleteSale) {
-      alert.participationPercentage = 0;
-    } else {
-      // Para ventas parciales, reducir el porcentaje basándose en la posición original
-      const originalPercentage = alert.originalParticipationPercentage || 100;
-      const newParticipationPercentage = Math.max(0, originalPercentage - percentage);
-      alert.participationPercentage = newParticipationPercentage;
-    }
-    console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
     
     // ✅ NUEVO: Si hay rango de venta, NO ejecutar la venta inmediatamente
     // Solo programarla para ejecutarse cuando el precio llegue al rango
     const hasSellRange = notificationPriceRange && notificationPriceRange.min && notificationPriceRange.max;
     
     if (hasSellRange && notificationPriceRange) {
+      // ✅ NO descontar participación todavía - se descontará cuando se ejecute la venta
       // ✅ PROGRAMAR VENTA: Guardar el rango de venta y los datos de la venta programada
       alert.sellRangeMin = notificationPriceRange.min;
       alert.sellRangeMax = notificationPriceRange.max;
@@ -317,9 +307,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log(`✅ Venta programada: La alerta seguirá visible hasta que se ejecute la venta en el rango`);
       console.log(`💰 Liquidez NO liberada todavía - se liberará cuando se ejecute la venta en auto-convert-ranges`);
       
+      // ✅ NUEVO: Enviar email inmediatamente cuando se programa la venta (no esperar al cierre)
+      try {
+        console.log(`📧 Enviando email de VENTA PROGRAMADA para alerta ${alert.symbol}...`);
+        
+        // Construir el mensaje de notificación
+        const notificationMessage = emailMessage || 
+          `Venta programada para ${alert.symbol}: Se venderá el ${percentage}% de la posición cuando el precio llegue al rango de $${notificationPriceRange.min} a $${notificationPriceRange.max}. ` +
+          `La venta se ejecutará automáticamente cuando el precio esté en el rango.`;
+        
+        // Importar y usar la función de notificaciones
+        const { notifyAlertSubscribers } = await import('../../../lib/notificationUtils');
+        
+        // Enviar notificación usando el sistema existente
+        await notifyAlertSubscribers(alert, {
+          message: notificationMessage,
+          imageUrl: emailImageUrl || undefined,
+          title: `📅 Venta Programada - ${alert.symbol}`,
+          action: 'SELL', // ✅ Asegurar que sea SELL
+          priceRange: notificationPriceRange,
+          soldPercentage: percentage // ✅ Pasar el porcentaje vendido
+        });
+        
+        console.log(`✅ Email de venta programada enviado exitosamente para ${alert.symbol}`);
+      } catch (emailError) {
+        console.log('⚠️ Error enviando email de venta programada:', emailError);
+        // No fallar la operación por un error de email
+      }
+      
     } else {
       // ✅ SIN RANGO: Ejecutar la venta inmediatamente (comportamiento anterior)
       console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
+      
+      // ✅ NUEVO: Actualizar el porcentaje de participación correctamente (solo para venta inmediata)
+      if (isCompleteSale) {
+        alert.participationPercentage = 0;
+      } else {
+        // Para ventas parciales, reducir el porcentaje basándose en la posición original
+        const originalPercentage = alert.originalParticipationPercentage || 100;
+        const newParticipationPercentage = Math.max(0, originalPercentage - percentage);
+        alert.participationPercentage = newParticipationPercentage;
+      }
+      console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
       
       // ✅ NUEVO: Guardar información de liquidez mejorada
       alert.liquidityData = {

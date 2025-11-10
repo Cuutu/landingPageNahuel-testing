@@ -23,6 +23,33 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     if (overrides) {
       console.log('🎛️ [ALERT NOTIFICATION] Overrides recibidos:', overrides);
     }
+    
+    // ✅ NUEVO: Obtener porcentaje de liquidez desde la distribución si no se pasa en overrides
+    let liquidityPercentage = overrides?.liquidityPercentage;
+    if (!liquidityPercentage && alert.action === 'BUY') {
+      try {
+        const LiquidityModule = await import('@/models/Liquidity');
+        const Liquidity = LiquidityModule.default;
+        
+        // Determinar el pool basado en el tipo de alerta
+        const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+        
+        // Buscar la distribución de liquidez para esta alerta
+        const liquidity = await Liquidity.findOne({ pool });
+        if (liquidity) {
+          const distribution = liquidity.distributions.find((dist: any) => 
+            dist.alertId === alert._id.toString() && dist.isActive
+          );
+          if (distribution) {
+            liquidityPercentage = distribution.percentage;
+            console.log(`📊 [ALERT NOTIFICATION] Porcentaje de liquidez obtenido desde distribución: ${liquidityPercentage}%`);
+          }
+        }
+      } catch (liquidityError) {
+        console.log('⚠️ [ALERT NOTIFICATION] Error obteniendo porcentaje de liquidez desde distribución:', liquidityError);
+        // Continuar sin porcentaje de liquidez
+      }
+    }
 
     // Determinar el grupo de usuarios basado en el tipo de alerta
     let targetUsers = 'alertas_trader'; // por defecto
@@ -143,8 +170,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertService: alert.tipo,
           automatic: true,
           imageUrl: finalImageUrl,
-          priceRange: overrides?.priceRange || null,
-          liquidityPercentage: overrides?.liquidityPercentage || null,
+          priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
+          liquidityPercentage: liquidityPercentage || null,
           soldPercentage: overrides?.soldPercentage || null
         }
       };
@@ -185,8 +212,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           alertService: alert.tipo,
           automatic: true,
           imageUrl: finalImageUrl,
-          priceRange: overrides?.priceRange || null,
-          liquidityPercentage: overrides?.liquidityPercentage || null,
+          priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
+          liquidityPercentage: liquidityPercentage || null,
           soldPercentage: overrides?.soldPercentage || null
         }
       };

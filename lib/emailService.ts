@@ -592,11 +592,13 @@ export function generateAlertEmailTemplate(
           <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Precio</div>
             <div style="font-size: 16px; color: #1e293b; font-weight: 700;">
-              ${notification.metadata.priceRange 
+              ${notification.metadata.priceRange && notification.metadata.priceRange.min != null && notification.metadata.priceRange.max != null && !isNaN(Number(notification.metadata.priceRange.min)) && !isNaN(Number(notification.metadata.priceRange.max))
                 ? `$${Number(notification.metadata.priceRange.min).toFixed(2)} - $${Number(notification.metadata.priceRange.max).toFixed(2)}`
                 : (typeof notification.metadata.alertPrice === 'string' && notification.metadata.alertPrice.includes('-')
                   ? `$${notification.metadata.alertPrice.split('-').map((p: string) => Number(p.trim()).toFixed(2)).join(' - $')}`
-                  : `$${notification.metadata.alertPrice}`)
+                  : notification.metadata.alertPrice != null && !isNaN(Number(notification.metadata.alertPrice))
+                  ? `$${Number(notification.metadata.alertPrice).toFixed(2)}`
+                  : 'N/A')
               }
             </div>
           </div>

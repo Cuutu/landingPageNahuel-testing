@@ -326,6 +326,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               unsetFields.sellRangeMin = 1;
               unsetFields.sellRangeMax = 1;
               
+              // ✅ NUEVO: Enviar email de CONFIRMACIÓN DE VENTA cuando se ejecuta la venta programada
+              try {
+                console.log(`📧 Enviando email de CONFIRMACIÓN DE VENTA para alerta ${alert.symbol}...`);
+                
+                // Obtener información de la venta ejecutada
+                const emailMessage = pendingSale.emailMessage || 
+                  `✅ VENTA EJECUTADA: Se vendió el ${percentage}% de la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. ` +
+                  `La venta se ejecutó automáticamente cuando el precio llegó al rango de $${sellRangeMin} a $${sellRangeMax}.`;
+                
+                // Importar y usar la función de notificaciones
+                const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+                
+                // Enviar notificación de confirmación
+                await notifyAlertSubscribers(alert, {
+                  message: emailMessage,
+                  imageUrl: pendingSale.emailImageUrl || undefined,
+                  title: `✅ Confirmación de Venta - ${alert.symbol}`,
+                  action: 'SELL', // ✅ Asegurar que sea SELL
+                  price: closePrice,
+                  soldPercentage: percentage // ✅ Pasar el porcentaje vendido
+                });
+                
+                console.log(`✅ Email de confirmación de venta enviado exitosamente para ${alert.symbol}`);
+              } catch (emailError) {
+                console.error(`⚠️ Error enviando email de confirmación de venta para ${alert.symbol}:`, emailError);
+                // No fallar la ejecución por un error de email
+              }
+              
               console.log(`✅ ${alert.symbol}: Venta programada ejecutada exitosamente - ${percentage}% vendido a $${closePrice}`);
             } catch (saleError) {
               console.error(`❌ Error ejecutando venta programada para ${alert.symbol}:`, saleError);
