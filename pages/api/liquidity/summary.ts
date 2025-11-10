@@ -24,6 +24,18 @@ interface LiquiditySummaryResponse {
       realizedProfitLoss?: number;
       isActive: boolean;
     }>;
+    individualDistributions?: Array<{  // ✅ NUEVO: Distribuciones individuales por alertId
+      alertId: string;
+      symbol: string;
+      allocatedAmount: number;
+      shares: number;
+      entryPrice: number;
+      currentPrice: number;
+      profitLoss: number;
+      profitLossPercentage: number;
+      realizedProfitLoss?: number;
+      isActive: boolean;
+    }>;
   };
   error?: string;
 }
@@ -186,7 +198,8 @@ export default async function handler(
       ganancia: gananciaTotalSum,
       gananciaPorcentaje,
       porcentajeRestante,  // ✅ NUEVO: % restante
-      distributions: consolidatedDistributions
+      distributions: consolidatedDistributions,  // Distribuciones consolidadas por símbolo
+      individualDistributions: allDistributions  // ✅ NUEVO: Distribuciones individuales por alertId
     };
 
     // Guardar en cache

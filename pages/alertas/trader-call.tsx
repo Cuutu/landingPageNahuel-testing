@@ -550,6 +550,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [stockPrice, setStockPrice] = useState<number | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [liquidityMap, setLiquidityMap] = useState<Record<string, { alertId: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
+  // ✅ NUEVO: Mapa de distribuciones individuales por alertId (para el gráfico de torta)
+  const [liquidityMapByAlertId, setLiquidityMapByAlertId] = useState<Record<string, { alertId: string; symbol: string; allocatedAmount: number; shares: number; entryPrice: number; currentPrice: number; profitLoss: number; profitLossPercentage: number; realizedProfitLoss: number }>>({});
   const [liquidityTotal, setLiquidityTotal] = useState<number>(0);
   
   // ✅ NUEVO: Estado para el resumen completo de liquidez
@@ -1291,13 +1293,24 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         });
         
         if (json.success && json.data) {
+          // ✅ Mapa consolidado por símbolo (para compatibilidad)
           const map: Record<string, any> = {};
           (json.data?.distributions || []).forEach((d: any) => {
             map[d.symbol] = d;
-            console.log(`📊 [LIQUIDITY] Distribución cargada: ${d.symbol} - $${d.allocatedAmount}`);
+            console.log(`📊 [LIQUIDITY] Distribución consolidada cargada: ${d.symbol} - $${d.allocatedAmount}`);
+          });
+          
+          // ✅ NUEVO: Mapa individual por alertId (para el gráfico de torta)
+          const mapByAlertId: Record<string, any> = {};
+          (json.data?.individualDistributions || []).forEach((d: any) => {
+            if (d.alertId) {
+              mapByAlertId[d.alertId] = d;
+              console.log(`📊 [LIQUIDITY] Distribución individual cargada: ${d.symbol} (alertId: ${d.alertId}) - $${d.allocatedAmount}`);
+            }
           });
           
           setLiquidityMap(map);
+          setLiquidityMapByAlertId(mapByAlertId);
           // ✅ NUEVO: Usar liquidez total del nuevo resumen
           setLiquidityTotal(Number(json.data?.liquidezTotal || 0));
           
@@ -1442,12 +1455,22 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       return;
     }
     
-    // ✅ DEBUG: Log de datos antes de enviar
+    // ✅ NUEVO: Validar que haya suficiente liquidez disponible
     const liquidityAmount = newAlert.liquidityPercentage > 0 ? (liquidityTotal * newAlert.liquidityPercentage / 100) : 0;
+    if (liquidityAmount > 0) {
+      const availableLiquidity = liquiditySummary.liquidezDisponible || 0;
+      if (liquidityAmount > availableLiquidity) {
+        alert(`❌ Liquidez insuficiente. Disponible: $${availableLiquidity.toFixed(2)}. Intenta asignar: $${liquidityAmount.toFixed(2)}`);
+        return;
+      }
+    }
+    
+    // ✅ DEBUG: Log de datos antes de enviar
     console.log('🔍 [DEBUG] Datos de liquidez antes de enviar:', {
       liquidityPercentage: newAlert.liquidityPercentage,
       liquidityTotal,
       liquidityAmount,
+      availableLiquidity: liquiditySummary.liquidezDisponible,
       symbol: newAlert.symbol.toUpperCase()
     });
     
@@ -1520,7 +1543,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       } else {
         const error = await response.json();
         console.error('❌ Error del servidor:', error);
-        alert(`Error: ${error.message || 'No se pudo crear la alerta'}`);
+        alert(`Error: ${error.error || error.message || 'No se pudo crear la alerta'}`);
       }
     } catch (error) {
       console.error('Error creating alert:', error);
@@ -2213,6 +2236,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     console.log('📊 [PIE CHART] Creando datos del gráfico de torta...', {
       alertsCount: alerts.length,
       liquidityMapKeys: Object.keys(liquidityMap || {}).length,
+      liquidityMapByAlertIdKeys: Object.keys(liquidityMapByAlertId || {}).length,
       liquidityTotal: liquidityTotal,
       liquiditySummary: liquiditySummary
     });
@@ -2224,17 +2248,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
     ];
 
-    // ✅ CORREGIDO: Filtrar TODAS las alertas activas con liquidez asignada
-    // Empezar desde las alertas y verificar si tienen liquidez (más confiable)
+    // ✅ CORREGIDO: Filtrar TODAS las alertas activas con liquidez asignada (usando alertId)
+    // Usar distribuciones individuales por alertId para mostrar cada alerta por separado
     const activeAlertsWithLiquidity = alerts.filter(alert => {
-      const liquidity = liquidityMap?.[alert.symbol];
+      const alertId = alert.id || alert._id;
+      const liquidity = liquidityMapByAlertId?.[alertId];
       const hasLiquidity = liquidity && liquidity.allocatedAmount > 0;
       const isActive = alert.status === 'ACTIVE';
       
       if (isActive && hasLiquidity) {
-        console.log(`✅ [PIE CHART] Alerta activa con liquidez: ${alert.symbol} - $${liquidity.allocatedAmount}`);
+        console.log(`✅ [PIE CHART] Alerta activa con liquidez: ${alert.symbol} (alertId: ${alertId}) - $${liquidity.allocatedAmount}`);
       } else if (isActive && !hasLiquidity) {
-        console.log(`⚠️ [PIE CHART] Alerta activa SIN liquidez: ${alert.symbol}`);
+        console.log(`⚠️ [PIE CHART] Alerta activa SIN liquidez: ${alert.symbol} (alertId: ${alertId})`);
       }
       
       return isActive && hasLiquidity;
@@ -2244,10 +2269,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     // Preparar datos para el gráfico de torta 3D - TODAS las alertas activas con liquidez
     const chartData = activeAlertsWithLiquidity.map((alert, index) => {
+      const alertId = alert.id || alert._id;
       const profitValue = typeof alert.profit === 'string' 
         ? parseFloat(alert.profit.replace(/[+%]/g, ''))
         : Number(alert.profit) || 0;
-      const liquidity = liquidityMap?.[alert.symbol];
+      // ✅ CORREGIDO: Usar distribuciones individuales por alertId en lugar de consolidadas por símbolo
+      const liquidity = liquidityMapByAlertId?.[alertId];
       const allocated = Number(liquidity?.allocatedAmount || 0);
       
       // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
@@ -2259,7 +2286,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         : 0;
       
       return {
-        id: alert.id || alert._id,
+        id: alertId || alert.id || alert._id,
         symbol: alert.symbol,
         profit: profitValue,
         status: alert.status,

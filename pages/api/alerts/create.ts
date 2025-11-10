@@ -242,6 +242,47 @@ export default async function handler(
         // Determinar el pool según el tipo de alerta
         const pool = tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
         
+        // ✅ NUEVO: Calcular liquidez disponible del pool completo antes de asignar
+        const allLiquidityDocs = await Liquidity.find({ pool }).lean();
+        
+        // Calcular liquidez disponible similar al summary
+        let liquidezInicialGlobal = 0;
+        let liquidezTotalSum = 0;
+        let liquidezDistribuidaSum = 0;
+        let gananciaTotalSum = 0;
+        
+        // Obtener liquidez inicial global (del documento más reciente)
+        const docsWithInitialLiquidity = allLiquidityDocs.filter((doc: any) => 
+          doc.initialLiquidity !== undefined && doc.initialLiquidity !== null && doc.initialLiquidity > 0
+        );
+        
+        if (docsWithInitialLiquidity.length > 0) {
+          const sortedByUpdate = [...docsWithInitialLiquidity].sort((a: any, b: any) => 
+            new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+          );
+          liquidezInicialGlobal = sortedByUpdate[0].initialLiquidity;
+        } else if (allLiquidityDocs.length > 0) {
+          const firstDoc = allLiquidityDocs[0];
+          liquidezInicialGlobal = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
+        }
+        
+        // Sumar distribuciones y ganancias de todos los documentos
+        allLiquidityDocs.forEach((doc: any) => {
+          liquidezDistribuidaSum += doc.distributedLiquidity || 0;
+          gananciaTotalSum += doc.totalProfitLoss || 0;
+        });
+        
+        // Calcular liquidez total y disponible
+        liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
+        const liquidezDisponible = liquidezTotalSum - liquidezDistribuidaSum;
+        
+        // ✅ NUEVO: Validar que haya suficiente liquidez disponible
+        if (liquidityAmount > liquidezDisponible) {
+          return res.status(400).json({ 
+            error: `Liquidez insuficiente. Disponible: $${liquidezDisponible.toFixed(2)}. Intenta asignar: $${liquidityAmount.toFixed(2)}` 
+          });
+        }
+        
         // Buscar o crear el documento de liquidez
         console.log(`🔍 [DEBUG] Buscando liquidez para usuario ${user._id} en pool ${pool}`);
         let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
