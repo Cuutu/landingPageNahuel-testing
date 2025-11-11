@@ -169,10 +169,11 @@
 
 .heroVideoPlayer {
   width: 100%;
-  aspect-ratio: 16/9;
+  height: 100%;
   border-radius: 16px;
   border: none;
   outline: none;
+  object-fit: cover;
 }
 
 /* === SECCIÓN 2: SERVICIOS - AZUL MARINO OSCURO === */
@@ -1358,7 +1359,7 @@
   }
   
   .heroVideoPlayer {
-    height: 240px;
+    height: 100%;
   }
 
   .heroButton {
@@ -1392,7 +1393,7 @@
   }
 
   .heroVideoPlayer {
-    height: 200px;
+    height: 100%;
   }
 
   .heroContent {
