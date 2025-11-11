@@ -335,6 +335,7 @@ const NonSubscriberView: React.FC<{
                     loop={!!traderHeroVideo.loop}
                     controls={true}
                     className={styles.video}
+                    fillContainer={true}
                   />
                 ) : (
                   <YouTubePlayer
@@ -345,6 +346,7 @@ const NonSubscriberView: React.FC<{
                     loop={false}
                     controls={true}
                     className={styles.video}
+                    fillContainer={true}
                   />
                 )}
               </div>

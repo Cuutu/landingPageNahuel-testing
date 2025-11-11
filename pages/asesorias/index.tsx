@@ -145,6 +145,7 @@ const AsesoriasPage: React.FC<AsesoriasPageProps> = ({ session, asesorias, faqs 
                     muted={true}
                     loop={false}
                     className={styles.videoPlayer}
+                    fillContainer={true}
                   />
                 </div>
               </div>
@@ -191,6 +192,7 @@ const AsesoriasPage: React.FC<AsesoriasPageProps> = ({ session, asesorias, faqs 
                       muted={true}
                       loop={false}
                       className={styles.videoPlayer}
+                      fillContainer={true}
                     />
                   </div>
 

@@ -24,8 +24,9 @@
   margin: 0 !important;
   background: #000;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 16px; /* Usar border-radius fijo en lugar de inherit */
   display: block !important;
+  box-sizing: border-box !important;
 }
 
 .iframe {
@@ -42,6 +43,27 @@
   padding: 0 !important;
   display: block !important;
   box-sizing: border-box !important;
+}
+
+/* Estilos adicionales para el iframe cuando está en playerContainerInContainer */
+.playerContainerInContainer .iframe {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  object-fit: fill !important;
 }
 
 

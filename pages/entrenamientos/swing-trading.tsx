@@ -932,6 +932,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                       loop={!!swingHeroVideo.loop}
                       controls={true}
                       className={styles.videoPlayer}
+                      fillContainer={true}
                     />
                   ) : (
                     <YouTubePlayer
@@ -942,6 +943,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                       loop={false}
                       controls={true}
                       className={styles.videoPlayer}
+                      fillContainer={true}
                     />
                   )}
                 </div>
