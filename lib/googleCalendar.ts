@@ -331,7 +331,7 @@ export async function createAdvisoryEvent(
   userEmail: string,
   advisoryName: string,
   startDate: Date,
-  durationMinutes: number = 60
+  durationMinutes: number = 45
 ): Promise<GoogleMeetData> {
   try {
     console.log('📅 Creando evento de asesoría en calendario del admin');

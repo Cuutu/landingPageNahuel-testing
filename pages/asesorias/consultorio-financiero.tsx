@@ -519,7 +519,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
             type: 'advisory',
             serviceType: 'ConsultorioFinanciero',
             startDate: utcDate.toISOString(),
-            duration: 60,
+            duration: 45,
             price: bookingPrice,
             notes: `Reserva desde página de Consultorio Financiero - ${selectedDate} a las ${selectedTime}`,
             userEmail: session.user?.email,
@@ -574,7 +574,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     <>
       <Head>
         <title>Consultorio Financiero - Consulta Individual Personalizada | Nahuel Lozano</title>
-        <meta name="description" content="Sesión individual de 60 minutos para optimizar tu estrategia de inversión. Análisis personalizado, recomendaciones específicas y plan de acción detallado." />
+        <meta name="description" content="Sesión individual de 45 minutos para optimizar tu estrategia de inversión. Análisis personalizado, recomendaciones específicas y plan de acción detallado." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
@@ -636,7 +636,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
           <div className={styles.reservaContainer}>
             <h2 className={styles.reservaTitle}>Próximos Turnos</h2>
             <p className={styles.reservaSubtitle}>
-              Selecciona la fecha y hora que mejor se adapte a tu agenda. Sesiones de 60 minutos para un análisis completo de tu situación financiera.
+              Selecciona la fecha y hora que mejor se adapte a tu agenda. Sesiones de 45 minutos para un análisis completo de tu situación financiera.
             </p>
             
             <div className={styles.reservaCard}>

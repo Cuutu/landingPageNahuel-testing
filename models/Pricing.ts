@@ -119,7 +119,7 @@ const PricingSchema = new Schema({
       price: { type: Number, required: true, default: 50000 },
       currency: { type: String, required: true, default: 'ARS' },
       description: { type: String, default: 'Consultorio Financiero Individual' },
-      duration: { type: String, default: '60 minutos' },
+      duration: { type: String, default: '45 minutos' },
       originalPrice: { type: Number },
       discount: { type: Number, min: 0, max: 100 }
     }

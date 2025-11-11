@@ -87,8 +87,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const requestedDateTime = new Date(targetDate);
     requestedDateTime.setHours(hour, minute, 0, 0);
 
-    // **CORREGIDO: Crear fecha de fin basada en duración estándar (60 minutos)**
-    const endDateTime = new Date(requestedDateTime.getTime() + 60 * 60000); // 60 minutos después
+    // **CORREGIDO: Crear fecha de fin basada en duración estándar (45 minutos)**
+    const endDateTime = new Date(requestedDateTime.getTime() + 45 * 60000); // 45 minutos después
 
     // **CORREGIDO: Query con la misma lógica que la API de bookings (rangos superpuestos)**
     // IMPORTANTE: NO filtrar por serviceType porque un horario ocupado es ocupado sin importar el tipo de servicio

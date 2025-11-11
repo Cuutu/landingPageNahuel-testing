@@ -575,7 +575,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         
         if (reservationData && reservationData.startDate) {
           startDate = new Date(reservationData.startDate);
-          endDate = new Date(startDate.getTime() + (reservationData.duration || 60) * 60 * 1000);
+          endDate = new Date(startDate.getTime() + (reservationData.duration || 45) * 60 * 1000);
         }
         
         // Crear la reserva con los datos correctos
@@ -587,7 +587,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           serviceType: serviceType,
           startDate: startDate,
           endDate: endDate,
-          duration: reservationData?.duration || 60,
+          duration: reservationData?.duration || 45,
           status: 'confirmed',
           price: amount,
           paymentStatus: 'paid',

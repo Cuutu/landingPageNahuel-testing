@@ -96,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         serviceName,
         startDate: booking.startDate,
         endDate: booking.endDate,
-        duration: booking.duration || 60,
+        duration: booking.duration || 45,
         price: booking.price || 0,
         status: booking.status,
         user: { name: booking.userName || 'Usuario sin nombre', email: booking.userEmail || 'Sin email', image: null },

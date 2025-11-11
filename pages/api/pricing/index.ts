@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               price: 50000,
               currency: 'ARS',
               description: 'Consultorio Financiero Individual',
-              duration: '60 minutos'
+              duration: '45 minutos'
             }
           },
           indicadores: {

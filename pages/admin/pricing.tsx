@@ -360,7 +360,7 @@ export default function AdminPricing({ session }: AdminPricingProps) {
                       value={localPricing.asesorias.consultorioFinanciero.duration}
                       onChange={(e) => handleInputChange('asesorias.consultorioFinanciero.duration', e.target.value)}
                       className={styles.input}
-                      placeholder="60 minutos"
+                      placeholder="45 minutos"
                     />
                   </div>
                   

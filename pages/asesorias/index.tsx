@@ -372,7 +372,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         title: 'Consultorio Financiero',
         subtitle: 'Consulta Individual Personalizada',
         description: 'Sesión one-on-one para analizar tu situación financiera actual y diseñar una estrategia de inversión personalizada según tu perfil de riesgo y objetivos.',
-        duration: '60 minutos',
+        duration: '45 minutos',
         modality: 'Videollamada',
         price: '50000',
         features: [

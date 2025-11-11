@@ -316,7 +316,7 @@ function getAdvisorySlotsOptimized(
     // 🔥 CORREGIDO: Usar targetDate específica en lugar de new Date()
     const slotDate = new Date(targetDate);
     slotDate.setHours(schedule.hour, schedule.minute, 0, 0);
-    const slotEndDate = new Date(slotDate.getTime() + 60 * 60000); // 60 minutos después
+    const slotEndDate = new Date(slotDate.getTime() + 45 * 60000); // 45 minutos después
     
     // Verificar si el slot se superpone con alguna reserva existente
     const isOccupied = dayBookings.some(booking => {
@@ -368,7 +368,7 @@ function getTrainingSlotsOptimized(
     // 🔥 CORREGIDO: Usar targetDate específica en lugar de new Date()
     const slotDate = new Date(targetDate);
     slotDate.setHours(schedule.hour, schedule.minute, 0, 0);
-    const duration = schedule.duration || 60; // Usar duración del schedule o 60 min por defecto
+    const duration = schedule.duration || 45; // Usar duración del schedule o 45 min por defecto
     const slotEndDate = new Date(slotDate.getTime() + duration * 60000);
     
     // Verificar si el slot se superpone con alguna reserva existente

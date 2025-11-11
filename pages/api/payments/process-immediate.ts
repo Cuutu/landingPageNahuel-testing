@@ -311,10 +311,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Datos desde metadata
         const reservationData = payment.metadata?.reservationData || {};
         let startDate: Date = new Date();
-        let endDate: Date = new Date(Date.now() + (reservationData.duration || 60) * 60000);
+        let endDate: Date = new Date(Date.now() + (reservationData.duration || 45) * 60000);
         if (reservationData.startDate) {
           startDate = new Date(reservationData.startDate);
-          endDate = new Date(startDate.getTime() + (reservationData.duration || 60) * 60000);
+          endDate = new Date(startDate.getTime() + (reservationData.duration || 45) * 60000);
         }
 
         // Confirmar AdvisoryDate y corregir huso horario
@@ -336,7 +336,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const day = advisoryDate.date.getUTCDate();
               const [hh, mm] = (advisoryDate.time || '10:00').split(':').map((v: string) => parseInt(v, 10));
               const fixedStartUtc = new Date(Date.UTC(year, month, day, hh + 3, mm || 0, 0, 0));
-              const fixedEndUtc = new Date(fixedStartUtc.getTime() + (reservationData.duration || 60) * 60000);
+              const fixedEndUtc = new Date(fixedStartUtc.getTime() + (reservationData.duration || 45) * 60000);
               startDate = fixedStartUtc;
               endDate = fixedEndUtc;
 
@@ -362,7 +362,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           serviceType: serviceType,
           startDate,
           endDate,
-          duration: reservationData?.duration || 60,
+          duration: reservationData?.duration || 45,
           status: 'confirmed',
           price: payment.amount,
           paymentStatus: 'paid',
@@ -425,7 +425,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               type: serviceType,
               date: formattedDate,
               time: formattedTime,
-              duration: reservationData?.duration || 60,
+              duration: reservationData?.duration || 45,
               price: payment.amount,
               meetLink: (await Booking.findById(newBooking._id))?.meetingLink
             }
@@ -437,7 +437,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             serviceType,
             date: formattedDate,
             time: formattedTime,
-            duration: reservationData?.duration || 60,
+            duration: reservationData?.duration || 45,
             price: payment.amount,
             meetLink: (await Booking.findById(newBooking._id))?.meetingLink
           });

@@ -179,7 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             serviceType: 'ConsultorioFinanciero',
             available: scheduleData.isAvailable && !scheduleData.isBooked,
             price: 50000,
-            duration: 60
+            duration: 45
           });
           
           // Crear nuevo slot en AvailableSlot
@@ -189,7 +189,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             serviceType: 'ConsultorioFinanciero',
             available: scheduleData.isAvailable && !scheduleData.isBooked,
             price: 50000, // Precio por defecto en ARS
-            duration: 60, // Duración por defecto en minutos
+            duration: 45, // Duración por defecto en minutos
             reservedBy: undefined,
             reservedAt: undefined,
             bookingId: undefined

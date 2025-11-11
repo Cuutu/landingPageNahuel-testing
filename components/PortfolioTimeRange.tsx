@@ -328,7 +328,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
               <div className={styles.explanationBox}>
                 <p><strong>Rendimiento vs S&P 500:</strong> Comparación relativa del rendimiento del portfolio respecto al índice S&P 500. Fórmula: ((Trader Call − S&P500) / S&P500) × 100</p>
                 <p><strong>Win Rate:</strong> Proporción de operaciones ganadoras sobre el total de operaciones ejecutadas. Fórmula: (Cantidad de trades ganadores / Cantidad total de trades) × 100</p>
-                <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio Trader Call en el rango de fechas seleccionado</p>
+                <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio Trader Call en el rango de fechas seleccionado</p>a
               </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>

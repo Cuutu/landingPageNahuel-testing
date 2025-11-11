@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             serviceType: 'ConsultorioFinanciero',
             available: schedule.isAvailable && !schedule.isBooked,
             price: 50000, // Precio por defecto en ARS
-            duration: 60, // Duración por defecto en minutos
+            duration: 45, // Duración por defecto en minutos
             reservedBy: undefined,
             reservedAt: undefined,
             bookingId: undefined

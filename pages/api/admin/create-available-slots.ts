@@ -33,7 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       endDate,   // DD/MM/YYYY
       timeSlots = ['14:00', '15:00', '16:00', '17:00', '18:00', '19:00'], // Horarios por defecto
       price = 199,
-      duration = 60,
+      duration = 45,
       skipWeekends = true,
       skipExisting = true
     } = req.body;

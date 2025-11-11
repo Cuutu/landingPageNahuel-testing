@@ -478,7 +478,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
     {
       id: 'consultorio-financiero',
       titulo: 'Consultorio Financiero',
-      descripcion: 'Consulta individual personalizada de 60 minutos para analizar tu situación financiera y diseñar una estrategia de inversión según tu perfil de riesgo',
+      descripcion: 'Consulta individual personalizada de 45 minutos para analizar tu situación financiera y diseñar una estrategia de inversión según tu perfil de riesgo',
       tag: 'Asesorías',
       tagClass: 'tagAsesorias',
       rating: '4,5',
