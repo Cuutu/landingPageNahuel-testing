@@ -150,11 +150,11 @@
 
 .heroVideo {
   position: relative;
-  border-radius: 12px;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.3),
-    0 10px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   background: #1a1a1a;
   transform: scale(1.0);
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -169,11 +169,10 @@
 
 .heroVideoPlayer {
   width: 100%;
-  height: 320px;
-  border-radius: 12px;
+  aspect-ratio: 16/9;
+  border-radius: 16px;
   border: none;
   outline: none;
-  aspect-ratio: 16/9;
 }
 
 /* === SECCIÓN 2: SERVICIOS - AZUL MARINO OSCURO === */

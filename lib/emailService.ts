@@ -545,8 +545,14 @@ export function generateReportEmailTemplate(
     </div>
   `;
 
+  // Construir título del email sin repetición
+  // El título del email debe ser simple: solo indicar que hay un nuevo informe del servicio
+  // El título específico del informe ya aparece en el contenido del email
+  // Esto evita títulos repetitivos como "Nuevo Trader Call: Nuevo Informe Trader Call"
+  const emailTitle = `${service.emoji} Nuevo Informe ${service.name}`;
+
   return createNotificationEmailTemplate({
-    title: `${service.emoji} Nuevo ${service.name}: ${notification.title}`,
+    title: emailTitle,
     content: contentHtml,
     notificationType: 'info',
     urgency: 'normal',
@@ -566,12 +572,6 @@ export function generateAlertEmailTemplate(
   if (notification.type === 'actualizacion' || notification.metadata?.reportTitle) {
     return generateReportEmailTemplate(notification, user);
   }
-
-  const actionButton = notification.actionUrl ? 
-    `<a href="${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}${notification.actionUrl}" 
-        style="display: inline-block; padding: 12px 24px; background: #00ff88; color: #000; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 20px; box-shadow: 0 4px 12px rgba(0,255,136,0.3);">
-      ${notification.actionText || 'Ver Alerta'}
-    </a>` : '';
 
   const alertDetails = notification.metadata ? `
     <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
@@ -648,10 +648,6 @@ export function generateAlertEmailTemplate(
         ${alertDetails}
       </div>
       
-      <div style="text-align: center; margin: 30px 0;">
-        ${actionButton}
-      </div>
-      
       <div style="background-color: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 15px; margin: 25px 0;">
         <p style="margin: 0; font-size: 14px; color: #92400e; font-weight: 500;">
           ⚡ <strong>Acción Requerida:</strong> Esta es una alerta de alta prioridad. Te recomendamos revisar los detalles completos en la plataforma lo antes posible.
@@ -659,7 +655,9 @@ export function generateAlertEmailTemplate(
       </div>
     `,
     notificationType: 'alert',
-    urgency: 'high'
+    urgency: 'high',
+    buttonText: notification.actionText || 'Ver Alertas',
+    buttonUrl: notification.actionUrl ? `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}${notification.actionUrl}` : undefined
   });
 }
 

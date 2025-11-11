@@ -636,14 +636,8 @@ export async function sendUserContactConfirmationEmail(
               <ul>
                 <li>Revisaremos tu mensaje en las próximas 24 horas</li>
                 <li>Te responderemos directamente a este email</li>
-                <li>Si es urgente, también puedes contactarnos por WhatsApp</li>
               </ul>
             </div>
-            
-            <p style="margin-top: 30px;">
-              <strong>¿Necesitas ayuda inmediata?</strong><br>
-              Si tu consulta es urgente, puedes contactarnos directamente por WhatsApp.
-            </p>
           </div>
           
           <div class="footer">
@@ -829,10 +823,6 @@ export async function sendPaymentSuccessEmail(
           .detail-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
           .detail-label { font-weight: 600; color: #495057; }
           .detail-value { color: #6c757d; }
-          .next-steps { background: #e3f2fd; border-radius: 8px; padding: 20px; margin: 20px 0; }
-          .next-steps h3 { color: #1976d2; margin-top: 0; }
-          .next-steps ul { margin: 0; padding-left: 20px; }
-          .next-steps li { margin-bottom: 8px; color: #1565c0; }
           .cta-button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
           .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
           .support { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 20px 0; }
@@ -885,36 +875,6 @@ export async function sendPaymentSuccessEmail(
               </div>
               ` : ''}
             </div>
-            
-            ${paymentDetails.service !== 'ConsultorioFinanciero' ? `
-            <div class="next-steps">
-              <h3>🚀 ¿Qué sigue ahora?</h3>
-              ${['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) ? `
-                <ul>
-                  <li>Recibirás notificaciones de nuevas alertas en tiempo real</li>
-                  <li>Acceso completo a todos los recursos y análisis</li>
-                  <li>Soporte prioritario durante tu suscripción</li>
-                  <li>Puedes acceder desde cualquier dispositivo</li>
-                </ul>
-              ` : ''}
-              ${['SwingTrading', 'DowJones'].includes(paymentDetails.service) ? `
-                <ul>
-                  <li>Acceso completo al entrenamiento y materiales</li>
-                  <li>Videos y recursos descargables disponibles</li>
-                  <li>Soporte durante todo el curso</li>
-                  <li>Certificado de finalización</li>
-                </ul>
-              ` : ''}
-              ${paymentDetails.service.includes('booking') ? `
-                <ul>
-                  <li>Recibirás un email de confirmación con el link de Google Meet</li>
-                  <li>Recordatorio 24 horas antes de tu cita</li>
-                  <li>Acceso a materiales preparatorios</li>
-                  <li>Seguimiento personalizado</li>
-                </ul>
-              ` : ''}
-            </div>
-            ` : ''}
             
             ${['TraderCall', 'SmartMoney', 'CashFlow'].includes(paymentDetails.service) ? `
               <a href="${process.env.NEXTAUTH_URL}/alertas" class="cta-button">Ir a las Alertas</a>
