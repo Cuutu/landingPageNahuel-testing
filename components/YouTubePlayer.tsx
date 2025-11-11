@@ -38,6 +38,10 @@ export default function YouTubePlayer({
 }: YouTubePlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  
+  // Detectar si está dentro de un videoContainer (por la className)
+  // Si tiene className con "videoPlayer" o "video", asumimos que está en un videoContainer
+  const isInVideoContainer = Boolean(className && (className.includes('videoPlayer') || className.includes('video')));
 
   // Construir la URL del video con parámetros
   const buildVideoUrl = () => {
@@ -82,7 +86,7 @@ export default function YouTubePlayer({
 
   return (
     <div 
-      className={`${styles.playerContainer} ${className}`}
+      className={`${isInVideoContainer ? styles.playerContainerInContainer : styles.playerContainer} ${className}`}
     >
       {isLoading && (
         <div className={styles.loading}>
@@ -101,7 +105,17 @@ export default function YouTubePlayer({
         onError={handleError}
         className={styles.iframe}
         style={{
-          display: isLoading ? 'none' : 'block'
+          display: isLoading ? 'none' : 'block',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          height: '100%',
+          border: 'none',
+          margin: 0,
+          padding: 0
         }}
       />
     </div>
