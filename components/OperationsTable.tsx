@@ -216,6 +216,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               <th>Cantidad</th>
               <th>Precio</th>
               <th>Monto</th>
+              <th>% Cartera</th>
               <th>Fecha</th>
               <th>Saldo</th>
             </tr>
@@ -223,7 +224,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           <tbody>
             {filteredOperations.length === 0 ? (
               <tr>
-                <td colSpan={7} className={styles.noData}>
+                <td colSpan={8} className={styles.noData}>
                   <Clock className="w-8 h-8 mx-auto mb-2" />
                   <p>No hay operaciones para mostrar</p>
                   {searchTerm && (
@@ -273,6 +274,19 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   </td>
                   <td>
                     {formatCurrency(Math.abs(operation.amount))}
+                  </td>
+                  <td>
+                    {operation.operationType === 'COMPRA' && operation.portfolioPercentage ? (
+                      <span style={{ color: '#10B981', fontWeight: '500' }}>
+                        {operation.portfolioPercentage.toFixed(2)}%
+                      </span>
+                    ) : operation.operationType === 'VENTA' && operation.partialSalePercentage ? (
+                      <span style={{ color: '#EF4444', fontWeight: '500' }}>
+                        {operation.partialSalePercentage}%
+                      </span>
+                    ) : (
+                      <span style={{ color: '#9ca3af' }}>—</span>
+                    )}
                   </td>
                   <td>
                     {formatDate(operation.date)}

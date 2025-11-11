@@ -15,6 +15,7 @@ interface CreateOperationRequest {
   isPartialSale?: boolean;
   partialSalePercentage?: number;
   originalQuantity?: number;
+  portfolioPercentage?: number; // ✅ NUEVO: Porcentaje de la cartera para compras
   liquidityData?: {
     allocatedAmount: number;
     shares: number;
@@ -60,6 +61,7 @@ export default async function handler(
       isPartialSale = false,
       partialSalePercentage,
       originalQuantity,
+      portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
       liquidityData,
       notes
     }: CreateOperationRequest = req.body;
@@ -130,6 +132,7 @@ export default async function handler(
       isPartialSale,
       partialSalePercentage,
       originalQuantity,
+      portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
       liquidityData,
       executedBy: session.user.email,
       executionMethod: 'MANUAL',
@@ -164,6 +167,7 @@ export default async function handler(
         isPartialSale: operation.isPartialSale,
         partialSalePercentage: operation.partialSalePercentage,
         originalQuantity: operation.originalQuantity,
+        portfolioPercentage: operation.portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera
         liquidityData: operation.liquidityData,
         executedBy: operation.executedBy,
         executionMethod: operation.executionMethod,

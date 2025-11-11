@@ -4531,7 +4531,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
               {/* ✅ NUEVO: Campo de porcentaje personalizable */}
               <div className={styles.inputGroup}>
-                <label>Porcentaje a vender</label>
+                <label>Porcentaje de la cartera a vender</label>
                 <div className={styles.percentageInputContainer}>
                   <input
                     type="number"
@@ -4545,8 +4545,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   <span className={styles.percentageSymbol}>%</span>
                 </div>
                 <p className={styles.inputDescription}>
-                  Porcentaje de tus acciones actuales que deseas vender
+                  Porcentaje de tu posición en esta alerta que deseas vender (ej: 5%, 10%, 50%, 100%)
                 </p>
+                {sellPercentage > 0 && (
+                  <p style={{ fontSize: '0.875rem', color: '#EF4444', marginTop: '4px', fontWeight: '500' }}>
+                    Venderás {sellPercentage}% de tu posición en {partialSaleAlert.symbol}
+                  </p>
+                )}
               </div>
 
               {/* ✅ NUEVO: Rango de precios */}

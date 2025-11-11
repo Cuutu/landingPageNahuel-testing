@@ -111,6 +111,49 @@ export default async function handler(
       liquidity.recalculateDistributions();
       await liquidity.save();
 
+      // ✅ NUEVO: Crear operación de compra cuando se incrementa una distribución existente
+      try {
+        const Operation = (await import('@/models/Operation')).default;
+        
+        // Obtener el balance actual del usuario para este sistema
+        const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system: pool })
+          .sort({ date: -1 })
+          .select('balance');
+        const currentBalance = currentBalanceDoc?.balance || 0;
+        
+        // Calcular el nuevo balance (restar el gasto de la compra adicional)
+        const newBalance = currentBalance - actualAllocatedAmount;
+        
+        const operation = new Operation({
+          ticker: alert.symbol,
+          operationType: 'COMPRA',
+          quantity: additionalShares,
+          price: entryPrice,
+          amount: actualAllocatedAmount,
+          date: new Date(),
+          balance: newBalance,
+          alertId: alert._id,
+          alertSymbol: alert.symbol,
+          system: pool,
+          createdBy: user._id,
+          portfolioPercentage: targetPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
+          liquidityData: {
+            allocatedAmount: actualAllocatedAmount,
+            shares: additionalShares,
+            entryPrice: entryPrice
+          },
+          executedBy: user.email,
+          executionMethod: 'ADMIN',
+          notes: `Compra adicional asignada - +${targetPercentage.toFixed(2)}% de la cartera`
+        });
+        
+        await operation.save();
+        console.log(`✅ Operación de compra adicional creada: ${alert.symbol} - ${additionalShares} acciones (+${targetPercentage.toFixed(2)}% de la cartera)`);
+      } catch (operationError) {
+        console.error('⚠️ Error creando operación de compra adicional:', operationError);
+        // No fallar la distribución por un error en la operación
+      }
+
       return res.status(200).json({
         success: true,
         distribution: {
@@ -125,19 +168,62 @@ export default async function handler(
           isActive: existingDistribution.isActive,
           createdAt: existingDistribution.createdAt
         },
-        message: `Liquidez incrementada: +${targetPercentage.toFixed(2)}% para ${alert.symbol}`
+        message: `Liquidez incrementada: +${targetPercentage.toFixed(2)}% de la cartera para ${alert.symbol}`
       });
     }
 
     const distribution = liquidity.addDistribution(alertId, alert.symbol, targetPercentage, entryPrice);
     await liquidity.save();
 
+    // ✅ NUEVO: Crear operación de compra con el porcentaje de la cartera
+    try {
+      const Operation = (await import('@/models/Operation')).default;
+      
+      // Obtener el balance actual del usuario para este sistema
+      const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system: pool })
+        .sort({ date: -1 })
+        .select('balance');
+      const currentBalance = currentBalanceDoc?.balance || 0;
+      
+      // Calcular el nuevo balance (restar el gasto de la compra)
+      const newBalance = currentBalance - distribution.allocatedAmount;
+      
+      const operation = new Operation({
+        ticker: alert.symbol,
+        operationType: 'COMPRA',
+        quantity: distribution.shares,
+        price: entryPrice,
+        amount: distribution.allocatedAmount,
+        date: new Date(),
+        balance: newBalance,
+        alertId: alert._id,
+        alertSymbol: alert.symbol,
+        system: pool,
+        createdBy: user._id,
+        portfolioPercentage: targetPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
+        liquidityData: {
+          allocatedAmount: distribution.allocatedAmount,
+          shares: distribution.shares,
+          entryPrice: entryPrice
+        },
+        executedBy: user.email,
+        executionMethod: 'ADMIN',
+        notes: `Compra asignada - ${targetPercentage.toFixed(2)}% de la cartera`
+      });
+      
+      await operation.save();
+      console.log(`✅ Operación de compra creada: ${alert.symbol} - ${distribution.shares} acciones (${targetPercentage.toFixed(2)}% de la cartera)`);
+    } catch (operationError) {
+      console.error('⚠️ Error creando operación de compra:', operationError);
+      // No fallar la distribución por un error en la operación
+    }
+
     // 🔔 Notificar compra/asignación a suscriptores
     try {
       const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
       const allocatedAmount = distribution.allocatedAmount;
       const shares = distribution.shares;
-      const message = req.body?.emailMessage || `Compra asignada en ${alert.symbol}: ${shares} shares a $${entryPrice} (monto: $${allocatedAmount.toFixed(2)}).`;
+      const message = req.body?.emailMessage || `Compra asignada en ${alert.symbol}: ${shares} shares a $${entryPrice} (${targetPercentage.toFixed(2)}% de la cartera, monto: $${allocatedAmount.toFixed(2)}).`;
       const imageUrl = req.body?.emailImageUrl || undefined;
       await notifyAlertSubscribers(alert as any, { message, imageUrl, price: entryPrice });
       console.log('✅ Notificación de asignación enviada');
@@ -159,7 +245,7 @@ export default async function handler(
         isActive: distribution.isActive,
         createdAt: distribution.createdAt
       },
-      message: `Liquidez distribuida exitosamente: ${targetPercentage.toFixed(2)}% para ${alert.symbol}`
+      message: `Liquidez distribuida exitosamente: ${targetPercentage.toFixed(2)}% de la cartera para ${alert.symbol}`
     });
 
   } catch (error) {

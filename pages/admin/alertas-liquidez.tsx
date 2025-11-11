@@ -537,8 +537,8 @@ const AdminLiquidityPage: React.FC = () => {
         </>)}
 
         {/* Asignar SmartMoney */}
-        {selectedPool === 'SmartMoney' && card(<>
-          <div className="font-medium mb-3">Asignar a Alerta Activa - SmartMoney</div>
+        {selectedPool === 'SmartMoney' && card(<>  
+          <div className="font-medium mb-3">💰 Comprar - Asignar Liquidez a Alerta Activa - SmartMoney</div>
           <div className={styles.row}>
             <select value={smartAssignId} onChange={e => setSmartAssignId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
@@ -546,9 +546,67 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={smartAssignPct} onChange={e => setSmartAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
-            <input value={smartAssignAmount} onChange={e => setSmartAssignAmount(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="$ monto" />
-            <button onClick={handleAssignSmart} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>% de la cartera</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input 
+                  value={smartAssignPct} 
+                  onChange={e => {
+                    setSmartAssignPct(e.target.value);
+                    // Calcular monto automáticamente cuando se ingresa porcentaje
+                    if (liquiditySummary && e.target.value) {
+                      const pct = parseFloat(e.target.value);
+                      if (!isNaN(pct) && pct > 0) {
+                        const calculatedAmount = (liquiditySummary.liquidezTotal * pct) / 100;
+                        setSmartAssignAmount(calculatedAmount.toFixed(2));
+                      }
+                    }
+                  }} 
+                  type="number" 
+                  step="0.1" 
+                  min="0.1"
+                  max="100"
+                  className={styles.input} 
+                  placeholder="5" 
+                  style={{ width: '80px' }}
+                />
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>%</span>
+              </div>
+              {smartAssignPct && liquiditySummary && !isNaN(parseFloat(smartAssignPct)) && (
+                <span style={{ fontSize: '0.75rem', color: '#10B981' }}>
+                  ≈ ${((liquiditySummary.liquidezTotal * parseFloat(smartAssignPct)) / 100).toFixed(2)}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Monto (USD)</label>
+              <input 
+                value={smartAssignAmount} 
+                onChange={e => {
+                  setSmartAssignAmount(e.target.value);
+                  // Calcular porcentaje automáticamente cuando se ingresa monto
+                  if (liquiditySummary && e.target.value) {
+                    const amount = parseFloat(e.target.value);
+                    if (!isNaN(amount) && amount > 0 && liquiditySummary.liquidezTotal > 0) {
+                      const calculatedPct = (amount / liquiditySummary.liquidezTotal) * 100;
+                      setSmartAssignPct(calculatedPct.toFixed(2));
+                    }
+                  }
+                }} 
+                type="number" 
+                step="0.01" 
+                min="0.01"
+                className={styles.input} 
+                placeholder="1000" 
+                style={{ width: '120px' }}
+              />
+              {smartAssignAmount && liquiditySummary && !isNaN(parseFloat(smartAssignAmount)) && liquiditySummary.liquidezTotal > 0 && (
+                <span style={{ fontSize: '0.75rem', color: '#10B981' }}>
+                  ≈ {((parseFloat(smartAssignAmount) / liquiditySummary.liquidezTotal) * 100).toFixed(2)}%
+                </span>
+              )}
+            </div>
+            <button onClick={handleAssignSmart} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Comprar</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
             <input value={smartAssignMessage} onChange={e => setSmartAssignMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
@@ -561,13 +619,18 @@ const AdminLiquidityPage: React.FC = () => {
             />
           </div>
           <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>
-            % asignado total: {totalAssignedPct.toFixed(2)}% · % restante: {remainingPct.toFixed(2)}%
+            📊 % de cartera asignado total: {totalAssignedPct.toFixed(2)}% · % restante disponible: {remainingPct.toFixed(2)}%
           </div>
+          {liquiditySummary && (
+            <div className="text-xs" style={{ color: '#6b7280', marginTop: 4 }}>
+              💰 Cartera total: ${liquiditySummary.liquidezTotal.toFixed(2)} · Disponible: ${liquiditySummary.liquidezDisponible.toFixed(2)}
+            </div>
+          )}
         </>)}
 
         {/* Asignar TraderCall */}
-        {selectedPool === 'TraderCall' && card(<>
-          <div className="font-medium mb-3">Asignar a Alerta Activa - TraderCall</div>
+        {selectedPool === 'TraderCall' && card(<>  
+          <div className="font-medium mb-3">💰 Comprar - Asignar Liquidez a Alerta Activa - TraderCall</div>
           <div className={styles.row}>
             <select value={traderAssignId} onChange={e => setTraderAssignId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
@@ -575,9 +638,67 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input value={traderAssignPct} onChange={e => setTraderAssignPct(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="%" />
-            <input value={traderAssignAmount} onChange={e => setTraderAssignAmount(e.target.value)} type="number" step="0.01" className={styles.input} placeholder="$ monto" />
-            <button onClick={handleAssignTrader} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Asignar</button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>% de la cartera</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input 
+                  value={traderAssignPct} 
+                  onChange={e => {
+                    setTraderAssignPct(e.target.value);
+                    // Calcular monto automáticamente cuando se ingresa porcentaje
+                    if (liquiditySummary && e.target.value) {
+                      const pct = parseFloat(e.target.value);
+                      if (!isNaN(pct) && pct > 0) {
+                        const calculatedAmount = (liquiditySummary.liquidezTotal * pct) / 100;
+                        setTraderAssignAmount(calculatedAmount.toFixed(2));
+                      }
+                    }
+                  }} 
+                  type="number" 
+                  step="0.1" 
+                  min="0.1"
+                  max="100"
+                  className={styles.input} 
+                  placeholder="5" 
+                  style={{ width: '80px' }}
+                />
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>%</span>
+              </div>
+              {traderAssignPct && liquiditySummary && !isNaN(parseFloat(traderAssignPct)) && (
+                <span style={{ fontSize: '0.75rem', color: '#10B981' }}>
+                  ≈ ${((liquiditySummary.liquidezTotal * parseFloat(traderAssignPct)) / 100).toFixed(2)}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>Monto (USD)</label>
+              <input 
+                value={traderAssignAmount} 
+                onChange={e => {
+                  setTraderAssignAmount(e.target.value);
+                  // Calcular porcentaje automáticamente cuando se ingresa monto
+                  if (liquiditySummary && e.target.value) {
+                    const amount = parseFloat(e.target.value);
+                    if (!isNaN(amount) && amount > 0 && liquiditySummary.liquidezTotal > 0) {
+                      const calculatedPct = (amount / liquiditySummary.liquidezTotal) * 100;
+                      setTraderAssignPct(calculatedPct.toFixed(2));
+                    }
+                  }
+                }} 
+                type="number" 
+                step="0.01" 
+                min="0.01"
+                className={styles.input} 
+                placeholder="1000" 
+                style={{ width: '120px' }}
+              />
+              {traderAssignAmount && liquiditySummary && !isNaN(parseFloat(traderAssignAmount)) && liquiditySummary.liquidezTotal > 0 && (
+                <span style={{ fontSize: '0.75rem', color: '#10B981' }}>
+                  ≈ {((parseFloat(traderAssignAmount) / liquiditySummary.liquidezTotal) * 100).toFixed(2)}%
+                </span>
+              )}
+            </div>
+            <button onClick={handleAssignTrader} disabled={saving} className={`${styles.btn} ${styles.btnSuccess}`}>Comprar</button>
           </div>
           <div className={styles.row} style={{ marginTop: 8, gap: 8 }}>
             <input value={traderAssignMessage} onChange={e => setTraderAssignMessage(e.target.value)} className={styles.input} placeholder="Mensaje de email (opcional)" />
@@ -590,13 +711,18 @@ const AdminLiquidityPage: React.FC = () => {
             />
           </div>
           <div className="text-sm" style={{ color: '#9ca3af', marginTop: 8 }}>
-            % asignado total: {totalAssignedPct.toFixed(2)}% · % restante: {remainingPct.toFixed(2)}%
+            📊 % de cartera asignado total: {totalAssignedPct.toFixed(2)}% · % restante disponible: {remainingPct.toFixed(2)}%
           </div>
+          {liquiditySummary && (
+            <div className="text-xs" style={{ color: '#6b7280', marginTop: 4 }}>
+              💰 Cartera total: ${liquiditySummary.liquidezTotal.toFixed(2)} · Disponible: ${liquiditySummary.liquidezDisponible.toFixed(2)}
+            </div>
+          )}
         </>)}
 
         {/* ✅ NUEVO: Vender SmartMoney con rango de precios */}
         {selectedPool === 'SmartMoney' && card(<> 
-          <div className="font-medium mb-3">Vender - SmartMoney</div>
+          <div className="font-medium mb-3">💸 Vender - SmartMoney</div>
           <div className={styles.row}>
             <select value={smartSellId} onChange={e => setSmartSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
@@ -604,17 +730,28 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input 
-              value={smartSellPercentage} 
-              onChange={e => setSmartSellPercentage(e.target.value)} 
-              type="number" 
-              min="1" 
-              max="100" 
-              step="1" 
-              className={styles.input} 
-              placeholder="%" 
-              style={{ width: '80px' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>% de la cartera a vender</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input 
+                  value={smartSellPercentage} 
+                  onChange={e => setSmartSellPercentage(e.target.value)} 
+                  type="number" 
+                  min="1" 
+                  max="100" 
+                  step="1" 
+                  className={styles.input} 
+                  placeholder="50" 
+                  style={{ width: '80px' }}
+                />
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>%</span>
+              </div>
+              {smartSellPercentage && liquiditySummary && !isNaN(parseFloat(smartSellPercentage)) && (
+                <span style={{ fontSize: '0.75rem', color: '#EF4444' }}>
+                  Venderás {smartSellPercentage}% de tu posición en esta alerta
+                </span>
+              )}
+            </div>
             <input 
               value={smartSellPriceMin} 
               onChange={e => setSmartSellPriceMin(e.target.value)} 
@@ -654,7 +791,7 @@ const AdminLiquidityPage: React.FC = () => {
 
         {/* ✅ NUEVO: Vender TraderCall con rango de precios */}
         {selectedPool === 'TraderCall' && card(<>
-          <div className="font-medium mb-3">Vender - TraderCall</div>
+          <div className="font-medium mb-3">💸 Vender - TraderCall</div>
           <div className={styles.row}>
             <select value={traderSellId} onChange={e => setTraderSellId(e.target.value)} className={styles.select}>
               <option value="">Seleccione alerta</option>
@@ -662,17 +799,28 @@ const AdminLiquidityPage: React.FC = () => {
                 <option key={a.id} value={a.id}>{a.symbol} ({a.id.slice(0,6)}...)</option>
               ))}
             </select>
-            <input 
-              value={traderSellPercentage} 
-              onChange={e => setTraderSellPercentage(e.target.value)} 
-              type="number" 
-              min="1" 
-              max="100" 
-              step="1" 
-              className={styles.input} 
-              placeholder="%" 
-              style={{ width: '80px' }}
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <label style={{ fontSize: '0.75rem', color: '#9ca3af' }}>% de la cartera a vender</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input 
+                  value={traderSellPercentage} 
+                  onChange={e => setTraderSellPercentage(e.target.value)} 
+                  type="number" 
+                  min="1" 
+                  max="100" 
+                  step="1" 
+                  className={styles.input} 
+                  placeholder="50" 
+                  style={{ width: '80px' }}
+                />
+                <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>%</span>
+              </div>
+              {traderSellPercentage && liquiditySummary && !isNaN(parseFloat(traderSellPercentage)) && (
+                <span style={{ fontSize: '0.75rem', color: '#EF4444' }}>
+                  Venderás {traderSellPercentage}% de tu posición en esta alerta
+                </span>
+              )}
+            </div>
             <input 
               value={traderSellPriceMin} 
               onChange={e => setTraderSellPriceMin(e.target.value)} 

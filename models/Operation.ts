@@ -24,6 +24,9 @@ export interface IOperation extends Document {
   partialSalePercentage?: number; // Porcentaje vendido
   originalQuantity?: number; // Cantidad original antes de la venta parcial
   
+  // Información adicional para compras
+  portfolioPercentage?: number; // Porcentaje de la cartera usado para esta compra
+  
   // Información de liquidez
   liquidityData?: {
     allocatedAmount: number; // Monto asignado en liquidez
@@ -117,6 +120,13 @@ const OperationSchema: Schema = new Schema({
   originalQuantity: {
     type: Number,
     min: 0
+  },
+  
+  // Información adicional para compras
+  portfolioPercentage: {
+    type: Number,
+    min: 0,
+    max: 100
   },
   
   // Información de liquidez

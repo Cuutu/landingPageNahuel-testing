@@ -387,6 +387,7 @@ export default async function handler(
               alertSymbol: symbol.toUpperCase(),
               system: pool,
               createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
+              portfolioPercentage: liquidityPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
               liquidityData: {
                 allocatedAmount: liquidityAmount,
                 shares: shares,
@@ -394,7 +395,7 @@ export default async function handler(
               },
               executedBy: user.email,
               executionMethod: 'AUTOMATIC',
-              notes: `Compra automática al crear alerta - ${liquidityPercentage}% de liquidez`
+              notes: `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
             });
 
             await operation.save();

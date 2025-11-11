@@ -15,6 +15,7 @@ interface Operation {
   isPartialSale?: boolean;
   partialSalePercentage?: number;
   originalQuantity?: number;
+  portfolioPercentage?: number; // ✅ NUEVO: Porcentaje de la cartera para compras
   liquidityData?: {
     allocatedAmount: number;
     shares: number;
@@ -58,6 +59,7 @@ interface CreateOperationData {
   isPartialSale?: boolean;
   partialSalePercentage?: number;
   originalQuantity?: number;
+  portfolioPercentage?: number; // ✅ NUEVO: Porcentaje de la cartera para compras
   liquidityData?: {
     allocatedAmount: number;
     shares: number;
