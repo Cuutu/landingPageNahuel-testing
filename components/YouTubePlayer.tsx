@@ -81,7 +81,9 @@ export default function YouTubePlayer({
   }
 
   return (
-    <div className={`${styles.playerContainer} ${className}`}>
+    <div 
+      className={`${styles.playerContainer} ${className}`}
+    >
       {isLoading && (
         <div className={styles.loading}>
           <div className={styles.spinner}></div>
@@ -90,8 +92,6 @@ export default function YouTubePlayer({
       )}
       
       <iframe
-        width={width}
-        height={height}
         src={buildVideoUrl()}
         title={title}
         frameBorder="0"
