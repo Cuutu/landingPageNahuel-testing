@@ -275,7 +275,8 @@
   background: #374151;
   border-radius: 16px 16px 0 0;
   overflow: hidden;
-  height: 200px;
+  width: 100%;
+  aspect-ratio: 16/9;
 }
 
 .videoPlayerContainer .videoPlayer {
