@@ -4,6 +4,7 @@ import {
   createSubscriptionExpiryWarningTemplate, 
   createSubscriptionExpiredTemplate 
 } from './email-templates';
+import User from '@/models/User';
 
 interface SubscriptionNotification {
   userId: string;
@@ -18,20 +19,58 @@ interface SubscriptionNotification {
 
 /**
  * Obtiene todas las suscripciones que están por vencer o han expirado
+ * Ahora obtiene desde User.activeSubscriptions en lugar de payments
  */
 export async function getSubscriptionsForNotifications() {
-  const conn = await dbConnect();
-  const db = conn.connection.db;
+  await dbConnect();
   const now = new Date();
   
-  // Obtener suscripciones activas que vencen en 1 día o ya expiraron
-  const subscriptions = await db.collection('payments').find({
-    status: 'approved',
-    expiryDate: {
-      $gte: new Date(now.getTime() - 24 * 60 * 60 * 1000), // Desde hace 1 día
-      $lte: new Date(now.getTime() + 24 * 60 * 60 * 1000)  // Hasta en 1 día
+  // Obtener usuarios con suscripciones activas que vencen en 5 días o ya expiraron
+  const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  // Buscar usuarios con activeSubscriptions que estén por vencer o hayan expirado
+  const users = await User.find({
+    'activeSubscriptions': {
+      $elemMatch: {
+        isActive: true,
+        expiryDate: {
+          $gte: oneDayAgo, // Desde hace 1 día (ya expiradas)
+          $lte: fiveDaysFromNow // Hasta en 5 días
+        }
+      }
     }
-  }).toArray();
+  }).select('_id name email activeSubscriptions');
+
+  // Extraer suscripciones individuales con información del usuario
+  const subscriptions: any[] = [];
+  
+  for (const user of users) {
+    if (!user.activeSubscriptions || user.activeSubscriptions.length === 0) continue;
+    
+    for (const sub of user.activeSubscriptions) {
+      if (!sub.isActive) continue;
+      
+      const expiryDate = new Date(sub.expiryDate);
+      const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Solo incluir si vence en 5 días o menos, o ya expiró (hasta 1 día después)
+      if (daysUntilExpiry <= 5 && daysUntilExpiry >= -1) {
+        subscriptions.push({
+          _id: sub._id || `${user._id}_${sub.service}`,
+          userId: user._id.toString(),
+          userEmail: user.email,
+          userName: user.name || 'Usuario',
+          service: sub.service,
+          expiryDate: expiryDate,
+          startDate: sub.startDate,
+          amount: sub.amount || 0,
+          currency: sub.currency || 'ARS',
+          mercadopagoPaymentId: sub.mercadopagoPaymentId
+        });
+      }
+    }
+  }
 
   console.log(`📧 [SUBSCRIPTION NOTIFICATIONS] Encontradas ${subscriptions.length} suscripciones para notificar`);
 
@@ -115,7 +154,7 @@ function getRenewalUrl(service: string): string {
 }
 
 /**
- * Envía notificación de advertencia (1 día antes)
+ * Envía notificación de advertencia (5 días antes)
  */
 async function sendWarningNotification(
   userEmail: string,
@@ -146,7 +185,7 @@ async function sendWarningNotification(
       html
     });
 
-    console.log(`📧 [SUBSCRIPTION NOTIFICATIONS] Advertencia enviada a ${userEmail} para ${serviceName}`);
+    console.log(`📧 [SUBSCRIPTION NOTIFICATIONS] Advertencia enviada a ${userEmail} para ${serviceName} (${daysLeft} días antes)`);
     return true;
   } catch (error) {
     console.error(`❌ [SUBSCRIPTION NOTIFICATIONS] Error enviando advertencia a ${userEmail}:`, error);
@@ -215,26 +254,17 @@ export async function processSubscriptionNotifications(): Promise<{
         (subscription.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      // Obtener información del usuario
-      const conn = await dbConnect();
-      const db = conn.connection.db;
-      const user = await db.collection('users').findOne({ _id: subscription.userId });
-      
-      if (!user) {
-        errors.push(`Usuario no encontrado para suscripción ${subscription._id}`);
-        continue;
-      }
+      // La información del usuario ya está en subscription
+      const userEmail = subscription.userEmail;
+      const userName = subscription.userName;
 
-      const userEmail = subscription.userEmail || user.email;
-      const userName = user.name || 'Usuario';
-
-      // Notificación de advertencia (1 día antes)
-      if (daysUntilExpiry === 1) {
+      // Notificación de advertencia (5 días antes)
+      if (daysUntilExpiry === 5) {
         const alreadySent = await hasNotificationBeenSent(
           subscription.userId, 
           subscription.service, 
           'warning', 
-          1
+          5
         );
 
         if (!alreadySent) {
@@ -243,7 +273,7 @@ export async function processSubscriptionNotifications(): Promise<{
             userName,
             subscription.service,
             subscription.expiryDate,
-            1
+            5
           );
 
           if (success) {
@@ -253,7 +283,7 @@ export async function processSubscriptionNotifications(): Promise<{
               userName,
               service: subscription.service,
               expiryDate: subscription.expiryDate,
-              daysLeft: 1,
+              daysLeft: 5,
               notificationType: 'warning',
               sentAt: new Date()
             });
@@ -264,8 +294,8 @@ export async function processSubscriptionNotifications(): Promise<{
         }
       }
 
-      // Notificación de expiración (el día que expira)
-      if (daysUntilExpiry <= 0) {
+      // Notificación de expiración (el día que expira o hasta 1 día después)
+      if (daysUntilExpiry <= 0 && daysUntilExpiry >= -1) {
         const alreadySent = await hasNotificationBeenSent(
           subscription.userId, 
           subscription.service, 
