@@ -54,43 +54,51 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
     }
   };
 
+  // Convertir período a días (igual que PortfolioTimeRange)
+  const periodToDays = (period: string): number => {
+    switch (period) {
+      case '7d': return 7;
+      case '15d': return 15;
+      case '30d': return 30;
+      case '6m': return 180;
+      case '1y': return 365;
+      default: return 30;
+    }
+  };
+
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
-      // Obtener métricas reales del servicio desde la base de datos
-      const response = await fetch(`/api/performance/service-performance?period=${selectedPeriod}&tipo=${serviceType}`);
+      // Usar el mismo endpoint que PortfolioTimeRange
+      const days = periodToDays(selectedPeriod);
+      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
 
       if (!response.ok) {
         throw new Error('Error al obtener métricas del servicio');
       }
 
-      const serviceMetrics = await response.json();
+      const portfolioData = await response.json();
 
-      // Calcular rendimiento relativo vs S&P500 usando la fórmula correcta
-      const sp500Return = sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0;
-      let relativePerformanceVsSP500 = 0;
-      
-      if (sp500Return !== 0) {
-        // Fórmula: ((Trader Call − S&P500) / S&P500) × 100
-        relativePerformanceVsSP500 = ((serviceMetrics.totalReturnPercent - sp500Return) / sp500Return) * 100;
+      if (!portfolioData.success || !portfolioData.data || portfolioData.data.length === 0) {
+        throw new Error('No hay datos disponibles para el período seleccionado');
       }
-      
-      console.log('Debug SP500 Performance:', {
-        serviceReturn: serviceMetrics.totalReturnPercent,
-        sp500Return,
-        relativePerformance: relativePerformanceVsSP500
-      });
+
+      // Calcular rendimiento de la misma manera que PortfolioTimeRange
+      const firstValue = portfolioData.data[0]?.value || 10000;
+      const lastValue = portfolioData.data[portfolioData.data.length - 1]?.value || 10000;
+      const change = lastValue - firstValue;
+      const totalReturnPercent = firstValue ? (change / firstValue) * 100 : 0;
 
       const serviceData: ServicePerformanceData = {
-        totalReturnPercent: serviceMetrics.totalReturnPercent,
-        relativePerformanceVsSP500: parseFloat(relativePerformanceVsSP500.toFixed(2)),
-        activeAlerts: serviceMetrics.activeAlerts,
-        closedAlerts: serviceMetrics.closedAlerts,
-        winningAlerts: serviceMetrics.winningAlerts,
-        losingAlerts: serviceMetrics.losingAlerts,
-        winRate: serviceMetrics.winRate,
-        averageGain: serviceMetrics.averageGain,
-        averageLoss: serviceMetrics.averageLoss,
-        totalTrades: serviceMetrics.totalTrades,
+        totalReturnPercent: parseFloat(totalReturnPercent.toFixed(2)),
+        relativePerformanceVsSP500: 0, // Se calculará después cuando sp500Data esté disponible
+        activeAlerts: portfolioData.stats?.totalAlerts || 0,
+        closedAlerts: portfolioData.stats?.closedAlerts || 0,
+        winningAlerts: 0, // No disponible en portfolio-evolution
+        losingAlerts: 0, // No disponible en portfolio-evolution
+        winRate: portfolioData.stats?.winRate || 0,
+        averageGain: 0, // No disponible en portfolio-evolution
+        averageLoss: 0, // No disponible en portfolio-evolution
+        totalTrades: portfolioData.stats?.totalAlerts || 0,
         period: selectedPeriod
       };
 
@@ -103,16 +111,16 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
 
       // Fallback a datos simulados si hay error
       const fallbackData: ServicePerformanceData = {
-        totalReturnPercent: 12.5,
-        relativePerformanceVsSP500: 0, // Se calculará cuando se tengan datos del SP500
-        activeAlerts: 8,
-        closedAlerts: 25,
-        winningAlerts: 16,
-        losingAlerts: 9,
-        winRate: 64.0,
-        averageGain: 8.5,
-        averageLoss: 5.2,
-        totalTrades: 33,
+        totalReturnPercent: 0,
+        relativePerformanceVsSP500: 0,
+        activeAlerts: 0,
+        closedAlerts: 0,
+        winningAlerts: 0,
+        losingAlerts: 0,
+        winRate: 0,
+        averageGain: 0,
+        averageLoss: 0,
+        totalTrades: 0,
         period: selectedPeriod
       };
       setServiceData(fallbackData);
@@ -131,6 +139,23 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
   useEffect(() => {
     refreshData(period);
   }, [period]);
+
+  // Recalcular rendimiento relativo cuando sp500Data cambie
+  useEffect(() => {
+    if (sp500Data && serviceData) {
+      const sp500Return = sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0;
+      let relativePerformanceVsSP500 = 0;
+      
+      if (sp500Return !== 0) {
+        relativePerformanceVsSP500 = ((serviceData.totalReturnPercent - sp500Return) / sp500Return) * 100;
+      }
+      
+      setServiceData(prev => prev ? {
+        ...prev,
+        relativePerformanceVsSP500: parseFloat(relativePerformanceVsSP500.toFixed(2))
+      } : null);
+    }
+  }, [sp500Data]);
 
   return {
     sp500Data,

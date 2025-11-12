@@ -81,7 +81,7 @@ export default async function handler(
     // ✅ CAMBIO: No verificar autenticación - datos globales para todos los usuarios
 
     // Extraer parámetros de query
-    const { days = '30' } = req.query;
+    const { days = '30', tipo } = req.query;
     const daysNum = parseInt(days as string);
 
     // Calcular fecha de inicio
@@ -92,13 +92,21 @@ export default async function handler(
     const sp500Data = await getSP500Data(startDate, endDate);
     const sp500Map = new Map(sp500Data.map((item: SP500DataPoint) => [item.date, item]));
 
-    // Obtener todas las alertas en el rango de fechas
-    const alerts = await Alert.find({
+    // Construir query de alertas con filtro opcional por tipo
+    const alertQuery: any = {
       $or: [
         { createdAt: { $gte: startDate, $lte: endDate } },
         { exitDate: { $gte: startDate, $lte: endDate } }
       ]
-    }).sort({ createdAt: 1 }).lean();
+    };
+
+    // Filtrar por tipo si se proporciona
+    if (tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney')) {
+      alertQuery.tipo = tipo;
+    }
+
+    // Obtener todas las alertas en el rango de fechas
+    const alerts = await Alert.find(alertQuery).sort({ createdAt: 1 }).lean();
 
     // Crear mapa de datos por día
     const dailyData = new Map<string, {
@@ -169,8 +177,12 @@ export default async function handler(
       new Date(a.date).getTime() - new Date(b.date).getTime()
     );
 
-    // Calcular estadísticas generales
-    const allAlerts = await Alert.find({}).lean();
+    // Calcular estadísticas generales (filtrar por tipo si se proporciona)
+    const statsQuery: any = {};
+    if (tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney')) {
+      statsQuery.tipo = tipo;
+    }
+    const allAlerts = await Alert.find(statsQuery).lean();
     const totalAlerts = allAlerts.length;
     const closedAlerts = allAlerts.filter(alert => alert.status === 'CLOSED');
     const winningAlerts = closedAlerts.filter(alert => (alert.profit || 0) > 0);
