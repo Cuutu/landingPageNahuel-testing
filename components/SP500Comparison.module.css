@@ -199,6 +199,13 @@
   margin-bottom: 2rem;
 }
 
+.cardsGridContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .card {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%);
   border-radius: 16px;
@@ -325,6 +332,25 @@
 /* Estilos específicos para la tarjeta del S&P 500 */
 .sp500Card {
   position: relative;
+}
+
+/* Estilos específicos para la tarjeta de nuestro servicio */
+.serviceCard {
+  position: relative;
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(168, 85, 247, 0.02) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.serviceCard::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 /* Estilos específicos para la tarjeta de rendimiento relativo */
@@ -591,6 +617,11 @@
   
   .cardsGrid {
     grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .cardsGridContainer {
+    grid-template-columns: 1fr;
     gap: 1rem;
   }
   

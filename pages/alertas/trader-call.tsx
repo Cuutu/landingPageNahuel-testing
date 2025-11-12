@@ -396,7 +396,7 @@ const NonSubscriberView: React.FC<{
       {/* Rendimiento Comparado */}
       <section className={styles.comparisonSection}>
         <div className={styles.container}>
-          <SP500Comparison />
+          <SP500Comparison serviceType="TraderCall" />
         </div>
       </section>
 
@@ -2486,7 +2486,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </div>
 
         {/* Comparación con SP500 - MOVIDO AL INICIO */}
-        <SP500Comparison />
+        <SP500Comparison serviceType="TraderCall" />
 
         {/* Métricas principales - OCULTADO */}
         {/* <div className={styles.modernMetricsGrid}>

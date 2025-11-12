@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, RefreshCw, BarChart3, AlertCircle, Loader2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, RefreshCw, BarChart3, AlertCircle, Loader2, Activity } from 'lucide-react';
 import { useSP500Performance, SP500Data, ServicePerformanceData } from '@/hooks/useSP500Performance';
 import styles from './SP500Comparison.module.css';
 
@@ -133,8 +133,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
         ))}
       </div>
 
-      {/* SP500 Card Only */} 
-      <div className={styles.singleCardContainer}>
+      {/* Cards Grid - SP500 y Nuestro Servicio */}
+      <div className={styles.cardsGridContainer}>
         {/* SP500 Card */}
         <div className={`${styles.card} ${styles.sp500Card}`} role="article" aria-label="Rendimiento del índice S&P 500">
           <div className={styles.trendIndicator} aria-hidden="true"></div>
@@ -162,6 +162,39 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                   className={`${styles.performanceValue} ${getPerformanceClass(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}`}
                 >
                   {formatPercentage(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nuestro Servicio Card */}
+        <div className={`${styles.card} ${styles.serviceCard}`} role="article" aria-label="Rendimiento de nuestro servicio">
+          <div className={styles.trendIndicator} aria-hidden="true"></div>
+          
+          <div className={styles.cardHeader}>
+            <div className={styles.cardIcon} aria-hidden="true">
+              <Activity size={16} />
+            </div>
+            <div>
+              <h4 className={styles.cardTitle}>
+                Nuestro servicio
+              </h4>
+              <p className={styles.cardSubtitle}>
+                {serviceType === 'SmartMoney' ? 'Smart Money' : 'Trader Call'}
+              </p>
+            </div>
+          </div>
+          
+          <div>
+            <div className={styles.performanceContainer}>
+              <span className={styles.performanceLabel}>Rendimiento en el período seleccionado</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                {getPerformanceIcon(serviceData?.totalReturnPercent ?? 0)}
+                <span
+                  className={`${styles.performanceValue} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}
+                >
+                  {formatPercentage(serviceData?.totalReturnPercent ?? 0)}
                 </span>
               </div>
             </div>
