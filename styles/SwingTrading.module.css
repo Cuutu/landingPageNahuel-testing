@@ -98,7 +98,7 @@
   margin: 0 auto;
   padding: 0 2rem;
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 4rem;
   align-items: start;
   box-sizing: border-box;
@@ -217,19 +217,19 @@
   width: 100%;
   min-width: 0; /* Permite que el grid ajuste el ancho */
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .videoContainer {
-  width: 120%;
-  max-width: 120%;
+  width: 100%;
+  max-width: 100%;
   aspect-ratio: 16/9;
-  background: #111;
+  background: transparent;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   position: relative !important;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
