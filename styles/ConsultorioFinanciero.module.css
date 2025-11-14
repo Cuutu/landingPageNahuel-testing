@@ -1820,6 +1820,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  width: 100%;
 }
 
 .videoArrow {
@@ -1831,11 +1832,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .videoArrow:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.1);
+}
+
+.youtubeVideoWrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: #2a2a2a;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  flex: 1;
+  min-width: 0;
 }
 
 .videoPlayer {
@@ -1950,10 +1964,20 @@
   
   .youtubeVideoContainer {
     justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .youtubeVideoWrapper {
+    width: 100%;
+    max-width: 100%;
   }
   
   .videoPlayer {
     max-width: 100%;
+  }
+  
+  .videoArrow {
+    display: none; /* Ocultar flechas en mobile para más espacio */
   }
 }
 

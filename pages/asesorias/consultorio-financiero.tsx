@@ -915,14 +915,14 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                   <ChevronLeft size={24} />
                 </div>
                 
-                <div className={styles.videoPlayer}>
+                <div className={styles.youtubeVideoWrapper}>
                   <YouTubePlayer
                     videoId="dQw4w9WgXcQ"
                     title="Consultorio Financiero - Testimonios"
                     autoplay={false}
                     muted={true}
                     loop={false}
-                    className={styles.videoPlayer}
+                    fillContainer={true}
                   />
                 </div>
                 
