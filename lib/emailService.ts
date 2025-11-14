@@ -450,6 +450,26 @@ export function generateReportEmailTemplate(
   const category = notification.metadata?.reportCategory || 'trader-call';
   const service = serviceInfo[category as keyof typeof serviceInfo] || serviceInfo['trader-call'];
 
+  // Extraer el título del informe del metadata, del título de la notificación, o usar fallback
+  const getReportTitle = (): string => {
+    // Primero intentar desde metadata
+    if (notification.metadata?.reportTitle) {
+      return notification.metadata.reportTitle;
+    }
+    // Si no está en metadata, intentar extraer del título de la notificación
+    // Formato esperado: "📰 Nuevo Informe TraderCall: Título del Informe"
+    if (notification.title) {
+      const match = notification.title.match(/:\s*(.+)$/);
+      if (match && match[1]) {
+        return match[1].trim();
+      }
+    }
+    // Fallback final
+    return 'Nuevo Informe';
+  };
+
+  const reportTitle = getReportTitle();
+
   const reportDetailsHtml = notification.metadata ? `
     <div style="background-color: #f8fafc; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e2e8f0;">
       <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
@@ -461,7 +481,7 @@ export function generateReportEmailTemplate(
       
       <div style="margin: 8px 0 16px;">
         <div style="font-size: 13px; color: #64748b; font-weight: 600; margin-bottom: 4px;">Título</div>
-        <div style="font-size: 14px; color: #111827; font-weight: 700;">${notification.metadata?.reportTitle || 'Nuevo Informe'}</div>
+        <div style="font-size: 14px; color: #111827; font-weight: 700;">${reportTitle}</div>
       </div>
       
       <table role="presentation" width="100%" cellspacing="0" cellpadding="8" border="0">
@@ -517,7 +537,7 @@ export function generateReportEmailTemplate(
     <div style="background-color: #ffffff; border: 2px solid #e2e8f0; border-radius: 16px; padding: 25px; margin: 20px 0; text-align: center;">
       <div style="font-size: 40px; margin-bottom: 15px;">📊</div>
       <h4 style="margin: 0 0 15px; font-size: 18px; color: #1e293b; font-weight: 700;">
-        ${notification.metadata?.reportTitle || notification.title || 'Nuevo Informe'}
+        ${reportTitle}
       </h4>
       
       <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 15px 0;">

@@ -858,14 +858,15 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
             muted={true}
             loop={true}
             showControls={false}
+            className={styles.backgroundVideo}
           />
-          <div className={styles.container}>
-            <motion.div 
-              className={styles.heroContent}
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-            >
+          <div className={styles.heroOverlay}></div>
+          <motion.div 
+            className={styles.heroContent}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
               <div className={styles.heroText}>
                 <h1 className={styles.heroTitle}>
                   Swing Trading
@@ -923,33 +924,18 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               </div>
               <div className={styles.heroVideo}>
                 <div className={styles.videoContainer}>
-                  {swingHeroVideo?.youtubeId ? (
-                    <YouTubePlayer
-                      videoId={swingHeroVideo.youtubeId}
-                      title={swingHeroVideo.title || 'Swing Trading - Video'}
-                      autoplay={!!swingHeroVideo.autoplay}
-                      muted={!!swingHeroVideo.muted}
-                      loop={!!swingHeroVideo.loop}
-                      controls={true}
-                      className={styles.videoPlayer}
-                      fillContainer={true}
-                    />
-                  ) : (
-                    <YouTubePlayer
-                      videoId="dQw4w9WgXcQ"
-                      title="Swing Trading - Video"
-                      autoplay={false}
-                      muted={true}
-                      loop={false}
-                      controls={true}
-                      className={styles.videoPlayer}
-                      fillContainer={true}
-                    />
-                  )}
+                  <YouTubePlayer
+                    videoId={swingHeroVideo?.youtubeId || "dQw4w9WgXcQ"}
+                    title={swingHeroVideo?.title || "Swing Trading - Introducción"}
+                    autoplay={swingHeroVideo?.autoplay || false}
+                    muted={swingHeroVideo?.muted !== undefined ? swingHeroVideo.muted : true}
+                    loop={swingHeroVideo?.loop || false}
+                    className={styles.videoPlayer}
+                    fillContainer={true}
+                  />
                 </div>
               </div>
             </motion.div>
-          </div>
         </section>
 
         {/* Info Cards Section */}

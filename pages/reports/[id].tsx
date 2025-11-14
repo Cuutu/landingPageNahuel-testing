@@ -777,11 +777,16 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               )}
             </div>
 
-            {/* Controles de zoom ABAJO */}
+            {/* Controles de zoom ABAJO con caption integrado */}
             <div className={styles.zoomControls}>
               <span className={styles.imageCounter}>
                 {currentImageIndex + 1} de {report.images.length}
               </span>
+              {report.images[currentImageIndex]?.caption && (
+                <span className={styles.imageCaption}>
+                  {report.images[currentImageIndex].caption}
+                </span>
+              )}
               <div className={styles.zoomButtonGroup}>
                 <button 
                   className={styles.zoomButton} 
@@ -808,14 +813,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   ⌂
                 </button>
               </div>
-            </div>
-                
-            <div className={styles.imageModalInfo}>
-              {report.images[currentImageIndex]?.caption && (
-                <p className={styles.modalCaption}>
-                  {report.images[currentImageIndex].caption}
-                </p>
-              )}
             </div>
               </div>
             </div>
@@ -946,11 +943,16 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
               )}
             </div>
 
-            {/* Controles de zoom ABAJO */}
+            {/* Controles de zoom ABAJO con caption integrado */}
             <div className={styles.zoomControls}>
               <span className={styles.imageCounter}>
                 {currentImageIndex + 1} de {report.images.length}
               </span>
+              {report.images[currentImageIndex]?.caption && (
+                <span className={styles.imageCaption}>
+                  {report.images[currentImageIndex].caption}
+                </span>
+              )}
               <div className={styles.zoomButtonGroup}>
                 <button 
                   className={styles.zoomButton} 
@@ -977,14 +979,6 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                   ⌂
                 </button>
               </div>
-            </div>
-            
-            <div className={styles.imageModalInfo}>
-              {report.images[currentImageIndex]?.caption && (
-                <p className={styles.modalCaption}>
-                  {report.images[currentImageIndex].caption}
-                </p>
-              )}
             </div>
           </div>
         </div>

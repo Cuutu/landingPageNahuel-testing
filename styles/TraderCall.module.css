@@ -5738,6 +5738,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 1rem;
   border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
 }
 
@@ -5981,6 +5982,8 @@
 .imageCounter {
   font-weight: 600;
   font-size: 0.875rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .imageCaption {
@@ -5988,6 +5991,11 @@
   margin-left: 1rem;
   font-size: 0.875rem;
   line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  text-align: center;
 }
 
 /* Responsive */
