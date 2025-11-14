@@ -42,20 +42,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let performanceData;
     try {
       console.log(`🔄 Intentando obtener datos reales para período: ${period}`);
-      performanceData = await getRealSP500Data(period as string);
-      console.log(`✅ Datos reales obtenidos:`, {
+      // Intentar primero con Yahoo Finance (más confiable)
+      performanceData = await getRealSP500DataFromYahoo(period as string);
+      console.log(`✅ Datos reales obtenidos de Yahoo Finance:`, {
         currentPrice: performanceData.currentPrice,
         periodChangePercent: performanceData.periodChangePercent,
         dataProvider: performanceData.dataProvider
       });
-    } catch (error) {
-      console.log('⚠️ Usando datos simulados como fallback:', error);
-      performanceData = await generateHistoricalPerformance(startDate, endDate, period as string);
-      console.log(`📊 Datos simulados generados:`, {
-        currentPrice: performanceData.currentPrice,
-        changePercent: performanceData.changePercent,
-        dataProvider: performanceData.dataProvider
-      });
+    } catch (yahooError) {
+      console.log('⚠️ Yahoo Finance falló, intentando Alpha Vantage:', yahooError);
+      try {
+        // Fallback a Alpha Vantage
+        performanceData = await getRealSP500Data(period as string);
+        console.log(`✅ Datos reales obtenidos de Alpha Vantage:`, {
+          currentPrice: performanceData.currentPrice,
+          periodChangePercent: performanceData.periodChangePercent,
+          dataProvider: performanceData.dataProvider
+        });
+      } catch (alphaError) {
+        console.log('⚠️ Alpha Vantage falló, usando datos simulados como fallback:', alphaError);
+        performanceData = await generateHistoricalPerformance(startDate, endDate, period as string);
+        console.log(`📊 Datos simulados generados:`, {
+          currentPrice: performanceData.currentPrice,
+          changePercent: performanceData.changePercent,
+          dataProvider: performanceData.dataProvider
+        });
+      }
     }
 
     // Cache headers para optimizar
@@ -80,7 +92,136 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 }
 
 /**
- * Obtiene datos reales del S&P 500 desde Alpha Vantage API
+ * Obtiene datos reales del S&P 500 desde Yahoo Finance (fuente principal)
+ */
+async function getRealSP500DataFromYahoo(period: string) {
+  try {
+    // Calcular rango de fechas según el período
+    const endDate = new Date();
+    let startDate = new Date();
+    const periodDays: { [key: string]: number } = {
+      '7d': 7,
+      '15d': 15,
+      '30d': 30,
+      '6m': 180,
+      '1y': 365
+    };
+    
+    const days = periodDays[period] || 30;
+    startDate.setDate(endDate.getDate() - days);
+    
+    // Convertir a timestamps Unix
+    const period1 = Math.floor(startDate.getTime() / 1000);
+    const period2 = Math.floor(endDate.getTime() / 1000);
+    
+    // Obtener datos de Yahoo Finance
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=${period1}&period2=${period2}&interval=1d`);
+    
+    if (!response.ok) {
+      throw new Error(`Error HTTP: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Verificar estructura de respuesta
+    if (!data.chart || !data.chart.result || !data.chart.result[0]) {
+      throw new Error('Estructura de respuesta inválida de Yahoo Finance');
+    }
+    
+    const chartData = data.chart.result[0];
+    const quotes = chartData.indicators?.quote?.[0];
+    const timestamps = chartData.timestamp;
+    
+    if (!quotes || !timestamps || !quotes.close || quotes.close.length === 0) {
+      throw new Error('No se encontraron datos de precios en la respuesta');
+    }
+    
+    // Obtener precios válidos (filtrar nulls)
+    const validData: Array<{ timestamp: number; price: number }> = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      if (quotes.close[i] !== null && quotes.close[i] !== undefined) {
+        validData.push({
+          timestamp: timestamps[i],
+          price: quotes.close[i]
+        });
+      }
+    }
+    
+    if (validData.length === 0) {
+      throw new Error('No se encontraron datos válidos de precios');
+    }
+    
+    // Obtener precio actual (más reciente)
+    const currentPrice = validData[validData.length - 1].price;
+    const currentDate = new Date(validData[validData.length - 1].timestamp * 1000);
+    
+    // Calcular precio de inicio según el período
+    const targetStartDate = new Date(currentDate);
+    targetStartDate.setDate(targetStartDate.getDate() - days);
+    
+    // Encontrar el precio más cercano a la fecha de inicio
+    let startPrice = currentPrice;
+    let closestDiff = Infinity;
+    
+    for (const dataPoint of validData) {
+      const dataDate = new Date(dataPoint.timestamp * 1000);
+      const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
+      
+      if (diff < closestDiff && dataDate <= targetStartDate) {
+        closestDiff = diff;
+        startPrice = dataPoint.price;
+      }
+    }
+    
+    // Calcular rendimiento del período
+    const periodChange = currentPrice - startPrice;
+    const periodChangePercent = (periodChange / startPrice) * 100;
+    
+    // Obtener cambio diario
+    const previousPrice = validData.length > 1 ? validData[validData.length - 2].price : startPrice;
+    const dailyChange = currentPrice - previousPrice;
+    const dailyChangePercent = (dailyChange / previousPrice) * 100;
+    
+    // Generar datos diarios
+    const dailyData = validData.slice(-Math.min(validData.length, 30)).map((dataPoint, index, array) => {
+      const date = new Date(dataPoint.timestamp * 1000);
+      const prevPrice = index > 0 ? array[index - 1].price : dataPoint.price;
+      const change = dataPoint.price - prevPrice;
+      const changePercent = (change / prevPrice) * 100;
+      
+      return {
+        date: date.toISOString().split('T')[0],
+        price: parseFloat(dataPoint.price.toFixed(2)),
+        change: parseFloat(change.toFixed(2)),
+        changePercent: parseFloat(changePercent.toFixed(2))
+      };
+    });
+    
+    return {
+      currentPrice: parseFloat(currentPrice.toFixed(2)),
+      startPrice: parseFloat(startPrice.toFixed(2)),
+      change: parseFloat(dailyChange.toFixed(2)),
+      changePercent: parseFloat(dailyChangePercent.toFixed(2)),
+      periodChange: parseFloat(periodChange.toFixed(2)),
+      periodChangePercent: parseFloat(periodChangePercent.toFixed(2)),
+      volatility: parseFloat((Math.abs(periodChangePercent) * 0.3).toFixed(2)),
+      period: period,
+      marketStatus: getMarketStatus(),
+      lastUpdate: new Date().toISOString(),
+      dailyData: dailyData,
+      dataProvider: 'Yahoo Finance (Real)',
+      startDate: new Date(targetStartDate).toISOString().split('T')[0],
+      endDate: currentDate.toISOString().split('T')[0]
+    };
+    
+  } catch (error) {
+    console.error('Error obteniendo datos de Yahoo Finance:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtiene datos reales del S&P 500 desde Alpha Vantage API (fallback)
  */
 async function getRealSP500Data(period: string) {
   try {
@@ -96,8 +237,18 @@ async function getRealSP500Data(period: string) {
     
     const historicalData = await historicalResponse.json();
     
+    // Verificar si hay errores en la respuesta de Alpha Vantage
+    if (historicalData['Error Message']) {
+      throw new Error(`Alpha Vantage Error: ${historicalData['Error Message']}`);
+    }
+    
+    if (historicalData['Note']) {
+      throw new Error(`Alpha Vantage API Limit: ${historicalData['Note']}`);
+    }
+    
     // Verificar si hay datos válidos
     if (!historicalData['Time Series (Daily)']) {
+      console.error('Respuesta de Alpha Vantage:', JSON.stringify(historicalData, null, 2));
       throw new Error('No se pudieron obtener datos históricos válidos del S&P 500');
     }
     

@@ -67,10 +67,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let optimizedImageUrl = null;
       if (report.coverImage?.public_id) {
         optimizedImageUrl = getCloudinaryImageUrl(report.coverImage.public_id, {
-          width: 400,
-          height: 300,
-          crop: 'fill',
-          format: 'webp'
+          width: 600,
+          height: 400,
+          crop: 'limit',
+          format: 'webp',
+          quality: 'auto'
         });
       }
 
@@ -80,11 +81,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         optimizedImages = report.images.map((img: any) => ({
           ...img,
           optimizedUrl: getCloudinaryImageUrl(img.public_id, {
-            width: 600,
-            height: 400,
-            crop: 'fill',
-            format: 'webp'
-          })
+            width: 800,
+            height: 800,
+            crop: 'limit',
+            format: 'webp',
+            quality: 'auto'
+          }),
+          originalUrl: img.secure_url || img.url
         }));
       }
 

@@ -85,9 +85,9 @@
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1fr 1.1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 4rem;
-  align-items: center;
+  align-items: start;
   width: 100%;
   max-width: 1300px;
   margin: 0 auto;
@@ -199,8 +199,9 @@
 .heroVideo {
   height: 100%;
   display: flex;
-  align-items: center;
+  align-items: start;
   justify-content: center;
+  padding-top: 0;
 }
 
 .videoContainer {

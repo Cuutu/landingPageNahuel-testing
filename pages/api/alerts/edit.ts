@@ -126,13 +126,30 @@ export default async function handler(
       changes.action = action;
     }
 
+    // ✅ CORREGIDO: Para alertas de rango, entryPrice es opcional
+    // Solo validar entryPrice si la alerta NO es de tipo rango, o si se está enviando explícitamente
+    const isRangeAlert = alert.tipoAlerta === 'rango' || alert.precioMinimo || alert.precioMaximo;
+    
     if (entryPrice !== undefined && entryPrice !== alert.entryPrice) {
-      if (entryPrice <= 0) {
+      // Para alertas de rango, entryPrice puede ser opcional o 0
+      if (!isRangeAlert && (isNaN(entryPrice) || entryPrice <= 0)) {
         return res.status(400).json({ error: 'El precio de entrada debe ser mayor a 0' });
       }
-      oldValues.entryPrice = alert.entryPrice;
-      changes.entryPrice = entryPrice;
-      changes.currentPrice = entryPrice; // Actualizar precio actual también
+      
+      // Si es alerta de rango y entryPrice es válido o 0, permitir el cambio
+      if (isRangeAlert && (isNaN(entryPrice) || entryPrice < 0)) {
+        return res.status(400).json({ error: 'El precio de entrada no puede ser negativo' });
+      }
+      
+      // Solo actualizar si el valor es válido
+      if (!isNaN(entryPrice) && entryPrice >= 0) {
+        oldValues.entryPrice = alert.entryPrice;
+        changes.entryPrice = entryPrice;
+        // Solo actualizar currentPrice si entryPrice es mayor a 0
+        if (entryPrice > 0) {
+          changes.currentPrice = entryPrice; // Actualizar precio actual también
+        }
+      }
     }
 
     if (stopLoss !== undefined && stopLoss !== alert.stopLoss) {

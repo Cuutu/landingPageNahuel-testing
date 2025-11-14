@@ -238,19 +238,21 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               filteredOperations.map((operation) => (
                 <tr key={operation._id} className={operation.operationType === 'COMPRA' ? styles.buyRow : styles.sellRow}>
                   <td>
-                    <div className="flex items-center space-x-2">
-                      {getOperationIcon(operation.operationType)}
-                      <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
-                        {operation.operationType}
-                      </span>
-                    </div>
-                    {operation.isPartialSale && (
-                      <div className="mt-1">
-                        <span className={styles.partialSaleTag}>
-                          Parcial ({operation.partialSalePercentage}%)
+                    <div className="flex flex-col">
+                      <div className="flex items-center space-x-2">
+                        {getOperationIcon(operation.operationType)}
+                        <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
+                          {operation.operationType}
                         </span>
                       </div>
-                    )}
+                      {operation.isPartialSale && (
+                        <div className="mt-1 flex items-center">
+                          <span className={styles.partialSaleTag}>
+                            Parcial ({operation.partialSalePercentage}%)
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div>

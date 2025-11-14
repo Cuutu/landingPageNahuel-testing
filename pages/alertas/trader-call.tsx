@@ -1388,7 +1388,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         console.log(`💰 Precio obtenido para ${symbol}: $${data.price}`);
         console.log(`📊 Estado del mercado: ${data.marketStatus}`);
         
-        setStockPrice(data.price);
+        const price = data.price;
+        setStockPrice(price);
+        
+        // Si es alerta de rango, llenar el precio mínimo con el precio obtenido
+        if (newAlert.tipoAlerta === 'rango') {
+          setNewAlert(prev => ({ ...prev, precioMinimo: price.toString() }));
+        }
         
       } else {
         console.error('Error al obtener precio:', response.status);
@@ -1457,6 +1463,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       return;
     }
     
+    // Validación para alertas de rango
+    if (newAlert.tipoAlerta === 'rango') {
+      if (!newAlert.precioMinimo || !newAlert.precioMaximo) {
+        alert('Por favor completa el precio mínimo y máximo del rango');
+        return;
+      }
+      if (parseFloat(newAlert.precioMinimo) >= parseFloat(newAlert.precioMaximo)) {
+        alert('El precio mínimo debe ser menor al precio máximo');
+        return;
+      }
+    }
+    
     // ✅ NUEVO: Validar que haya suficiente liquidez disponible
     const liquidityAmount = newAlert.liquidityPercentage > 0 ? (liquidityTotal * newAlert.liquidityPercentage / 100) : 0;
     if (liquidityAmount > 0) {
@@ -1467,13 +1485,41 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
     }
     
+    // ✅ NUEVO: Obtener precio actual para alertas de rango (para entryPrice estático)
+    let currentPriceForRange: number | undefined = undefined;
+    if (newAlert.tipoAlerta === 'rango') {
+      try {
+        console.log(`🔍 Obteniendo precio actual para alerta de rango: ${newAlert.symbol.toUpperCase()}`);
+        const priceResponse = await fetch(`/api/stock-price?symbol=${newAlert.symbol.toUpperCase()}`, {
+          method: 'GET',
+          credentials: 'same-origin',
+        });
+        
+        if (priceResponse.ok) {
+          const priceData = await priceResponse.json();
+          currentPriceForRange = priceData.price;
+          console.log(`✅ Precio actual obtenido para rango: $${currentPriceForRange}`);
+        } else {
+          console.warn('⚠️ No se pudo obtener precio actual, se usará el precio mínimo del rango');
+          // Si no se puede obtener, usar el precio mínimo como fallback
+          currentPriceForRange = parseFloat(newAlert.precioMinimo);
+        }
+      } catch (error) {
+        console.error('Error obteniendo precio actual para rango:', error);
+        // Si falla, usar el precio mínimo como fallback
+        currentPriceForRange = parseFloat(newAlert.precioMinimo);
+      }
+    }
+    
     // ✅ DEBUG: Log de datos antes de enviar
     console.log('🔍 [DEBUG] Datos de liquidez antes de enviar:', {
       liquidityPercentage: newAlert.liquidityPercentage,
       liquidityTotal,
       liquidityAmount,
       availableLiquidity: liquiditySummary.liquidezDisponible,
-      symbol: newAlert.symbol.toUpperCase()
+      symbol: newAlert.symbol.toUpperCase(),
+      tipoAlerta: newAlert.tipoAlerta,
+      currentPriceForRange: currentPriceForRange
     });
     
     setLoading(true);
@@ -1488,7 +1534,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           tipo: 'TraderCall',
           symbol: newAlert.symbol.toUpperCase(),
           action: newAlert.action,
-          entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : undefined, // Solo para alertas de precio específico
+          // ✅ CORREGIDO: Para alertas de rango, usar el precio actual obtenido como entryPrice estático
+          entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : (currentPriceForRange || parseFloat(newAlert.precioMinimo)),
           stopLoss: parseFloat(newAlert.stopLoss),
           takeProfit: parseFloat(newAlert.takeProfit),
           analysis: newAlert.analysis || '',
@@ -2091,6 +2138,23 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         return;
       }
 
+      // ✅ Validar entryPrice solo si está presente y no está vacío
+      // Para alertas de rango, entryPrice es opcional
+      const isRangeAlert = editingAlert?.tipoAlerta === 'rango' || editingAlert?.precioMinimo || editingAlert?.precioMaximo;
+      const entryPriceValue = editAlert.entryPrice?.trim() ? parseFloat(editAlert.entryPrice) : undefined;
+      
+      // Solo validar entryPrice si NO es una alerta de rango
+      if (!isRangeAlert && entryPriceValue !== undefined && (isNaN(entryPriceValue) || entryPriceValue <= 0)) {
+        alert('❌ El precio de entrada debe ser mayor a 0');
+        return;
+      }
+      
+      // Para alertas de rango, solo validar que no sea negativo si se proporciona
+      if (isRangeAlert && entryPriceValue !== undefined && (isNaN(entryPriceValue) || entryPriceValue < 0)) {
+        alert('❌ El precio de entrada no puede ser negativo');
+        return;
+      }
+
       console.log('🔄 Guardando cambios de alerta:', {
         alertId: alertId,
         changes: editAlert
@@ -2117,7 +2181,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           alertId: alertId,
           symbol: editAlert.symbol,
           action: editAlert.action,
-          entryPrice: parseFloat(editAlert.entryPrice),
+          entryPrice: entryPriceValue,
           stopLoss: parseFloat(editAlert.stopLoss),
           takeProfit: parseFloat(editAlert.takeProfit),
           analysis: editAlert.analysis,
@@ -3900,15 +3964,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   onChange={(e) => setNewAlert(prev => ({ ...prev, symbol: e.target.value }))}
                   className={styles.input}
                 />
-                {newAlert.tipoAlerta !== 'rango' && (
-                  <button
-                    onClick={() => fetchStockPrice(newAlert.symbol)}
-                    disabled={!newAlert.symbol || priceLoading}
-                    className={styles.getPriceButton}
-                  >
-                    {priceLoading ? 'Cargando...' : 'Obtener Precio'}
-                  </button>
-                )}
+                <button
+                  onClick={() => fetchStockPrice(newAlert.symbol)}
+                  disabled={!newAlert.symbol || priceLoading}
+                  className={styles.getPriceButton}
+                >
+                  {priceLoading ? 'Cargando...' : 'Obtener Precio'}
+                </button>
               </div>
             </div>
 
@@ -3962,14 +4024,23 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <>
                 <div className={styles.inputGroup}>
                   <label>Precio Mínimo del Rango</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="Precio mínimo"
-                    value={newAlert.precioMinimo}
-                    onChange={(e) => setNewAlert(prev => ({ ...prev, precioMinimo: e.target.value }))}
-                    className={styles.input}
-                  />
+                  <div className={styles.symbolInput}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Precio mínimo"
+                      value={newAlert.precioMinimo}
+                      onChange={(e) => setNewAlert(prev => ({ ...prev, precioMinimo: e.target.value }))}
+                      className={styles.input}
+                    />
+                    <button
+                      onClick={() => fetchStockPrice(newAlert.symbol)}
+                      disabled={!newAlert.symbol || priceLoading}
+                      className={styles.getPriceButton}
+                    >
+                      {priceLoading ? 'Cargando...' : 'Obtener Precio'}
+                    </button>
+                  </div>
                 </div>
 
                 <div className={styles.inputGroup}>
@@ -5091,6 +5162,13 @@ const ReportViewModal = ({ report, onClose, onEdit, userRole }: {
                   className={styles.modalImage}
                   loading="lazy"
                   draggable={false}
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '100%', 
+                    width: 'auto', 
+                    height: 'auto',
+                    objectFit: 'contain'
+                  }}
                 />
               </div>
               {report.images.length > 1 && (
@@ -5211,6 +5289,13 @@ const ReportViewModal = ({ report, onClose, onEdit, userRole }: {
                   className={styles.modalImage}
                   loading="lazy"
                   draggable={false}
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '100%', 
+                    width: 'auto', 
+                    height: 'auto',
+                    objectFit: 'contain'
+                  }}
                 />
               </div>
               {report.images.length > 1 && (

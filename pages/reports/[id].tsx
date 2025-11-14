@@ -58,10 +58,17 @@ interface ReportData {
   };
   images?: Array<{
     url: string;
+    secure_url?: string;
     optimizedUrl?: string;
+    originalUrl?: string;
     thumbnailUrl?: string;
     caption?: string;
     order: number;
+    public_id?: string;
+    width?: number;
+    height?: number;
+    format?: string;
+    bytes?: number;
   }>;
   isPublished: boolean;
   publishedAt: string;
@@ -744,10 +751,17 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 }}
               >
                 <img 
-                  src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
+                  src={report.images[currentImageIndex]?.originalUrl || report.images[currentImageIndex]?.secure_url || report.images[currentImageIndex]?.url}
                   alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
                   className={styles.modalImage}
                   draggable={false}
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '100%', 
+                    width: 'auto', 
+                    height: 'auto',
+                    objectFit: 'contain'
+                  }}
                 />
               </div>
               
@@ -906,10 +920,17 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 }}
               >
                 <img 
-                  src={report.images[currentImageIndex]?.optimizedUrl || report.images[currentImageIndex]?.url}
+                  src={report.images[currentImageIndex]?.originalUrl || report.images[currentImageIndex]?.secure_url || report.images[currentImageIndex]?.url}
                   alt={report.images[currentImageIndex]?.caption || `Imagen ${currentImageIndex + 1}`}
                   className={styles.modalImage}
                   draggable={false}
+                  style={{ 
+                    maxWidth: '100%', 
+                    maxHeight: '100%', 
+                    width: 'auto', 
+                    height: 'auto',
+                    objectFit: 'contain'
+                  }}
                 />
               </div>
               
@@ -1220,11 +1241,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (reportDoc.coverImage?.public_id) {
       try {
         const { getCloudinaryImageUrl } = await import('@/lib/cloudinary');
+        // Usar 'limit' para mantener aspect ratio, solo limita el tamaño máximo
         optimizedImageUrl = getCloudinaryImageUrl(reportDoc.coverImage.public_id, {
-          width: 800,
-          height: 600,
-          crop: 'scale',
-          format: 'webp'
+          width: 1200,
+          height: 800,
+          crop: 'limit',
+          format: 'webp',
+          quality: 'auto'
         });
       } catch (error) {
         console.log('Error procesando imagen de portada:', error);
@@ -1240,17 +1263,23 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
           .map((img: any) => ({
             ...img,
+            // URL optimizada para vista normal (mantiene aspect ratio)
             optimizedUrl: getCloudinaryImageUrl(img.public_id, {
-              width: 800,
-              height: 600,
-              crop: 'scale',
-              format: 'webp'
+              width: 1200,
+              height: 1200,
+              crop: 'limit',
+              format: 'webp',
+              quality: 'auto'
             }),
+            // URL original para modal (sin transformaciones para ver tamaño completo)
+            originalUrl: img.secure_url || img.url,
+            // Thumbnail para galería (mantiene aspect ratio)
             thumbnailUrl: getCloudinaryImageUrl(img.public_id, {
-              width: 300,
-              height: 200,
-              crop: 'scale',
-              format: 'webp'
+              width: 400,
+              height: 400,
+              crop: 'limit',
+              format: 'webp',
+              quality: 'auto'
             })
           }));
       } catch (error) {

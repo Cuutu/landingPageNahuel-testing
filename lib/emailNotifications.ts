@@ -619,6 +619,7 @@ export async function sendUserContactConfirmationEmail(
               
               <div class="label">📅 Fecha de envío:</div>
               <div class="value">${new Date(contactDetails.timestamp).toLocaleString('es-ES', {
+                timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires',
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',

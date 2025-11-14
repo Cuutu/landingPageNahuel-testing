@@ -430,17 +430,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               meetLink: (await Booking.findById(newBooking._id))?.meetingLink
             }
           );
-          await sendAdminNotificationEmail({
-            userEmail: bookingUser.email,
-            userName: bookingUser.name || bookingUser.email,
-            type: 'advisory',
-            serviceType,
-            date: formattedDate,
-            time: formattedTime,
-            duration: reservationData?.duration || 45,
-            price: payment.amount,
-            meetLink: (await Booking.findById(newBooking._id))?.meetingLink
-          });
+          
+          // Verificar si ya se envió la notificación al admin (idempotente)
+          if (!payment.metadata) payment.metadata = {};
+          
+          if (!payment.metadata.adminAdvisoryBookingNotified) {
+            await sendAdminNotificationEmail({
+              userEmail: bookingUser.email,
+              userName: bookingUser.name || bookingUser.email,
+              type: 'advisory',
+              serviceType,
+              date: formattedDate,
+              time: formattedTime,
+              duration: reservationData?.duration || 45,
+              price: payment.amount,
+              meetLink: (await Booking.findById(newBooking._id))?.meetingLink
+            });
+            
+            // Marcar como notificado para evitar duplicados
+            payment.metadata.adminAdvisoryBookingNotified = true;
+            payment.metadata.adminAdvisoryBookingNotifiedAt = new Date();
+            await payment.save();
+            
+            logger.info('IMMEDIATE admin notification sent', { module: 'payments', step: 'admin_notification_sent', user: bookingUser.email });
+          } else {
+            logger.info('IMMEDIATE admin notification already sent', { module: 'payments', step: 'admin_notification_skipped', user: bookingUser.email });
+          }
+          
           logger.info('IMMEDIATE emails sent', { module: 'payments', step: 'emails_sent', user: bookingUser.email });
         } catch (emailErr) {
           logger.error('IMMEDIATE email error', { module: 'payments', step: 'emails_error', error: (emailErr as Error).message });

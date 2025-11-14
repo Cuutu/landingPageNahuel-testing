@@ -203,19 +203,25 @@ export default async function handler(
       alertData.precioMinimo = precioMinimo; // Mantener para compatibilidad
       alertData.precioMaximo = precioMaximo; // Mantener para compatibilidad
       
-      // ✅ CORREGIDO: Usar precio real del mercado o promedio del rango para P&L correcto
-      // Si se obtuvo el precio actual del mercado y está dentro del rango, usarlo
-      // Si no, usar el promedio del rango para un P&L más realista
-      // Nota: precioMinimo y precioMaximo ya están validados en el if anterior (líneas 135-140)
-      if (currentMarketPrice && precioMinimo && precioMaximo && currentMarketPrice > precioMinimo && currentMarketPrice < precioMaximo) {
-        // Precio del mercado está dentro del rango, usarlo
-        alertData.currentPrice = currentMarketPrice;
-        console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${currentMarketPrice} (precio real del mercado, P&L: 0%)`);
+      // ✅ NUEVO: Guardar entryPrice estático (precio actual al momento de creación)
+      // El entryPrice viene del frontend como el precio actual obtenido en ese momento
+      if (entryPrice && entryPrice > 0) {
+        alertData.entryPrice = entryPrice;
+        alertData.currentPrice = entryPrice; // El precio actual es el mismo que el entryPrice al momento de creación
+        console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, entryPrice estático: $${entryPrice}, currentPrice inicial: $${entryPrice} (P&L: 0%)`);
       } else {
-        // Usar promedio del rango para un cálculo de P&L más justo
-        const averagePrice = ((precioMinimo || 0) + (precioMaximo || 0)) / 2;
-        alertData.currentPrice = averagePrice;
-        console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, precio inicial: $${averagePrice} (promedio del rango, P&L: 0%)`);
+        // Fallback: usar precio actual del mercado si está disponible, sino promedio del rango
+        if (currentMarketPrice && precioMinimo && precioMaximo && currentMarketPrice > precioMinimo && currentMarketPrice < precioMaximo) {
+          alertData.entryPrice = currentMarketPrice;
+          alertData.currentPrice = currentMarketPrice;
+          console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, entryPrice estático: $${currentMarketPrice} (precio real del mercado, P&L: 0%)`);
+        } else {
+          // Usar promedio del rango como último recurso
+          const averagePrice = ((precioMinimo || 0) + (precioMaximo || 0)) / 2;
+          alertData.entryPrice = averagePrice;
+          alertData.currentPrice = averagePrice;
+          console.log(`📊 Alerta de ${action} con rango creada para ${symbol}: rango $${precioMinimo}-$${precioMaximo}, entryPrice estático: $${averagePrice} (promedio del rango, P&L: 0%)`);
+        }
       }
       
       // ✅ NUEVO: Establecer horario de cierre por defecto a 17:30 para alertas de rango

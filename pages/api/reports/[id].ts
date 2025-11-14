@@ -109,10 +109,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let optimizedImageUrl = null;
     if (report.coverImage?.public_id) {
       optimizedImageUrl = getCloudinaryImageUrl(report.coverImage.public_id, {
-        width: 800,
-        height: 600,
-        crop: 'fill',
-        format: 'webp'
+        width: 1200,
+        height: 800,
+        crop: 'limit',
+        format: 'webp',
+        quality: 'auto'
       });
     }
 
@@ -123,17 +124,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
         .map((img: any) => ({
           ...img,
+          // URL optimizada para vista normal (mantiene aspect ratio)
           optimizedUrl: getCloudinaryImageUrl(img.public_id, {
-            width: 800,
-            height: 600,
-            crop: 'fill',
-            format: 'webp'
+            width: 1200,
+            height: 1200,
+            crop: 'limit',
+            format: 'webp',
+            quality: 'auto'
           }),
+          // URL original para modal (sin transformaciones)
+          originalUrl: img.secure_url || img.url,
+          // Thumbnail para galería (mantiene aspect ratio)
           thumbnailUrl: getCloudinaryImageUrl(img.public_id, {
-            width: 300,
-            height: 200,
-            crop: 'fill',
-            format: 'webp'
+            width: 400,
+            height: 400,
+            crop: 'limit',
+            format: 'webp',
+            quality: 'auto'
           })
         }));
     }

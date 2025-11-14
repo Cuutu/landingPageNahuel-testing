@@ -93,18 +93,29 @@ export default async function handler(
 
     // Procesar el archivo
     console.log('📁 Procesando archivo con formidable...');
-    const [fields, files] = await form.parse(req);
-    console.log('📁 Archivos recibidos:', Object.keys(files));
-    console.log('📁 Campos recibidos:', Object.keys(fields));
+    
+    let fields: any, files: any;
+    try {
+      [fields, files] = await form.parse(req);
+      console.log('📁 Archivos recibidos:', Object.keys(files || {}));
+      console.log('📁 Campos recibidos:', Object.keys(fields || {}));
+    } catch (parseError: any) {
+      console.error('❌ Error parseando formulario:', parseError);
+      return res.status(400).json({
+        success: false,
+        error: `Error procesando archivo: ${parseError.message || 'Error desconocido'}`
+      });
+    }
     
     const file = Array.isArray(files.image) ? files.image[0] : files.image;
     console.log('📁 Archivo extraído:', file ? 'SÍ' : 'NO');
 
     if (!file) {
       console.error('❌ No se encontró archivo de imagen en la request');
+      console.error('📁 Archivos disponibles:', Object.keys(files || {}));
       return res.status(400).json({
         success: false,
-        error: 'No se encontró archivo de imagen'
+        error: 'No se encontró archivo de imagen. Asegúrate de enviar el archivo con el campo "image"'
       });
     }
 

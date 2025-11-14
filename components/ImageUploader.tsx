@@ -85,7 +85,7 @@ export default function ImageUploader({
     });
   };
 
-  const handleFileUpload = async (files: File[]) => {
+  const handleFileUpload = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
 
     setUploading(true);
@@ -113,18 +113,43 @@ export default function ImageUploader({
       setUploading(false);
       setProgress(0);
     }
-  };
+  }, [onImageUploaded, onUploadStart, onUploadComplete, onError]);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
+    if (rejectedFiles && rejectedFiles.length > 0) {
+      const rejection = rejectedFiles[0];
+      let errorMessage = 'Error al seleccionar archivo';
+      
+      if (rejection.errors && rejection.errors.length > 0) {
+        const error = rejection.errors[0];
+        if (error.code === 'file-too-large') {
+          errorMessage = `El archivo es demasiado grande. Máximo: ${Math.round(maxSizeBytes / (1024 * 1024))}MB`;
+        } else if (error.code === 'file-invalid-type') {
+          errorMessage = `Tipo de archivo no válido. Formatos permitidos: ${allowedFormats.join(', ').toUpperCase()}`;
+        } else if (error.code === 'too-many-files') {
+          errorMessage = `Demasiados archivos. Máximo: ${maxFiles}`;
+        } else {
+          errorMessage = error.message || 'Error al seleccionar archivo';
+        }
+      }
+      
+      console.error('❌ Archivo rechazado:', rejection);
+      onError?.(errorMessage);
+      return;
+    }
+    
     if (acceptedFiles.length > 0) {
       handleFileUpload(acceptedFiles);
     }
-  }, []);
+  }, [maxSizeBytes, maxFiles, allowedFormats, onError, handleFileUpload]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': allowedFormats.map(format => `.${format}`)
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png'],
+      'image/gif': ['.gif'],
+      'image/webp': ['.webp']
     },
     maxFiles: multiple ? maxFiles : 1,
     maxSize: maxSizeBytes,
@@ -132,7 +157,7 @@ export default function ImageUploader({
     disabled: uploading,
     onError: (error: any) => {
       console.error('❌ Error en dropzone:', error);
-      onError?.(error.message);
+      onError?.(error.message || 'Error al seleccionar archivo');
     }
   });
 

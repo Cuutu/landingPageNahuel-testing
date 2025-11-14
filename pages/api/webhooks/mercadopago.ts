@@ -794,44 +794,56 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           console.error('🔍 Stack trace del error de email:', emailError.stack);
         }
 
-        // ✅ NUEVO: Enviar notificación al administrador
+        // ✅ NUEVO: Enviar notificación al administrador (idempotente)
         try {
-          console.log('📧 Enviando notificación al administrador...');
+          // Verificar si ya se envió la notificación al admin
+          if (!payment.metadata) payment.metadata = {};
           
-          const { sendAdminNotificationEmail } = await import('@/lib/emailNotifications');
-          console.log('✅ Función sendAdminNotificationEmail importada correctamente');
-          
-          // Usar la misma lógica de formateo que createAdvisoryEvent para el admin también
-          const timezoneForAdmin = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
-          const adminFormattedDate = eventResult?.formattedDate || new Intl.DateTimeFormat('es-ES', {
-            timeZone: timezoneForAdmin,
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          }).format(startDate);
-          
-          const adminFormattedTime = eventResult?.formattedTime || new Intl.DateTimeFormat('es-ES', {
-            timeZone: timezoneForAdmin,
-            hour: '2-digit',
-            minute: '2-digit'
-          }).format(startDate);
-          
-          const adminNotificationData = {
-            userEmail: bookingUser.email,
-            userName: bookingUser.name || bookingUser.email,
-            type: 'advisory' as const,
-            serviceType: serviceType,
-            date: adminFormattedDate,
-            time: adminFormattedTime,
-            duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
-            price: amount,
-            meetLink: (await Booking.findById(newBooking._id))?.meetingLink
-          };
-          
-          await sendAdminNotificationEmail(adminNotificationData);
-          
-          console.log('✅ Notificación al administrador enviada exitosamente');
+          if (payment.metadata.adminAdvisoryBookingNotified) {
+            console.log('ℹ️ Notificación de admin para reserva de asesoría ya enviada previamente.');
+          } else {
+            console.log('📧 Enviando notificación al administrador...');
+            
+            const { sendAdminNotificationEmail } = await import('@/lib/emailNotifications');
+            console.log('✅ Función sendAdminNotificationEmail importada correctamente');
+            
+            // Usar la misma lógica de formateo que createAdvisoryEvent para el admin también
+            const timezoneForAdmin = process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires';
+            const adminFormattedDate = eventResult?.formattedDate || new Intl.DateTimeFormat('es-ES', {
+              timeZone: timezoneForAdmin,
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric'
+            }).format(startDate);
+            
+            const adminFormattedTime = eventResult?.formattedTime || new Intl.DateTimeFormat('es-ES', {
+              timeZone: timezoneForAdmin,
+              hour: '2-digit',
+              minute: '2-digit'
+            }).format(startDate);
+            
+            const adminNotificationData = {
+              userEmail: bookingUser.email,
+              userName: bookingUser.name || bookingUser.email,
+              type: 'advisory' as const,
+              serviceType: serviceType,
+              date: adminFormattedDate,
+              time: adminFormattedTime,
+              duration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
+              price: amount,
+              meetLink: (await Booking.findById(newBooking._id))?.meetingLink
+            };
+            
+            await sendAdminNotificationEmail(adminNotificationData);
+            
+            // Marcar como notificado para evitar duplicados
+            payment.metadata.adminAdvisoryBookingNotified = true;
+            payment.metadata.adminAdvisoryBookingNotifiedAt = new Date();
+            await payment.save();
+            
+            console.log('✅ Notificación al administrador enviada exitosamente');
+          }
         } catch (adminEmailError: any) {
           console.error('❌ Error enviando notificación al administrador:', adminEmailError);
           console.error('🔍 Stack trace del error de notificación admin:', adminEmailError.stack);
