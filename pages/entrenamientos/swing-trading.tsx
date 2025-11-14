@@ -930,7 +930,6 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                     autoplay={swingHeroVideo?.autoplay || false}
                     muted={swingHeroVideo?.muted !== undefined ? swingHeroVideo.muted : true}
                     loop={swingHeroVideo?.loop || false}
-                    className={styles.videoPlayer}
                     fillContainer={true}
                   />
                 </div>

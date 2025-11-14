@@ -139,6 +139,9 @@
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   position: relative !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* El componente YouTubePlayer con fillContainer={true} manejará el estilo internamente */

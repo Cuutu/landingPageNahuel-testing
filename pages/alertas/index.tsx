@@ -288,7 +288,6 @@ const AlertasPage: React.FC = () => {
                     muted={true}
                     loop={false}
                     controls={true}
-                    className={styles.videoPlayer}
                     fillContainer={true}
                   />
                 </div>
