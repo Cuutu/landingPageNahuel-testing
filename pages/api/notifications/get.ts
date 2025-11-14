@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
+import UserSubscription from '@/models/UserSubscription';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
@@ -59,17 +60,41 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
       ]
     };
 
+    // Obtener suscripciones activas del usuario
+    const activeSubscriptions = await UserSubscription.find({
+      userId: user._id,
+      status: 'active',
+      endDate: { $gt: now }
+    }).lean();
+
+    // Crear array con los tipos de alertas permitidos según suscripciones
+    const allowedAlertTypes: string[] = ['todos']; // Todos los usuarios ven 'todos'
+
     // Filtrar por tipo de usuario
     if (userRole === 'admin') {
+      // Admin ve todo
       query.targetUsers = { 
         $in: ['todos', 'admin', 'alertas_trader', 'alertas_smart', 'alertas_cashflow'] 
       };
-    } else if (userRole === 'suscriptor') {
-      query.targetUsers = { 
-        $in: ['todos', 'suscriptores', 'alertas_trader', 'alertas_smart', 'alertas_cashflow'] 
-      };
     } else {
-      query.targetUsers = 'todos';
+      // Para usuarios normales y suscriptores, verificar suscripciones activas
+      if (userRole === 'suscriptor') {
+        allowedAlertTypes.push('suscriptores');
+      }
+
+      // Agregar tipos de alertas según suscripciones activas
+      for (const subscription of activeSubscriptions) {
+        if (subscription.serviceType === 'TraderCall') {
+          allowedAlertTypes.push('alertas_trader');
+        } else if (subscription.serviceType === 'SmartMoney') {
+          allowedAlertTypes.push('alertas_smart');
+        } else if (subscription.serviceType === 'CashFlow') {
+          allowedAlertTypes.push('alertas_cashflow');
+        }
+      }
+
+      // Solo mostrar notificaciones de tipos permitidos
+      query.targetUsers = { $in: allowedAlertTypes };
     }
 
     // Filtros adicionales
