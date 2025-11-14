@@ -13,18 +13,18 @@
 /* Clase específica para cuando el player está dentro de un videoContainer */
 .playerContainerInContainer {
   position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
+  top: 50% !important;
+  left: 50% !important;
+  width: 115% !important;
+  height: 115% !important;
+  transform: translate(-50%, -50%) scale(1.15) !important;
+  transform-origin: center center !important;
   padding: 0 !important;
   padding-bottom: 0 !important;
   margin: 0 !important;
   background: #000;
   overflow: hidden;
-  border-radius: 16px; /* Usar border-radius fijo en lugar de inherit */
+  border-radius: 16px;
   display: block !important;
   box-sizing: border-box !important;
 }
@@ -48,12 +48,16 @@
 /* Estilos adicionales para el iframe cuando está en playerContainerInContainer */
 .playerContainerInContainer .iframe {
   position: absolute !important;
-  top: 50% !important;
-  left: 50% !important;
-  width: 110% !important;
-  height: 110% !important;
-  transform: translate(-50%, -50%) scale(1.1) !important;
-  transform-origin: center center !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
   border: none !important;
   margin: 0 !important;
   padding: 0 !important;

@@ -1186,6 +1186,14 @@
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(5px);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+}
+
+/* Cuando el strong contiene participationPercentage, no aplicar padding adicional */
+.alertDetail strong.participationPercentage {
+  padding: 0.5rem 0.75rem;
 }
 
 /* ✅ NUEVO: Estilos para rangos de precio */
@@ -8500,7 +8508,12 @@
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  min-height: 2.5rem;
+  line-height: 1.5;
 }
 
 .participationPercentage:hover {
@@ -8509,9 +8522,14 @@
 }
 
 .partialSaleIndicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.875rem;
   opacity: 0.8;
   animation: pulse 2s infinite;
+  margin-left: 0.25rem;
+  vertical-align: middle;
 }
 
 @keyframes pulse {
