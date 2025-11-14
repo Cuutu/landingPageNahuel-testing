@@ -221,19 +221,17 @@
 }
 
 .videoContainer {
-  width: 100%;
-  max-width: 100%;
+  width: 120%;
+  max-width: 120%;
   aspect-ratio: 16/9;
   background: #111;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   position: relative !important;
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
   box-sizing: border-box;
-  transform: scaleX(1.2);
-  transform-origin: center center;
 }
 
 /* El componente YouTubePlayer con fillContainer={true} manejará el estilo internamente */
