@@ -611,7 +611,6 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                   autoplay={false}
                   muted={true}
                   loop={false}
-                  className={styles.videoPlayer}
                   fillContainer={true}
                 />
               </div>

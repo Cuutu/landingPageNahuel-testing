@@ -22,16 +22,17 @@
   padding: 0 !important;
   padding-bottom: 0 !important;
   margin: 0 !important;
-  background: transparent;
+  background: #000;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 0;
   display: block !important;
   box-sizing: border-box !important;
 }
 
 .iframe {
   position: absolute !important;
-  inset: 0 !important; /* top: 0; right: 0; bottom: 0; left: 0; */
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
   min-width: 100% !important;
@@ -43,6 +44,7 @@
   padding: 0 !important;
   display: block !important;
   box-sizing: border-box !important;
+  object-fit: cover !important;
 }
 
 /* Estilos adicionales para el iframe cuando está en playerContainerInContainer */
@@ -63,7 +65,7 @@
   padding: 0 !important;
   display: block !important;
   box-sizing: border-box !important;
-  object-fit: fill !important;
+  object-fit: cover !important;
 }
 
 
