@@ -3282,6 +3282,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       </div>
                     </div>
                     
+                    {/* Preview de imágenes del informe */}
+                    {informe.images && informe.images.length > 0 && (
+                      <div className={styles.informePreviewImages}>
+                        {informe.images.slice(0, 1).map((image: any, index: number) => (
+                          <div key={index} className={styles.previewImageContainer}>
+                            <img 
+                              src={image.thumbnailUrl || image.secure_url || image.url} 
+                              alt={image.caption || `Preview ${index + 1}`}
+                              className={styles.previewImage}
+                              loading="lazy"
+                            />
+                            {informe.images.length > 1 && (
+                              <span className={styles.imageCount}>
+                                +{informe.images.length - 1} más
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     
                     <div className={styles.informeDescription}>

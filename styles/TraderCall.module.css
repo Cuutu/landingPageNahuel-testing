@@ -6277,6 +6277,44 @@
   transform: scale(1.05);
 }
 
+.informePreviewImages {
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.previewImageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16/9;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.previewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.previewImageContainer:hover .previewImage {
+  transform: scale(1.05);
+}
+
+.imageCount {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--border-radius);
+  font-size: 0.75rem;
+  font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
 .informeDescription {
   color: var(--text-secondary);
   line-height: 1.6;
