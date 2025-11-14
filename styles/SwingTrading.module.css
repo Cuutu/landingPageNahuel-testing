@@ -218,6 +218,7 @@
   min-width: 0; /* Permite que el grid ajuste el ancho */
   box-sizing: border-box;
   overflow: visible;
+  margin-top: 5rem;
 }
 
 .videoContainer {
