@@ -1003,7 +1003,9 @@ export function createAdminContactNotificationTemplate(
   }
 ): string {
   const fullName = `${contactDetails.userName} ${contactDetails.userLastName}`;
-  const messageDate = new Date(contactDetails.timestamp).toLocaleString('es-AR', {
+  const messageDate = new Date(contactDetails.timestamp).toLocaleString('es-ES', {
+    timeZone: process.env.GOOGLE_CALENDAR_TIMEZONE || 'America/Argentina/Buenos_Aires',
+    weekday: 'long',
     year: 'numeric',
     month: 'long',
     day: 'numeric',

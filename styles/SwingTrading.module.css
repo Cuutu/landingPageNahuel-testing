@@ -100,7 +100,7 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4rem;
-  align-items: center;
+  align-items: start;
   box-sizing: border-box;
 }
 
@@ -212,7 +212,7 @@
 .heroVideo {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 0;
   width: 100%;
   min-width: 0; /* Permite que el grid ajuste el ancho */
@@ -223,7 +223,7 @@
   width: 100%;
   max-width: 100%;
   aspect-ratio: 16/9;
-  background: #111;
+  background: transparent;
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
