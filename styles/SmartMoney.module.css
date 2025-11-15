@@ -8252,31 +8252,6 @@
   display: block;
 }
 
-.removeImageButton {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
-}
-
-.removeImageButton:hover {
-  background: rgba(220, 38, 38, 1);
-  transform: scale(1.1);
-}
-
 .urlPreview {
   display: flex;
   align-items: center;
