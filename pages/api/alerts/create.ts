@@ -187,7 +187,9 @@ export default async function handler(
       images: images || [], // Imágenes adicionales
       // ✅ NUEVO: Inicializar porcentajes de participación
       participationPercentage: 100, // Comenzar con 100% de participación
-      originalParticipationPercentage: 100 // Porcentaje original al crear
+      originalParticipationPercentage: 100, // Porcentaje original al crear
+      // ✅ NUEVO: Guardar porcentaje de liquidez cuando se crea la alerta
+      liquidityPercentage: liquidityPercentage || 0
     };
 
     // Agregar campos específicos según el tipo de alerta
