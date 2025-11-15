@@ -629,9 +629,7 @@
   background: rgba(255, 255, 255, 0.05);
   position: relative;
   aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  min-height: 140px;
 }
 
 .galleryItem:hover {
@@ -663,7 +661,9 @@
   height: 100%;
   object-fit: cover;
   transition: all 0.3s ease;
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   z-index: 2;
   display: block;
 }
@@ -675,10 +675,16 @@
 .imageCaption {
   font-size: 0.8rem;
   color: #a0a0a0;
-  margin-top: 0.75rem;
   text-align: center;
-  padding: 0 0.5rem;
+  padding: 0.5rem;
   line-height: 1.4;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  z-index: 3;
+  margin: 0;
 }
 
 /* ===== MODAL DE IMÁGENES MEJORADO ===== */
