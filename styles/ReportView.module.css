@@ -628,6 +628,10 @@
   border: 2px solid transparent;
   background: rgba(255, 255, 255, 0.05);
   position: relative;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .galleryItem:hover {
@@ -656,14 +660,11 @@
 
 .galleryThumbnail {
   width: 100%;
-  height: auto;
-  min-height: 100px;
-  max-height: 200px;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
-  margin: 0 auto;
   display: block;
 }
 

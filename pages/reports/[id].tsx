@@ -692,9 +692,13 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                           onClick={() => handleImageClick(index)}
                         >
                           <img 
-                            src={image.thumbnailUrl || image.url}
+                            src={image.thumbnailUrl || image.secure_url || image.url}
                             alt={image.caption || `Imagen ${index + 1}`}
                             className={styles.galleryThumbnail}
+                            onError={(e) => {
+                              console.error('Error loading image:', image);
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
                           />
                           {image.caption && (
                             <p className={styles.imageCaption}>{image.caption}</p>
