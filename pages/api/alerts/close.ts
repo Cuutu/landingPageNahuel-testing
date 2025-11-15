@@ -238,7 +238,8 @@ export default async function handler(
       await createAlertNotification(updatedAlert as any, {
         message: emailMessage || `Cierre de posición en ${updatedAlert?.symbol} a $${currentPrice}. Resultado: ${finalProfit.toFixed(1)}%`,
         imageUrl: emailImageUrl,
-        price: currentPrice
+        price: currentPrice,
+        liquidityPercentage: updatedAlert?.liquidityPercentage || 0
       });
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de cierre:', notifyErr);

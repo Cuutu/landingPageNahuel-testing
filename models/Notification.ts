@@ -29,6 +29,23 @@ export interface INotification extends mongoose.Document {
     alertPrice?: number | string | null; // Precio de la alerta (opcional) - puede ser número o rango string
     imageUrl?: string; // URL de imagen opcional para emails/notificaciones
     priceRange?: { min: number; max: number } | null; // Rango de precios completo
+    alertService?: string; // Servicio de la alerta (TraderCall, SmartMoney, etc.)
+    automatic?: boolean; // Si la notificación es automática
+    participationPercentage?: number; // Porcentaje de participación en la cartera
+    liquidityPercentage?: number; // Porcentaje de liquidez asignado
+    soldPercentage?: number; // Porcentaje vendido (para ventas parciales)
+    // Campos para informes
+    reportTitle?: string;
+    reportType?: string;
+    reportCategory?: string;
+    serviceType?: string;
+    // Campos para pagos
+    paymentId?: string;
+    service?: string;
+    amount?: number;
+    currency?: string;
+    userEmail?: string;
+    transactionDate?: Date;
   };
 }
 
@@ -131,7 +148,24 @@ const NotificationSchema = new mongoose.Schema({
     priceRange: {
       min: { type: Number, required: false },
       max: { type: Number, required: false }
-    }
+    },
+    alertService: { type: String, required: false },
+    automatic: { type: Boolean, required: false },
+    participationPercentage: { type: Number, required: false },
+    liquidityPercentage: { type: Number, required: false },
+    soldPercentage: { type: Number, required: false },
+    // Campos para informes
+    reportTitle: { type: String, required: false },
+    reportType: { type: String, required: false },
+    reportCategory: { type: String, required: false },
+    serviceType: { type: String, required: false },
+    // Campos para pagos
+    paymentId: { type: String, required: false },
+    service: { type: String, required: false },
+    amount: { type: Number, required: false },
+    currency: { type: String, required: false },
+    userEmail: { type: String, required: false },
+    transactionDate: { type: Date, required: false }
   }
 }, {
   timestamps: true
