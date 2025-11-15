@@ -374,7 +374,8 @@ function createAdminEnrollmentNotificationTemplate(
             <li><strong>Email:</strong> ${userEmail}</li>
             <li><strong>Entrenamiento:</strong> ${trainingName}</li>
             <li><strong>Precio:</strong> $${price}</li>
-            <li><strong>Fecha:</strong> ${new Date().toLocaleDateString('es-ES', { 
+            <li><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES', { 
+              timeZone: process.env.TZ || 'America/Montevideo',
               year: 'numeric', 
               month: 'long', 
               day: 'numeric',

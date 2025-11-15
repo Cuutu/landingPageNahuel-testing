@@ -949,11 +949,12 @@ export function createAdminNewSubscriberTemplate(details: {
   };
   const serviceInfo = serviceNames[details.service] || { label: details.service, emoji: '🔔' };
 
+  const timezone = process.env.TZ || 'America/Montevideo';
   const dateStr = details.transactionDate
-    ? new Date(details.transactionDate).toLocaleString('es-AR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : new Date().toLocaleString('es-AR');
+    ? new Date(details.transactionDate).toLocaleString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : new Date().toLocaleString('es-AR', { timeZone: timezone });
   const expiryStr = details.expiryDate
-    ? new Date(details.expiryDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' })
+    ? new Date(details.expiryDate).toLocaleDateString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' })
     : undefined;
 
   return createEmailTemplate({
@@ -1362,7 +1363,8 @@ export function createSubscriptionConfirmationTemplate(details: {
     CashFlow: { name: 'Cash Flow', emoji: '💵', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas` }
   };
   const svc = serviceInfo[details.service] || { name: details.service, emoji: '🔔', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas` };
-  const expiryStr = details.expiryDate ? new Date(details.expiryDate).toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
+  const timezone = process.env.TZ || 'America/Montevideo';
+  const expiryStr = details.expiryDate ? new Date(details.expiryDate).toLocaleDateString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
 
   const featuresHtml = `
     <ul style="margin: 0; padding-left: 20px;">
