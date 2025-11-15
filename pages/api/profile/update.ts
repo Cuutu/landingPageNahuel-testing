@@ -39,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (!user) {
       // Crear nuevo usuario si no existe
       const newUser = await User.create({
-        googleId: session.user.id,
+        googleId: (session.user as any).id || session.user.email,
         name: session.user.name,
         email: session.user.email,
         picture: session.user.image,
