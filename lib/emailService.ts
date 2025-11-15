@@ -109,7 +109,7 @@ export async function sendEmail(options: {
     });
     
     const mailOptions = {
-      from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER}>`,
+      from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}>`,
       to,
       subject,
       html
@@ -266,7 +266,7 @@ export function getEmailServiceStatus(): {
   return {
     configured,
     provider: process.env.SMTP_HOST || null,
-    fromAddress: process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || null
+    fromAddress: process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'
   };
 }
 
@@ -384,7 +384,7 @@ export function createEmailTemplate({
                                             </a>
                                         </td>
                                         <td style="padding: 0 8px;">
-                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" 
+                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}" 
                                                style="display: inline-block; width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 50%; text-align: center; line-height: 40px; font-size: 16px;">
                                                 📧
                                             </a>
@@ -408,8 +408,8 @@ export function createEmailTemplate({
                                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
                                         Si tienes preguntas, contáctanos en: 
-                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
-                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}
+                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
+                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}
                                         </a>
                                     </p>
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
@@ -1298,7 +1298,7 @@ export function createNotificationEmailTemplate({
                                             </a>
                                         </td>
                                         <td style="padding: 0 8px;">
-                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" 
+                                            <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}" 
                                                style="display: inline-block; width: 40px; height: 40px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; border-radius: 50%; text-align: center; line-height: 40px; font-size: 16px;">
                                                 📧
                                             </a>
@@ -1322,8 +1322,8 @@ export function createNotificationEmailTemplate({
                                 <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
                                         Si tienes preguntas, contáctanos en: 
-                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
-                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'Soporte@lozanonahuel.com'}
+                                        <a href="mailto:${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}" style="color: #3b82f6; text-decoration: none;">
+                                            ${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}
                                         </a>
                                     </p>
                                     <p style="font-size: 12px; color: #9ca3af; margin: 0 0 8px 0;">
