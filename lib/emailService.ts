@@ -629,7 +629,7 @@ export function generateAlertEmailTemplate(
             <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${notification.metadata.participationPercentage}%</div>
           </div>
         ` : ''}
-        ${notification.metadata.liquidityPercentage != null && notification.metadata.alertAction === 'BUY' ? `
+        ${notification.metadata.liquidityPercentage != null && notification.metadata.liquidityPercentage > 0 && notification.metadata.alertAction === 'BUY' ? `
           <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">% Comprado</div>
             <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${typeof notification.metadata.liquidityPercentage === 'number' ? notification.metadata.liquidityPercentage.toFixed(2) : notification.metadata.liquidityPercentage}%</div>

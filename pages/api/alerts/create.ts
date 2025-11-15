@@ -473,8 +473,8 @@ export default async function handler(
           : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined);
       }
 
-      // ✅ NUEVO: Pasar el porcentaje de liquidez si está disponible (solo para alertas de compra)
-      if (liquidityPercentage > 0 && newAlert.action === 'BUY') {
+      // ✅ NUEVO: Pasar el porcentaje de liquidez siempre para alertas de compra
+      if (newAlert.action === 'BUY') {
         notificationParams.liquidityPercentage = liquidityPercentage;
       }
 

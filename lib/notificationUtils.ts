@@ -22,10 +22,12 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     });
     if (overrides) {
       console.log('🎛️ [ALERT NOTIFICATION] Overrides recibidos:', overrides);
+      console.log('🎛️ [ALERT NOTIFICATION] liquidityPercentage en overrides:', overrides.liquidityPercentage);
     }
     
     // ✅ NUEVO: Obtener porcentaje de liquidez desde la distribución si no se pasa en overrides
     let liquidityPercentage = overrides?.liquidityPercentage;
+    console.log('💰 [ALERT NOTIFICATION] liquidityPercentage inicial:', liquidityPercentage);
     if (!liquidityPercentage && alert.action === 'BUY') {
       try {
         const LiquidityModule = await import('@/models/Liquidity');
@@ -176,6 +178,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null
         }
       };
+      
+      console.log('💰 [ALERT NOTIFICATION] Metadata liquidityPercentage guardado:', notification.metadata.liquidityPercentage);
     } else {
       console.log('🎨 [ALERT NOTIFICATION] Usando notificación manual (sin plantilla)');
       // Crear notificación manual si no hay plantilla
