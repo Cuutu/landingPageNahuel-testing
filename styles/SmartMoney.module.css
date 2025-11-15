@@ -4260,6 +4260,25 @@
   font-weight: 500;
 }
 
+.uploadedImageContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.uploadedImageContainer img {
+  width: 100%;
+  max-width: 400px;
+  max-height: 200px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
 .removeImageButton {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: white;
@@ -4272,6 +4291,10 @@
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: fit-content;
 }
 
 .removeImageButton::before {

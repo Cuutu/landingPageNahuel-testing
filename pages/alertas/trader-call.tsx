@@ -4226,7 +4226,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     className={styles.removeImageButton}
                     title="Eliminar imagen"
                   >
-                    <X size={16} />
+                    <Trash2 size={16} />
+                    <span>Eliminar imagen</span>
                   </button>
                 </div>
               ) : (
