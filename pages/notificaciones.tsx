@@ -368,7 +368,10 @@ export default function NotificacionesPage() {
 
                       {/* Message */}
                       <div className={styles.cardBody}>
-                        <p className={styles.notificationMessage}>{linkifyText(notification.message)}</p>
+                        <div 
+                          className={styles.notificationMessage}
+                          dangerouslySetInnerHTML={{ __html: notification.message }}
+                        />
                       </div>
 
                       {/* Action */}

@@ -413,7 +413,7 @@ export default function AdminNotificationsPage({ user }: AdminNotificationsProps
                       </div>
                       
                       <div className={styles.notificationContent}>
-                        <p>{notification.message}</p>
+                        <div dangerouslySetInnerHTML={{ __html: notification.message }} />
                         
                         {notification.actionUrl && (
                           <div className={styles.notificationAction}>

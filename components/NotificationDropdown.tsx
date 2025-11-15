@@ -386,7 +386,10 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
                       </div>
                     </div>
                     
-                    <p className={styles.notificationMessage}>{notification.message}</p>
+                    <div 
+                      className={styles.notificationMessage}
+                      dangerouslySetInnerHTML={{ __html: notification.message }}
+                    />
                     
                     {/* Action button */}
                     {notification.actionUrl && notification.actionText && (

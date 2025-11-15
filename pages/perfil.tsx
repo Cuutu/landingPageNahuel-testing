@@ -141,7 +141,7 @@ const NotificationsSection = () => {
                   </div>
                   <div className={styles.notificationContent}>
                     <h4>{notification.title}</h4>
-                    <p>{notification.message}</p>
+                    <div dangerouslySetInnerHTML={{ __html: notification.message }} />
                     <span className={styles.notificationTime}>
                       {formatTimeAgo(notification.createdAt)}
                     </span>
