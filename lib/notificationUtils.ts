@@ -194,7 +194,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       const defaultMessage = `${alert.action} ${alert.symbol} en ${priceMessage}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
       notification = {
-        title: overrides?.title || `🚨 Nueva Alerta ${alert.tipo}`,
+        title: overrides?.title || `🚨 Nueva Alerta ${alert.tipo} 🚨`,
         message: overrides?.message || defaultMessage,
         type: 'alerta',
         priority: 'alta', // Usar valor válido en español
@@ -615,7 +615,7 @@ export async function createDefaultTemplates(): Promise<void> {
       description: 'Plantilla para notificaciones de nuevas alertas',
       type: 'alerta',
       priority: 'alta',
-      titleTemplate: '🚨 Nueva Alerta {alertType}',
+      titleTemplate: '🚨 Nueva Alerta {alertType} 🚨',
       messageTemplate: '{action} {symbol} en ${price}. TP: ${takeProfit}, SL: ${stopLoss}',
       icon: '🚨',
       actionUrlTemplate: '/alertas/{alertType}',
