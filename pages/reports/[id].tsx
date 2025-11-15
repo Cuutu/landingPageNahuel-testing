@@ -110,6 +110,21 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   const [editImages, setEditImages] = useState<CloudinaryImage[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
 
+  // Debug: Log de imágenes del reporte
+  useEffect(() => {
+    console.log('🖼️ Report images:', report.images);
+    if (report.images && report.images.length > 0) {
+      report.images.forEach((img, idx) => {
+        console.log(`Image ${idx}:`, {
+          thumbnailUrl: img.thumbnailUrl,
+          secure_url: img.secure_url,
+          url: img.url,
+          public_id: img.public_id
+        });
+      });
+    }
+  }, [report.images]);
+
   const handleBack = () => {
     router.back();
   };
@@ -1252,38 +1267,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       }
     }
 
-    // Generar URLs optimizadas para imágenes adicionales
+    // Usar imágenes tal como están en la BD
     let optimizedImages: any[] = [];
     if (reportDoc.images && reportDoc.images.length > 0) {
-      try {
-        const { getCloudinaryImageUrl } = await import('@/lib/cloudinary');
-        optimizedImages = reportDoc.images
-          .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
-          .map((img: any) => ({
-            ...img,
-            // URL optimizada para vista normal (mantiene aspect ratio)
-            optimizedUrl: getCloudinaryImageUrl(img.public_id, {
-              width: 1200,
-              height: 1200,
-              crop: 'limit',
-              format: 'webp',
-              quality: 'auto'
-            }),
-            // URL original para modal (sin transformaciones para ver tamaño completo)
-            originalUrl: img.secure_url || img.url,
-            // Thumbnail para galería (mantiene aspect ratio)
-            thumbnailUrl: getCloudinaryImageUrl(img.public_id, {
-              width: 400,
-              height: 400,
-              crop: 'limit',
-              format: 'webp',
-              quality: 'auto'
-            })
-          }));
-      } catch (error) {
-        console.log('Error procesando imágenes adicionales:', error);
-        optimizedImages = reportDoc.images || [];
-      }
+      optimizedImages = reportDoc.images
+        .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+        .map((img: any) => ({
+          ...img,
+          // Asegurar que las URLs estén disponibles
+          thumbnailUrl: img.secure_url || img.url,
+          optimizedUrl: img.secure_url || img.url,
+          originalUrl: img.secure_url || img.url,
+          url: img.url || img.secure_url,
+          secure_url: img.secure_url || img.url
+        }));
     }
 
     const processedReport = {
