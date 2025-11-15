@@ -98,6 +98,12 @@ export default async function handler(
       return res.status(400).json({ success: false, error: 'No hay suficientes acciones para vender' });
     }
 
+    // ✅ Calcular el porcentaje vendido antes de ejecutar la venta
+    const totalSharesBeforeSale = distribution.shares;
+    const soldPercentage = totalSharesBeforeSale > 0 
+      ? (shares / totalSharesBeforeSale) * distribution.percentage 
+      : 0;
+
     const { realized, returnedCash, remainingShares } = liquidity.sellShares(alertId, shares, price);
 
     // Si ya no quedan acciones, eliminar distribución
@@ -119,9 +125,10 @@ export default async function handler(
         message,
         imageUrl,
         price,
-        action: 'SELL'
+        action: 'SELL',
+        soldPercentage: soldPercentage // ✅ NUEVO: Pasar el porcentaje vendido
       });
-      console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl });
+      console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl, soldPercentage: soldPercentage.toFixed(2) });
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de venta:', notifyErr);
     }

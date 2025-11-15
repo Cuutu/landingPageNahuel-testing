@@ -47,11 +47,29 @@ interface LiquidityByAlert {
   };
 }
 
+// ✅ NUEVO: Datos de liquidez por alertId (para asociar correctamente cada alerta con su distribución)
+interface LiquidityByAlertId {
+  [alertId: string]: {
+    alertId: string;
+    symbol: string;
+    allocatedAmount: number;
+    shares: number;
+    entryPrice: number;
+    currentPrice: number;
+    profitLoss: number;
+    profitLossPercentage: number;
+    realizedProfitLoss?: number;
+    isActive: boolean;
+  };
+}
+
 interface ActiveAlertsPieChartProps {
   alerts: AlertData[];
   className?: string;
-  // ✅ NUEVO: Liquidez (opcional)
+  // ✅ NUEVO: Liquidez (opcional) - por símbolo (legacy)
   liquidityMap?: LiquidityByAlert;
+  // ✅ NUEVO: Liquidez por alertId (preferido para asociar correctamente cada alerta)
+  liquidityMapByAlertId?: LiquidityByAlertId;
   totalLiquidity?: number;
   // ✅ NUEVO: Rol del usuario para restricciones de administrador
   userRole?: string;
@@ -76,6 +94,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   alerts, 
   className = '',
   liquidityMap,
+  liquidityMapByAlertId,
   totalLiquidity,
   userRole
 }) => {
@@ -98,14 +117,20 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         return;
       }
       
-      // Filtrar solo alertas activas con liquidez asignada
+      // ✅ CORREGIDO: Filtrar solo alertas activas con liquidez asignada
+      // Usar liquidityMapByAlertId si está disponible (asocia correctamente cada alerta con su distribución)
+      // Si no, usar liquidityMap como fallback (por símbolo, puede tener problemas con múltiples alertas del mismo símbolo)
       const activeAlertsWithLiquidity = activeAlerts.filter(alert => {
-        const liquidity = liquidityMap?.[alert.symbol];
+        const alertId = alert.id || (alert as any)._id;
+        // Preferir liquidityMapByAlertId si está disponible
+        const liquidity = liquidityMapByAlertId?.[alertId] || liquidityMap?.[alert.symbol];
         return liquidity && liquidity.allocatedAmount > 0;
       });
 
       const chartSegments: ChartSegment[] = activeAlertsWithLiquidity.map((alert, index) => {
-        const liquidity = liquidityMap?.[alert.symbol];
+        const alertId = alert.id || (alert as any)._id;
+        // Preferir liquidityMapByAlertId si está disponible
+        const liquidity = liquidityMapByAlertId?.[alertId] || liquidityMap?.[alert.symbol];
         const allocated = Number(liquidity?.allocatedAmount || 0);
         return {
           name: alert.symbol,
@@ -147,7 +172,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
     } else {
       setChartData([]);
     }
-  }, [alerts, liquidityMap, totalLiquidity]);
+  }, [alerts, liquidityMap, liquidityMapByAlertId, totalLiquidity]);
 
   // ✅ Formateadores
   const formatCurrency = (n?: number) => {

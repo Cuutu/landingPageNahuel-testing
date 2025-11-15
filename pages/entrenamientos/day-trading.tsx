@@ -210,8 +210,8 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
     loadTrainingDates();
     
     // Verificar si el usuario es admin
-    if (session?.user?.email) {
-      setIsAdmin(session.user.email === 'joaquinperez028@gmail.com' || session.user.email === 'franco.l.varela99@gmail.com');
+    if (session?.user) {
+      setIsAdmin(session.user.role === 'admin');
     }
   }, [session]);
 

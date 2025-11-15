@@ -2666,14 +2666,25 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // Todas las alertas aparecen en Seguimiento, independientemente del checkbox
     // Los clientes deben poder seguir cualquier alerta que hayan comprado
     // ✅ NUEVO: Incluir alertas descartadas del día actual
+    // ✅ NUEVO: Excluir alertas creadas HOY que aún no tienen finalPriceSetAt (aún no confirmadas a las 18:30)
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     
     const alertasEnSeguimiento = realAlerts.filter(alert => {
       // ✅ NUEVA LÓGICA: Incluir TODAS las alertas activas (marcadas y desmarcadas)
-      // Todas las alertas aparecen en Seguimiento
+      // EXCEPTO las alertas creadas HOY que aún no tienen finalPriceSetAt (aún no confirmadas)
       if (alert.status === 'ACTIVE') {
+        // Verificar si la alerta fue creada hoy
+        const alertDate = new Date(alert.date || alert.createdAt);
+        const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
+        
+        // Si fue creada hoy y no tiene finalPriceSetAt, no mostrarla (aún no confirmada a las 18:30)
+        if (isCreatedToday && !alert.finalPriceSetAt) {
+          return false;
+        }
+        
+        // Mostrar todas las demás alertas activas
         return true;
       }
 

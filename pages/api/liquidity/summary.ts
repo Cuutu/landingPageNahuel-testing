@@ -126,7 +126,8 @@ export default async function handler(
       const activeDistributions = (doc.distributions || [])
         .filter((d: any) => d.isActive)
         .map((d: any) => ({
-          alertId: d.alertId,
+          // ✅ CORREGIDO: Convertir alertId a string para asegurar consistencia con el frontend
+          alertId: d.alertId ? d.alertId.toString() : d.alertId,
           symbol: d.symbol,
           allocatedAmount: d.allocatedAmount,
           shares: d.shares,

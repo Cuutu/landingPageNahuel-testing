@@ -52,6 +52,9 @@ export default async function handler(
       return res.status(400).json({ success: false, error: "alertId es requerido" });
     }
 
+    // ✅ CORREGIDO: Convertir alertId a string para asegurar consistencia
+    const alertIdString = alertId.toString();
+
     if ((!percentage && !amount) || (percentage && percentage <= 0) || (amount && amount <= 0)) {
       return res.status(400).json({ success: false, error: "Debe especificar un porcentaje (>0) o un monto (>0)" });
     }
@@ -72,7 +75,7 @@ export default async function handler(
       return res.status(400).json({ success: false, error: `No hay liquidez configurada para el pool ${pool}. Configure la liquidez total primero.` });
     }
 
-    const existingDistribution = liquidity.distributions.find((dist: any) => dist.alertId === alertId);
+    const existingDistribution = liquidity.distributions.find((dist: any) => dist.alertId?.toString() === alertIdString);
 
     const entryPrice = alert.entryPriceRange?.max || alert.entryPrice;
     if (!entryPrice) {
@@ -154,6 +157,23 @@ export default async function handler(
         // No fallar la distribución por un error en la operación
       }
 
+      // 🔔 Notificar compra adicional/asignación incrementada a suscriptores
+      try {
+        const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+        const message = req.body?.emailMessage || `Compra adicional asignada en ${alert.symbol}: +${additionalShares} shares a $${entryPrice} (+${targetPercentage.toFixed(2)}% de la cartera, monto: $${actualAllocatedAmount.toFixed(2)}).`;
+        const imageUrl = req.body?.emailImageUrl || undefined;
+        await notifyAlertSubscribers(alert as any, { 
+          message, 
+          imageUrl, 
+          price: entryPrice,
+          action: 'BUY',
+          liquidityPercentage: targetPercentage // ✅ NUEVO: Pasar el porcentaje de compra adicional
+        });
+        console.log('✅ Notificación de asignación incrementada enviada');
+      } catch (notifyErr) {
+        console.error('❌ Error enviando notificación de asignación incrementada:', notifyErr);
+      }
+
       return res.status(200).json({
         success: true,
         distribution: {
@@ -172,7 +192,7 @@ export default async function handler(
       });
     }
 
-    const distribution = liquidity.addDistribution(alertId, alert.symbol, targetPercentage, entryPrice);
+    const distribution = liquidity.addDistribution(alertIdString, alert.symbol, targetPercentage, entryPrice);
     await liquidity.save();
 
     // ✅ NUEVO: Crear operación de compra con el porcentaje de la cartera
@@ -225,7 +245,13 @@ export default async function handler(
       const shares = distribution.shares;
       const message = req.body?.emailMessage || `Compra asignada en ${alert.symbol}: ${shares} shares a $${entryPrice} (${targetPercentage.toFixed(2)}% de la cartera, monto: $${allocatedAmount.toFixed(2)}).`;
       const imageUrl = req.body?.emailImageUrl || undefined;
-      await notifyAlertSubscribers(alert as any, { message, imageUrl, price: entryPrice });
+      await notifyAlertSubscribers(alert as any, { 
+        message, 
+        imageUrl, 
+        price: entryPrice,
+        action: 'BUY',
+        liquidityPercentage: targetPercentage // ✅ NUEVO: Pasar el porcentaje de compra
+      });
       console.log('✅ Notificación de asignación enviada');
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de asignación:', notifyErr);

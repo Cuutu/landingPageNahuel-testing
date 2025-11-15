@@ -629,16 +629,16 @@ export function generateAlertEmailTemplate(
             <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${notification.metadata.participationPercentage}%</div>
           </div>
         ` : ''}
-        ${notification.metadata.liquidityPercentage && notification.metadata.alertAction === 'BUY' ? `
+        ${notification.metadata.liquidityPercentage != null && notification.metadata.alertAction === 'BUY' ? `
           <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">% Comprado</div>
-            <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${notification.metadata.liquidityPercentage}%</div>
+            <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${typeof notification.metadata.liquidityPercentage === 'number' ? notification.metadata.liquidityPercentage.toFixed(2) : notification.metadata.liquidityPercentage}%</div>
           </div>
         ` : ''}
-        ${notification.metadata.soldPercentage && notification.metadata.alertAction === 'SELL' ? `
+        ${notification.metadata.soldPercentage != null && notification.metadata.alertAction === 'SELL' ? `
           <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">% Vendido</div>
-            <div style="font-size: 16px; color: #ef4444; font-weight: 700;">${notification.metadata.soldPercentage}%</div>
+            <div style="font-size: 16px; color: #ef4444; font-weight: 700;">${typeof notification.metadata.soldPercentage === 'number' ? notification.metadata.soldPercentage.toFixed(2) : notification.metadata.soldPercentage}%</div>
           </div>
         ` : ''}
       </div>
@@ -667,8 +667,8 @@ export function generateAlertEmailTemplate(
         <h3 style="margin: 0 0 15px; font-size: 18px; color: #1e293b; font-weight: 600;">
           📊 Detalles de la Alerta
         </h3>
-        <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6; white-space: pre-wrap;">
-          ${notification.message.replace(/\n/g, '<br>')}
+        <p style="margin: 0; font-size: 16px; color: #374151; line-height: 1.6;">
+          ${notification.message.replace(/\n/g, '<br>').trim()}
         </p>
         ${imageBlock}
         ${alertDetails}

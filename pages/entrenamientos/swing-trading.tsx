@@ -404,8 +404,8 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     checkMonthlyAccess(); // Verificar acceso mensual
     
     // Verificar si el usuario es admin
-    if (session?.user?.email) {
-      setIsAdmin(session.user.email === 'joaquinperez028@gmail.com' || session.user.email === 'franco.l.varela99@gmail.com');
+    if (session?.user) {
+      setIsAdmin(session.user.role === 'admin');
     }
   }, [session]);
 

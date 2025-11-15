@@ -206,6 +206,13 @@
   color: var(--bg-primary);
 }
 
+/* Iconos con fondo negro: invertir colores en hover */
+.socialIconInverted:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #000000;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .footerContent {

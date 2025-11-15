@@ -35,7 +35,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'COMPRA' | 'VENTA'>('ALL');
-  const [sortBy, setSortBy] = useState<'date' | 'ticker' | 'amount'>('date');
+  const [sortBy, setSortBy] = useState<'date' | 'ticker'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
@@ -64,9 +64,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           break;
         case 'ticker':
           comparison = a.ticker.localeCompare(b.ticker);
-          break;
-        case 'amount':
-          comparison = a.amount - b.amount;
           break;
       }
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -191,7 +188,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             value={`${sortBy}-${sortOrder}`}
             onChange={(e) => {
               const [field, order] = e.target.value.split('-');
-              setSortBy(field as 'date' | 'ticker' | 'amount');
+              setSortBy(field as 'date' | 'ticker');
               setSortOrder(order as 'asc' | 'desc');
             }}
             className={styles.filterSelect}
@@ -200,8 +197,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             <option value="date-asc">Fecha (Antiguo)</option>
             <option value="ticker-asc">Ticker (A-Z)</option>
             <option value="ticker-desc">Ticker (Z-A)</option>
-            <option value="amount-desc">Monto (Mayor)</option>
-            <option value="amount-asc">Monto (Menor)</option>
           </select>
         </div>
       </div>
@@ -213,18 +208,15 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             <tr>
               <th>Operación</th>
               <th>Ticker</th>
-              <th>Cantidad</th>
               <th>Precio</th>
-              <th>Monto</th>
               <th>% Cartera</th>
               <th>Fecha</th>
-              <th>Saldo</th>
             </tr>
           </thead>
           <tbody>
             {filteredOperations.length === 0 ? (
               <tr>
-                <td colSpan={8} className={styles.noData}>
+                <td colSpan={5} className={styles.noData}>
                   <Clock className="w-8 h-8 mx-auto mb-2" />
                   <p>No hay operaciones para mostrar</p>
                   {searchTerm && (
@@ -267,15 +259,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     </div>
                   </td>
                   <td>
-                    <div className={operation.quantity > 0 ? styles.positive : styles.negative}>
-                      {operation.quantity > 0 ? '+' : ''}{operation.quantity.toFixed(2)}
-                    </div>
-                  </td>
-                  <td>
                     {formatCurrency(operation.price)}
-                  </td>
-                  <td>
-                    {formatCurrency(Math.abs(operation.amount))}
                   </td>
                   <td>
                     {operation.operationType === 'COMPRA' && operation.portfolioPercentage ? (
@@ -292,9 +276,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   </td>
                   <td>
                     {formatDate(operation.date)}
-                  </td>
-                  <td>
-                    {formatCurrency(operation.balance)}
                   </td>
                 </tr>
               ))

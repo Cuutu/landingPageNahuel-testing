@@ -170,7 +170,7 @@ const CreateSlotsPage = () => {
     );
   }
 
-  if (!session || session.user?.email !== 'joaquinperez028@gmail.com') {
+  if (!session || session.user?.role !== 'admin') {
     return (
       <>
         <Navbar />

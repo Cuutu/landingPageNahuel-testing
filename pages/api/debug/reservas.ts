@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Verificar que sea admin
   const session = await getServerSession(req, res, authOptions);
-  if (!session?.user?.email || session.user.email !== 'joaquinperez028@gmail.com') {
+  if (!session?.user?.email || session.user.role !== 'admin') {
     return res.status(401).json({ error: 'Solo el admin puede acceder a este endpoint' });
   }
 
