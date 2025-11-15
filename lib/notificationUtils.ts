@@ -171,6 +171,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           automatic: true,
           imageUrl: finalImageUrl,
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
+          participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
           liquidityPercentage: liquidityPercentage || null,
           soldPercentage: overrides?.soldPercentage || null
         }
@@ -213,6 +214,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           automatic: true,
           imageUrl: finalImageUrl,
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
+          participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
           liquidityPercentage: liquidityPercentage || null,
           soldPercentage: overrides?.soldPercentage || null
         }
