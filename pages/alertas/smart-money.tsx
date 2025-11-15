@@ -4215,11 +4215,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               <label>Imagen para Email (opcional)</label>
               {emailImage ? (
                 <div className={styles.uploadedImageContainer}>
-                  <img 
-                    src={emailImage.secure_url} 
-                    alt="Imagen de email" 
-                    className={styles.uploadedImagePreview}
-                  />
+                  <div className={styles.imagePreviewWrapper}>
+                    <img 
+                      src={emailImage.secure_url} 
+                      alt="Imagen de email" 
+                      className={styles.uploadedImagePreview}
+                    />
+                  </div>
                   <button
                     type="button"
                     onClick={removeEmailImage}
