@@ -3178,7 +3178,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   <span>Take Profit:</span>
                   <strong className="sensitivePrice">{alert.takeProfit}</strong>
                 </div>
-                <div className={styles.alertDetail}>
+                <div className={styles.alertDetail} style={{ display: 'none' }}>
                   <span>P&L:</span>
                   <strong className={(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? styles.profit : styles.loss}>
                     <span>{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0) >= 0 ? '+' : ''}{(typeof alert.profit === 'number' ? alert.profit : parseFloat(alert.profit) || 0).toFixed(2)}%</span>
