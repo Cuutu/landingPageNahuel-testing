@@ -172,8 +172,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           imageUrl: finalImageUrl,
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
           participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
-          liquidityPercentage: liquidityPercentage || null,
-          soldPercentage: overrides?.soldPercentage || null
+          liquidityPercentage: overrides?.liquidityPercentage != null ? overrides.liquidityPercentage : (liquidityPercentage || null),
+          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null
         }
       };
     } else {
@@ -215,8 +215,8 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           imageUrl: finalImageUrl,
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
           participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
-          liquidityPercentage: liquidityPercentage || null,
-          soldPercentage: overrides?.soldPercentage || null
+          liquidityPercentage: overrides?.liquidityPercentage != null ? overrides.liquidityPercentage : (liquidityPercentage || null),
+          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null
         }
       };
     }

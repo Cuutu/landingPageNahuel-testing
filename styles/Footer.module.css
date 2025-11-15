@@ -208,9 +208,9 @@
 
 /* Iconos con fondo negro: invertir colores en hover */
 .socialIconInverted:hover {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #000000;
+  background: #ffffff !important;
+  border-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 /* Responsive Design */

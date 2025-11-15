@@ -651,8 +651,12 @@ export function generateAlertEmailTemplate(
     </div>
   ` : '';
 
+  // Si el título ya tiene emojis, no agregar el icon para evitar duplicados
+  const titleHasEmoji = notification.title.includes('🚨');
+  const finalTitle = titleHasEmoji ? notification.title : `${notification.icon} ${notification.title}`;
+  
   return createNotificationEmailTemplate({
-    title: `${notification.icon} ${notification.title}`,
+    title: finalTitle,
     content: `
       <div style="text-align: center; margin-bottom: 25px;">
         <h2 style="margin: 0 0 10px; font-size: 20px; color: #1e293b; font-weight: 600;">
