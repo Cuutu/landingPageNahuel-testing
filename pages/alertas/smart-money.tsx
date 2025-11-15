@@ -2350,34 +2350,37 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // ✅ NUEVO: Usar liquidezDisponible directamente del resumen (más preciso)
+    // ✅ CORREGIDO: Usar liquidezDisponible directamente del resumen (más preciso)
     // Si no hay resumen, calcular como diferencia entre totalBase y totalAllocated
     const available = (liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
       ? Math.max(liquiditySummary.liquidezDisponible, 0)
       : Math.max((totalBase || 0) - totalAllocated, 0);
-    // Siempre agregar el segmento de liquidez, incluso si es 0, para mostrar la composición completa
-    const liqStart = cumulativeAngle;
-    const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
-    chartSegments.push({
-      id: 'LIQ-SEG',
-      symbol: 'LIQUIDEZ',
-      profit: 0,
-      status: 'ACTIVE',
-      entryPrice: 0,
-      currentPrice: 0,
-      stopLoss: 0,
-      takeProfit: 0,
-      action: 'BUY',
-      date: '',
-      analysis: '',
-      allocatedAmount: available,
-      color: '#9CA3AF',
-      darkColor: '#9CA3AF80',
-      size: (available / (totalBase || 1)) * 100,
-      startAngle: liqStart,
-      endAngle: liqEnd,
-      centerAngle: (liqStart + liqEnd) / 2,
-    } as any);
+    
+    // ✅ CORREGIDO: Solo agregar el segmento de liquidez si es mayor a 0 para evitar partes vacías
+    if (available > 0) {
+      const liqStart = cumulativeAngle;
+      const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
+      chartSegments.push({
+        id: 'LIQ-SEG',
+        symbol: 'LIQUIDEZ',
+        profit: 0,
+        status: 'ACTIVE',
+        entryPrice: 0,
+        currentPrice: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+        action: 'BUY',
+        date: '',
+        analysis: '',
+        allocatedAmount: available,
+        color: '#9CA3AF',
+        darkColor: '#9CA3AF80',
+        size: (available / (totalBase || 1)) * 100,
+        startAngle: liqStart,
+        endAngle: liqEnd,
+        centerAngle: (liqStart + liqEnd) / 2,
+      } as any);
+    }
 
     // ✅ NUEVO: Logging final de los segmentos creados
     console.log('📊 [PIE CHART] Segmentos finales creados:', {

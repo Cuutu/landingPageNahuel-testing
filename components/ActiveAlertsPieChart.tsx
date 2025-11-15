@@ -71,6 +71,8 @@ interface ActiveAlertsPieChartProps {
   // ✅ NUEVO: Liquidez por alertId (preferido para asociar correctamente cada alerta)
   liquidityMapByAlertId?: LiquidityByAlertId;
   totalLiquidity?: number;
+  // ✅ NUEVO: Liquidez disponible del resumen (más preciso que calcular)
+  availableLiquidity?: number;
   // ✅ NUEVO: Rol del usuario para restricciones de administrador
   userRole?: string;
 }
@@ -96,6 +98,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
   liquidityMap,
   liquidityMapByAlertId,
   totalLiquidity,
+  availableLiquidity,
   userRole
 }) => {
   const [chartData, setChartData] = useState<ChartSegment[]>([]);
@@ -147,12 +150,22 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         } as ChartSegment;
       });
 
-      // Agregar segmento de Liquidez disponible para que la torta sume 100%
-      if (typeof totalLiquidity === 'number' && totalLiquidity > 0) {
-        const allocatedSum = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
-        const available = Math.max(totalLiquidity - allocatedSum, 0);
-        
-        // Siempre agregar el segmento de liquidez, incluso si es 0, para mostrar la composición completa
+      // ✅ CORREGIDO: Usar liquidez disponible del resumen si está disponible (más preciso)
+      // Si no, calcular basándose solo en distribuciones de alertas activas
+      const allocatedSum = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
+      
+      // Calcular liquidez disponible
+      let available = 0;
+      if (typeof availableLiquidity === 'number') {
+        // Usar el valor del resumen directamente (más preciso)
+        available = Math.max(availableLiquidity, 0);
+      } else if (typeof totalLiquidity === 'number' && totalLiquidity > 0) {
+        // Calcular como diferencia entre total y asignado
+        available = Math.max(totalLiquidity - allocatedSum, 0);
+      }
+      
+      // Solo agregar el segmento de liquidez si es mayor a 0 para evitar partes vacías
+      if (available > 0) {
         chartSegments.push({
           name: 'Liquidez',
           value: available,
@@ -172,7 +185,7 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
     } else {
       setChartData([]);
     }
-  }, [alerts, liquidityMap, liquidityMapByAlertId, totalLiquidity]);
+  }, [alerts, liquidityMap, liquidityMapByAlertId, totalLiquidity, availableLiquidity]);
 
   // ✅ Formateadores
   const formatCurrency = (n?: number) => {
