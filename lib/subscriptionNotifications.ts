@@ -294,6 +294,42 @@ export async function processSubscriptionNotifications(): Promise<{
         }
       }
 
+      // Notificación de advertencia (1 día antes)
+      if (daysUntilExpiry === 1) {
+        const alreadySent = await hasNotificationBeenSent(
+          subscription.userId, 
+          subscription.service, 
+          'warning', 
+          1
+        );
+
+        if (!alreadySent) {
+          const success = await sendWarningNotification(
+            userEmail,
+            userName,
+            subscription.service,
+            subscription.expiryDate,
+            1
+          );
+
+          if (success) {
+            await recordNotificationSent({
+              userId: subscription.userId,
+              userEmail,
+              userName,
+              service: subscription.service,
+              expiryDate: subscription.expiryDate,
+              daysLeft: 1,
+              notificationType: 'warning',
+              sentAt: new Date()
+            });
+            warningsSent++;
+          } else {
+            errors.push(`Error enviando advertencia a ${userEmail} para ${subscription.service}`);
+          }
+        }
+      }
+
       // Notificación de expiración (el día que expira o hasta 1 día después)
       if (daysUntilExpiry <= 0 && daysUntilExpiry >= -1) {
         const alreadySent = await hasNotificationBeenSent(

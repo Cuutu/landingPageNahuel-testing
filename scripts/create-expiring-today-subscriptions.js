@@ -1,0 +1,146 @@
+/**
+ * Script para crear suscripciones que expiran HOY
+ * Para testear el envío inmediato de notificaciones de expiración
+ */
+
+const mongoose = require('mongoose');
+
+// MongoDB URI directa para testing
+const MONGODB_URI = 'mongodb+srv://Tortu:Las40org@landingpagenahuel.pdccomn.mongodb.net/?retryWrites=true&w=majority&appName=landingPageNahuel';
+
+// Definir el esquema de User directamente
+const UserSchema = new mongoose.Schema({
+  googleId: String,
+  name: String,
+  email: { type: String, required: true, unique: true },
+  picture: String,
+  role: {
+    type: String,
+    enum: ['normal', 'suscriptor', 'admin'],
+    default: 'normal'
+  },
+  activeSubscriptions: [{
+    service: {
+      type: String,
+      enum: ['TraderCall', 'SmartMoney', 'CashFlow'],
+      required: true
+    },
+    startDate: { type: Date, required: true, default: Date.now },
+    expiryDate: { type: Date, required: true },
+    isActive: { type: Boolean, default: true },
+    mercadopagoPaymentId: String,
+    amount: { type: Number, required: true },
+    currency: { type: String, default: 'ARS' }
+  }],
+  subscriptionExpiry: Date,
+  lastPaymentDate: Date,
+}, { timestamps: true });
+
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+
+async function createExpiringTodaySubscriptions() {
+  try {
+    console.log('🔌 Conectando a MongoDB...');
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ Conectado a MongoDB\n');
+
+    // Emails de prueba
+    const testEmails = [
+      'franco.l.varela99@gmail.com',
+      'lozanonahuel@gmail.com',
+      'nlozano@lozanonahuel.com'
+    ];
+
+    // Servicios a activar
+    const services = ['TraderCall', 'SmartMoney'];
+
+    console.log('📧 Creando suscripciones que EXPIRAN HOY para:');
+    testEmails.forEach(email => console.log(`   - ${email}`));
+    console.log(`\n📦 Servicios: ${services.join(', ')}\n`);
+
+    for (const email of testEmails) {
+      console.log(`\n🔍 Procesando: ${email}`);
+
+      // Buscar o crear usuario
+      let user = await User.findOne({ email });
+
+      if (!user) {
+        console.log('   ⚠️  Usuario no encontrado, creando uno nuevo...');
+        user = new User({
+          email,
+          googleId: `test-${Date.now()}-${Math.random()}`,
+          name: email.split('@')[0],
+          role: 'normal',
+          picture: '',
+          activeSubscriptions: []
+        });
+      }
+
+      // Configurar fechas: YA EXPIRÓ (hace 2 horas)
+      const now = new Date();
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // Inicio hace 30 días
+
+      console.log(`   📅 Inicio: ${startDate.toLocaleString()} (hace 30 días)`);
+      console.log(`   ⏰ Expira: ${twoHoursAgo.toLocaleString()} (hace 2 horas)`);
+      console.log(`   ⚠️  Estado: ❌ YA EXPIRÓ`);
+
+      // Limpiar suscripciones existentes para estos servicios
+      user.activeSubscriptions = user.activeSubscriptions.filter(
+        sub => !services.includes(sub.service)
+      );
+
+      // Agregar las nuevas suscripciones
+      for (const service of services) {
+        user.activeSubscriptions.push({
+          service,
+          startDate: startDate,
+          expiryDate: twoHoursAgo,
+          isActive: true,
+          mercadopagoPaymentId: `test-expired-${Date.now()}`,
+          amount: 99,
+          currency: 'ARS'
+        });
+        console.log(`   ✅ Agregada suscripción: ${service}`);
+      }
+
+      // Actualizar campos generales
+      user.subscriptionExpiry = twoHoursAgo;
+      user.lastPaymentDate = startDate;
+      
+      // Actualizar rol a suscriptor
+      if (user.role === 'normal') {
+        user.role = 'suscriptor';
+        console.log('   👤 Rol actualizado a: suscriptor');
+      }
+
+      // Guardar
+      await user.save();
+      console.log(`   💾 Usuario guardado exitosamente`);
+    }
+
+    console.log('\n' + '='.repeat(60));
+    console.log('✅ PROCESO COMPLETADO');
+    console.log('='.repeat(60));
+    console.log('\n📊 Resumen:');
+    console.log(`   • Usuarios procesados: ${testEmails.length}`);
+    console.log(`   • Servicios por usuario: ${services.length}`);
+    console.log(`   • Total de suscripciones: ${testEmails.length * services.length}`);
+    console.log(`   • Estado: ❌ YA EXPIRARON (hace 2 horas)`);
+    console.log(`   • Expiraron: ${new Date(Date.now() - 2 * 60 * 60 * 1000).toLocaleString()}`);
+    console.log('\n🚀 PRUEBA INMEDIATA:');
+    console.log('   Ejecuta ahora:');
+    console.log('   Invoke-WebRequest -Uri "https://lozanonahuel.vercel.app/api/cron/subscription-notifications" -Method GET -UserAgent "curl/7.68.0"');
+    console.log('\n   Deberías recibir emails de EXPIRACIÓN en los 3 correos!\n');
+
+  } catch (error) {
+    console.error('❌ Error:', error);
+  } finally {
+    await mongoose.disconnect();
+    console.log('🔌 Desconectado de MongoDB');
+  }
+}
+
+// Ejecutar
+createExpiringTodaySubscriptions();
+
