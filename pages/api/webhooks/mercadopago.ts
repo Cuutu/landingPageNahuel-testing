@@ -367,6 +367,14 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         if (!payment.metadata) payment.metadata = {};
         if (!payment.metadata.userSubscriptionConfirmationSent) {
           const { sendSubscriptionConfirmationEmail } = await import('@/lib/emailNotifications');
+          
+          console.log('📧 Preparando email de confirmación:', {
+            isRenewal,
+            previousExpiry: previousExpiry?.toISOString(),
+            startDate: updatedSub?.startDate,
+            expiryDate: updatedSub?.expiryDate
+          });
+          
           await sendSubscriptionConfirmationEmail({
             userEmail: user.email,
             userName: user.name || user.email,
@@ -374,10 +382,12 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             expiryDate: updatedSub?.expiryDate || user.subscriptionExpiry,
             startDate: updatedSub?.startDate,
             isRenewal,
-            previousExpiry
+            previousExpiry: previousExpiry || undefined // Convertir null a undefined
           });
           payment.metadata.userSubscriptionConfirmationSent = true;
           await payment.save();
+          
+          console.log(`✅ Email de ${isRenewal ? 'RENOVACIÓN' : 'CONFIRMACIÓN'} enviado a ${user.email}`);
         } else {
           console.log('ℹ️ Confirmación de suscripción al usuario ya enviada previamente.');
         }

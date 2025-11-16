@@ -1384,20 +1384,34 @@ export function createSubscriptionConfirmationTemplate(details: {
     </ul>
   `;
 
-  // Mensaje específico para renovación anticipada
+  // Mensaje específico para renovación
   let renewalMessage = '';
-  if (details.isRenewal && previousExpiryStr && startStr) {
-    renewalMessage = `
-      <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
-        <p style="margin: 0 0 8px; color: #065f46; font-weight: 600;">✅ Renovación Anticipada Confirmada</p>
-        <p style="margin: 0; color: #047857; font-size: 14px;">
-          Tu tiempo actual no se perdió. La nueva suscripción empezará cuando termine la actual.<br/>
-          <strong>Tu suscripción anterior expiraba:</strong> ${previousExpiryStr}<br/>
-          <strong>La nueva suscripción empieza:</strong> ${startStr}<br/>
-          <strong>Nueva fecha de expiración:</strong> ${expiryStr}
-        </p>
-      </div>
-    `;
+  if (details.isRenewal) {
+    if (previousExpiryStr && startStr) {
+      // Renovación anticipada (cuando aún tenía tiempo activo)
+      renewalMessage = `
+        <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0 0 8px; color: #065f46; font-weight: 600;">✅ Renovación Anticipada Confirmada</p>
+          <p style="margin: 0; color: #047857; font-size: 14px;">
+            Tu tiempo actual no se perdió. La nueva suscripción empezará cuando termine la actual.<br/>
+            <strong>Tu suscripción anterior expiraba:</strong> ${previousExpiryStr}<br/>
+            <strong>La nueva suscripción empieza:</strong> ${startStr}<br/>
+            <strong>Nueva fecha de expiración:</strong> ${expiryStr}
+          </p>
+        </div>
+      `;
+    } else {
+      // Renovación normal (después de expiración o primera renovación)
+      renewalMessage = `
+        <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 4px;">
+          <p style="margin: 0 0 8px; color: #1e40af; font-weight: 600;">✅ Renovación Confirmada</p>
+          <p style="margin: 0; color: #1e40af; font-size: 14px;">
+            Tu renovación ha sido procesada exitosamente. Ya tenés acceso completo nuevamente.<br/>
+            ${expiryStr ? `<strong>Tu suscripción expira el:</strong> ${expiryStr}` : ''}
+          </p>
+        </div>
+      `;
+    }
   }
 
   return createNotificationEmailTemplate({
