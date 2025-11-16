@@ -757,17 +757,26 @@ export async function sendSubscriptionConfirmationEmail(params: {
   userName: string;
   service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
   expiryDate?: Date | string;
+  startDate?: Date | string;
+  isRenewal?: boolean;
+  previousExpiry?: Date | string | null;
 }) {
   try {
-    console.log('📧 Enviando confirmación de suscripción a usuario:', params.userEmail);
+    console.log('📧 Enviando confirmación de suscripción a usuario:', params.userEmail, {
+      isRenewal: params.isRenewal,
+      previousExpiry: params.previousExpiry
+    });
     const html = createSubscriptionConfirmationTemplate({
       userName: params.userName,
       service: params.service,
-      expiryDate: params.expiryDate
+      expiryDate: params.expiryDate,
+      startDate: params.startDate,
+      isRenewal: params.isRenewal,
+      previousExpiry: params.previousExpiry || undefined
     });
     await sendEmail({
       to: params.userEmail,
-      subject: `✅ Suscripción Activa - ${params.service}`,
+      subject: `✅ ${params.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'} - ${params.service}`,
       html
     });
     console.log('✅ Confirmación de suscripción enviada al usuario');

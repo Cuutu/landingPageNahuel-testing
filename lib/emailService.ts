@@ -1359,6 +1359,9 @@ export function createSubscriptionConfirmationTemplate(details: {
   userName: string;
   service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
   expiryDate?: Date | string;
+  startDate?: Date | string;
+  isRenewal?: boolean;
+  previousExpiry?: Date | string;
   featuresUrl?: string;
 }): string {
   const serviceInfo: Record<string, { name: string; emoji: string; url: string }> = {
@@ -1369,6 +1372,8 @@ export function createSubscriptionConfirmationTemplate(details: {
   const svc = serviceInfo[details.service] || { name: details.service, emoji: '🔔', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas` };
   const timezone = process.env.TZ || 'America/Montevideo';
   const expiryStr = details.expiryDate ? new Date(details.expiryDate).toLocaleDateString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
+  const startStr = details.startDate ? new Date(details.startDate).toLocaleDateString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
+  const previousExpiryStr = details.previousExpiry ? new Date(details.previousExpiry).toLocaleDateString('es-AR', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : undefined;
 
   const featuresHtml = `
     <ul style="margin: 0; padding-left: 20px;">
@@ -1379,12 +1384,32 @@ export function createSubscriptionConfirmationTemplate(details: {
     </ul>
   `;
 
+  // Mensaje específico para renovación anticipada
+  let renewalMessage = '';
+  if (details.isRenewal && previousExpiryStr && startStr) {
+    renewalMessage = `
+      <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0 0 8px; color: #065f46; font-weight: 600;">✅ Renovación Anticipada Confirmada</p>
+        <p style="margin: 0; color: #047857; font-size: 14px;">
+          Tu tiempo actual no se perdió. La nueva suscripción empezará cuando termine la actual.<br/>
+          <strong>Tu suscripción anterior expiraba:</strong> ${previousExpiryStr}<br/>
+          <strong>La nueva suscripción empieza:</strong> ${startStr}<br/>
+          <strong>Nueva fecha de expiración:</strong> ${expiryStr}
+        </p>
+      </div>
+    `;
+  }
+
   return createNotificationEmailTemplate({
-    title: `${svc.emoji} Suscripción Activa: ${svc.name}`,
+    title: `${svc.emoji} ${details.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'}: ${svc.name}`,
     content: `
-      <p>¡Gracias por suscribirte, <strong>${details.userName}</strong>! 🎉</p>
-      <p>Tu suscripción a <strong>${svc.name}</strong> fue activada exitosamente.</p>
-      ${expiryStr ? `<p><strong>Vencimiento:</strong> ${expiryStr}</p>` : ''}
+      <p>¡Gracias ${details.isRenewal ? 'por renovar' : 'por suscribirte'}, <strong>${details.userName}</strong>! 🎉</p>
+      <p>Tu ${details.isRenewal ? 'renovación a' : 'suscripción a'} <strong>${svc.name}</strong> fue ${details.isRenewal ? 'procesada' : 'activada'} exitosamente.</p>
+      
+      ${renewalMessage}
+      
+      ${!details.isRenewal && expiryStr ? `<p><strong>Tu suscripción expira:</strong> ${expiryStr}</p>` : ''}
+      ${!details.isRenewal ? `<p style="color: #64748b; font-size: 14px;">💡 <em>Recordá que si renovás antes de que expire, tu tiempo actual se mantendrá y la nueva suscripción se apilará automáticamente.</em></p>` : ''}
 
       <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
         <h4 style="margin: 0 0 10px; color: #1e293b;">Funciones para suscriptores</h4>

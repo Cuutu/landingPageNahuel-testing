@@ -313,23 +313,54 @@ UserSchema.methods.addActiveSubscription = function(
   return this.save();
 };
 
-// Método para renovar suscripción
+// Método para renovar suscripción con APILADO DE TIEMPO
 UserSchema.methods.renewSubscription = function(
   service: string,
   amount: number,
   currency: string = 'ARS',
   mercadopagoPaymentId?: string
 ) {
-  const startDate = new Date();
-  const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const now = new Date();
+  let startDate: Date;
+  let expiryDate: Date;
   
-  // 1. Actualizar activeSubscriptions (MercadoPago)
+  // 1. Buscar suscripción activa existente del mismo servicio
   const existingActiveSub = this.activeSubscriptions.find(
-    (sub: any) => sub.service === service
+    (sub: any) => sub.service === service && sub.isActive
   );
   
+  // 2. Determinar fechas según si hay suscripción activa o no
+  if (existingActiveSub && new Date(existingActiveSub.expiryDate) > now) {
+    // 🎯 RENOVACIÓN ANTICIPADA: Apilar tiempo sobre la suscripción actual
+    // La nueva suscripción empieza cuando termina la actual
+    startDate = new Date(existingActiveSub.expiryDate);
+    expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    console.log('🔄 Renovación anticipada detectada:', {
+      email: this.email,
+      service,
+      currentExpiry: existingActiveSub.expiryDate,
+      newStart: startDate,
+      newExpiry: expiryDate,
+      message: 'Tiempo apilado - sin pérdida de días actuales'
+    });
+  } else {
+    // 🆕 PRIMERA SUSCRIPCIÓN o YA EXPIRÓ: Empezar desde HOY
+    startDate = now;
+    expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    console.log('✨ Nueva suscripción o renovación post-expiración:', {
+      email: this.email,
+      service,
+      startDate,
+      expiryDate,
+      message: 'Inicia desde hoy'
+    });
+  }
+  
+  // 3. Actualizar activeSubscriptions (MercadoPago)
   if (existingActiveSub) {
-    // Renovar suscripción existente
+    // Actualizar suscripción existente
     existingActiveSub.startDate = startDate;
     existingActiveSub.expiryDate = expiryDate;
     existingActiveSub.isActive = true;
@@ -349,7 +380,7 @@ UserSchema.methods.renewSubscription = function(
     });
   }
   
-  // 2. ✅ NUEVO: También actualizar el array 'subscriptions' (admin) para consistencia
+  // 4. También actualizar el array 'subscriptions' (admin) para consistencia
   const existingAdminSub = this.subscriptions.find(
     (sub: any) => sub.tipo === service
   );
@@ -371,9 +402,9 @@ UserSchema.methods.renewSubscription = function(
     });
   }
   
-  // 3. Actualizar fechas generales
+  // 5. Actualizar fechas generales (usar la fecha de expiración más lejana)
   this.subscriptionExpiry = expiryDate;
-  this.lastPaymentDate = startDate;
+  this.lastPaymentDate = now; // El pago siempre es HOY
   
   // 4. ✅ IMPORTANTE: Actualizar el rol SOLO si es 'normal' (NO cambiar admin)
   if (this.role === 'normal') {

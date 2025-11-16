@@ -291,13 +291,30 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     const isMonthlyTrainingSubscription = externalRef && externalRef.startsWith('MTS_');
 
     if (isSubscription) {
+      // Detectar si existe suscripción activa antes de renovar
+      const existingActiveSub = user.activeSubscriptions.find(
+        (sub: any) => sub.service === service && sub.isActive && new Date(sub.expiryDate) > new Date()
+      );
+      const previousExpiry = existingActiveSub ? new Date(existingActiveSub.expiryDate) : null;
+      const isRenewal = !!previousExpiry;
+      
       // Procesar suscripción
       await user.renewSubscription(service, amount, currency, paymentInfo.id);
+      
+      // Recargar el usuario para obtener las fechas actualizadas
+      await user.reload();
+      
+      const updatedSub = user.activeSubscriptions.find(
+        (sub: any) => sub.service === service
+      );
       
       console.log('✅ Suscripción activada:', {
         user: user.email,
         service,
-        expiryDate: user.subscriptionExpiry
+        isRenewal,
+        previousExpiry: previousExpiry?.toISOString(),
+        newStartDate: updatedSub?.startDate,
+        newExpiryDate: updatedSub?.expiryDate
       });
 
       // ✅ La suscripción ya está activada en user.activeSubscriptions
@@ -339,7 +356,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             userEmail: user.email,
             userName: user.name || user.email,
             service: service,
-            expiryDate: user.subscriptionExpiry
+            expiryDate: updatedSub?.expiryDate || user.subscriptionExpiry,
+            startDate: updatedSub?.startDate,
+            isRenewal,
+            previousExpiry
           });
           payment.metadata.userSubscriptionConfirmationSent = true;
           await payment.save();
