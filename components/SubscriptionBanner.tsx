@@ -58,11 +58,35 @@ export default function SubscriptionBanner({ service }: SubscriptionBannerProps)
     }
   };
 
-  const handleRenew = () => {
-    // Scroll hacia el botón de suscripción en la página
-    const subscribeButton = document.querySelector('[data-subscribe-button]');
-    if (subscribeButton) {
-      subscribeButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  const handleRenew = async () => {
+    try {
+      console.log('🔄 Iniciando renovación para:', service);
+      
+      // Llamar al endpoint de renovación para crear el checkout
+      const response = await fetch('/api/payments/mercadopago/create-renewal-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ service })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al crear checkout de renovación');
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.checkoutUrl) {
+        console.log('✅ Redirigiendo al checkout de MercadoPago');
+        // Redirigir al checkout de MercadoPago
+        window.location.href = data.checkoutUrl;
+      } else {
+        throw new Error('No se pudo obtener URL de checkout');
+      }
+    } catch (error) {
+      console.error('❌ Error al renovar suscripción:', error);
+      alert('Error al procesar la renovación. Por favor intenta nuevamente.');
     }
   };
 
