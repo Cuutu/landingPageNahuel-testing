@@ -98,6 +98,27 @@ export default function UserSubscriptions() {
     refreshSubscriptions 
   } = useUserSubscriptions();
 
+  const handleRenewSubscription = async (service: string) => {
+    try {
+      // Redirigir a la página de checkout correspondiente
+      const serviceUrls: { [key: string]: string } = {
+        'TraderCall': '/alertas/trader-call',
+        'SmartMoney': '/alertas/smart-money',
+        'SwingTrading': '/entrenamientos/swing-trading'
+      };
+      
+      const url = serviceUrls[service];
+      if (url) {
+        window.location.href = url;
+      } else {
+        alert('Servicio no disponible para renovación');
+      }
+    } catch (error) {
+      console.error('Error al renovar suscripción:', error);
+      alert('Error al procesar la renovación');
+    }
+  };
+
   if (loading) {
     return (
       <div className={styles.loadingContainer}>
@@ -226,6 +247,21 @@ export default function UserSubscriptions() {
                         <div className={styles.paymentInfo}>
                           <span>ID: {subscription.transactionId}</span>
                         </div>
+                      )}
+
+                      {/* Botón de renovar */}
+                      <button
+                        onClick={() => handleRenewSubscription(subscription.service)}
+                        className={styles.renewButton}
+                      >
+                        <RefreshCw size={16} />
+                        Renovar Ahora
+                      </button>
+                      
+                      {isExpiringSoon && (
+                        <p className={styles.renewTip}>
+                          💡 Si renovás ahora, tu tiempo actual se mantendrá y se agregará 30 días más
+                        </p>
                       )}
                     </div>
                   </motion.div>

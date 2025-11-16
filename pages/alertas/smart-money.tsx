@@ -9,6 +9,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import VideoPlayerMux from '@/components/VideoPlayerMux';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import SubscriptionBanner from '@/components/SubscriptionBanner';
 
 import Carousel from '@/components/Carousel';
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
@@ -4300,6 +4301,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           </p>
         </div>
       </div>
+
+      {/* Banner de Estado de Suscripción */}
+      <SubscriptionBanner service="SmartMoney" />
 
       {/* Navegación Móvil (Tabs) */}
       <div className={styles.mobileTabs}>
