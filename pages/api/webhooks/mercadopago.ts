@@ -186,13 +186,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('🆕 Payment creado desde webhook para external_reference:', payment.externalReference);
     }
 
-    // Evitar procesar el mismo pago múltiples veces
-    if (payment.status === 'approved' && payment.mercadopagoPaymentId === paymentInfo.id) {
-      console.log('✅ Pago ya procesado anteriormente:', paymentInfo.id);
+    // ✅ MEJORADO: Evitar procesar el mismo pago múltiples veces
+    const wasAlreadyApproved = payment.status === 'approved';
+    const isSamePayment = payment.mercadopagoPaymentId === paymentInfo.id;
+    
+    if (wasAlreadyApproved && isSamePayment) {
+      console.log('✅ Pago ya procesado anteriormente (approved):', paymentInfo.id);
       return res.status(200).json({ success: true, message: 'Pago ya procesado' });
     }
 
+    // Si el pago ya tiene este mercadopagoPaymentId con status approved, no procesar
+    if (isSamePayment && wasAlreadyApproved) {
+      console.log('⚠️  Webhook duplicado detectado para pago ya aprobado:', paymentInfo.id);
+      return res.status(200).json({ success: true, message: 'Webhook duplicado ignorado' });
+    }
+
     // Actualizar campos del Payment
+    const oldStatus = payment.status;
     payment.mercadopagoPaymentId = paymentInfo.id;
     payment.status = paymentInfo.status;
     payment.paymentMethodId = paymentInfo.payment_method_id || '';
@@ -208,10 +218,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await payment.save();
 
+    // Solo procesar si el status cambió a approved (no si ya estaba approved)
+    const isNewApproval = !wasAlreadyApproved && isPaymentSuccessful(paymentInfo);
+
     // Procesamiento por estado
-    if (isPaymentSuccessful(paymentInfo)) {
-      console.log('✅ Pago aprobado. Procesando efectos…');
+    if (isNewApproval) {
+      console.log('✅ Pago aprobado (NUEVO). Procesando efectos…');
       await processSuccessfulPayment(payment, paymentInfo);
+    } else if (isPaymentSuccessful(paymentInfo) && wasAlreadyApproved) {
+      console.log('ℹ️  Pago ya estaba aprobado, no se procesa nuevamente');
     } else if (isPaymentRejected(paymentInfo)) {
       console.log('❌ Pago rechazado');
       await processRejectedPayment(payment, paymentInfo);
