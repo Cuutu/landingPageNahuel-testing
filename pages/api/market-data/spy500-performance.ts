@@ -9,34 +9,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
+  // Declarar variables fuera del try para que estén disponibles en el catch
+  const { period = '30d' } = req.query;
+  const endDate = new Date();
+  let startDate = new Date();
+
+  // Calcular fechas según el período solicitado (fuera del try para que esté disponible en catch)
+  switch (period) {
+    case '7d':
+      startDate.setDate(endDate.getDate() - 7);
+      break;
+    case '15d':
+      startDate.setDate(endDate.getDate() - 15);
+      break;
+    case '30d':
+      startDate.setDate(endDate.getDate() - 30);
+      break;
+    case '6m':
+      startDate.setMonth(endDate.getMonth() - 6);
+      break;
+    case '1y':
+      startDate.setFullYear(endDate.getFullYear() - 1);
+      break;
+    default:
+      return res.status(400).json({ error: 'Período no válido. Use: 7d, 15d, 30d, 6m, 1y' });
+  }
+
   try {
-    const { period = '30d' } = req.query;
-
     console.log(`📊 Obteniendo rendimiento del S&P 500 para período: ${period}`);
-
-    // Calcular fechas según el período solicitado
-    const endDate = new Date();
-    let startDate = new Date();
-
-    switch (period) {
-      case '7d':
-        startDate.setDate(endDate.getDate() - 7);
-        break;
-      case '15d':
-        startDate.setDate(endDate.getDate() - 15);
-        break;
-      case '30d':
-        startDate.setDate(endDate.getDate() - 30);
-        break;
-      case '6m':
-        startDate.setMonth(endDate.getMonth() - 6);
-        break;
-      case '1y':
-        startDate.setFullYear(endDate.getFullYear() - 1);
-        break;
-      default:
-        return res.status(400).json({ error: 'Período no válido. Use: 7d, 15d, 30d, 6m, 1y' });
-    }
 
     // Intentar obtener datos reales del S&P 500, con fallback a datos simulados
     let performanceData;
