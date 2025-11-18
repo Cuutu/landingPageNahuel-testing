@@ -34,7 +34,7 @@ export interface ServicePerformanceData {
   period: string;
 }
 
-export function useSP500Performance(period: string = '30d', serviceType: 'TraderCall' | 'SmartMoney' = 'TraderCall') {
+export function useSP500Performance(period: string = '1m', serviceType: 'TraderCall' | 'SmartMoney' = 'TraderCall') {
   const [sp500Data, setSp500Data] = useState<SP500Data | null>(null);
   const [serviceData, setServiceData] = useState<ServicePerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,9 +76,9 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
   // Convertir período a días (igual que PortfolioTimeRange)
   const periodToDays = (period: string): number => {
     switch (period) {
-      case '7d': return 7;
-      case '15d': return 15;
-      case '30d': return 30;
+      case '1d': return 1;
+      case '5d': return 5;
+      case '1m': return 30;
       case '6m': return 180;
       case '1y': return 365;
       default: return 30;
@@ -202,9 +202,9 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
  */
 function getMonthsFromPeriod(period: string): number {
   switch (period) {
-    case '7d': return 1/4;
-    case '15d': return 0.5;
-    case '30d': return 1;
+    case '1d': return 1/30;
+    case '5d': return 5/30;
+    case '1m': return 1;
     case '6m': return 6;
     case '1y': return 12;
     default: return 1;

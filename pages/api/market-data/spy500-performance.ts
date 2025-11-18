@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 
 /**
  * API endpoint para obtener rendimiento histórico del S&P 500 por períodos
- * GET /api/market-data/spy500-performance?period=7d|15d|30d|6m|1y
+ * GET /api/market-data/spy500-performance?period=1d|5d|1m|6m|1y
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -10,20 +10,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Declarar variables fuera del try para que estén disponibles en el catch
-  const { period = '30d' } = req.query;
+  const { period = '1m' } = req.query;
   const endDate = new Date();
   let startDate = new Date();
 
   // Calcular fechas según el período solicitado (fuera del try para que esté disponible en catch)
   switch (period) {
-    case '7d':
-      startDate.setDate(endDate.getDate() - 7);
+    case '1d':
+      startDate.setDate(endDate.getDate() - 1);
       break;
-    case '15d':
-      startDate.setDate(endDate.getDate() - 15);
+    case '5d':
+      startDate.setDate(endDate.getDate() - 5);
       break;
-    case '30d':
-      startDate.setDate(endDate.getDate() - 30);
+    case '1m':
+      startDate.setMonth(endDate.getMonth() - 1);
       break;
     case '6m':
       startDate.setMonth(endDate.getMonth() - 6);
@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       startDate.setFullYear(endDate.getFullYear() - 1);
       break;
     default:
-      return res.status(400).json({ error: 'Período no válido. Use: 7d, 15d, 30d, 6m, 1y' });
+      return res.status(400).json({ error: 'Período no válido. Use: 1d, 5d, 1m, 6m, 1y' });
   }
 
   try {
@@ -136,9 +136,9 @@ async function getRealSP500DataFromYahoo(period: string) {
     const endDate = new Date();
     let startDate = new Date();
     const periodDays: { [key: string]: number } = {
-      '7d': 7,
-      '15d': 15,
-      '30d': 30,
+      '1d': 1,
+      '5d': 5,
+      '1m': 30,
       '6m': 180,
       '1y': 365
     };
@@ -208,51 +208,44 @@ async function getRealSP500DataFromYahoo(period: string) {
     const targetStartDate = new Date(currentDate);
     targetStartDate.setDate(targetStartDate.getDate() - days);
     
-    // ✅ MEJORADO: Calcular precio de inicio según el período
-    // Para períodos cortos (7d, 15d, 30d), usar el primer precio válido del array
-    // Para períodos largos (6m, 1y), buscar el precio más cercano a la fecha objetivo
+    // ✅ SIMPLIFICADO: Calcular precio de inicio de forma consistente para TODOS los períodos
+    // Usar la misma lógica que funciona bien para 1 año: buscar el precio más cercano a targetStartDate
+    // que sea anterior o igual a la fecha objetivo (no futuros)
     let startPrice = currentPrice;
+    let closestDiff = Infinity;
+    let foundPrice = false;
     
-    if (period === '7d' || period === '15d' || period === '30d') {
-      // Para períodos cortos, buscar el precio más cercano a la fecha objetivo
-      // pero asegurarnos de tener al menos algunos días de datos
-      let closestDiff = Infinity;
-      let closestPrice = validData[0].price; // Fallback al primer precio
+    // Buscar el precio más cercano a la fecha objetivo que sea anterior o igual
+    for (const dataPoint of validData) {
+      const dataDate = new Date(dataPoint.timestamp * 1000);
+      const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
       
-      for (const dataPoint of validData) {
-        const dataDate = new Date(dataPoint.timestamp * 1000);
-        const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
-        
-        // Buscar el precio más cercano a la fecha objetivo (puede ser antes o después)
+      // Priorizar precios anteriores o iguales a la fecha objetivo
+      if (dataDate <= targetStartDate) {
         if (diff < closestDiff) {
           closestDiff = diff;
-          closestPrice = dataPoint.price;
+          startPrice = dataPoint.price;
+          foundPrice = true;
         }
       }
-      
-      startPrice = closestPrice;
-      
-      // Si no hay suficientes datos, usar el primero disponible
-      if (validData.length < 2) {
-        startPrice = validData[0].price;
-      }
-    } else {
-      // Para períodos largos, buscar el precio más cercano a la fecha objetivo
-      let closestDiff = Infinity;
+    }
+    
+    // Si no encontramos un precio anterior, buscar el más cercano en general (fallback)
+    if (!foundPrice) {
+      closestDiff = Infinity;
       for (const dataPoint of validData) {
         const dataDate = new Date(dataPoint.timestamp * 1000);
         const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
-        
-        if (diff < closestDiff && dataDate <= targetStartDate) {
+        if (diff < closestDiff) {
           closestDiff = diff;
           startPrice = dataPoint.price;
         }
       }
-      
-      // Si no encontramos un precio anterior, usar el primero disponible
-      if (startPrice === currentPrice && validData.length > 0) {
-        startPrice = validData[0].price;
-      }
+    }
+    
+    // Fallback final: si aún no tenemos un precio válido, usar el primero disponible
+    if (startPrice <= 0 && validData.length > 0) {
+      startPrice = validData[0].price;
     }
     
     // ✅ MEJORADO: Calcular rendimiento del período con validación
@@ -263,7 +256,19 @@ async function getRealSP500DataFromYahoo(period: string) {
     const periodChange = currentPrice - startPrice;
     const periodChangePercent = (periodChange / startPrice) * 100;
     
-    console.log(`📊 [YAHOO] Período: ${period}, Precio inicio: $${startPrice.toFixed(2)}, Precio actual: $${currentPrice.toFixed(2)}, Cambio: ${periodChangePercent.toFixed(2)}%`);
+    // ✅ NUEVO: Logging detallado para debugging
+    const startPriceDate = validData.find(dp => Math.abs(dp.price - startPrice) < 0.01)?.timestamp 
+      ? new Date(validData.find(dp => Math.abs(dp.price - startPrice) < 0.01)!.timestamp * 1000)
+      : null;
+    
+    console.log(`📊 [YAHOO] Período: ${period}`);
+    console.log(`   📅 Fecha objetivo inicio: ${targetStartDate.toISOString().split('T')[0]}`);
+    console.log(`   📅 Fecha precio inicio encontrado: ${startPriceDate?.toISOString().split('T')[0] || 'N/A'}`);
+    console.log(`   📅 Fecha precio actual: ${currentDate.toISOString().split('T')[0]}`);
+    console.log(`   💰 Precio inicio: $${startPrice.toFixed(2)}`);
+    console.log(`   💰 Precio actual: $${currentPrice.toFixed(2)}`);
+    console.log(`   📈 Cambio: $${periodChange.toFixed(2)} (${periodChangePercent.toFixed(2)}%)`);
+    console.log(`   📊 Total datos disponibles: ${validData.length} días hábiles`);
     
     // Obtener cambio diario
     const previousPrice = validData.length > 1 ? validData[validData.length - 2].price : startPrice;
@@ -352,14 +357,14 @@ async function getRealSP500Data(period: string) {
     let startDate = new Date(endDate);
     
     switch (period) {
-      case '7d':
-        startDate.setDate(endDate.getDate() - 7);
+      case '1d':
+        startDate.setDate(endDate.getDate() - 1);
         break;
-      case '15d':
-        startDate.setDate(endDate.getDate() - 15);
+      case '5d':
+        startDate.setDate(endDate.getDate() - 5);
         break;
-      case '30d':
-        startDate.setDate(endDate.getDate() - 30);
+      case '1m':
+        startDate.setMonth(endDate.getMonth() - 1);
         break;
       case '6m':
         startDate.setMonth(endDate.getMonth() - 6);
@@ -428,7 +433,7 @@ function generateDailyDataFromAlphaVantage(currentPrice: number, period: string)
     change: number;
     changePercent: number;
   }> = [];
-  const maxDays = period === '7d' ? 7 : period === '15d' ? 15 : 30;
+  const maxDays = period === '1d' ? 1 : period === '5d' ? 5 : period === '1m' ? 30 : period === '6m' ? 180 : 365;
   
   // Generar datos simulados pero realistas basados en el precio actual
   let basePrice = currentPrice;
@@ -476,9 +481,9 @@ async function generateHistoricalPerformance(startDate: Date, endDate: Date, per
       // Calcular precio de inicio según el período
       let startIndex = 0;
       const periodDays: { [key: string]: number } = {
-        '7d': 7,
-        '15d': 15,
-        '30d': 30,
+        '1d': 1,
+        '5d': 5,
+        '1m': 30,
         '6m': 180,
         '1y': 365
       };

@@ -10,9 +10,9 @@ interface SP500ComparisonProps {
 
 // Constantes para mejor mantenibilidad
 const PERIODS = [
-  { value: '7d', label: '7D' },
-  { value: '15d', label: '15D' },
-  { value: '30d', label: '30D' },
+  { value: '1d', label: '1D' },
+  { value: '5d', label: '5D' },
+  { value: '1m', label: '1M' },
   { value: '6m', label: '6M' },
   { value: '1y', label: '1A' }
 ] as const;
@@ -23,7 +23,7 @@ const PERFORMANCE_COLORS = {
 } as const;
 
 const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', serviceType = 'TraderCall' }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
+  const [selectedPeriod, setSelectedPeriod] = useState('1m');
   const { sp500Data, serviceData, loading, error, refreshData } = useSP500Performance(selectedPeriod, serviceType);
 
   const handlePeriodChange = (period: string) => {
