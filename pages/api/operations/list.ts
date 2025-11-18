@@ -73,7 +73,7 @@ export default async function handler(
       .sort({ date: -1 })
       .limit(parseInt(limit as string))
       .skip(parseInt(skip as string))
-      .populate('alertId', 'symbol action status profit');
+      .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt');
 
     // Obtener resumen
     const summary = await Operation.aggregate([
@@ -125,7 +125,16 @@ export default async function handler(
         executedBy: op.executedBy,
         executionMethod: op.executionMethod,
         notes: op.notes,
-        createdAt: op.createdAt
+        createdAt: op.createdAt,
+        // ✅ NUEVO: Información de la alerta para determinar el estado
+        alert: op.alertId && typeof op.alertId === 'object' ? {
+          status: op.alertId.status,
+          availableForPurchase: op.alertId.availableForPurchase,
+          finalPriceSetAt: op.alertId.finalPriceSetAt,
+          descartadaAt: op.alertId.descartadaAt,
+          date: op.alertId.date,
+          createdAt: op.alertId.createdAt
+        } : null
       })),
       summary,
       currentBalance: currentBalanceDoc?.balance || 0,

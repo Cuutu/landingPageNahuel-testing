@@ -26,6 +26,15 @@ interface Operation {
   executionMethod?: 'MANUAL' | 'AUTOMATIC' | 'ADMIN';
   notes?: string;
   createdAt: string;
+  // ✅ NUEVO: Información de la alerta para determinar el estado
+  alert?: {
+    status: 'ACTIVE' | 'CLOSED' | 'STOPPED' | 'DESESTIMADA' | 'DESCARTADA';
+    availableForPurchase?: boolean;
+    finalPriceSetAt?: string | Date;
+    descartadaAt?: string | Date;
+    date?: string | Date;
+    createdAt?: string | Date;
+  } | null;
 }
 
 interface OperationsSummary {

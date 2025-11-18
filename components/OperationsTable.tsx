@@ -101,6 +101,91 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     return type === 'COMPRA' ? 'bg-green-50' : 'bg-red-50';
   };
 
+  // ✅ NUEVO: Función para determinar el estado de la operación
+  const getOperationStatus = (operation: any): 'Ejecutada' | 'Rechazada' | 'A confirmar' => {
+    if (!operation.alert) {
+      // Si no hay información de la alerta, retornar "A confirmar" por defecto
+      return 'A confirmar';
+    }
+
+    const alert = operation.alert;
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+
+    // "A confirmar": Alertas vigentes (status === 'ACTIVE' && availableForPurchase === true)
+    // Estas son las alertas que aparecen en "Alertas vigentes"
+    if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
+      return 'A confirmar';
+    }
+
+    // "Rechazada": Alertas descartadas que NO son del día actual
+    // Las descartadas del día actual aparecen en seguimiento, así que son "Ejecutada"
+    if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
+      const descartadaAt = new Date(alert.descartadaAt);
+      const isDescartadaToday = descartadaAt >= startOfDay && descartadaAt <= endOfDay;
+      if (!isDescartadaToday) {
+        return 'Rechazada';
+      }
+    }
+
+    // "Ejecutada": Todas las alertas que aparecen en Seguimiento
+    // Según la lógica de seguimiento:
+    // 1. Alertas cerradas o detenidas
+    if (alert.status === 'CLOSED' || alert.status === 'STOPPED') {
+      return 'Ejecutada';
+    }
+
+    // 2. Alertas activas que están en seguimiento:
+    //    - No son del día actual, O
+    //    - Son del día actual pero tienen finalPriceSetAt (confirmadas a las 18:30)
+    if (alert.status === 'ACTIVE') {
+      const alertDate = alert.date ? new Date(alert.date) : (alert.createdAt ? new Date(alert.createdAt) : null);
+      if (alertDate) {
+        const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
+        // Si no es del día actual, está en seguimiento
+        if (!isCreatedToday) {
+          return 'Ejecutada';
+        }
+        // Si es del día actual pero tiene finalPriceSetAt, está en seguimiento
+        if (isCreatedToday && alert.finalPriceSetAt) {
+          return 'Ejecutada';
+        }
+      } else {
+        // Si no tiene fecha pero tiene finalPriceSetAt, está en seguimiento
+        if (alert.finalPriceSetAt) {
+          return 'Ejecutada';
+        }
+      }
+    }
+
+    // 3. Alertas descartadas del día actual (aparecen en seguimiento)
+    if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
+      const descartadaAt = new Date(alert.descartadaAt);
+      const isDescartadaToday = descartadaAt >= startOfDay && descartadaAt <= endOfDay;
+      if (isDescartadaToday) {
+        return 'Ejecutada';
+      }
+    }
+
+    // Por defecto, si no cumple ninguna condición, es "A confirmar"
+    return 'A confirmar';
+  };
+
+  // ✅ NUEVO: Función para obtener el color del estado
+  const getStatusColor = (status: 'Ejecutada' | 'Rechazada' | 'A confirmar') => {
+    switch (status) {
+      case 'Ejecutada':
+        return { color: '#10B981', bgColor: '#D1FAE5' }; // Verde
+      case 'Rechazada':
+        return { color: '#EF4444', bgColor: '#FEE2E2' }; // Rojo
+      case 'A confirmar':
+        return { color: '#F59E0B', bgColor: '#FEF3C7' }; // Amarillo/Naranja
+      default:
+        return { color: '#6B7280', bgColor: '#F3F4F6' }; // Gris
+    }
+  };
+
   if (loading && operations.length === 0) {
     return (
       <div className={`${styles.operationsContainer} ${className}`}>
@@ -210,13 +295,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               <th>Ticker</th>
               <th>Precio</th>
               <th>% Cartera</th>
+              <th>Estado</th>
               <th>Fecha</th>
             </tr>
           </thead>
           <tbody>
             {filteredOperations.length === 0 ? (
               <tr>
-                <td colSpan={5} className={styles.noData}>
+                <td colSpan={6} className={styles.noData}>
                   <Clock className="w-8 h-8 mx-auto mb-2" />
                   <p>No hay operaciones para mostrar</p>
                   {searchTerm && (
@@ -227,60 +313,81 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 </td>
               </tr>
             ) : (
-              filteredOperations.map((operation) => (
-                <tr key={operation._id} className={operation.operationType === 'COMPRA' ? styles.buyRow : styles.sellRow}>
-                  <td>
-                    <div className="flex flex-col">
-                      <div className="flex items-center space-x-2">
-                        {getOperationIcon(operation.operationType)}
-                        <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
-                          {operation.operationType}
-                        </span>
-                      </div>
-                      {operation.isPartialSale && (
-                        <div className="mt-1 flex items-center">
-                          <span className={styles.partialSaleTag}>
-                            Parcial ({operation.partialSalePercentage}%)
+              filteredOperations.map((operation) => {
+                const status = getOperationStatus(operation);
+                const statusColors = getStatusColor(status);
+                
+                return (
+                  <tr key={operation._id} className={operation.operationType === 'COMPRA' ? styles.buyRow : styles.sellRow}>
+                    <td>
+                      <div className="flex flex-col">
+                        <div className="flex items-center space-x-2">
+                          {getOperationIcon(operation.operationType)}
+                          <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
+                            {operation.operationType}
                           </span>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                  <td>
-                    <div>
-                      <div className="font-medium">
-                        {operation.ticker}
+                        {operation.isPartialSale && (
+                          <div className="mt-1 flex items-center">
+                            <span className={styles.partialSaleTag}>
+                              Parcial ({operation.partialSalePercentage}%)
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      {operation.alertSymbol && operation.alertSymbol !== operation.ticker && (
-                        <div className="text-sm opacity-75">
-                          {operation.alertSymbol}
+                    </td>
+                    <td>
+                      <div>
+                        <div className="font-medium">
+                          {operation.ticker}
                         </div>
+                        {operation.alertSymbol && operation.alertSymbol !== operation.ticker && (
+                          <div className="text-sm opacity-75">
+                            {operation.alertSymbol}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {formatCurrency(operation.price)}
+                    </td>
+                    <td>
+                      {operation.operationType === 'COMPRA' && operation.portfolioPercentage != null ? (
+                        <span style={{ color: '#10B981', fontWeight: '500' }}>
+                          {typeof operation.portfolioPercentage === 'number' 
+                            ? operation.portfolioPercentage.toFixed(2) 
+                            : operation.portfolioPercentage}%
+                        </span>
+                      ) : operation.operationType === 'VENTA' && operation.partialSalePercentage != null ? (
+                        <span style={{ color: '#EF4444', fontWeight: '500' }}>
+                          {operation.partialSalePercentage}%
+                        </span>
+                      ) : (
+                        <span style={{ color: '#9ca3af' }}>—</span>
                       )}
-                    </div>
-                  </td>
-                  <td>
-                    {formatCurrency(operation.price)}
-                  </td>
-                  <td>
-                    {operation.operationType === 'COMPRA' && operation.portfolioPercentage != null ? (
-                      <span style={{ color: '#10B981', fontWeight: '500' }}>
-                        {typeof operation.portfolioPercentage === 'number' 
-                          ? operation.portfolioPercentage.toFixed(2) 
-                          : operation.portfolioPercentage}%
+                    </td>
+                    <td>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '4px 12px',
+                          borderRadius: '12px',
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: statusColors.color,
+                          backgroundColor: statusColors.bgColor,
+                          border: `1px solid ${statusColors.color}20`
+                        }}
+                      >
+                        {status}
                       </span>
-                    ) : operation.operationType === 'VENTA' && operation.partialSalePercentage != null ? (
-                      <span style={{ color: '#EF4444', fontWeight: '500' }}>
-                        {operation.partialSalePercentage}%
-                      </span>
-                    ) : (
-                      <span style={{ color: '#9ca3af' }}>—</span>
-                    )}
-                  </td>
-                  <td>
-                    {formatDate(operation.date)}
-                  </td>
-                </tr>
-              ))
+                    </td>
+                    <td>
+                      {formatDate(operation.date)}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
