@@ -120,6 +120,7 @@ export default async function handler(
         isPartialSale: op.isPartialSale,
         partialSalePercentage: op.partialSalePercentage,
         originalQuantity: op.originalQuantity,
+        portfolioPercentage: op.portfolioPercentage, // ✅ Agregado: Porcentaje de la cartera
         liquidityData: op.liquidityData,
         executedBy: op.executedBy,
         executionMethod: op.executionMethod,

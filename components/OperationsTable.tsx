@@ -262,11 +262,13 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     {formatCurrency(operation.price)}
                   </td>
                   <td>
-                    {operation.operationType === 'COMPRA' && operation.portfolioPercentage ? (
+                    {operation.operationType === 'COMPRA' && operation.portfolioPercentage != null ? (
                       <span style={{ color: '#10B981', fontWeight: '500' }}>
-                        {operation.portfolioPercentage.toFixed(2)}%
+                        {typeof operation.portfolioPercentage === 'number' 
+                          ? operation.portfolioPercentage.toFixed(2) 
+                          : operation.portfolioPercentage}%
                       </span>
-                    ) : operation.operationType === 'VENTA' && operation.partialSalePercentage ? (
+                    ) : operation.operationType === 'VENTA' && operation.partialSalePercentage != null ? (
                       <span style={{ color: '#EF4444', fontWeight: '500' }}>
                         {operation.partialSalePercentage}%
                       </span>
