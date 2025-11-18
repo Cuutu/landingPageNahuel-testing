@@ -7,6 +7,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 
 interface SP500DataPoint {
   date: string;
@@ -101,9 +102,54 @@ export default async function handler(
     };
 
     // Filtrar por tipo si se proporciona
+    const poolType = tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney') ? tipo : 'TraderCall';
     if (tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney')) {
       alertQuery.tipo = tipo;
     }
+
+    // ✅ NUEVO: Obtener liquidez inicial y total del sistema
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+    const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+    
+    let initialLiquidity = 10000; // Valor por defecto
+    let totalLiquidity = 10000; // Valor por defecto
+    
+    if (adminUser) {
+      const liquidityDocs = await Liquidity.find({ 
+        createdBy: adminUser._id, 
+        pool: poolType 
+      }).lean();
+      
+      if (liquidityDocs.length > 0) {
+        // Obtener liquidez inicial global (del documento más reciente)
+        const docsWithInitialLiquidity = liquidityDocs.filter((doc: any) => 
+          doc.initialLiquidity !== undefined && doc.initialLiquidity !== null && doc.initialLiquidity > 0
+        );
+        
+        if (docsWithInitialLiquidity.length > 0) {
+          const sortedByUpdate = [...docsWithInitialLiquidity].sort((a: any, b: any) => 
+            new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+          );
+          initialLiquidity = sortedByUpdate[0].initialLiquidity;
+        } else {
+          // Fallback: calcular desde el primer documento
+          const firstDoc = liquidityDocs[0];
+          initialLiquidity = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
+        }
+        
+        // Calcular liquidez total actual (suma de todos los documentos)
+        let totalProfitLoss = 0;
+        liquidityDocs.forEach((doc: any) => {
+          const unrealized = (doc.distributions || []).reduce((sum: number, dist: any) => sum + (dist.profitLoss || 0), 0);
+          const realized = (doc.distributions || []).reduce((sum: number, dist: any) => sum + (dist.realizedProfitLoss || 0), 0);
+          totalProfitLoss += (unrealized + realized);
+        });
+        
+        totalLiquidity = initialLiquidity + totalProfitLoss;
+      }
+    }
+
+    console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity}, Liquidez Total: $${totalLiquidity}`);
 
     // Obtener todas las alertas en el rango de fechas
     const alerts = await Alert.find(alertQuery).sort({ createdAt: 1 }).lean();
@@ -118,13 +164,21 @@ export default async function handler(
       sp500Change?: number;
     }>();
 
+    // ✅ NUEVO: Calcular rendimiento basado en liquidez
+    // Fórmula: ((Liquidez Total - Liquidez Inicial) / Liquidez Inicial) × 100
+    const performancePercentage = initialLiquidity > 0 
+      ? ((totalLiquidity - initialLiquidity) / initialLiquidity) * 100 
+      : 0;
+    
+    console.log(`📊 [PORTFOLIO] Rendimiento calculado: ${performancePercentage.toFixed(2)}%`);
+
     // Inicializar todos los días en el rango
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split('T')[0];
       const sp500Day = sp500Map.get(dateKey);
       dailyData.set(dateKey, {
         date: dateKey,
-        value: 10000, // Portfolio inicial base
+        value: initialLiquidity, // ✅ NUEVO: Usar liquidez inicial como base
         profit: 0,
         alertsCount: 0,
         sp500Value: sp500Day?.value || 0,
@@ -132,9 +186,14 @@ export default async function handler(
       });
     }
 
-    // Calcular evolución acumulativa
-    let cumulativeProfit = 0;
-    let baseValue = 10000;
+    // ✅ NUEVO: Calcular evolución basada en liquidez real
+    // El valor del portfolio evoluciona desde initialLiquidity hasta totalLiquidity
+    // Distribuir el cambio proporcionalmente a lo largo del período
+    const liquidityChange = totalLiquidity - initialLiquidity;
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const dailyChange = totalDays > 0 ? liquidityChange / totalDays : 0;
+    
+    let currentLiquidity = initialLiquidity;
 
     // Procesar alertas por día
     const alertsByDay = new Map<string, any[]>();
@@ -149,26 +208,25 @@ export default async function handler(
       alertsByDay.get(dateKey)!.push(alert);
     });
 
-    // Procesar datos día por día
+    // ✅ NUEVO: Procesar datos día por día basado en liquidez real
     const sortedDates = Array.from(dailyData.keys()).sort();
     
     for (const dateKey of sortedDates) {
       const dayAlerts = alertsByDay.get(dateKey) || [];
       const dayData = dailyData.get(dateKey)!;
       
-      // Calcular profit del día
-      const dayProfit = dayAlerts.reduce((sum, alert) => {
-        return sum + (Number(alert.profit) || 0);
-      }, 0);
+      // ✅ NUEVO: Calcular valor del portfolio basado en liquidez
+      // El valor evoluciona proporcionalmente desde initialLiquidity hasta totalLiquidity
+      // Para el último día, usar totalLiquidity exacto
+      if (dateKey === sortedDates[sortedDates.length - 1]) {
+        dayData.value = totalLiquidity;
+      } else {
+        currentLiquidity += dailyChange;
+        dayData.value = Math.max(initialLiquidity, Math.min(totalLiquidity, currentLiquidity));
+      }
       
-      // Acumular profit
-      cumulativeProfit += dayProfit;
-      
-      // Calcular valor del portfolio (base + profit acumulado)
-      const portfolioValue = baseValue + (baseValue * (cumulativeProfit / 100));
-      
-      dayData.value = portfolioValue;
-      dayData.profit = cumulativeProfit;
+      // Calcular profit acumulado como diferencia desde liquidez inicial
+      dayData.profit = dayData.value - initialLiquidity;
       dayData.alertsCount = dayAlerts.length;
     }
 
@@ -198,12 +256,12 @@ export default async function handler(
       ((sp500Data[sp500Data.length - 1].value - sp500Data[0].value) / sp500Data[0].value) * 100 : 0;
     
     const stats = {
-      totalProfit: Number(totalProfit.toFixed(2)),
+      totalProfit: Number((totalLiquidity - initialLiquidity).toFixed(2)), // ✅ NUEVO: Ganancia real en dólares
       totalAlerts,
       closedAlerts: closedAlerts.length,
       winRate: Number(winRate.toFixed(1)),
       sp500Return: Number(sp500Return.toFixed(2)),
-      baseValue: baseValue
+      baseValue: initialLiquidity // ✅ NUEVO: Usar liquidez inicial como base
     };
 
     return res.status(200).json({
