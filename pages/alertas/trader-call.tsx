@@ -2315,26 +2315,43 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       '#14B8A6', '#F43F5E', '#A855F7', '#EAB308', '#22C55E'
     ];
 
-    // ✅ CORREGIDO: Filtrar TODAS las alertas activas con liquidez asignada (usando alertId)
-    // Usar distribuciones individuales por alertId para mostrar cada alerta por separado
+    // ✅ CORREGIDO: Filtrar solo alertas CONFIRMADAS con liquidez asignada (usando alertId)
+    // Solo mostrar alertas que están en "Seguimiento de alertas" (confirmadas)
+    // Excluir alertas creadas HOY que aún no tienen finalPriceSetAt (aún no confirmadas a las 18:30)
+    const today = new Date();
+    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+    
     const activeAlertsWithLiquidity = alerts.filter(alert => {
       const alertId = alert.id || alert._id;
       const liquidity = liquidityMapByAlertId?.[alertId];
       const hasLiquidity = liquidity && liquidity.allocatedAmount > 0;
       const isActive = alert.status === 'ACTIVE';
       
+      // ✅ NUEVO: Verificar si la alerta está confirmada (misma lógica que renderSeguimientoAlertas)
+      if (isActive) {
+        // Verificar si la alerta fue creada hoy
+        const alertDate = new Date(alert.date || alert.createdAt);
+        const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
+        
+        // Si fue creada hoy y no tiene finalPriceSetAt, no mostrarla (aún no confirmada)
+        if (isCreatedToday && !alert.finalPriceSetAt) {
+          return false;
+        }
+      }
+      
       if (isActive && hasLiquidity) {
-        console.log(`✅ [PIE CHART] Alerta activa con liquidez: ${alert.symbol} (alertId: ${alertId}) - $${liquidity.allocatedAmount}`);
+        console.log(`✅ [PIE CHART] Alerta confirmada con liquidez: ${alert.symbol} (alertId: ${alertId}) - $${liquidity.allocatedAmount}`);
       } else if (isActive && !hasLiquidity) {
-        console.log(`⚠️ [PIE CHART] Alerta activa SIN liquidez: ${alert.symbol} (alertId: ${alertId})`);
+        console.log(`⚠️ [PIE CHART] Alerta confirmada SIN liquidez: ${alert.symbol} (alertId: ${alertId})`);
       }
       
       return isActive && hasLiquidity;
     });
 
-    console.log('📊 [PIE CHART] Alertas activas con liquidez:', activeAlertsWithLiquidity.length);
+    console.log('📊 [PIE CHART] Alertas confirmadas con liquidez:', activeAlertsWithLiquidity.length);
 
-    // Preparar datos para el gráfico de torta 3D - TODAS las alertas activas con liquidez
+    // Preparar datos para el gráfico de torta 3D - Solo alertas confirmadas con liquidez
     const chartData = activeAlertsWithLiquidity.map((alert, index) => {
       const alertId = alert.id || alert._id;
       const profitValue = typeof alert.profit === 'string' 
