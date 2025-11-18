@@ -11,6 +11,7 @@ export interface SP500Data {
   period: string;
   marketStatus: string;
   lastUpdate: string;
+  dataProvider?: string; // ✅ NUEVO: Fuente de los datos (Yahoo Finance, Alpha Vantage, etc.)
   dailyData: Array<{
     date: string;
     price: number;
