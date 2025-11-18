@@ -204,6 +204,10 @@ async function getRealSP500DataFromYahoo(period: string) {
     const currentPrice = validData[validData.length - 1].price;
     const currentDate = new Date(validData[validData.length - 1].timestamp * 1000);
     
+    // ✅ MEJORADO: Calcular fecha objetivo fuera de los bloques condicionales
+    const targetStartDate = new Date(currentDate);
+    targetStartDate.setDate(targetStartDate.getDate() - days);
+    
     // ✅ MEJORADO: Calcular precio de inicio según el período
     // Para períodos cortos (7d, 15d, 30d), usar el primer precio válido del array
     // Para períodos largos (6m, 1y), buscar el precio más cercano a la fecha objetivo
@@ -212,9 +216,6 @@ async function getRealSP500DataFromYahoo(period: string) {
     if (period === '7d' || period === '15d' || period === '30d') {
       // Para períodos cortos, buscar el precio más cercano a la fecha objetivo
       // pero asegurarnos de tener al menos algunos días de datos
-      const targetStartDate = new Date(currentDate);
-      targetStartDate.setDate(targetStartDate.getDate() - days);
-      
       let closestDiff = Infinity;
       let closestPrice = validData[0].price; // Fallback al primer precio
       
@@ -237,9 +238,6 @@ async function getRealSP500DataFromYahoo(period: string) {
       }
     } else {
       // Para períodos largos, buscar el precio más cercano a la fecha objetivo
-      const targetStartDate = new Date(currentDate);
-      targetStartDate.setDate(targetStartDate.getDate() - days);
-      
       let closestDiff = Infinity;
       for (const dataPoint of validData) {
         const dataDate = new Date(dataPoint.timestamp * 1000);
