@@ -135,26 +135,38 @@ async function getRealSP500DataFromYahoo(period: string) {
     // Calcular rango de fechas según el período
     const endDate = new Date();
     let startDate = new Date();
-    const periodDays: { [key: string]: number } = {
-      '1d': 1,
-      '5d': 5,
-      '1m': 30,
-      '6m': 180,
-      '1y': 365
-    };
+    // ✅ CORREGIDO: Usar el rango correcto para cada período
+    // Yahoo Finance necesita más datos de los que pedimos para calcular correctamente
+    let range = '1mo'; // Por defecto
+    let interval = '1d';
     
-    const days = periodDays[period] || 30;
-    startDate.setDate(endDate.getDate() - days);
+    switch (period) {
+      case '1d':
+        range = '5d'; // Pedir 5 días para tener suficientes datos
+        interval = '1d';
+        break;
+      case '5d':
+        range = '1mo'; // Pedir 1 mes para tener suficientes datos
+        interval = '1d';
+        break;
+      case '1m':
+        range = '3mo'; // Pedir 3 meses para tener suficientes datos
+        interval = '1d';
+        break;
+      case '6m':
+        range = '1y'; // Pedir 1 año para tener suficientes datos
+        interval = '1d';
+        break;
+      case '1y':
+        range = '2y'; // Pedir 2 años para tener suficientes datos
+        interval = '1d';
+        break;
+    }
     
-    // Convertir a timestamps Unix
-    const period1 = Math.floor(startDate.getTime() / 1000);
-    const period2 = Math.floor(endDate.getTime() / 1000);
+    console.log(`🔄 [YAHOO] Intentando obtener datos del S&P 500 para período ${period} (range=${range}, interval=${interval})`);
     
-    console.log(`🔄 [YAHOO] Intentando obtener datos del S&P 500 para período ${period} (${days} días)`);
-    console.log(`📅 [YAHOO] Rango: ${startDate.toISOString()} a ${endDate.toISOString()}`);
-    
-    // ✅ MEJORADO: Agregar headers para evitar bloqueos
-    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=${period1}&period2=${period2}&interval=1d`, {
+    // ✅ MEJORADO: Agregar headers para evitar bloqueos y usar range en lugar de period1/period2
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?range=${range}&interval=${interval}`, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'application/json',
@@ -204,9 +216,31 @@ async function getRealSP500DataFromYahoo(period: string) {
     const currentPrice = validData[validData.length - 1].price;
     const currentDate = new Date(validData[validData.length - 1].timestamp * 1000);
     
-    // ✅ MEJORADO: Calcular fecha objetivo fuera de los bloques condicionales
+    // ✅ MEJORADO: Calcular fecha objetivo correctamente según el período
     const targetStartDate = new Date(currentDate);
-    targetStartDate.setDate(targetStartDate.getDate() - days);
+    
+    switch (period) {
+      case '1d':
+        // Para 1D: restar 1 día hábil (puede ser 1-3 días calendario por fines de semana)
+        targetStartDate.setDate(targetStartDate.getDate() - 1);
+        break;
+      case '5d':
+        // Para 5D (1 semana): restar 7 días calendario (incluye fines de semana)
+        targetStartDate.setDate(targetStartDate.getDate() - 7);
+        break;
+      case '1m':
+        // Para 1M: restar 1 mes
+        targetStartDate.setMonth(targetStartDate.getMonth() - 1);
+        break;
+      case '6m':
+        // Para 6M: restar 6 meses
+        targetStartDate.setMonth(targetStartDate.getMonth() - 6);
+        break;
+      case '1y':
+        // Para 1Y: restar 1 año
+        targetStartDate.setFullYear(targetStartDate.getFullYear() - 1);
+        break;
+    }
     
     // ✅ SIMPLIFICADO: Calcular precio de inicio de forma consistente para TODOS los períodos
     // Usar la misma lógica que funciona bien para 1 año: buscar el precio más cercano a targetStartDate
