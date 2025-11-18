@@ -41,16 +41,34 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
 
   const fetchSP500Data = async (selectedPeriod: string) => {
     try {
+      console.log(`📊 [SP500] Obteniendo datos para período: ${selectedPeriod}`);
       const response = await fetch(`/api/market-data/spy500-performance?period=${selectedPeriod}`);
+      
       if (!response.ok) {
-        throw new Error('Error al obtener datos del SP500');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Error HTTP ${response.status}: Error al obtener datos del SP500`);
       }
+      
       const data = await response.json();
+      console.log(`✅ [SP500] Datos recibidos:`, {
+        periodChangePercent: data.periodChangePercent,
+        changePercent: data.changePercent,
+        currentPrice: data.currentPrice,
+        dataProvider: data.dataProvider
+      });
+      
+      // Verificar que los datos tienen al menos un campo de porcentaje
+      if (data.periodChangePercent === undefined && data.changePercent === undefined) {
+        console.warn('⚠️ [SP500] Datos recibidos sin porcentaje de cambio');
+      }
+      
       setSp500Data(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      console.error('Error fetching SP500 data:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      console.error('❌ [SP500] Error fetching SP500 data:', err);
+      setError(errorMessage);
+      // No establecer sp500Data a null, mantener el último valor si existe
     }
   };
 
@@ -128,16 +146,28 @@ export function useSP500Performance(period: string = '30d', serviceType: 'Trader
   };
 
   const refreshData = async (selectedPeriod: string) => {
+    console.log(`🔄 [SP500] refreshData iniciado para período: ${selectedPeriod}`);
     setLoading(true);
-    await Promise.all([
-      fetchSP500Data(selectedPeriod),
-      calculateServicePerformance(selectedPeriod)
-    ]);
-    setLoading(false);
+    setError(null);
+    
+    try {
+      await Promise.all([
+        fetchSP500Data(selectedPeriod),
+        calculateServicePerformance(selectedPeriod)
+      ]);
+      console.log(`✅ [SP500] refreshData completado para período: ${selectedPeriod}`);
+    } catch (err) {
+      console.error('❌ [SP500] Error en refreshData:', err);
+      setError(err instanceof Error ? err.message : 'Error al actualizar datos');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
+    console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}`);
     refreshData(period);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period]);
 
   // Recalcular rendimiento relativo cuando sp500Data cambie

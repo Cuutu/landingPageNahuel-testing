@@ -3359,9 +3359,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
                     {/* Estadísticas del informe */}
                     <div className={styles.informeStats}>
-                      <span className={styles.informeStat}>
-                        👁️ {informe.views || 0} vistas
-                      </span>
                       {informe.images && informe.images.length > 0 && (
                         <span className={styles.informeStat}>
                           📸 {informe.images.length} imágenes
@@ -5127,11 +5124,6 @@ const ReportViewModal = ({ report, onClose, onEdit, userRole }: {
 
             {/* Estadísticas del informe */}
             <div className={styles.reportStats}>
-              <div className={styles.statItem}>
-                <span className={styles.statLabel}>👁️ Vistas</span>
-                <span className={styles.statValue}>{report.views || 0}</span>
-              </div>
-
               {report.images && report.images.length > 0 && (
                 <div className={styles.statItem}>
                   <span className={styles.statLabel}>📸 Imágenes</span>

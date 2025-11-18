@@ -84,10 +84,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error) {
     console.error('❌ Error al obtener rendimiento del S&P 500:', error);
 
-    return res.status(500).json({
-      error: 'Error al obtener rendimiento del S&P 500',
-      details: error instanceof Error ? error.message : 'Error desconocido'
-    });
+    // Intentar devolver datos simulados como último recurso
+    try {
+      const fallbackData = await generateHistoricalPerformance(startDate, endDate, period as string);
+      console.log('📊 [FALLBACK] Devolviendo datos simulados debido a error');
+      
+      return res.status(200).json({
+        period: period,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        ...fallbackData,
+        refreshRate: '30 minutos',
+        isFallback: true
+      });
+    } catch (fallbackError) {
+      console.error('❌ Error incluso en fallback:', fallbackError);
+      
+      return res.status(500).json({
+        error: 'Error al obtener rendimiento del S&P 500',
+        details: error instanceof Error ? error.message : 'Error desconocido',
+        period: period,
+        periodChangePercent: 0,
+        changePercent: 0,
+        currentPrice: 0,
+        startPrice: 0
+      });
+    }
   }
 }
 

@@ -55,7 +55,7 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
   const relativePerformance = serviceData?.relativePerformanceVsSP500 ?? 0;
 
   // Estados de loading y error
-  if (loading) {
+  if (loading && !sp500Data && !serviceData) {
     return (
       <div className={`${styles.container} ${className}`}>
         <div className={styles.loadingContainer}>
@@ -66,7 +66,8 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
     );
   }
 
-  if (error) {
+  // Mostrar error solo si no hay datos previos
+  if (error && !sp500Data && !serviceData) {
     return (
       <div className={`${styles.container} ${className}`}>
         <div className={styles.errorContainer}>
@@ -156,14 +157,26 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
           <div>
             <div className={styles.performanceContainer}>
               <span className={styles.performanceLabel}>Rendimiento en el período seleccionado</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
-                {getPerformanceIcon(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}
-                <span
-                  className={`${styles.performanceValue} ${getPerformanceClass(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}`}
-                >
-                  {formatPercentage(sp500Data?.periodChangePercent ?? sp500Data?.changePercent ?? 0)}
-                </span>
-              </div>
+              {loading && !sp500Data ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span style={{ color: '#9CA3AF' }}>Cargando...</span>
+                </div>
+              ) : sp500Data ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  {getPerformanceIcon(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}
+                  <span
+                    className={`${styles.performanceValue} ${getPerformanceClass(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}`}
+                  >
+                    {formatPercentage(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}
+                  </span>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <AlertCircle size={16} style={{ color: '#EF4444' }} />
+                  <span style={{ color: '#EF4444' }}>No hay datos disponibles</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
