@@ -41,37 +41,51 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Intentar obtener datos reales del S&P 500, con fallback a datos simulados
     let performanceData;
     try {
-      console.log(`🔄 Intentando obtener datos reales para período: ${period}`);
+      console.log(`🔄 [SP500] Intentando obtener datos reales para período: ${period}`);
       // Intentar primero con Yahoo Finance (más confiable)
       performanceData = await getRealSP500DataFromYahoo(period as string);
-      console.log(`✅ Datos reales obtenidos de Yahoo Finance:`, {
+      console.log(`✅ [SP500] Datos reales obtenidos de Yahoo Finance:`, {
         currentPrice: performanceData.currentPrice,
+        startPrice: performanceData.startPrice,
         periodChangePercent: performanceData.periodChangePercent,
         dataProvider: performanceData.dataProvider
       });
+      
+      // ✅ NUEVO: Validar que el porcentaje sea un número válido
+      if (isNaN(performanceData.periodChangePercent) || !isFinite(performanceData.periodChangePercent)) {
+        throw new Error('Porcentaje de cambio inválido de Yahoo Finance');
+      }
     } catch (yahooError) {
-      console.log('⚠️ Yahoo Finance falló, intentando Alpha Vantage:', yahooError);
+      console.error('❌ [SP500] Yahoo Finance falló:', yahooError);
+      console.log('⚠️ [SP500] Intentando Alpha Vantage como fallback...');
       try {
         // Fallback a Alpha Vantage
         performanceData = await getRealSP500Data(period as string);
-        console.log(`✅ Datos reales obtenidos de Alpha Vantage:`, {
+        console.log(`✅ [SP500] Datos reales obtenidos de Alpha Vantage:`, {
           currentPrice: performanceData.currentPrice,
           periodChangePercent: performanceData.periodChangePercent,
           dataProvider: performanceData.dataProvider
         });
+        
+        // Validar Alpha Vantage también
+        if (isNaN(performanceData.periodChangePercent) || !isFinite(performanceData.periodChangePercent)) {
+          throw new Error('Porcentaje de cambio inválido de Alpha Vantage');
+        }
       } catch (alphaError) {
-        console.log('⚠️ Alpha Vantage falló, usando datos simulados como fallback:', alphaError);
+        console.error('❌ [SP500] Alpha Vantage falló:', alphaError);
+        console.log('⚠️ [SP500] Usando datos simulados como último fallback...');
         performanceData = await generateHistoricalPerformance(startDate, endDate, period as string);
-        console.log(`📊 Datos simulados generados:`, {
+        console.log(`📊 [SP500] Datos simulados generados:`, {
           currentPrice: performanceData.currentPrice,
           changePercent: performanceData.changePercent,
+          periodChangePercent: performanceData.periodChangePercent,
           dataProvider: performanceData.dataProvider
         });
       }
     }
 
-    // Cache headers para optimizar
-    res.setHeader('Cache-Control', 'public, max-age=1800'); // 30 minutos
+    // ✅ MEJORADO: Cache más corto para datos más actualizados (5 minutos)
+    res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minutos
 
     return res.status(200).json({
       period: period,
@@ -136,8 +150,18 @@ async function getRealSP500DataFromYahoo(period: string) {
     const period1 = Math.floor(startDate.getTime() / 1000);
     const period2 = Math.floor(endDate.getTime() / 1000);
     
-    // Obtener datos de Yahoo Finance
-    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=${period1}&period2=${period2}&interval=1d`);
+    console.log(`🔄 [YAHOO] Intentando obtener datos del S&P 500 para período ${period} (${days} días)`);
+    console.log(`📅 [YAHOO] Rango: ${startDate.toISOString()} a ${endDate.toISOString()}`);
+    
+    // ✅ MEJORADO: Agregar headers para evitar bloqueos
+    const response = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?period1=${period1}&period2=${period2}&interval=1d`, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
+      },
+      // Agregar timeout
+      signal: AbortSignal.timeout(10000) // 10 segundos timeout
+    } as any);
     
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status}`);
@@ -145,8 +169,11 @@ async function getRealSP500DataFromYahoo(period: string) {
     
     const data = await response.json();
     
+    console.log(`📥 [YAHOO] Respuesta recibida, verificando estructura...`);
+    
     // Verificar estructura de respuesta
     if (!data.chart || !data.chart.result || !data.chart.result[0]) {
+      console.error('❌ [YAHOO] Estructura de respuesta inválida:', JSON.stringify(data).substring(0, 500));
       throw new Error('Estructura de respuesta inválida de Yahoo Finance');
     }
     
@@ -177,27 +204,68 @@ async function getRealSP500DataFromYahoo(period: string) {
     const currentPrice = validData[validData.length - 1].price;
     const currentDate = new Date(validData[validData.length - 1].timestamp * 1000);
     
-    // Calcular precio de inicio según el período
-    const targetStartDate = new Date(currentDate);
-    targetStartDate.setDate(targetStartDate.getDate() - days);
-    
-    // Encontrar el precio más cercano a la fecha de inicio
+    // ✅ MEJORADO: Calcular precio de inicio según el período
+    // Para períodos cortos (7d, 15d, 30d), usar el primer precio válido del array
+    // Para períodos largos (6m, 1y), buscar el precio más cercano a la fecha objetivo
     let startPrice = currentPrice;
-    let closestDiff = Infinity;
     
-    for (const dataPoint of validData) {
-      const dataDate = new Date(dataPoint.timestamp * 1000);
-      const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
+    if (period === '7d' || period === '15d' || period === '30d') {
+      // Para períodos cortos, buscar el precio más cercano a la fecha objetivo
+      // pero asegurarnos de tener al menos algunos días de datos
+      const targetStartDate = new Date(currentDate);
+      targetStartDate.setDate(targetStartDate.getDate() - days);
       
-      if (diff < closestDiff && dataDate <= targetStartDate) {
-        closestDiff = diff;
-        startPrice = dataPoint.price;
+      let closestDiff = Infinity;
+      let closestPrice = validData[0].price; // Fallback al primer precio
+      
+      for (const dataPoint of validData) {
+        const dataDate = new Date(dataPoint.timestamp * 1000);
+        const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
+        
+        // Buscar el precio más cercano a la fecha objetivo (puede ser antes o después)
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestPrice = dataPoint.price;
+        }
+      }
+      
+      startPrice = closestPrice;
+      
+      // Si no hay suficientes datos, usar el primero disponible
+      if (validData.length < 2) {
+        startPrice = validData[0].price;
+      }
+    } else {
+      // Para períodos largos, buscar el precio más cercano a la fecha objetivo
+      const targetStartDate = new Date(currentDate);
+      targetStartDate.setDate(targetStartDate.getDate() - days);
+      
+      let closestDiff = Infinity;
+      for (const dataPoint of validData) {
+        const dataDate = new Date(dataPoint.timestamp * 1000);
+        const diff = Math.abs(dataDate.getTime() - targetStartDate.getTime());
+        
+        if (diff < closestDiff && dataDate <= targetStartDate) {
+          closestDiff = diff;
+          startPrice = dataPoint.price;
+        }
+      }
+      
+      // Si no encontramos un precio anterior, usar el primero disponible
+      if (startPrice === currentPrice && validData.length > 0) {
+        startPrice = validData[0].price;
       }
     }
     
-    // Calcular rendimiento del período
+    // ✅ MEJORADO: Calcular rendimiento del período con validación
+    if (startPrice <= 0) {
+      throw new Error('Precio de inicio inválido');
+    }
+    
     const periodChange = currentPrice - startPrice;
     const periodChangePercent = (periodChange / startPrice) * 100;
+    
+    console.log(`📊 [YAHOO] Período: ${period}, Precio inicio: $${startPrice.toFixed(2)}, Precio actual: $${currentPrice.toFixed(2)}, Cambio: ${periodChangePercent.toFixed(2)}%`);
     
     // Obtener cambio diario
     const previousPrice = validData.length > 1 ? validData[validData.length - 2].price : startPrice;

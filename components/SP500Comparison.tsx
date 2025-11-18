@@ -164,12 +164,25 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                 </div>
               ) : sp500Data ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
-                  {getPerformanceIcon(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}
-                  <span
-                    className={`${styles.performanceValue} ${getPerformanceClass(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}`}
-                  >
-                    {formatPercentage(sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0)}
-                  </span>
+                  {(() => {
+                    const percentValue = sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0;
+                    console.log('📊 [SP500Comparison] Mostrando porcentaje:', {
+                      periodChangePercent: sp500Data.periodChangePercent,
+                      changePercent: sp500Data.changePercent,
+                      finalValue: percentValue,
+                      dataProvider: sp500Data.dataProvider
+                    });
+                    return (
+                      <>
+                        {getPerformanceIcon(percentValue)}
+                        <span
+                          className={`${styles.performanceValue} ${getPerformanceClass(percentValue)}`}
+                        >
+                          {formatPercentage(percentValue)}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
