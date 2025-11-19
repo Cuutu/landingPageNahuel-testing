@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/googleAuth";
 import dbConnect from "@/lib/mongodb";
 import Operation from "@/models/Operation";
 import User from "@/models/User";
+import Alert from "@/models/Alert";
 
 interface OperationsListResponse {
   success: boolean;
@@ -75,6 +76,53 @@ export default async function handler(
       .skip(parseInt(skip as string))
       .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt');
 
+    // ✅ MEJORADO: Obtener información de alertas que no se populan correctamente
+    // Esto puede pasar si la alerta fue eliminada o si el populate falla
+    const operationsWithAlerts = await Promise.all(
+      operations.map(async (op) => {
+        let alertData = null;
+
+        // Si el populate funcionó y alertId es un objeto
+        if (op.alertId && typeof op.alertId === 'object' && op.alertId._id) {
+          alertData = {
+            status: op.alertId.status,
+            availableForPurchase: op.alertId.availableForPurchase,
+            finalPriceSetAt: op.alertId.finalPriceSetAt,
+            descartadaAt: op.alertId.descartadaAt,
+            date: op.alertId.date,
+            createdAt: op.alertId.createdAt
+          };
+        } 
+        // Si alertId es un string (ObjectId), intentar buscar la alerta manualmente
+        else if (op.alertId) {
+          try {
+            const alertIdString = typeof op.alertId === 'string' ? op.alertId : op.alertId.toString();
+            const alert = await Alert.findById(alertIdString).select('status availableForPurchase finalPriceSetAt descartadaAt date createdAt');
+            
+            if (alert) {
+              alertData = {
+                status: alert.status,
+                availableForPurchase: alert.availableForPurchase,
+                finalPriceSetAt: alert.finalPriceSetAt,
+                descartadaAt: alert.descartadaAt,
+                date: alert.date,
+                createdAt: alert.createdAt
+              };
+            } else {
+              console.warn(`⚠️ Alerta no encontrada para operación ${op._id}, alertId: ${alertIdString}`);
+            }
+          } catch (error) {
+            console.error(`❌ Error buscando alerta para operación ${op._id}:`, error);
+          }
+        }
+
+        return {
+          operation: op,
+          alertData
+        };
+      })
+    );
+
     // Obtener resumen
     const summary = await Operation.aggregate([
       { $match: { createdBy: adminUser._id, system } },
@@ -105,7 +153,7 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      operations: operations.map(op => ({
+      operations: operationsWithAlerts.map(({ operation: op, alertData }) => ({
         _id: op._id,
         ticker: op.ticker,
         operationType: op.operationType,
@@ -126,15 +174,8 @@ export default async function handler(
         executionMethod: op.executionMethod,
         notes: op.notes,
         createdAt: op.createdAt,
-        // ✅ NUEVO: Información de la alerta para determinar el estado
-        alert: op.alertId && typeof op.alertId === 'object' ? {
-          status: op.alertId.status,
-          availableForPurchase: op.alertId.availableForPurchase,
-          finalPriceSetAt: op.alertId.finalPriceSetAt,
-          descartadaAt: op.alertId.descartadaAt,
-          date: op.alertId.date,
-          createdAt: op.alertId.createdAt
-        } : null
+        // ✅ MEJORADO: Información de la alerta para determinar el estado
+        alert: alertData
       })),
       summary,
       currentBalance: currentBalanceDoc?.balance || 0,
