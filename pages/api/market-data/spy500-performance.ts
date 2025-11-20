@@ -139,7 +139,7 @@ async function getRealSP500DataFromYahoo(period: string) {
     // Yahoo Finance necesita más datos de los que pedimos para calcular correctamente
     let range = '1mo'; // Por defecto
     let interval = '1d';
-    
+     
     switch (period) {
       case '1d':
         range = '5d'; // Pedir 5 días para tener suficientes datos
