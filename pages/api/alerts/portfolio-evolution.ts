@@ -218,13 +218,15 @@ export default async function handler(
           // Calcular P&L en dólares usando la distribución de liquidez
           if (distribution) {
             allocatedAmount = distribution.allocatedAmount || 0;
-            const shares = distribution.shares || 0;
-            // Calcular P&L no realizado basado en precio actual vs precio de entrada
-            const unrealizedPL = alert.action === 'BUY'
-              ? (currentPrice - entryPrice) * shares
-              : (entryPrice - currentPrice) * shares;
             
-            alertPL = unrealizedPL;
+            // ✅ CORREGIDO: Calcular P&L siempre basado en allocatedAmount y cambio porcentual
+            // No usar shares porque pueden ser 0 cuando el monto es pequeño
+            // P&L = (cambio porcentual / 100) × monto asignado
+            if (allocatedAmount > 0) {
+              alertPL = (alertPLPercentage / 100) * allocatedAmount;
+            } else {
+              alertPL = 0;
+            }
             
             // Sumar P&L realizado si hay ventas parciales
             if (distribution.realizedProfitLoss) {
