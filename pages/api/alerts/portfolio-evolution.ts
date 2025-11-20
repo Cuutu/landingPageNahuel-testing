@@ -193,13 +193,15 @@ export default async function handler(
     // Para alertas CERRADAS: usar profit guardado
     let totalRealizedPL = 0; // P&L realizado de alertas cerradas
     let totalUnrealizedPL = 0; // P&L no realizado de alertas activas
+    let totalAllocatedAmount = 0; // Total de liquidez asignada (para calcular promedio ponderado)
     
     const alertsWithPL = allAlerts.map((alert: any) => {
       const alertId = alert._id.toString();
       const distribution = liquidityByAlertId.get(alertId);
       
-      let alertPL = 0;
-      let alertPLPercentage = 0;
+      let alertPL = 0; // P&L en dólares
+      let alertPLPercentage = 0; // P&L en porcentaje
+      let allocatedAmount = 0; // Monto asignado a esta alerta
       
       if (alert.status === 'ACTIVE') {
         // ✅ ALERTA ACTIVA: Calcular P&L en tiempo real
@@ -215,6 +217,7 @@ export default async function handler(
           
           // Calcular P&L en dólares usando la distribución de liquidez
           if (distribution) {
+            allocatedAmount = distribution.allocatedAmount || 0;
             const shares = distribution.shares || 0;
             // Calcular P&L no realizado basado en precio actual vs precio de entrada
             const unrealizedPL = alert.action === 'BUY'
@@ -227,10 +230,13 @@ export default async function handler(
             if (distribution.realizedProfitLoss) {
               totalRealizedPL += distribution.realizedProfitLoss;
             }
+            
+            totalAllocatedAmount += allocatedAmount;
           } else {
             // Si no hay distribución, usar un monto estimado basado en profit porcentual
-            const estimatedAllocation = 1000; // $1000 por defecto
-            alertPL = (alertPLPercentage / 100) * estimatedAllocation;
+            allocatedAmount = 1000; // $1000 por defecto
+            alertPL = (alertPLPercentage / 100) * allocatedAmount;
+            totalAllocatedAmount += allocatedAmount;
           }
           
           totalUnrealizedPL += alertPL;
@@ -240,6 +246,8 @@ export default async function handler(
         alertPLPercentage = alert.profit || 0;
         
         if (distribution) {
+          allocatedAmount = distribution.allocatedAmount || 0;
+          
           // Usar P&L realizado de la distribución (ya incluye todas las ventas)
           // Si la alerta está cerrada, todo el P&L debería estar realizado
           const realizedPL = distribution.realizedProfitLoss || 0;
@@ -258,11 +266,13 @@ export default async function handler(
           }
           
           totalRealizedPL += alertPL;
+          totalAllocatedAmount += allocatedAmount;
         } else {
           // Si no hay distribución, estimar basado en profit porcentual
-          const estimatedAllocation = 1000; // $1000 por defecto
-          alertPL = (alertPLPercentage / 100) * estimatedAllocation;
+          allocatedAmount = 1000; // $1000 por defecto
+          alertPL = (alertPLPercentage / 100) * allocatedAmount;
           totalRealizedPL += alertPL;
+          totalAllocatedAmount += allocatedAmount;
         }
       }
       
@@ -270,6 +280,7 @@ export default async function handler(
         ...alert,
         calculatedPL: alertPL,
         calculatedPLPercentage: alertPLPercentage,
+        allocatedAmount: allocatedAmount,
         distribution
       };
     });
@@ -277,10 +288,40 @@ export default async function handler(
     // ✅ NUEVO: Calcular liquidez total actual en tiempo real
     const currentTotalLiquidity = initialLiquidity + totalRealizedPL + totalUnrealizedPL;
     
+    // ✅ NUEVO: Calcular porcentaje promedio ponderado del portfolio
+    // Esto es más preciso que simplemente sumar porcentajes
+    let weightedAveragePercentage = 0;
+    if (totalAllocatedAmount > 0) {
+      // Calcular promedio ponderado: suma de (porcentaje * monto) / suma de montos
+      const weightedSum = alertsWithPL.reduce((sum, alert) => {
+        if (alert.allocatedAmount > 0 && alert.calculatedPLPercentage !== undefined) {
+          return sum + (alert.calculatedPLPercentage * alert.allocatedAmount);
+        }
+        return sum;
+      }, 0);
+      weightedAveragePercentage = weightedSum / totalAllocatedAmount;
+    }
+    
+    // ✅ NUEVO: Calcular porcentaje basado en liquidez total (método alternativo)
+    const portfolioReturnFromPL = initialLiquidity > 0 
+      ? ((totalRealizedPL + totalUnrealizedPL) / initialLiquidity) * 100 
+      : 0;
+    
     console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Liquidez Asignada Total: $${totalAllocatedAmount.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] P&L Realizado: $${totalRealizedPL.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] P&L No Realizado: $${totalUnrealizedPL.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] P&L Total: $${(totalRealizedPL + totalUnrealizedPL).toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Liquidez Total Actual: $${currentTotalLiquidity.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Rendimiento (Promedio Ponderado): ${weightedAveragePercentage.toFixed(2)}%`);
+    console.log(`📊 [PORTFOLIO] Rendimiento (Basado en Liquidez Inicial): ${portfolioReturnFromPL.toFixed(2)}%`);
+    
+    // ✅ DEBUG: Mostrar P&L de cada alerta
+    alertsWithPL.forEach((alert: any) => {
+      if (alert.allocatedAmount > 0) {
+        console.log(`  - ${alert.symbol}: ${alert.calculatedPLPercentage.toFixed(2)}% ($${alert.allocatedAmount.toFixed(2)} asignado, P&L: $${alert.calculatedPL.toFixed(2)})`);
+      }
+    });
 
     // Crear mapa de datos por día
     const dailyData = new Map<string, {
@@ -292,13 +333,22 @@ export default async function handler(
       sp500Change?: number;
     }>();
 
+    // ✅ NUEVO: Encontrar la fecha más antigua de las alertas para establecer el valor inicial correcto
+    let earliestAlertDate = startDate;
+    if (allAlerts.length > 0) {
+      const firstAlertDate = new Date(Math.min(...allAlerts.map((a: any) => new Date(a.createdAt).getTime())));
+      if (firstAlertDate < startDate) {
+        earliestAlertDate = firstAlertDate;
+      }
+    }
+    
     // Inicializar todos los días en el rango
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split('T')[0];
       const sp500Day = sp500Map.get(dateKey);
       dailyData.set(dateKey, {
         date: dateKey,
-        value: initialLiquidity,
+        value: initialLiquidity, // ✅ Usar liquidez inicial como base
         profit: 0,
         alertsCount: 0,
         sp500Value: sp500Day?.value || 0,
