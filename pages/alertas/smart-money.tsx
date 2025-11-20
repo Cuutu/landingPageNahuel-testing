@@ -2364,12 +2364,22 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       ? liquiditySummary.liquidezTotal 
       : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalCurrentValue);
     
+    // ✅ CORREGIDO: Calcular liquidez disponible ANTES de calcular los segmentos
+    // para asegurar que la suma sea exacta
+    const available = (liquiditySummary && liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
+      ? Math.max(liquiditySummary.liquidezDisponible, 0)
+      : Math.max((totalBase || 0) - totalCurrentValue, 0);
+    
+    // ✅ CORREGIDO: Calcular el total real que se va a distribuir (alertas + liquidez disponible)
+    const totalToDistribute = totalCurrentValue + available;
+    
     let cumulativeAngle = 0;
     const chartSegments = chartData.map((alert) => {
       // ✅ NUEVO: Usar valor actual (allocatedAmount + P&L) para calcular el tamaño del segmento
       const segmentBase = Math.abs(alert.currentValue || 0);
-      const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
-      const angle = (segmentBase / (totalBase || 1)) * 360;
+      // ✅ CORREGIDO: Usar totalToDistribute para que la suma sea exacta
+      const size = totalToDistribute > 0 ? (segmentBase / totalToDistribute) * 100 : 0;
+      const angle = (segmentBase / (totalToDistribute || 1)) * 360;
       const startAngle = cumulativeAngle;
       const endAngle = startAngle + angle;
       cumulativeAngle = endAngle;
@@ -2383,16 +2393,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // ✅ CORREGIDO: Usar liquidezDisponible directamente del resumen (más preciso)
-    // Si no hay resumen, calcular como diferencia entre totalBase y totalCurrentValue
-    const available = (liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
-      ? Math.max(liquiditySummary.liquidezDisponible, 0)
-      : Math.max((totalBase || 0) - totalCurrentValue, 0);
-    
-    // ✅ CORREGIDO: Solo agregar el segmento de liquidez si es mayor a 0 para evitar partes vacías
-    if (available > 0) {
+    // ✅ CORREGIDO: Agregar el segmento de liquidez disponible para completar el 100%
+    // Usar el ángulo restante para asegurar que sume exactamente 360 grados
+    if (available > 0 || cumulativeAngle < 360) {
+      const remainingAngle = 360 - cumulativeAngle;
       const liqStart = cumulativeAngle;
-      const liqEnd = liqStart + ((available / (totalBase || 1)) * 360);
+      const liqEnd = 360; // Asegurar que termine en 360 grados exactos
+      
       chartSegments.push({
         id: 'LIQ-SEG',
         symbol: 'LIQUIDEZ',
@@ -2406,9 +2413,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         date: '',
         analysis: '',
         allocatedAmount: available,
+        currentValue: available, // ✅ NUEVO: Para consistencia
         color: '#9CA3AF',
         darkColor: '#9CA3AF80',
-        size: (available / (totalBase || 1)) * 100,
+        size: totalToDistribute > 0 ? (available / totalToDistribute) * 100 : (remainingAngle / 360) * 100,
         startAngle: liqStart,
         endAngle: liqEnd,
         centerAngle: (liqStart + liqEnd) / 2,
