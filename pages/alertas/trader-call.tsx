@@ -2361,6 +2361,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const liquidity = liquidityMapByAlertId?.[alertId];
       const allocated = Number(liquidity?.allocatedAmount || 0);
       
+      // ✅ NUEVO: Calcular P&L en dólares usando allocatedAmount y cambio porcentual
+      // P&L = (cambio porcentual / 100) × allocatedAmount
+      const profitLoss = allocated > 0 && profitValue !== 0
+        ? (profitValue / 100) * allocated
+        : Number(liquidity?.profitLoss || 0);
+      
+      // ✅ NUEVO: Calcular valor actual = allocatedAmount + P&L
+      const currentValue = allocated + profitLoss;
+      
       // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
       // El precio actual viene como string con formato "$XX.XX" desde la API
       const currentPrice = alert.currentPrice ? 
@@ -2384,6 +2393,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         date: alert.date,
         analysis: alert.analysis,
         allocatedAmount: allocated,
+        profitLoss: profitLoss, // ✅ NUEVO: P&L en dólares
+        currentValue: currentValue, // ✅ NUEVO: Valor actual (allocated + P&L)
         // Color único para cada alerta
         color: colorPalette[index % colorPalette.length],
         // Color más oscuro para efecto 3D
@@ -2391,17 +2402,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // Calcular el tamaño de cada segmento basado en la liquidez asignada
-    const totalAllocated = chartData.reduce((sum, seg) => sum + Math.abs(seg.allocatedAmount || 0), 0);
+    // ✅ NUEVO: Calcular el tamaño de cada segmento basado en el VALOR ACTUAL (allocatedAmount + P&L)
+    // Esto refleja el cambio porcentual en el tamaño del segmento
+    const totalCurrentValue = chartData.reduce((sum, alert) => sum + Math.abs(alert.currentValue || 0), 0);
+    
     // ✅ NUEVO: Usar liquidezTotal del resumen (que incluye ganancias/pérdidas) como base
-    // Si no hay resumen, usar liquidityTotal antiguo o totalAllocated como fallback
+    // Si no hay resumen, usar el total de valores actuales
     const totalBase = (liquiditySummary.liquidezTotal && liquiditySummary.liquidezTotal > 0) 
       ? liquiditySummary.liquidezTotal 
-      : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalAllocated);
+      : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalCurrentValue);
 
     let cumulativeAngle = 0;
-    const chartSegments = chartData.map((seg) => {
-      const segmentBase = Math.abs(seg.allocatedAmount || 0);
+    const chartSegments = chartData.map((alert) => {
+      // ✅ NUEVO: Usar valor actual (allocatedAmount + P&L) para calcular el tamaño del segmento
+      const segmentBase = Math.abs(alert.currentValue || 0);
       const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
       const angle = (segmentBase / (totalBase || 1)) * 360;
       const startAngle = cumulativeAngle;
@@ -2409,7 +2423,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       cumulativeAngle = endAngle;
 
       return {
-        ...seg,
+        ...alert,
         size,
         startAngle,
         endAngle,
@@ -2418,10 +2432,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     });
 
     // ✅ CORREGIDO: Usar liquidezDisponible directamente del resumen (más preciso)
-    // Si no hay resumen, calcular como diferencia entre totalBase y totalAllocated
+    // Si no hay resumen, calcular como diferencia entre totalBase y totalCurrentValue
     const available = (liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
       ? Math.max(liquiditySummary.liquidezDisponible, 0)
-      : Math.max((totalBase || 0) - totalAllocated, 0);
+      : Math.max((totalBase || 0) - totalCurrentValue, 0);
     
     // ✅ CORREGIDO: Solo agregar el segmento de liquidez si es mayor a 0 para evitar partes vacías
     if (available > 0) {
