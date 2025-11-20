@@ -113,10 +113,26 @@ LiquiditySchema.methods.updateDistribution = function(this: any, alertId: string
     throw new Error("Distribución no encontrada");
   }
   distribution.currentPrice = currentPrice;
-  distribution.profitLoss = (currentPrice - distribution.entryPrice) * distribution.shares;
+  
+  // ✅ CORREGIDO: Calcular P&L porcentual primero
   distribution.profitLossPercentage = distribution.entryPrice > 0
     ? ((currentPrice - distribution.entryPrice) / distribution.entryPrice) * 100
     : 0;
+  
+  // ✅ CORREGIDO: Calcular P&L en dólares usando allocatedAmount si shares es 0
+  // Si hay shares, usar shares. Si no, usar el cambio porcentual sobre el monto asignado
+  if (distribution.shares > 0) {
+    // Método tradicional: usar shares
+    distribution.profitLoss = (currentPrice - distribution.entryPrice) * distribution.shares;
+  } else if (distribution.allocatedAmount > 0) {
+    // ✅ NUEVO: Si shares es 0 pero hay monto asignado, calcular P&L basado en el porcentaje
+    // P&L = (cambio porcentual / 100) * monto asignado
+    distribution.profitLoss = (distribution.profitLossPercentage / 100) * distribution.allocatedAmount;
+  } else {
+    // Si no hay ni shares ni monto asignado, P&L es 0
+    distribution.profitLoss = 0;
+  }
+  
   distribution.updatedAt = new Date();
   this.calculateTotalProfitLoss();
 };
