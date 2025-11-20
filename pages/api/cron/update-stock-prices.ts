@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 
@@ -65,6 +66,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             alert.currentPrice = newPrice;
             alert.calculateProfit(); // Recalcular profit automáticamente
             await alert.save();
+            
+            // ✅ NUEVO: Actualizar distribuciones de liquidez para esta alerta
+            try {
+              const liquidityDocs = await Liquidity.find({
+                'distributions.alertId': alert._id.toString()
+              });
+              
+              for (const liquidityDoc of liquidityDocs) {
+                const distribution = liquidityDoc.distributions.find(
+                  (d: any) => d.alertId.toString() === alert._id.toString()
+                );
+                
+                if (distribution && distribution.isActive) {
+                  // Actualizar precio y P&L de la distribución
+                  liquidityDoc.updateDistribution(alert._id.toString(), newPrice);
+                  await liquidityDoc.save();
+                  console.log(`✅ Distribución actualizada para ${alert.symbol} en pool ${liquidityDoc.pool}`);
+                }
+              }
+            } catch (liquidityError) {
+              console.error(`⚠️ Error actualizando distribución para ${alert.symbol}:`, liquidityError);
+              // Continuar aunque falle la actualización de liquidez
+            }
             
             updatedCount++;
             console.log(`✅ ${alert.symbol}: ${alert.currentPrice} → ${newPrice}`);

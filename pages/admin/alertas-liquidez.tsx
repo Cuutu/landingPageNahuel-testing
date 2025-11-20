@@ -155,6 +155,24 @@ const AdminLiquidityPage: React.FC = () => {
 
   useEffect(() => { loadData(); loadActiveAlerts(); }, [selectedPool]);
 
+  // ✅ NUEVO: Actualización automática cada 30 segundos para datos en tiempo real
+  useEffect(() => {
+    // Cargar datos inmediatamente
+    loadData();
+    loadActiveAlerts();
+
+    // Configurar intervalo de actualización cada 30 segundos
+    const intervalId = setInterval(() => {
+      loadData();
+      loadActiveAlerts();
+    }, 30000); // 30 segundos
+
+    // Limpiar intervalo al desmontar o cambiar pool
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [selectedPool]);
+
   // Preseleccionar desde query cuando listas estén cargadas
   useEffect(() => {
     if (!queryAlertId || !queryTipo) return;
