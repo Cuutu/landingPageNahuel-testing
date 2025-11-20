@@ -169,6 +169,25 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     }
   }, [selectedRange]);
 
+  // ✅ NUEVO: Actualización automática cada 30 segundos para datos en tiempo real
+  useEffect(() => {
+    const selectedOption = timeRangeOptions.find(opt => opt.value === selectedRange);
+    if (!selectedOption) return;
+
+    // Actualizar inmediatamente al montar
+    fetchPortfolioData(selectedOption.days);
+
+    // Configurar intervalo de actualización cada 30 segundos
+    const intervalId = setInterval(() => {
+      fetchPortfolioData(selectedOption.days);
+    }, 30000); // 30 segundos
+
+    // Limpiar intervalo al desmontar o cambiar rango
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [selectedRange]);
+
   // Calcular estadísticas usando datos del API actualizado
   const calculateEnhancedStats = (data: PortfolioData[], baseStats: any): PortfolioStats => {
     if (!baseStats) {
