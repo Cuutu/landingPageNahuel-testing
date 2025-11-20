@@ -113,13 +113,47 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    // "A confirmar": Alertas vigentes (status === 'ACTIVE' && availableForPurchase === true)
-    // Estas son las alertas que aparecen en "Alertas vigentes"
-    if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
-      return 'A confirmar';
+    // 1. "Ejecutada": Todas las alertas que aparecen en Seguimiento
+    // Según la lógica de seguimiento:
+    
+    // A. Alertas cerradas o detenidas
+    if (alert.status === 'CLOSED' || alert.status === 'STOPPED') {
+      return 'Ejecutada';
     }
 
-    // "Rechazada": Alertas descartadas que NO son del día actual
+    // B. Alertas activas que están en seguimiento:
+    //    - No son del día actual, O
+    //    - Son del día actual pero tienen finalPriceSetAt (confirmadas a las 18:30)
+    if (alert.status === 'ACTIVE') {
+      const alertDate = alert.date ? new Date(alert.date) : (alert.createdAt ? new Date(alert.createdAt) : null);
+      if (alertDate) {
+        const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
+        // Si no es del día actual, está en seguimiento -> Ejecutada
+        if (!isCreatedToday) {
+          return 'Ejecutada';
+        }
+        // Si es del día actual pero tiene finalPriceSetAt, está en seguimiento -> Ejecutada
+        if (isCreatedToday && alert.finalPriceSetAt) {
+          return 'Ejecutada';
+        }
+      } else {
+        // Si no tiene fecha pero tiene finalPriceSetAt, está en seguimiento -> Ejecutada
+        if (alert.finalPriceSetAt) {
+          return 'Ejecutada';
+        }
+      }
+    }
+
+    // C. Alertas descartadas del día actual (aparecen en seguimiento)
+    if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
+      const descartadaAt = new Date(alert.descartadaAt);
+      const isDescartadaToday = descartadaAt >= startOfDay && descartadaAt <= endOfDay;
+      if (isDescartadaToday) {
+        return 'Ejecutada';
+      }
+    }
+
+    // 2. "Rechazada": Alertas descartadas que NO son del día actual
     // Las descartadas del día actual aparecen en seguimiento, así que son "Ejecutada"
     if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
       const descartadaAt = new Date(alert.descartadaAt);
@@ -129,43 +163,12 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       }
     }
 
-    // "Ejecutada": Todas las alertas que aparecen en Seguimiento
-    // Según la lógica de seguimiento:
-    // 1. Alertas cerradas o detenidas
-    if (alert.status === 'CLOSED' || alert.status === 'STOPPED') {
-      return 'Ejecutada';
-    }
-
-    // 2. Alertas activas que están en seguimiento:
-    //    - No son del día actual, O
-    //    - Son del día actual pero tienen finalPriceSetAt (confirmadas a las 18:30)
-    if (alert.status === 'ACTIVE') {
-      const alertDate = alert.date ? new Date(alert.date) : (alert.createdAt ? new Date(alert.createdAt) : null);
-      if (alertDate) {
-        const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
-        // Si no es del día actual, está en seguimiento
-        if (!isCreatedToday) {
-          return 'Ejecutada';
-        }
-        // Si es del día actual pero tiene finalPriceSetAt, está en seguimiento
-        if (isCreatedToday && alert.finalPriceSetAt) {
-          return 'Ejecutada';
-        }
-      } else {
-        // Si no tiene fecha pero tiene finalPriceSetAt, está en seguimiento
-        if (alert.finalPriceSetAt) {
-          return 'Ejecutada';
-        }
-      }
-    }
-
-    // 3. Alertas descartadas del día actual (aparecen en seguimiento)
-    if (alert.status === 'DESCARTADA' && alert.descartadaAt) {
-      const descartadaAt = new Date(alert.descartadaAt);
-      const isDescartadaToday = descartadaAt >= startOfDay && descartadaAt <= endOfDay;
-      if (isDescartadaToday) {
-        return 'Ejecutada';
-      }
+    // 3. "A confirmar": Alertas vigentes (status === 'ACTIVE' && availableForPurchase === true)
+    // Estas son las alertas que aparecen en "Alertas vigentes"
+    // NOTA: Solo llegamos aquí si NO se cumplió la condición de "Ejecutada" anterior
+    // (es decir, son del día actual y NO tienen finalPriceSetAt)
+    if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
+      return 'A confirmar';
     }
 
     // Por defecto, si no cumple ninguna condición, es "A confirmar"

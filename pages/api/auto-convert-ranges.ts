@@ -28,22 +28,22 @@ interface AutoConvertResponse {
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertResponse>) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ 
+    return res.status(405).json({
       success: false,
       marketStatus: { isOpen: false, message: 'Método no permitido' },
-      error: 'Método no permitido' 
+      error: 'Método no permitido'
     });
   }
 
   try {
     // Verificar autenticación
     const session = await getServerSession(req, res, authOptions);
-    
+
     if (!session?.user?.email) {
-      return res.status(401).json({ 
+      return res.status(401).json({
         success: false,
         marketStatus: { isOpen: false, message: 'No autorizado' },
-        error: 'No autorizado' 
+        error: 'No autorizado'
       });
     }
 
@@ -51,21 +51,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     // Verificar que sea admin
     const user = await User.findOne({ email: session.user.email }).select('role');
-    
+
     if (!user) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         success: false,
         marketStatus: { isOpen: false, message: 'Usuario no encontrado' },
-        error: 'Usuario no encontrado' 
+        error: 'Usuario no encontrado'
       });
     }
-    
+
     if (user.role !== 'admin') {
       console.log(`❌ Usuario ${session.user.email} intentó usar función admin. Rol actual: ${user.role}`);
-      return res.status(403).json({ 
+      return res.status(403).json({
         success: false,
         marketStatus: { isOpen: false, message: 'Solo administradores pueden usar esta función' },
-        error: 'Solo administradores pueden usar esta función' 
+        error: 'Solo administradores pueden usar esta función'
       });
     }
 
@@ -115,12 +115,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
       // Usar el precio actual como precio de entrada fijo
       const closePrice = alert.currentPrice;
-      
+
       if (!closePrice || closePrice <= 0) {
         console.warn(`⚠️ ${alert.symbol}: Precio actual inválido (${closePrice}), saltando...`);
         continue;
       }
-      
+
       console.log(`💰 ${alert.symbol}: Precio actual ${closePrice} -> Precio de entrada fijo`);
 
       // Determinar el rango anterior para el log
@@ -134,12 +134,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       // Actualizar entryPrice al precio actual Y eliminar campos de rango en una sola operación
       await Alert.updateOne(
         { _id: alert._id },
-        { 
-          $set: { 
+        {
+          $set: {
             entryPrice: closePrice,
-            tipoAlerta: 'precio' // Cambiar a tipo precio fijo
+            tipoAlerta: 'precio', // Cambiar a tipo precio fijo
+            finalPriceSetAt: new Date() // ✅ Marcar como precio confirmado para que aparezca como "Ejecutada"
           },
-          $unset: { 
+          $unset: {
             entryPriceRange: 1,
             precioMinimo: 1,
             precioMaximo: 1
@@ -172,10 +173,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
   } catch (error) {
     console.error('❌ Error en conversión automática:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       marketStatus: { isOpen: false, message: 'Error interno' },
-      error: 'Error interno del servidor' 
+      error: 'Error interno del servidor'
     });
   }
 }
@@ -184,11 +185,11 @@ async function getMarketStatus(): Promise<{ isOpen: boolean; message: string }> 
   // Obtener hora actual en Nueva York (zona horaria del mercado)
   const now = new Date();
   const nyTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  
+
   const currentHour = nyTime.getHours();
   const currentMinute = nyTime.getMinutes();
   const currentDay = nyTime.getDay(); // 0 = Domingo, 6 = Sábado
-  
+
   // Verificar si es fin de semana
   if (currentDay === 0 || currentDay === 6) {
     return {
@@ -196,20 +197,20 @@ async function getMarketStatus(): Promise<{ isOpen: boolean; message: string }> 
       message: 'Mercado cerrado (fin de semana)'
     };
   }
-  
+
   // Horarios del mercado (9:30 AM - 4:00 PM EST/EDT)
   const marketOpenHour = 9;
   const marketOpenMinute = 30;
   const marketCloseHour = 16;
   const marketCloseMinute = 0;
-  
+
   // Convertir a minutos para facilitar comparación
   const currentTimeInMinutes = currentHour * 60 + currentMinute;
   const marketOpenInMinutes = marketOpenHour * 60 + marketOpenMinute;
   const marketCloseInMinutes = marketCloseHour * 60 + marketCloseMinute;
-  
+
   const isOpen = currentTimeInMinutes >= marketOpenInMinutes && currentTimeInMinutes < marketCloseInMinutes;
-  
+
   if (isOpen) {
     return {
       isOpen: true,
@@ -218,7 +219,7 @@ async function getMarketStatus(): Promise<{ isOpen: boolean; message: string }> 
   } else {
     return {
       isOpen: false,
-      message: currentTimeInMinutes < marketOpenInMinutes 
+      message: currentTimeInMinutes < marketOpenInMinutes
         ? 'Mercado cerrado (antes del horario de apertura)'
         : 'Mercado cerrado (después del horario de cierre)'
     };
