@@ -187,6 +187,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         if (hasEntryRange) {
           updateFields.entryPrice = closePrice;
           updateFields.tipoAlerta = 'precio'; // Cambiar a tipo precio fijo
+          // ✅ NUEVO: Establecer finalPrice y finalPriceSetAt para que aparezca en seguimiento
+          updateFields.finalPrice = closePrice;
+          updateFields.finalPriceSetAt = new Date();
           unsetFields.entryPriceRange = 1;
           unsetFields.precioMinimo = 1;
           unsetFields.precioMaximo = 1;
