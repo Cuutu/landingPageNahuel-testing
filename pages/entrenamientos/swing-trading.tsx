@@ -533,10 +533,10 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
             setRoadmapError('Este roadmap aún no tiene módulos creados. Contacta al administrador.');
           }
         } else {
-          setRoadmapError('No se encontró un roadmap activo para Swing Trading');
+          setRoadmapError('No se encontró un roadmap activo para Zero 2 Trader');
         }
       } else {
-        setRoadmapError('No se encontraron roadmaps para Swing Trading');
+        setRoadmapError('No se encontraron roadmaps para Zero 2 Trader');
       }
     } catch (error) {
       console.error('Error al cargar roadmaps:', error);
@@ -613,7 +613,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   // Función para cargar fechas de entrenamiento (simplificada)
   const loadTrainingDates = async () => {
     try {
-      console.log('📅 Cargando fechas específicas de Swing Trading...');
+      console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
       
       const response = await fetch('/api/training-dates/SwingTrading');
       const data = await response.json();
@@ -842,7 +842,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   return (
     <>
       <Head>
-        <title>Swing Trading - Entrenamiento Completo | Nahuel Lozano</title>
+        <title>Zero 2 Trader - Entrenamiento Completo | Nahuel Lozano</title>
         <meta name="description" content="Experiencia de aprendizaje premium, personalizada y con acompañamiento constante, donde aprenderás a operar movimientos de varios días o semanas, identificando oportunidades con análisis técnico y estrategias que combinan precisión y paciencia" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -869,10 +869,10 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           >
               <div className={styles.heroText}>
                 <h1 className={styles.heroTitle}>
-                  Swing Trading
+                  Zero 2 Trader
                 </h1>
                 <p className={styles.heroDescription}>
-                  Experiencia de aprendizaje premium, personalizada y con acompañamiento constante, donde aprenderás a operar movimientos de varios días o semanas, identificando oportunidades con análisis técnico y estrategias que combinan precisión y paciencia
+                  Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.
                 </p>
                 
                 <div className={styles.startDate}>
@@ -926,7 +926,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 <div className={styles.videoContainer}>
                   <YouTubePlayer
                     videoId={swingHeroVideo?.youtubeId || "dQw4w9WgXcQ"}
-                    title={swingHeroVideo?.title || "Swing Trading - Introducción"}
+                    title={swingHeroVideo?.title || "Zero 2 Trader - Introducción"}
                     autoplay={swingHeroVideo?.autoplay || false}
                     muted={swingHeroVideo?.muted !== undefined ? swingHeroVideo.muted : true}
                     loop={swingHeroVideo?.loop || false}
@@ -1069,8 +1069,8 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 <TrainingRoadmap
                   modules={roadmapModules}
                   onModuleClick={handleModuleClick}
-                  title="Roadmap de Swing Trading"
-                  description="Progresión estructurada diseñada para llevarte de principiante a trader avanzado en Swing Trading"
+                  title="Roadmap de Zero 2 Trader"
+                  description="Progresión estructurada diseñada para llevarte de cero a operar con independencia total"
                 />
               ) : (
                 <div className={styles.noRoadmapContainer}>
@@ -1086,7 +1086,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           <div className={styles.modalOverlay}>
             <div className={styles.modalContainer}>
               <div className={styles.modalHeader}>
-                <h3>Inscripción a Swing Trading</h3>
+                <h3>Inscripción a Zero 2 Trader</h3>
                 <button 
                   onClick={() => setShowEnrollForm(false)}
                   className={styles.closeButton}
@@ -1294,7 +1294,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
                 <TrainingRoadmap
                   modules={roadmapModules}
                   onModuleClick={handleModuleClick}
-                  title="Roadmap de Swing Trading"
+                  title="Roadmap de Zero 2 Trader"
                   description="Progresión estructurada desde principiante hasta trader competente"
                 />
               ) : (
@@ -1365,7 +1365,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
               {/* Título y Contador en la sección de testimonios */}
               <div className={styles.testimonialsHeader}>
                 <h2 className={styles.testimonialsTitle}>
-                  Swing Trading
+                  Zero 2 Trader
                 </h2>
                 
                 <div className={styles.testimonialsDate}>
@@ -1711,8 +1711,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       props: {
         training: {
           tipo: 'SwingTrading',
-          nombre: 'Swing Trading',
-          descripcion: 'Experiencia de aprendizaje premium, personalizada y con acompañamiento constante, donde aprenderás a operar movimientos de varios días o semanas, identificando oportunidades con análisis técnico y estrategias que combinan precisión y paciencia',
+          nombre: 'Zero 2 Trader',
+          descripcion: 'Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.',
           precio: 10,
           duracion: 40,
           metricas: {

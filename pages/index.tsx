@@ -464,8 +464,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
     },
     {
       id: 'swing-trading',
-      titulo: 'Swing Trading',
-      descripcion: 'Entrenamiento intensivo de 1 mes donde aprenderás a implementar una estrategia efectiva de Swing Trading, con sesiones en vivo y acompañamiento personalizado',
+      titulo: 'Zero 2 Trader',
+      descripcion: 'Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.',
       tag: 'Entrenamientos',
       tagClass: 'tagEntrenamientos',
       rating: '4,8',
@@ -1456,8 +1456,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       {
         _id: '1',
         tipo: 'SwingTrading',
-        nombre: 'Swing Trading',
-        descripcion: 'Aprende los fundamentos del trading y análisis técnico',
+        nombre: 'Zero 2 Trader',
+        descripcion: 'Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.',
         precio: 299,
         duracion: 8,
         contenido: {

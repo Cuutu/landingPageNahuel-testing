@@ -194,12 +194,12 @@ const AlertasPage: React.FC = () => {
     },
     {
       title: 'Smart Money',
-      description: 'Servicio de alertas de compra con visión de mediano y largo plazo, pensado para construir carteras sólidas, con foco en crecimiento sostenido y bajo riesgo. Ideal para quienes buscan invertir con estrategia sin estar pendientes del día a día.',
+      description: 'Servicio de alertas pensadas para el mediano y largo plazo donde buscaremos los momentos ideales para ingresar a los activos que mejores rentabilidades pueden tener en los próximos meses y años.',
       features: [
         'Estrategia de inversión de varios meses a años, ideal para acumular capital',
-        'Selección de activos con fundamentos sólidos tanto de renta fija como de renta variable',
+        'Selección de activos con fundamentos sólidos y gran potencial de crecimiento',
         'Informes de mercado y seguimiento semanal',
-        'Alertas del análisis técnicos y fundamental, con revisiones periódicas y constantes'
+        'Alertas fundamentadas en el análisis técnico, pero pensadas para el mediano y largo plazo'
       ],
       href: '/alertas/smart-money',
       backgroundColor: '#7f1d1d',

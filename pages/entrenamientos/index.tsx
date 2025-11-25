@@ -254,13 +254,13 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
               <div className={styles.swingTradingContent}>
                 {/* Título y nivel */}
                 <div className={styles.swingTradingHeader}>
-                  <h2 className={styles.swingTradingTitle}>Swing Trading</h2>
+                  <h2 className={styles.swingTradingTitle}>Zero 2 Trader</h2>
                   <span className={styles.swingTradingLevel}>Avanzado - Experto</span>
                 </div>
 
                 {/* Descripción */}
                 <p className={styles.swingTradingDescription}>
-                  Operá movimientos de varios días o semanas, identificando oportunidades con análisis técnico y estrategias que combinan precisión y paciencia. Para quienes prefieren menos operaciones, pero de mayor calidad.
+                  Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.
                 </p>
 
                 {/* Información del curso */}
@@ -268,7 +268,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                   <div className={styles.courseInfoGrid}>
                     <div className={styles.courseInfoItem}>
                       <Clock size={20} />
-                      <span>1 mes de duración</span>
+                      <span>3 meses de duración</span>
                     </div>
                     <div className={styles.courseInfoItem}>
                       <Users size={20} />
