@@ -43,7 +43,7 @@ interface NewTrainingDateForm {
 }
 
 const TRAINING_TYPES = {
-  SwingTrading: 'Swing Trading',
+  SwingTrading: 'Zero 2 Trader',
   DowJones: 'Dow Jones Advanced'
 };
 
@@ -308,7 +308,7 @@ export default function EntrenamientosFechasPage() {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    placeholder="Ej: Clase de Swing Trading - Módulo 1"
+                    placeholder="Ej: Clase de Zero 2 Trader - Módulo 1"
                     required
                   />
                 </div>

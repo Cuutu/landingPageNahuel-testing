@@ -772,13 +772,13 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
               Gestión de Lecciones
               {isFilteredByType && (
                 <span className={styles.typeFilter}>
-                  - {tipoFromURL === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones'}
+                  - {tipoFromURL === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones'}
                 </span>
               )}
             </h1>
             <p className={styles.subtitle}>
               {isFilteredByType 
-                ? `Gestiona las lecciones de ${tipoFromURL === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones'}`
+                ? `Gestiona las lecciones de ${tipoFromURL === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones'}`
                 : 'Crea y gestiona el contenido de los entrenamientos'
               }
             </p>
@@ -792,7 +792,7 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
                 className={styles.select}
               >
                 <option value="all">Todos los tipos</option>
-                <option value="SwingTrading">Swing Trading</option>
+                <option value="SwingTrading">Zero 2 Trader</option>
                 <option value="DowJones">Dow Jones</option>
               </select>
             )}
@@ -1094,7 +1094,7 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
                             value={formData.tipoEntrenamiento}
                             onChange={(e) => setFormData({...formData, tipoEntrenamiento: e.target.value as any})}
                           >
-                            <option value="SwingTrading">Swing Trading</option>
+                            <option value="SwingTrading">Zero 2 Trader</option>
                             <option value="DowJones">Dow Jones</option>
                           </select>
                         )}

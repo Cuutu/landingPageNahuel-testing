@@ -355,16 +355,16 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     swingTrading: {
       heroVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
-        title: { type: String, default: 'Swing Trading - Video Promocional' },
-        description: { type: String, default: 'Descubre el programa completo de Swing Trading' },
+        title: { type: String, default: 'Zero 2 Trader - Video Promocional' },
+        description: { type: String, default: 'Descubre el programa completo de Zero 2 Trader' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
-        title: { type: String, default: 'Swing Trading - Video Adicional' },
-        description: { type: String, default: 'Video adicional del programa Swing Trading' },
+        title: { type: String, default: 'Zero 2 Trader - Video Adicional' },
+        description: { type: String, default: 'Video adicional del programa Zero 2 Trader' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false }

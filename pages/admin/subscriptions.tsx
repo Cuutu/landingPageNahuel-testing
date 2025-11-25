@@ -134,7 +134,7 @@ export default function AdminSubscriptionsPage() {
       'TraderCall': 'Trader Call',
       'SmartMoney': 'Smart Money',
       'CashFlow': 'Cash Flow',
-      'SwingTrading': 'Swing Trading',
+      'SwingTrading': 'Zero 2 Trader',
       'DowJones': 'Dow Jones'
     };
     return serviceNames[service] || service;
@@ -525,7 +525,7 @@ export default function AdminSubscriptionsPage() {
                 <option value="TraderCall">Trader Call</option>
                 <option value="SmartMoney">Smart Money</option>
                 <option value="CashFlow">Cash Flow</option>
-                <option value="SwingTrading">Swing Trading</option>
+                <option value="SwingTrading">Zero 2 Trader</option>
                 <option value="DowJones">Dow Jones</option>
               </select>
             </div>

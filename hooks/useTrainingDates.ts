@@ -112,7 +112,7 @@ export const useTrainingDates = (session: Session | null, trainingType: string) 
   // Función para cargar fechas de entrenamiento
   const loadTrainingDates = async () => {
     try {
-      console.log('📅 Cargando fechas específicas de Swing Trading...');
+      console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
       
       const response = await fetch('/api/training-dates/SwingTrading');
       const data = await response.json();

@@ -70,7 +70,7 @@ export default function PaymentPendingPage({
   return (
     <>
       <Head>
-        <title>Pago Pendiente - Swing Trading | Lozano Nahuel</title>
+        <title>Pago Pendiente - Zero 2 Trader | Lozano Nahuel</title>
         <meta name="description" content="Tu pago está siendo procesado. Te notificaremos cuando esté confirmado." />
       </Head>
 
@@ -83,7 +83,7 @@ export default function PaymentPendingPage({
           <h1 className={styles.title}>Pago Pendiente</h1>
           
           <p className={styles.description}>
-            Tu pago para el entrenamiento de Swing Trading está siendo procesado. 
+            Tu pago para el entrenamiento de Zero 2 Trader está siendo procesado. 
             Te notificaremos por email cuando esté confirmado.
           </p>
 

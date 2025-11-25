@@ -266,7 +266,7 @@ export default function EditMonthlyTraining() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Swing Trading - Enero 2024"
+                placeholder="Zero 2 Trader - Enero 2024"
                 required
               />
             </div>

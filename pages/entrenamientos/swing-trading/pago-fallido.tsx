@@ -56,7 +56,7 @@ export default function PaymentFailurePage({
   const handleRetryPayment = async () => {
     setIsRetrying(true);
     try {
-      // Redirigir de vuelta a la página de Swing Trading
+      // Redirigir de vuelta a la página de Zero 2 Trader
       router.push('/entrenamientos/swing-trading');
     } catch (error) {
       console.error('Error al reintentar pago:', error);
@@ -68,8 +68,8 @@ export default function PaymentFailurePage({
   return (
     <>
       <Head>
-        <title>Pago No Completado - Swing Trading | Lozano Nahuel</title>
-        <meta name="description" content="Tu pago no pudo ser procesado. Intenta nuevamente para acceder al entrenamiento de Swing Trading." />
+        <title>Pago No Completado - Zero 2 Trader | Lozano Nahuel</title>
+        <meta name="description" content="Tu pago no pudo ser procesado. Intenta nuevamente para acceder al entrenamiento de Zero 2 Trader." />
       </Head>
 
       <div className={styles.container}>
@@ -81,7 +81,7 @@ export default function PaymentFailurePage({
           <h1 className={styles.title}>Pago No Completado</h1>
           
           <p className={styles.description}>
-            Tu pago para el entrenamiento de Swing Trading no pudo ser procesado correctamente.
+            Tu pago para el entrenamiento de Zero 2 Trader no pudo ser procesado correctamente.
           </p>
 
           <div className={styles.details}>

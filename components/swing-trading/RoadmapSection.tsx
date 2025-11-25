@@ -71,8 +71,8 @@ const RoadmapSection: React.FC<RoadmapSectionProps> = ({
           <TrainingRoadmap
             modules={roadmapModules}
             onModuleClick={handleModuleClick}
-            title="Roadmap de Swing Trading"
-            description="Progresión estructurada diseñada para llevarte de principiante a trader avanzado en Swing Trading"
+            title="Roadmap de Zero 2 Trader"
+            description="Progresión estructurada diseñada para llevarte de cero a operar con independencia total"
           />
         ) : (
           <motion.div

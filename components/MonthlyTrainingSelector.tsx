@@ -65,7 +65,7 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
   const getTrainingDisplayName = () => {
     switch (trainingType) {
       case 'SwingTrading':
-        return 'Swing Trading';
+        return 'Zero 2 Trader';
       case 'DayTrading':
         return 'Day Trading';
       case 'DowJones':

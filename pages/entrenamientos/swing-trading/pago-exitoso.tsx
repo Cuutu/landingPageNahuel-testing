@@ -168,8 +168,8 @@ export default function PaymentSuccessPage({
   return (
     <>
       <Head>
-        <title>Pago Exitoso - Swing Trading | Lozano Nahuel</title>
-        <meta name="description" content="¡Tu pago fue procesado exitosamente! Tu entrenamiento de Swing Trading ya está agendado." />
+        <title>Pago Exitoso - Zero 2 Trader | Lozano Nahuel</title>
+        <meta name="description" content="¡Tu pago fue procesado exitosamente! Tu entrenamiento de Zero 2 Trader ya está agendado." />
       </Head>
 
       <div className={styles.container}>
@@ -181,8 +181,8 @@ export default function PaymentSuccessPage({
           <h1 className={styles.title}>¡Pago Exitoso!</h1>
           
           <p className={styles.description}>
-            Tu pago para el entrenamiento de Swing Trading fue procesado correctamente. 
-            Tu entrenamiento de Swing Trading ya está agendado. En las próximas horas recibirás un correo con el link a la reunión.
+            Tu pago para el entrenamiento de Zero 2 Trader fue procesado correctamente. 
+            Tu entrenamiento de Zero 2 Trader ya está agendado. En las próximas horas recibirás un correo con el link a la reunión.
           </p>
 
           <div className={styles.details}>

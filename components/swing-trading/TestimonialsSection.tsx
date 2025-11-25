@@ -109,7 +109,7 @@ const TestimonialsSection: React.FC<TestimonialsSectionProps> = ({
         >
           <div className={styles.testimonialsHeader}>
             <h2 className={styles.testimonialsTitle}>
-              Swing Trading
+              Zero 2 Trader
             </h2>
             
             <div className={styles.testimonialsDate}>

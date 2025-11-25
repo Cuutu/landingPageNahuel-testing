@@ -11,7 +11,7 @@ export default function StudentDashboard() {
     <>
       <Head>
         <title>Mis Entrenamientos - Dashboard Estudiante</title>
-        <meta name="description" content="Dashboard del estudiante para gestionar entrenamientos de Swing Trading" />
+        <meta name="description" content="Dashboard del estudiante para gestionar entrenamientos de Zero 2 Trader" />
       </Head>
 
       <Navbar />

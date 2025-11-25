@@ -16,12 +16,12 @@ const SwingTradingFAQ: React.FC = () => {
     {
       id: 1,
       question: "¿A quién está dirigido este entrenamiento?",
-      answer: "Está pensado para personas que ya dominan el análisis técnico y quieren aplicar lo aprendido en el mercado real con una estrategia profesional de Swing Trading. Si operás sin un método claro, te cuesta sostener tus decisiones o sentís que necesitás acompañamiento para operar con criterio, este entrenamiento es para vos. No se enseñan los fundamentos del análisis técnico desde cero, por lo que es recomendable haber hecho un curso de análisis técnico previamente."
+      answer: "Está pensado para personas que ya dominan el análisis técnico y quieren aplicar lo aprendido en el mercado real con una estrategia profesional de Zero 2 Trader. Si operás sin un método claro, te cuesta sostener tus decisiones o sentís que necesitás acompañamiento para operar con criterio, este entrenamiento es para vos. No se enseñan los fundamentos del análisis técnico desde cero, por lo que es recomendable haber hecho un curso de análisis técnico previamente."
     },
     {
       id: 2,
       question: "¿Qué voy a aprender?",
-      answer: "Vas a aprender una estrategia de Swing Trading enfocada en operar movimientos de varios días o semanas, usando análisis técnico, gestión del riesgo y contexto de mercado. El foco está en ayudarte a identificar oportunidades de calidad, interpretar los gráficos con criterio y ejecutar decisiones con claridad. Todo se enseña de manera aplicada, sin teoría innecesaria y con seguimiento real. No es un curso más: es entrenamiento en acción real."
+      answer: "Vas a aprender una estrategia de Zero 2 Trader enfocada en operar movimientos de varios días o semanas, usando análisis técnico, gestión del riesgo y contexto de mercado. El foco está en ayudarte a identificar oportunidades de calidad, interpretar los gráficos con criterio y ejecutar decisiones con claridad. Todo se enseña de manera aplicada, sin teoría innecesaria y con seguimiento real. No es un curso más: es entrenamiento en acción real."
     },
     {
       id: 3,
@@ -63,7 +63,7 @@ const SwingTradingFAQ: React.FC = () => {
             Preguntas Frecuentes
           </h2>
           <p className={styles.faqSubtitle}>
-            Todo lo que necesitás saber sobre el entrenamiento de Swing Trading
+            Todo lo que necesitás saber sobre el entrenamiento de Zero 2 Trader
           </p>
           
           <div className={styles.faqContainer}>

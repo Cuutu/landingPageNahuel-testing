@@ -33,7 +33,7 @@ export default function PaymentSuccess() {
       'SmartMoney': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de SmartMoney.',
       'TraderCall': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de TraderCall.',
       'CashFlow': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de CashFlow.',
-      'SwingTrading': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de Swing Trading.',
+      'SwingTrading': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de Zero 2 Trader.',
       'DowJones': 'Gracias por tu pago. En unos segundos vas a poder acceder a todo el contenido de Dow Jones.',
       'Consulta Financiera': 'Gracias por tu pago. En unos segundos vas a poder acceder a tu consulta financiera.',
       'Asesoría': 'Gracias por tu pago. En unos segundos vas a poder acceder a tu asesoría personalizada.'

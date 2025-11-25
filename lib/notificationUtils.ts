@@ -912,7 +912,7 @@ export async function createPaymentNotification(
       actionUrl = '/alertas';
       actionText = 'Ver Alertas';
     } else if (['SwingTrading', 'DowJones'].includes(service)) {
-      serviceDisplayName = service === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones';
+      serviceDisplayName = service === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones';
       actionUrl = '/entrenamientos';
       actionText = 'Ver Entrenamientos';
     }

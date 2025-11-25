@@ -94,7 +94,7 @@ const PricingSchema = new Schema({
     swingTrading: {
       price: { type: Number, required: true, default: 50000 },
       currency: { type: String, required: true, default: 'ARS' },
-      description: { type: String, default: 'Entrenamiento de Swing Trading' },
+      description: { type: String, default: 'Entrenamiento de Zero 2 Trader' },
       originalPrice: { type: Number },
       discount: { type: Number, min: 0, max: 100 }
     },

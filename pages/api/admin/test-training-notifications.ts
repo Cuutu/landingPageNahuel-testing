@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         userEmail || 'test@example.com',
         userName || 'Usuario de Prueba',
         'SwingTrading',
-        'Swing Trading',
+        'Zero 2 Trader',
         497
       );
 
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           userEmail: userEmail || 'test@example.com',
           userName: userName || 'Usuario de Prueba',
           trainingType: 'SwingTrading',
-          trainingName: 'Swing Trading',
+          trainingName: 'Zero 2 Trader',
           price: 497
         }
       });
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Probar notificación de nuevo horario
       await createTrainingScheduleNotification(
         'SwingTrading',
-        'Swing Trading',
+        'Zero 2 Trader',
         {
           dayOfWeek: 1, // Lunes
           hour: 19,
@@ -69,7 +69,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         testType: 'schedule',
         details: {
           trainingType: 'SwingTrading',
-          trainingName: 'Swing Trading',
+          trainingName: 'Zero 2 Trader',
           schedule: {
             dayOfWeek: 1,
             dayName: 'Lunes',

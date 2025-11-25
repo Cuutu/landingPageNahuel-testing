@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const monthlyTrainings = await MonthlyTraining.find({
       month: parseInt(month as string),
       year: parseInt(year as string),
-      type: 'swing-trading' // Solo Swing Trading por ahora
+      type: 'swing-trading' // Solo Zero 2 Trader por ahora
     }).lean();
     
     console.log('🔍 Debug: MonthlyTrainings encontrados:', monthlyTrainings.length, monthlyTrainings);

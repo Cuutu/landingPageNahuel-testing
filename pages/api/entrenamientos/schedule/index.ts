@@ -107,10 +107,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         training = new Training({
           tipo: scheduleData.type,
           nombre: scheduleData.type === 'SwingTrading' 
-            ? 'Swing Trading' 
+            ? 'Zero 2 Trader' 
             : 'Dow Jones Advanced',
           descripcion: scheduleData.type === 'SwingTrading'
-            ? 'Entrenamiento completo de Swing Trading desde cero'
+            ? 'Entrenamiento completo de Zero 2 Trader desde cero'
             : 'Estrategias avanzadas de trading profesional',
           precio: scheduleData.price,
           duracion: scheduleData.duration,

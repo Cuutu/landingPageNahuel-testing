@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             swingTrading: {
               price: 50000,
               currency: 'ARS',
-              description: 'Entrenamiento de Swing Trading'
+              description: 'Entrenamiento de Zero 2 Trader'
             },
             dayTrading: {
               price: 75000,

@@ -208,8 +208,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       items: [
         {
           id: `monthly-training-${trainingType.toLowerCase()}`,
-          title: `Entrenamiento ${trainingType === 'SwingTrading' ? 'Swing Trading' : trainingType} - ${subscriptionMonth}/${subscriptionYear}`,
-          description: `Suscripción mensual para el entrenamiento de ${trainingType === 'SwingTrading' ? 'Swing Trading' : trainingType} del mes ${subscriptionMonth}/${subscriptionYear}`,
+          title: `Entrenamiento ${trainingType === 'SwingTrading' ? 'Zero 2 Trader' : trainingType} - ${subscriptionMonth}/${subscriptionYear}`,
+          description: `Suscripción mensual para el entrenamiento de ${trainingType === 'SwingTrading' ? 'Zero 2 Trader' : trainingType} del mes ${subscriptionMonth}/${subscriptionYear}`,
           quantity: 1,
           unit_price: amount,
           currency_id: 'ARS'

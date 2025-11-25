@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (typeof swingTrading !== 'number' || swingTrading < 0) {
         return res.status(400).json({
           success: false,
-          error: 'Precio de Swing Trading inválido'
+          error: 'Precio de Zero 2 Trader inválido'
         });
       }
 

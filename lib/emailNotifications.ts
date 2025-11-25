@@ -99,7 +99,7 @@ export async function sendMonthlyTrainingConfirmationEmail(params: {
     ];
     const monthName = monthNames[subscriptionMonth - 1];
 
-    const trainingDisplayName = trainingType === 'SwingTrading' ? 'Swing Trading' : trainingType;
+    const trainingDisplayName = trainingType === 'SwingTrading' ? 'Zero 2 Trader' : trainingType;
 
     // Crear HTML del email
     const html = `
@@ -807,7 +807,7 @@ export async function sendPaymentSuccessEmail(
       'TraderCall': 'TraderCall Premium',
       'SmartMoney': 'SmartMoney Alerts',
       'CashFlow': 'CashFlow Analysis',
-      'SwingTrading': 'Entrenamiento Swing Trading',
+      'SwingTrading': 'Entrenamiento Zero 2 Trader',
       'DowJones': 'Entrenamiento Dow Jones',
       'ConsultorioFinanciero': 'Consultoría Financiera'
     };
@@ -947,7 +947,7 @@ export async function sendPaymentFailedEmail(
       'TraderCall': 'TraderCall Premium',
       'SmartMoney': 'SmartMoney Alerts',
       'CashFlow': 'CashFlow Analysis',
-      'SwingTrading': 'Entrenamiento Swing Trading',
+      'SwingTrading': 'Entrenamiento Zero 2 Trader',
       'DowJones': 'Entrenamiento Dow Jones',
       'ConsultorioFinanciero': 'Consultoría Financiera'
     };

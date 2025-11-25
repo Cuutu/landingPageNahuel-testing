@@ -217,7 +217,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, adminEmail:
       for (const cls of newTraining.classes as any[]) {
         const startDate: Date = cls.date;
         const durationMinutes = 120; // Duración estándar
-        const trainingName = newTraining.title || 'Entrenamiento Swing Trading';
+        const trainingName = newTraining.title || 'Entrenamiento Zero 2 Trader';
 
         const meet = await createTrainingEvent(
           adminEmail,
@@ -322,7 +322,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, adminEmail: 
           if (!processed.googleEventId) {
             const meet = await createTrainingEvent(
               adminEmail,
-              training.title || 'Entrenamiento Swing Trading',
+              training.title || 'Entrenamiento Zero 2 Trader',
               processed.date,
               120
             );

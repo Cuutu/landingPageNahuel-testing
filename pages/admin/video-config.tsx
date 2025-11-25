@@ -323,8 +323,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     // Videos específicos de entrenamientos
     {
       id: 'trainingVideos.swingTrading.heroVideo',
-      name: 'Swing Trading - Video Hero',
-      description: 'Video principal de la página Swing Trading',
+      name: 'Zero 2 Trader - Video Hero',
+      description: 'Video principal de la página Zero 2 Trader',
       icon: <TrendingUp size={20} />,
       color: '#dc2626',
       category: 'trainings',
@@ -332,8 +332,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     },
     {
       id: 'trainingVideos.swingTrading.promoVideo',
-      name: 'Swing Trading - Video Promocional',
-      description: 'Video promocional adicional de Swing Trading',
+      name: 'Zero 2 Trader - Video Promocional',
+      description: 'Video promocional adicional de Zero 2 Trader',
       icon: <Star size={20} />,
       color: '#dc2626',
       category: 'trainings',

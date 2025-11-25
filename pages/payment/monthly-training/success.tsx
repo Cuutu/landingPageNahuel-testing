@@ -120,7 +120,7 @@ export default function MonthlyTrainingPaymentSuccess() {
           <h2>Error</h2>
           <p>{error || 'Información del entrenamiento no disponible'}</p>
           <Link href="/entrenamientos/swing-trading" className={styles.backButton}>
-            Volver a Swing Trading
+            Volver a Zero 2 Trader
           </Link>
         </div>
       </div>

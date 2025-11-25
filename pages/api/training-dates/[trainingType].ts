@@ -112,7 +112,7 @@ async function handlePost(req: NextApiRequest, res: NextApiResponse, trainingTyp
 
     // Obtener configuración del entrenamiento (duración y nombre)
     const trainingDoc = await Training.findOne({ tipo: trainingType });
-    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Swing Trading' : 'Entrenamiento');
+    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Zero 2 Trader' : 'Entrenamiento');
     const durationMinutes = 120; // duración fija de la clase en minutos
 
     // Crear entidad en BD primero
@@ -220,7 +220,7 @@ async function handlePut(req: NextApiRequest, res: NextApiResponse, trainingType
 
     // Obtener training para duración/nombre
     const trainingDoc = await Training.findOne({ tipo: trainingType });
-    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Swing Trading' : 'Entrenamiento');
+    const trainingName = trainingDoc?.nombre || (trainingType === 'SwingTrading' ? 'Zero 2 Trader' : 'Entrenamiento');
     const durationMinutes = (trainingDoc?.duracion ? Number(trainingDoc.duracion) : 3) * 60;
 
     // Actualizar documento

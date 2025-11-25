@@ -970,7 +970,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                     />
                   </motion.a>
 
-                  <motion.a
+                  {/*<motion.a
                     href="https://balanz.com/"
                     target="_blank"
                     rel="noopener noreferrer"
@@ -987,7 +987,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       width={156} 
                       height={52}
                     />
-                  </motion.a>
+                  </motion.a>*/}
                 </div>
               </div>
             </motion.div>
@@ -1613,7 +1613,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           {
             _id: '1',
             tipo: 'SwingTrading',
-            nombre: 'Swing Trading',
+            nombre: 'Zero 2 Trader',
             descripcion: 'Aprende los fundamentos del trading y análisis técnico',
             precio: 299,
             duracion: 8,

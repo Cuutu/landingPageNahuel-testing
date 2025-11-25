@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'TraderCall': 'Trader Call',
       'SmartMoney': 'Smart Money',
       'CashFlow': 'Cash Flow',
-      'SwingTrading': 'Swing Trading',
+      'SwingTrading': 'Zero 2 Trader',
       'DowJones': 'Dow Jones'
     };
 

@@ -77,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const monthlyTrainings = await MonthlyTraining.find({
       month: parseInt(month),
       year: parseInt(year),
-      type: 'swing-trading' // Solo Swing Trading por ahora
+      type: 'swing-trading' // Solo Zero 2 Trader por ahora
     }).lean();
 
     // Extraer links de Meet de las clases de cada entrenamiento mensual
@@ -192,7 +192,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
  */
 function getTrainingDisplayName(trainingType: string): string {
   const names: { [key: string]: string } = {
-    'SwingTrading': 'Swing Trading',
+    'SwingTrading': 'Zero 2 Trader',
     'DayTrading': 'Day Trading',
     'DowJones': 'Dow Jones'
   };

@@ -426,7 +426,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       try {
         if (!payment.metadata) payment.metadata = {} as any;
         if (!payment.metadata.trainingEnrollmentNotificationSent) {
-          const trainingName = service === 'SwingTrading' ? 'Swing Trading' : service;
+          const trainingName = service === 'SwingTrading' ? 'Zero 2 Trader' : service;
           await createTrainingEnrollmentNotification(user.email, user.name || user.email, service, trainingName, amount);
           payment.metadata.trainingEnrollmentNotificationSent = true;
           await payment.save();

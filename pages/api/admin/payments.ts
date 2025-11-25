@@ -60,7 +60,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (service === 'ConsultorioFinanciero') return 'consulta financiera';
 
       // Entrenamientos
-      if (service === 'SwingTrading') return 'entrenamiento swing trading';
+      if (service === 'SwingTrading') return 'entrenamiento zero 2 trader';
 
       // Alertas: TraderCall / SmartMoney
       if (service === 'TraderCall' || service === 'SmartMoney') {

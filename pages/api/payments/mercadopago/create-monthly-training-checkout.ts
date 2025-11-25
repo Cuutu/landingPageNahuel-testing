@@ -71,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         {
           id: `monthly-training-${training._id}`,
           title: `${training.title} - Entrenamiento Mensual`,
-          description: `Swing Trading - ${training.monthName} ${training.year}`,
+          description: `Zero 2 Trader - ${training.monthName} ${training.year}`,
           quantity: 1,
           unit_price: training.price,
           currency_id: 'ARS'

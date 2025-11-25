@@ -218,7 +218,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
           </div>
         </section>
 
-        {/* Swing Trading Section - Nuevo diseño basado en la imagen */}
+        {/* Zero 2 Trader Section - Nuevo diseño basado en la imagen */}
         <section className={styles.swingTradingSection}>
           <div className={styles.container}>
             <motion.div 
@@ -335,7 +335,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                 Únete a nuestra comunidad y comienza a construir tu libertad financiera
               </p>
               <Link href="/entrenamientos/swing-trading" className={styles.ctaButton}>
-                Swing Trading <ArrowRight size={20} />
+                Zero 2 Trader <ArrowRight size={20} />
               </Link>
             </motion.div>
           </div>
@@ -396,11 +396,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       loop: false
     };
 
-    // Obtener la configuración del video de Swing Trading
+    // Obtener la configuración del video de Zero 2 Trader
     const swingTradingVideoConfig = siteConfig?.trainingVideos?.swingTrading?.heroVideo || {
       youtubeId: 'dQw4w9WgXcQ',
-      title: 'Swing Trading - Video Promocional',
-      description: 'Descubre el programa completo de Swing Trading',
+      title: 'Zero 2 Trader - Video Promocional',
+      description: 'Descubre el programa completo de Zero 2 Trader',
       autoplay: false,
       muted: true,
       loop: false
@@ -471,8 +471,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     const swingTradingVideoConfig = {
       youtubeId: 'dQw4w9WgXcQ',
-      title: 'Swing Trading - Video Promocional',
-      description: 'Descubre el programa completo de Swing Trading',
+      title: 'Zero 2 Trader - Video Promocional',
+      description: 'Descubre el programa completo de Zero 2 Trader',
       autoplay: false,
       muted: true,
       loop: false

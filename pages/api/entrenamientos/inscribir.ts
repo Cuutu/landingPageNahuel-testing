@@ -128,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // ✅ NUEVO: Crear notificaciones de inscripción
     try {
-      const trainingName = datosValidados.tipo === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones Advanced';
+      const trainingName = datosValidados.tipo === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones Advanced';
       
       await createTrainingEnrollmentNotification(
         usuario.email,

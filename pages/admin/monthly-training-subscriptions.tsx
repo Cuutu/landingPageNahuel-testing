@@ -156,7 +156,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
 
   const getTrainingDisplayName = (type: string) => {
     const names: { [key: string]: string } = {
-      'SwingTrading': 'Swing Trading',
+      'SwingTrading': 'Zero 2 Trader',
       'DayTrading': 'Day Trading',
       'DowJones': 'Dow Jones'
     };
@@ -346,7 +346,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
                       }}
                     >
                       <option value="all" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>🎯 Todos</option>
-                      <option value="SwingTrading" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>📈 Swing Trading</option>
+                      <option value="SwingTrading" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>📈 Zero 2 Trader</option>
                       <option value="DayTrading" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>⚡ Day Trading</option>
                       <option value="DowJones" style={{ background: '#1a2e05', color: '#e8f5e8', padding: '8px' }}>📊 Dow Jones</option>
                     </select>

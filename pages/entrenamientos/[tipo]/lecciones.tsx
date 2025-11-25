@@ -471,7 +471,7 @@ const LeccionesViewer: React.FC<LeccionesViewerProps> = ({
     <>
       <Head>
         <title>
-          {currentLesson?.titulo} - {tipoEntrenamiento === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones'}
+          {currentLesson?.titulo} - {tipoEntrenamiento === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones'}
         </title>
         <meta name="description" content={currentLesson?.descripcion} />
       </Head>
@@ -483,7 +483,7 @@ const LeccionesViewer: React.FC<LeccionesViewerProps> = ({
         <div className={`${styles.sidebar} ${showSidebar ? styles.sidebarOpen : styles.sidebarClosed}`}>
           <div className={styles.sidebarHeader}>
             <h3>
-              {tipoEntrenamiento === 'SwingTrading' ? 'Swing Trading' : 'Dow Jones'}
+              {tipoEntrenamiento === 'SwingTrading' ? 'Zero 2 Trader' : 'Dow Jones'}
             </h3>
             <button 
               onClick={() => setShowSidebar(!showSidebar)}

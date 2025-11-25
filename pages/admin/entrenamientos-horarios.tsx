@@ -51,7 +51,7 @@ const DAYS_OF_WEEK = [
 ];
 
 const TRAINING_TYPES = {
-  SwingTrading: 'Swing Trading',
+  SwingTrading: 'Zero 2 Trader',
   DowJones: 'Dow Jones Advanced'
 };
 
@@ -352,7 +352,7 @@ export default function EntrenamientosHorariosPage() {
                     })}
                     required
                   >
-                    <option value="SwingTrading">Swing Trading</option>
+                    <option value="SwingTrading">Zero 2 Trader</option>
                     <option value="DowJones">Dow Jones Advanced</option>
                   </select>
                 </div>

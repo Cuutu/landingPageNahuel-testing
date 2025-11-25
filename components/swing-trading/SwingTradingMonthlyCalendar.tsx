@@ -213,8 +213,8 @@ export default function SwingTradingCalendar({ selectedMonth, selectedYear }: Sw
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.headerContent}>
-          <h2>Swing Trading - Entrenamientos Mensuales</h2>
-          <p>Inscríbete a nuestros entrenamientos mensuales de Swing Trading</p>
+          <h2>Zero 2 Trader - Entrenamientos Mensuales</h2>
+          <p>Inscríbete a nuestros entrenamientos mensuales de Zero 2 Trader</p>
         </div>
         
         <div className={styles.monthNavigation}>
@@ -341,7 +341,7 @@ export default function SwingTradingCalendar({ selectedMonth, selectedYear }: Sw
         <div className={styles.infoCard}>
           <h3>¿Cómo funcionan los entrenamientos mensuales?</h3>
           <ul>
-            <li>Cada mes ofrecemos un entrenamiento completo de Swing Trading</li>
+            <li>Cada mes ofrecemos un entrenamiento completo de Zero 2 Trader</li>
             <li>Incluye múltiples clases en vivo durante el mes</li>
             <li>Máximo 10 participantes por entrenamiento para atención personalizada</li>
             <li>Material de apoyo y seguimiento personalizado</li>

@@ -58,10 +58,10 @@ export const useSwingTradingData = () => {
             setRoadmapError('Este roadmap aún no tiene módulos creados. Contacta al administrador.');
           }
         } else {
-          setRoadmapError('No se encontró un roadmap activo para Swing Trading');
+          setRoadmapError('No se encontró un roadmap activo para Zero 2 Trader');
         }
       } else {
-        setRoadmapError('No se encontraron roadmaps para Swing Trading');
+          setRoadmapError('No se encontraron roadmaps para Zero 2 Trader');
       }
     } catch (error) {
       console.error('Error al cargar roadmaps:', error);

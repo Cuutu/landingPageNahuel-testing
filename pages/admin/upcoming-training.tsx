@@ -121,14 +121,14 @@ export default function UpcomingTrainingPage() {
   return (
     <>
       <Head>
-        <title>Próximas Sesiones - Swing Trading | Admin</title>
+        <title>Próximas Sesiones - Zero 2 Trader | Admin</title>
       </Head>
       <Navbar />
       <main className={styles.container}>
         <div className={styles.header}>
           <div className={styles.headerContent}>
             <div className={styles.headerText}>
-              <h1 className={styles.title}><Calendar /> Próximas Sesiones - Swing Trading</h1>
+              <h1 className={styles.title}><Calendar /> Próximas Sesiones - Zero 2 Trader</h1>
               <p className={styles.subtitle}>Listado de personas agendadas al próximo entrenamiento</p>
             </div>
             <div className={styles.actions}>

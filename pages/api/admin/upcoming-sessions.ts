@@ -83,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       switch (booking.serviceType) {
         case 'ConsultorioFinanciero': serviceName = 'Consultorio Financiero'; break;
         case 'CuentaAsesorada': serviceName = 'Cuenta Asesorada'; break;
-        case 'SwingTrading': serviceName = 'Swing Trading'; break;
+        case 'SwingTrading': serviceName = 'Zero 2 Trader'; break;
         case 'AdvancedStrategies': serviceName = 'Estrategias Avanzadas'; break;
         case 'DowJones': serviceName = 'Dow Jones - Estrategias Avanzadas'; break;
         default: serviceName = booking.serviceType || 'Servicio';

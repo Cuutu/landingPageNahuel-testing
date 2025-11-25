@@ -267,9 +267,9 @@ export default function AdminPricing({ session }: AdminPricingProps) {
               </div>
               
               <div className={styles.pricingGrid}>
-                {/* Swing Trading */}
+                {/* Zero 2 Trader */}
                 <div className={styles.pricingCard}>
-                  <h3>Swing Trading</h3>
+                  <h3>Zero 2 Trader</h3>
                   <div className={styles.priceInputs}>
                     <div className={styles.priceInput}>
                       <label>Precio</label>

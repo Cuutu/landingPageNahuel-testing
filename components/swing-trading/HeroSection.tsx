@@ -69,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         >
           <div className={styles.heroText}>
             <h1 className={styles.heroTitle}>
-              Swing Trading
+              Zero 2 Trader
             </h1>
             <p className={styles.heroDescription}>
               {training.descripcion}
@@ -115,7 +115,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
               {heroVideo && heroVideo.youtubeId ? (
                 <YouTubePlayer
                   videoId={heroVideo.youtubeId}
-                  title={heroVideo.title || 'Swing Trading - Video Promocional'}
+                  title={heroVideo.title || 'Zero 2 Trader - Video Promocional'}
                   autoplay={heroVideo.autoplay || false}
                   muted={heroVideo.muted || true}
                   loop={heroVideo.loop || false}
@@ -124,7 +124,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
               ) : (
                 <YouTubePlayer
                   videoId="dQw4w9WgXcQ"
-                  title="Swing Trading - Video Promocional"
+                  title="Zero 2 Trader - Video Promocional"
                   autoplay={false}
                   muted={true}
                   loop={false}

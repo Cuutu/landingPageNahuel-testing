@@ -102,12 +102,12 @@ const useDashboardSections = () => {
     {
       id: 'roadmaps',
       title: 'Gestión de Roadmaps',
-      description: 'Crea y gestiona los roadmaps de aprendizaje para Swing Trading, Day Trading y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado.',
+      description: 'Crea y gestiona los roadmaps de aprendizaje para Zero 2 Trader, Day Trading y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado.',
       icon: <Map size={32} />,
       color: 'from-cyan-500 to-blue-500',
       links: [
         { label: 'Gestionar Roadmaps', href: '#roadmaps-modal', icon: <Map size={16} /> },
-        { label: 'Swing Trading', href: '#roadmaps-modal', icon: <TrendingUp size={16} /> },
+        { label: 'Zero 2 Trader', href: '#roadmaps-modal', icon: <TrendingUp size={16} /> },
         { label: 'Day Trading', href: '#roadmaps-modal', icon: <Target size={16} /> }
       ]
     },
@@ -128,12 +128,12 @@ const useDashboardSections = () => {
     {
       id: 'lecciones',
       title: 'Gestión de Lecciones',
-      description: 'Crea, edita y administra las lecciones de los entrenamientos SwingTrading y DayTrading. Sistema completo de contenido educativo con soporte para videos, PDFs, imágenes y más.',
+      description: 'Crea, edita y administra las lecciones de los entrenamientos Zero 2 Trader y DayTrading. Sistema completo de contenido educativo con soporte para videos, PDFs, imágenes y más.',
       icon: <BookOpen size={32} />,
       color: 'from-red-500 to-rose-500',
       links: [
         { label: 'Gestionar Lecciones', href: '/admin/lecciones', icon: <BookOpen size={16} /> },
-        { label: 'Swing Trading', href: '/admin/lecciones?tipo=SwingTrading', icon: <FileText size={16} /> },
+        { label: 'Zero 2 Trader', href: '/admin/lecciones?tipo=SwingTrading', icon: <FileText size={16} /> },
         { label: 'Day Trading', href: '/admin/lecciones?tipo=DayTrading', icon: <TrendingUp size={16} /> }
       ]
     },
@@ -1080,7 +1080,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                   className={styles.filterSelect}
                 >
                   <option value="all">Todos los tipos</option>
-                  <option value="SwingTrading">Swing Trading</option>
+                  <option value="SwingTrading">Zero 2 Trader</option>
                   <option value="DayTrading">Day Trading</option>
                 </select>
                 <button
@@ -1268,7 +1268,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                       }))}
                       className={formErrors.tipoEntrenamiento ? styles.fieldError : ''}
                     >
-                      <option value="SwingTrading">Swing Trading</option>
+                      <option value="SwingTrading">Zero 2 Trader</option>
                       <option value="DayTrading">Day Trading</option>
                     </select>
                   </div>

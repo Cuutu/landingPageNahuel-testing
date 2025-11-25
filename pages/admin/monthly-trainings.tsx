@@ -253,7 +253,7 @@ export default function MonthlyTrainingsAdmin() {
 
         <div className={styles.header}>
           <div className={styles.headerLeft}>
-            <h1>Entrenamientos Mensuales de Swing Trading</h1>
+            <h1>Entrenamientos Mensuales de Zero 2 Trader</h1>
             <p>Gestiona entrenamientos por mes con múltiples clases</p>
           </div>
           
@@ -403,7 +403,7 @@ export default function MonthlyTrainingsAdmin() {
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Ej: Swing Trading - Noviembre 2024"
+                      placeholder="Ej: Zero 2 Trader - Noviembre 2024"
                       required
                     />
                   </div>

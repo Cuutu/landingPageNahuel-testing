@@ -30,7 +30,7 @@ const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     <div className={styles.modalOverlay}>
       <div className={styles.modalContainer}>
         <div className={styles.modalHeader}>
-          <h3>Inscripción a Swing Trading</h3>
+          <h3>Inscripción a Zero 2 Trader</h3>
           <button 
             onClick={onClose}
             className={styles.closeButton}

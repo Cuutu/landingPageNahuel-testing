@@ -173,7 +173,7 @@ export default function StudentTrainingDashboard() {
       <div className={styles.header}>
         <div className={styles.headerContent}>
           <h1>Mis Entrenamientos</h1>
-          <p>Gestiona y accede a todos tus entrenamientos de Swing Trading</p>
+          <p>Gestiona y accede a todos tus entrenamientos de Zero 2 Trader</p>
         </div>
         
         {trainings.length > 0 && (

@@ -31,8 +31,8 @@ interface EnrolledStudent {
 
 interface MonthlyTrainingDocument extends Document {
   // Información básica del entrenamiento
-  type: 'swing-trading'; // Solo para Swing Trading por ahora
-  title: string; // Ej: "Swing Trading - Noviembre 2024"
+  type: 'swing-trading'; // Solo para Zero 2 Trader por ahora
+  title: string; // Ej: "Zero 2 Trader - Noviembre 2024"
   description: string;
   
   // Fecha del entrenamiento (mes y año)

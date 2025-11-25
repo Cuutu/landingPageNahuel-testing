@@ -483,9 +483,9 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
                 <p>Configura las fechas de inicio y countdown para cada entrenamiento</p>
               </div>
 
-              {/* Swing Trading */}
+              {/* Zero 2 Trader */}
               <div className={styles.trainingDateGroup}>
-                <h3>🎯 Swing Trading</h3>
+                <h3>🎯 Zero 2 Trader</h3>
                 <div className={styles.trainingDateForm}>
                   <div className={styles.formGroup}>
                     <label>
@@ -572,9 +572,9 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
                 <p>Configura los precios en pesos argentinos para cada entrenamiento</p>
               </div>
 
-              {/* Swing Trading */}
+              {/* Zero 2 Trader */}
               <div className={styles.trainingPriceGroup}>
-                <h3>🎯 Swing Trading</h3>
+                <h3>🎯 Zero 2 Trader</h3>
                 <div className={styles.trainingPriceForm}>
                   <div className={styles.formGroup}>
                     <label>Precio (ARS)</label>
