@@ -371,15 +371,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               if (adminUser) {
                 const LiquidityModule = await import('@/models/Liquidity');
                 const Liquidity = LiquidityModule.default;
-                const liquidity = await Liquidity.findOne({ 
+                
+                // ✅ CORREGIDO: Buscar liquidez con fallback (igual que en /api/liquidity/sell.ts)
+                let liquidity = await Liquidity.findOne({ 
                   createdBy: adminUser._id, 
                   pool: pool 
                 });
                 
+                if (!liquidity) {
+                  console.warn(`[CRON] No se encontró liquidez para el admin en ${pool}. Intentando fallback por pool+alertId...`);
+                  liquidity = await Liquidity.findOne({ 
+                    pool: pool, 
+                    'distributions.alertId': alert._id.toString() 
+                  });
+                }
+                
                 if (liquidity) {
-                  const distribution = liquidity.distributions.find((d: any) => 
+                  let distribution = liquidity.distributions.find((d: any) => 
                     d.alertId && d.alertId.toString() === alert._id.toString()
                   );
+                  
+                  // ✅ CORREGIDO: Si no se encuentra en la primera búsqueda, buscar en todo el pool
+                  if (!distribution) {
+                    console.warn(`[CRON] No se encontró distribución en la liquidez seleccionada. Intentando localizar por alertId en el pool...`);
+                    const liquidityWithDist = await Liquidity.findOne({ 
+                      pool: pool, 
+                      'distributions.alertId': alert._id.toString() 
+                    });
+                    if (liquidityWithDist) {
+                      liquidity = liquidityWithDist;
+                      distribution = liquidityWithDist.distributions.find((d: any) => 
+                        d.alertId && d.alertId.toString() === alert._id.toString()
+                      );
+                    }
+                  }
                   
                   if (distribution && distribution.shares > 0) {
                     const sharesToSell = distribution.shares;
@@ -485,15 +510,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                     updateFields.sellPrice = closePrice;
                   } else {
                     console.log(`⚠️ ${alert.symbol}: No se encontró distribución de liquidez para ejecutar venta automática`);
+                    // ✅ NUEVO: Aunque no haya distribución, cerrar la alerta si el precio está en el rango de venta
+                    console.log(`🔄 ${alert.symbol}: Cerrando alerta sin liquidez (precio en rango de venta)`);
+                    const closedFields = await closeAlertWithoutLiquidity(alert, closePrice, sellRangeMin, sellRangeMax, pool, adminUser);
+                    // Actualizar updateFields para que el Alert.updateOne final también incluya estos campos
+                    Object.assign(updateFields, closedFields);
                   }
                 } else {
                   console.log(`⚠️ ${alert.symbol}: No se encontró liquidez para el pool ${pool}`);
+                  // ✅ NUEVO: Aunque no haya liquidez, cerrar la alerta si el precio está en el rango de venta
+                  console.log(`🔄 ${alert.symbol}: Cerrando alerta sin liquidez (precio en rango de venta)`);
+                  const closedFields = await closeAlertWithoutLiquidity(alert, closePrice, sellRangeMin, sellRangeMax, pool, adminUser);
+                  // Actualizar updateFields para que el Alert.updateOne final también incluya estos campos
+                  Object.assign(updateFields, closedFields);
                 }
               } else {
                 console.log(`⚠️ ${alert.symbol}: No se encontró usuario admin`);
+                // ✅ NUEVO: Aunque no haya admin, cerrar la alerta si el precio está en el rango de venta
+                console.log(`🔄 ${alert.symbol}: Cerrando alerta sin admin (precio en rango de venta)`);
+                const closedFields = await closeAlertWithoutLiquidity(alert, closePrice, sellRangeMin, sellRangeMax, pool, null);
+                // Actualizar updateFields para que el Alert.updateOne final también incluya estos campos
+                Object.assign(updateFields, closedFields);
               }
             } catch (autoSaleError) {
               console.error(`❌ Error ejecutando venta automática para ${alert.symbol}:`, autoSaleError);
+              // ✅ NUEVO: En caso de error, intentar cerrar la alerta de todas formas
+              try {
+                const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+                const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+                const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+                const closedFields = await closeAlertWithoutLiquidity(alert, closePrice, sellRangeMin, sellRangeMax, pool, adminUser);
+                // Actualizar updateFields para que el Alert.updateOne final también incluya estos campos
+                Object.assign(updateFields, closedFields);
+              } catch (fallbackError) {
+                console.error(`❌ Error en fallback de cierre para ${alert.symbol}:`, fallbackError);
+              }
             }
             
             // Limpiar el rango después de procesar
@@ -585,6 +636,125 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       message: 'OK',
       processed: 0
     });
+  }
+}
+
+/**
+ * ✅ NUEVO: Cierra una alerta cuando el precio está en el rango de venta pero no hay liquidez
+ */
+async function closeAlertWithoutLiquidity(
+  alert: any, 
+  closePrice: number, 
+  sellRangeMin: number, 
+  sellRangeMax: number,
+  pool: string,
+  adminUser: any
+) {
+  try {
+    const entryPrice = alert.entryPrice || closePrice;
+    
+    // Calcular profit porcentual
+    const profitPercentage = entryPrice > 0 
+      ? ((closePrice - entryPrice) / entryPrice) * 100 
+      : 0;
+    
+    // Cerrar la alerta
+    const updateFields: any = {
+      status: 'CLOSED',
+      exitPrice: closePrice,
+      exitDate: new Date(),
+      exitReason: 'AUTOMATIC',
+      participationPercentage: 0,
+      profit: profitPercentage,
+      sellPrice: closePrice
+    };
+    
+    await Alert.updateOne(
+      { _id: alert._id },
+      { $set: updateFields }
+    );
+    
+    console.log(`🔒 ${alert.symbol}: Alerta cerrada automáticamente (sin liquidez) - Profit: ${profitPercentage.toFixed(2)}%`);
+    
+    // Registrar operación de venta aunque no haya liquidez
+    if (adminUser) {
+      try {
+        const OperationModule = await import('@/models/Operation');
+        const Operation = OperationModule.default;
+        
+        // Obtener balance actual
+        const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+          .sort({ date: -1 })
+          .select('balance');
+        const currentBalance = currentBalanceDoc?.balance || 0;
+        
+        // Estimar cantidad vendida (usar un valor estimado si no hay liquidez)
+        // Buscar operación de compra previa para esta alerta
+        const buyOperation = await Operation.findOne({ 
+          alertId: alert._id, 
+          operationType: 'COMPRA',
+          system: pool
+        }).sort({ date: -1 });
+        
+        const estimatedShares = buyOperation?.quantity || 100; // Valor por defecto
+        const estimatedAmount = estimatedShares * closePrice;
+        const newBalance = currentBalance + estimatedAmount;
+        
+        const operation = new Operation({
+          ticker: alert.symbol.toUpperCase(),
+          operationType: 'VENTA',
+          quantity: -Math.abs(estimatedShares),
+          price: closePrice,
+          amount: estimatedAmount,
+          date: new Date(),
+          balance: newBalance,
+          alertId: alert._id,
+          alertSymbol: alert.symbol.toUpperCase(),
+          system: pool,
+          createdBy: adminUser._id,
+          isPartialSale: false,
+          liquidityData: {
+            allocatedAmount: 0,
+            shares: 0,
+            entryPrice: entryPrice,
+            realizedProfit: (closePrice - entryPrice) * Math.abs(estimatedShares)
+          },
+          executedBy: 'SYSTEM',
+          executionMethod: 'AUTOMATIC',
+          notes: `Venta automática ejecutada al convertir rango de venta (sin liquidez registrada) - ${alert.symbol} - Precio alcanzó rango $${sellRangeMin}-$${sellRangeMax}`
+        });
+        
+        await operation.save();
+        console.log(`✅ ${alert.symbol}: Operación de venta automática registrada (sin liquidez) - ${estimatedShares} acciones estimadas por $${closePrice}`);
+      } catch (operationError) {
+        console.error(`⚠️ Error registrando operación de venta automática (sin liquidez) para ${alert.symbol}:`, operationError);
+      }
+      
+      // Enviar notificación de venta ejecutada
+      try {
+        const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+        const emailMessage = `✅ VENTA AUTOMÁTICA EJECUTADA: Se cerró completamente la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. ` +
+          `La venta se ejecutó automáticamente cuando el precio alcanzó el rango de $${sellRangeMin} a $${sellRangeMax}. ` +
+          `Profit: ${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(2)}%`;
+        
+        await notifyAlertSubscribers(alert, {
+          message: emailMessage,
+          title: `✅ Venta Automática - ${alert.symbol}`,
+          action: 'SELL',
+          price: closePrice,
+          soldPercentage: 100
+        });
+        
+        console.log(`✅ Email de confirmación de venta automática enviado para ${alert.symbol}`);
+      } catch (emailError) {
+        console.error(`⚠️ Error enviando email de confirmación de venta automática para ${alert.symbol}:`, emailError);
+      }
+    }
+    
+    return updateFields;
+  } catch (error) {
+    console.error(`❌ Error cerrando alerta sin liquidez para ${alert.symbol}:`, error);
+    throw error;
   }
 }
 
