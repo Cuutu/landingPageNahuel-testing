@@ -360,7 +360,143 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
           } else {
             console.log(`⚠️ ${alert.symbol}: No se encontró venta programada pendiente para este rango`);
-            // Limpiar el rango aunque no haya venta programada
+            console.log(`🔄 ${alert.symbol}: Ejecutando venta automática completa (cerrar posición)`);
+            
+            // ✅ NUEVO: Si no hay venta programada pero el precio está en el rango, ejecutar venta completa automática
+            try {
+              const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+              const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+              const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+              
+              if (adminUser) {
+                const LiquidityModule = await import('@/models/Liquidity');
+                const Liquidity = LiquidityModule.default;
+                const liquidity = await Liquidity.findOne({ 
+                  createdBy: adminUser._id, 
+                  pool: pool 
+                });
+                
+                if (liquidity) {
+                  const distribution = liquidity.distributions.find((d: any) => 
+                    d.alertId && d.alertId.toString() === alert._id.toString()
+                  );
+                  
+                  if (distribution && distribution.shares > 0) {
+                    const sharesToSell = distribution.shares;
+                    const entryPrice = distribution.entryPrice || alert.entryPrice || closePrice;
+                    const { realized, returnedCash, remainingShares } = liquidity.sellShares(
+                      alert._id.toString(), 
+                      sharesToSell, 
+                      closePrice
+                    );
+                    
+                    // Remover la distribución ya que se vendió todo
+                    if (remainingShares <= 0) {
+                      liquidity.removeDistribution(alert._id.toString());
+                      console.log(`🗑️ ${alert.symbol}: Distribución removida - posición cerrada completamente`);
+                    }
+                    
+                    await liquidity.save();
+                    console.log(`✅ ${alert.symbol}: Sistema de liquidez actualizado - +$${returnedCash.toFixed(2)} liberados`);
+                    
+                    // Cerrar la alerta completamente
+                    alert.status = 'CLOSED';
+                    alert.exitPrice = closePrice;
+                    alert.exitDate = new Date();
+                    alert.exitReason = 'AUTOMATIC';
+                    alert.participationPercentage = 0;
+                    
+                    // Calcular profit porcentual
+                    const profitPercentage = entryPrice > 0 
+                      ? ((closePrice - entryPrice) / entryPrice) * 100 
+                      : 0;
+                    alert.profit = profitPercentage;
+                    
+                    console.log(`🔒 ${alert.symbol}: Alerta cerrada automáticamente - Profit: ${profitPercentage.toFixed(2)}%`);
+                    
+                    // Registrar operación de venta
+                    try {
+                      const OperationModule = await import('@/models/Operation');
+                      const Operation = OperationModule.default;
+                      
+                      const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+                        .sort({ date: -1 })
+                        .select('balance');
+                      const currentBalance = currentBalanceDoc?.balance || 0;
+                      const newBalance = currentBalance + returnedCash;
+                      
+                      const operation = new Operation({
+                        ticker: alert.symbol.toUpperCase(),
+                        operationType: 'VENTA',
+                        quantity: -sharesToSell,
+                        price: closePrice,
+                        amount: returnedCash,
+                        date: new Date(),
+                        balance: newBalance,
+                        alertId: alert._id,
+                        alertSymbol: alert.symbol.toUpperCase(),
+                        system: pool,
+                        createdBy: adminUser._id,
+                        isPartialSale: false,
+                        liquidityData: {
+                          allocatedAmount: 0, // Se vendió todo
+                          shares: 0,
+                          entryPrice: entryPrice,
+                          realizedProfit: realized
+                        },
+                        executedBy: 'SYSTEM',
+                        executionMethod: 'AUTOMATIC',
+                        notes: `Venta automática ejecutada al convertir rango de venta - ${alert.symbol} - Precio alcanzó rango $${sellRangeMin}-$${sellRangeMax}`
+                      });
+                      
+                      await operation.save();
+                      console.log(`✅ ${alert.symbol}: Operación de venta automática registrada - ${sharesToSell} acciones por $${closePrice}`);
+                    } catch (operationError) {
+                      console.error(`⚠️ Error registrando operación de venta automática para ${alert.symbol}:`, operationError);
+                    }
+                    
+                    // Enviar notificación de venta ejecutada
+                    try {
+                      const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
+                      const emailMessage = `✅ VENTA AUTOMÁTICA EJECUTADA: Se cerró completamente la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. ` +
+                        `La venta se ejecutó automáticamente cuando el precio alcanzó el rango de $${sellRangeMin} a $${sellRangeMax}. ` +
+                        `Profit: ${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(2)}%`;
+                      
+                      await notifyAlertSubscribers(alert, {
+                        message: emailMessage,
+                        title: `✅ Venta Automática - ${alert.symbol}`,
+                        action: 'SELL',
+                        price: closePrice,
+                        soldPercentage: 100
+                      });
+                      
+                      console.log(`✅ Email de confirmación de venta automática enviado para ${alert.symbol}`);
+                    } catch (emailError) {
+                      console.error(`⚠️ Error enviando email de confirmación de venta automática para ${alert.symbol}:`, emailError);
+                    }
+                    
+                    // Actualizar campos de la alerta
+                    updateFields.status = 'CLOSED';
+                    updateFields.exitPrice = closePrice;
+                    updateFields.exitDate = new Date();
+                    updateFields.exitReason = 'AUTOMATIC';
+                    updateFields.participationPercentage = 0;
+                    updateFields.profit = profitPercentage;
+                    updateFields.sellPrice = closePrice;
+                  } else {
+                    console.log(`⚠️ ${alert.symbol}: No se encontró distribución de liquidez para ejecutar venta automática`);
+                  }
+                } else {
+                  console.log(`⚠️ ${alert.symbol}: No se encontró liquidez para el pool ${pool}`);
+                }
+              } else {
+                console.log(`⚠️ ${alert.symbol}: No se encontró usuario admin`);
+              }
+            } catch (autoSaleError) {
+              console.error(`❌ Error ejecutando venta automática para ${alert.symbol}:`, autoSaleError);
+            }
+            
+            // Limpiar el rango después de procesar
             unsetFields.sellRangeMin = 1;
             unsetFields.sellRangeMax = 1;
           }
