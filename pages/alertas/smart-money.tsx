@@ -2377,9 +2377,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     const chartSegments = chartData.map((alert) => {
       // ✅ NUEVO: Usar valor actual (allocatedAmount + P&L) para calcular el tamaño del segmento
       const segmentBase = Math.abs(alert.currentValue || 0);
-      // ✅ CORREGIDO: Usar totalToDistribute para que la suma sea exacta
-      const size = totalToDistribute > 0 ? (segmentBase / totalToDistribute) * 100 : 0;
-      const angle = (segmentBase / (totalToDistribute || 1)) * 360;
+      // ✅ CORREGIDO: Calcular porcentaje basado en liquidez TOTAL actual (inicial + ganancias)
+      // Esto refleja el porcentaje real de la cartera considerando el P&L
+      // Ejemplo: Si asignas 5% de $1000 = $50, y sube 10% = $55, entonces el % es ($55 / $1005) * 100 = 5.47%
+      const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
+      const angle = (segmentBase / (totalBase || 1)) * 360;
       const startAngle = cumulativeAngle;
       const endAngle = startAngle + angle;
       cumulativeAngle = endAngle;
@@ -2416,7 +2418,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         currentValue: available, // ✅ NUEVO: Para consistencia
         color: '#9CA3AF',
         darkColor: '#9CA3AF80',
-        size: totalToDistribute > 0 ? (available / totalToDistribute) * 100 : (remainingAngle / 360) * 100,
+        // ✅ CORREGIDO: Calcular porcentaje de liquidez disponible basado en liquidez total actual
+        size: totalBase > 0 ? (available / totalBase) * 100 : (remainingAngle / 360) * 100,
         startAngle: liqStart,
         endAngle: liqEnd,
         centerAngle: (liqStart + liqEnd) / 2,
