@@ -892,6 +892,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                 <h2 className={styles.empresasTitle}>Empresas que confiaron en nosotros</h2>
                 
                 <div className={styles.empresasGrid}>
+                  {/*
                   <motion.a
                     href="https://www.inviu.com.ar/"
                     target="_blank"
@@ -910,6 +911,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       height={52}
                     />
                   </motion.a>
+                  */}
 
                   <motion.a
                     href="https://www.tradingview.com/"

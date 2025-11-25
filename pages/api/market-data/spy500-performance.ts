@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 
 /**
  * API endpoint para obtener rendimiento histórico del S&P 500 por períodos
- * GET /api/market-data/spy500-performance?period=1d|5d|1m|6m|1y
+ * GET /api/market-data/spy500-performance?period=1d|7d|15d|30d|6m|1y
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -10,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Declarar variables fuera del try para que estén disponibles en el catch
-  const { period = '1m' } = req.query;
+  const { period = '30d' } = req.query;
   const endDate = new Date();
   let startDate = new Date();
 
@@ -19,11 +19,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     case '1d':
       startDate.setDate(endDate.getDate() - 1);
       break;
-    case '5d':
-      startDate.setDate(endDate.getDate() - 5);
+    case '7d':
+      startDate.setDate(endDate.getDate() - 7);
       break;
-    case '1m':
-      startDate.setMonth(endDate.getMonth() - 1);
+    case '15d':
+      startDate.setDate(endDate.getDate() - 15);
+      break;
+    case '30d':
+      startDate.setDate(endDate.getDate() - 30);
       break;
     case '6m':
       startDate.setMonth(endDate.getMonth() - 6);
@@ -32,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       startDate.setFullYear(endDate.getFullYear() - 1);
       break;
     default:
-      return res.status(400).json({ error: 'Período no válido. Use: 1d, 5d, 1m, 6m, 1y' });
+      return res.status(400).json({ error: 'Período no válido. Use: 1d, 7d, 15d, 30d, 6m, 1y' });
   }
 
   try {
@@ -145,11 +148,15 @@ async function getRealSP500DataFromYahoo(period: string) {
         range = '5d'; // Pedir 5 días para tener suficientes datos
         interval = '1d';
         break;
-      case '5d':
+      case '7d':
         range = '1mo'; // Pedir 1 mes para tener suficientes datos
         interval = '1d';
         break;
-      case '1m':
+      case '15d':
+        range = '1mo'; // Pedir 1 mes para tener suficientes datos
+        interval = '1d';
+        break;
+      case '30d':
         range = '3mo'; // Pedir 3 meses para tener suficientes datos
         interval = '1d';
         break;
@@ -224,13 +231,17 @@ async function getRealSP500DataFromYahoo(period: string) {
         // Para 1D: restar 1 día hábil (puede ser 1-3 días calendario por fines de semana)
         targetStartDate.setDate(targetStartDate.getDate() - 1);
         break;
-      case '5d':
-        // Para 5D (1 semana): restar 7 días calendario (incluye fines de semana)
+      case '7d':
+        // Para 7D: restar 7 días calendario
         targetStartDate.setDate(targetStartDate.getDate() - 7);
         break;
-      case '1m':
-        // Para 1M: restar 1 mes
-        targetStartDate.setMonth(targetStartDate.getMonth() - 1);
+      case '15d':
+        // Para 15D: restar 15 días calendario
+        targetStartDate.setDate(targetStartDate.getDate() - 15);
+        break;
+      case '30d':
+        // Para 30D: restar 30 días calendario
+        targetStartDate.setDate(targetStartDate.getDate() - 30);
         break;
       case '6m':
         // Para 6M: restar 6 meses
@@ -394,11 +405,14 @@ async function getRealSP500Data(period: string) {
       case '1d':
         startDate.setDate(endDate.getDate() - 1);
         break;
-      case '5d':
-        startDate.setDate(endDate.getDate() - 5);
+      case '7d':
+        startDate.setDate(endDate.getDate() - 7);
         break;
-      case '1m':
-        startDate.setMonth(endDate.getMonth() - 1);
+      case '15d':
+        startDate.setDate(endDate.getDate() - 15);
+        break;
+      case '30d':
+        startDate.setDate(endDate.getDate() - 30);
         break;
       case '6m':
         startDate.setMonth(endDate.getMonth() - 6);
@@ -467,7 +481,7 @@ function generateDailyDataFromAlphaVantage(currentPrice: number, period: string)
     change: number;
     changePercent: number;
   }> = [];
-  const maxDays = period === '1d' ? 1 : period === '5d' ? 5 : period === '1m' ? 30 : period === '6m' ? 180 : 365;
+  const maxDays = period === '1d' ? 1 : period === '7d' ? 7 : period === '15d' ? 15 : period === '30d' ? 30 : period === '6m' ? 180 : 365;
   
   // Generar datos simulados pero realistas basados en el precio actual
   let basePrice = currentPrice;
@@ -516,8 +530,9 @@ async function generateHistoricalPerformance(startDate: Date, endDate: Date, per
       let startIndex = 0;
       const periodDays: { [key: string]: number } = {
         '1d': 1,
-        '5d': 5,
-        '1m': 30,
+        '7d': 7,
+        '15d': 15,
+        '30d': 30,
         '6m': 180,
         '1y': 365
       };

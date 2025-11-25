@@ -77,8 +77,9 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   const periodToDays = (period: string): number => {
     switch (period) {
       case '1d': return 1;
-      case '5d': return 5;
-      case '1m': return 30;
+      case '7d': return 7;
+      case '15d': return 15;
+      case '30d': return 30;
       case '6m': return 180;
       case '1y': return 365;
       default: return 30;
@@ -203,8 +204,9 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 function getMonthsFromPeriod(period: string): number {
   switch (period) {
     case '1d': return 1/30;
-    case '5d': return 5/30;
-    case '1m': return 1;
+    case '7d': return 7/30;
+    case '15d': return 15/30;
+    case '30d': return 1;
     case '6m': return 6;
     case '1y': return 12;
     default: return 1;
