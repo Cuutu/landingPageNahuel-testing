@@ -180,6 +180,13 @@ export default async function handler(
               .select('balance');
             const currentBalance = currentBalanceDoc?.balance || 0;
             const newBalance = currentBalance + returnedCash;
+            
+            // ✅ NUEVO: Buscar la operación de compra original para obtener el portfolioPercentage
+            const buyOperation = await Operation.findOne({ 
+              alertId: alertId, 
+              operationType: 'COMPRA',
+              system: pool
+            }).sort({ date: -1 });
 
             const operation = new Operation({
               ticker: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
@@ -194,6 +201,7 @@ export default async function handler(
               system: pool,
               createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
               isPartialSale: false,
+              portfolioPercentage: buyOperation?.portfolioPercentage, // ✅ NUEVO: Copiar el porcentaje de la compra original
               liquidityData: {
                 allocatedAmount: 0, // Se vendió todo
                 shares: 0,

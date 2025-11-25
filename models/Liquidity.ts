@@ -163,8 +163,8 @@ LiquiditySchema.methods.sellShares = function(this: any, alertId: string, shares
   // ✅ NUEVO: Aumentar liquidez total con las ganancias realizadas
   this.totalLiquidity += realized;
   
-  // ✅ NUEVO: Aumentar liquidez disponible con el efectivo devuelto
-  this.availableLiquidity += proceeds;
+  // ✅ CORREGIDO: No aumentar availableLiquidity aquí porque recalculateDistributions() lo recalcula
+  // En su lugar, recalculateDistributions() calculará correctamente basándose en totalLiquidity y distributedLiquidity
   
   this.recalculateDistributions();
 
@@ -177,10 +177,13 @@ LiquiditySchema.methods.removeDistribution = function(this: any, alertId: string
     throw new Error("Distribución no encontrada");
   }
   const distribution = this.distributions[distributionIndex] as ILiquidityDistribution;
-  this.availableLiquidity += distribution.allocatedAmount;
+  // ✅ CORREGIDO: No sumar allocatedAmount manualmente aquí porque:
+  // 1. Si ya se vendió todo, allocatedAmount es 0 (shares = 0)
+  // 2. La liquidez ya fue liberada por sellShares() a través del aumento de totalLiquidity
+  // 3. recalculateDistributions() recalculará correctamente availableLiquidity después de remover la distribución
   this.distributedLiquidity -= distribution.allocatedAmount;
   this.distributions.splice(distributionIndex, 1);
-  this.calculateTotalProfitLoss();
+  this.recalculateDistributions(); // ✅ CORREGIDO: Usar recalculateDistributions() para recalcular todo correctamente
 };
 
 LiquiditySchema.methods.calculateTotalProfitLoss = function(): void {

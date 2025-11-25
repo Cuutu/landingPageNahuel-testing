@@ -361,6 +361,12 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                             ? operation.portfolioPercentage.toFixed(2) 
                             : operation.portfolioPercentage}%
                         </span>
+                      ) : operation.operationType === 'VENTA' && operation.portfolioPercentage != null ? (
+                        <span style={{ color: '#EF4444', fontWeight: '500' }}>
+                          {typeof operation.portfolioPercentage === 'number' 
+                            ? operation.portfolioPercentage.toFixed(2) 
+                            : operation.portfolioPercentage}%
+                        </span>
                       ) : operation.operationType === 'VENTA' && operation.partialSalePercentage != null ? (
                         <span style={{ color: '#EF4444', fontWeight: '500' }}>
                           {operation.partialSalePercentage}%

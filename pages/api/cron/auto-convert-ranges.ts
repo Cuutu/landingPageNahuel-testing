@@ -450,6 +450,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                       const currentBalance = currentBalanceDoc?.balance || 0;
                       const newBalance = currentBalance + returnedCash;
                       
+                      // ✅ NUEVO: Buscar la operación de compra original para obtener el portfolioPercentage
+                      const buyOperation = await Operation.findOne({ 
+                        alertId: alert._id, 
+                        operationType: 'COMPRA',
+                        system: pool
+                      }).sort({ date: -1 });
+                      
                       const operation = new Operation({
                         ticker: alert.symbol.toUpperCase(),
                         operationType: 'VENTA',
@@ -463,6 +470,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                         system: pool,
                         createdBy: adminUser._id,
                         isPartialSale: false,
+                        portfolioPercentage: buyOperation?.portfolioPercentage, // ✅ NUEVO: Copiar el porcentaje de la compra original
                         liquidityData: {
                           allocatedAmount: 0, // Se vendió todo
                           shares: 0,
@@ -713,6 +721,7 @@ async function closeAlertWithoutLiquidity(
           system: pool,
           createdBy: adminUser._id,
           isPartialSale: false,
+          portfolioPercentage: buyOperation?.portfolioPercentage, // ✅ NUEVO: Copiar el porcentaje de la compra original
           liquidityData: {
             allocatedAmount: 0,
             shares: 0,
