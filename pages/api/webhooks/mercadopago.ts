@@ -331,11 +331,8 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         } catch (error: any) {
           console.error('❌ Error agregando trial:', error.message);
           // Si ya tiene un trial, no hacer nada más y retornar
-          return res.status(200).json({ 
-            success: true, 
-            message: 'Trial ya utilizado anteriormente',
-            error: error.message 
-          });
+          // El webhook ya devolverá 200 en el handler principal
+          return;
         }
       } else {
         // Procesar suscripción normal
