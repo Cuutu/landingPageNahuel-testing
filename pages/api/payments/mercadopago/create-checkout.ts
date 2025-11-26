@@ -16,9 +16,9 @@ import { z } from 'zod';
 // Schema de validación
 const checkoutSchema = z.object({
   service: z.enum(['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones']),
-  amount: z.number().positive('El monto debe ser positivo'),
+  amount: z.number().positive('El monto debe ser positivo').optional(),
   currency: z.enum(['ARS']).default('ARS'),
-  type: z.enum(['subscription', 'training']).default('subscription')
+  type: z.enum(['subscription', 'training', 'trial']).default('subscription')
 });
 
 /**
@@ -61,14 +61,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Verificar si ya tiene suscripción activa (solo para suscripciones)
-    if (type === 'subscription') {
+    // Verificar si ya tiene suscripción activa (solo para suscripciones y trials)
+    if (type === 'subscription' || type === 'trial') {
       const hasActiveSubscription = user.hasServiceAccess(service);
       if (hasActiveSubscription) {
         return res.status(409).json({ 
           success: false,
           error: `Ya tienes una suscripción activa a ${service}` 
         });
+      }
+      
+      // Para trials, verificar si ya tuvo un trial anteriormente
+      if (type === 'trial') {
+        const hasExistingTrial = user.activeSubscriptions.some(
+          (sub: any) => sub.service === service && sub.subscriptionType === 'trial'
+        );
+        if (hasExistingTrial) {
+          return res.status(409).json({ 
+            success: false,
+            error: `Ya has utilizado tu prueba de ${service}. Solo puedes tener una prueba por servicio.` 
+          });
+        }
       }
     }
 
@@ -85,9 +98,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Obtener monto dinámico desde BD
+    // Obtener monto dinámico desde BD o hardcodeado para trials
     let amount = 0;
-    if (type === 'subscription') {
+    if (type === 'trial') {
+      // Precios hardcodeados para trials
+      if (service === 'TraderCall') {
+        amount = 1; // $1 ARS
+      } else if (service === 'SmartMoney') {
+        amount = 2; // $2 ARS
+      } else {
+        return res.status(400).json({ success: false, error: 'Servicio de prueba inválido. Solo TraderCall y SmartMoney tienen pruebas disponibles.' });
+      }
+    } else if (type === 'subscription') {
       const pricing = await Pricing.findOne().sort({ createdAt: -1 });
       if (!pricing) {
         return res.status(500).json({ success: false, error: 'No hay configuración de precios' });
@@ -119,7 +141,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Crear URLs de retorno
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const externalReference = `${type}_${service}_${user._id}_${Date.now()}`;
+    // Para trials, el external_reference debe empezar con 'trial_' para que el webhook lo detecte
+    const externalReference = type === 'trial' 
+      ? `trial_${service}_${user._id}_${Date.now()}`
+      : `${type}_${service}_${user._id}_${Date.now()}`;
     
     const successUrl = `${baseUrl}/payment/success?reference=${externalReference}`;
     const failureUrl = `${baseUrl}/payment/failure?reference=${externalReference}`;
@@ -138,7 +163,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     let preferenceResult;
-    if (type === 'subscription') {
+    if (type === 'subscription' || type === 'trial') {
+      // Trials usan la misma preferencia que suscripciones
       preferenceResult = await createSubscriptionPreference(
         service,
         amount,
@@ -189,7 +215,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       metadata: {
         type,
         preferenceId: preferenceResult.preferenceId,
-        createdFromCheckout: true
+        createdFromCheckout: true,
+        subscriptionType: type === 'trial' ? 'trial' : 'full'
       }
     });
 

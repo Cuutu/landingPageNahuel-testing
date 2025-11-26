@@ -142,8 +142,46 @@ const NonSubscriberView: React.FC<{
   const { pricing, loading: pricingLoading } = usePricing();
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessingTrial, setIsProcessingTrial] = useState(false);
   // Rango de rentabilidad (vista pública)
   const [publicPortfolioRange, setPublicPortfolioRange] = useState('30d');
+
+  const handleTrial = async () => {
+    if (!session) {
+      signIn('google');
+      return;
+    }
+
+    setIsProcessingTrial(true);
+    
+    try {
+      const response = await fetch('/api/payments/mercadopago/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          service: 'SmartMoney',
+          currency: 'ARS',
+          type: 'trial'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      } else {
+        console.error('Error creando checkout:', data.error);
+        alert(data.error || 'Error al procesar el pago. Por favor intenta nuevamente.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al procesar el pago. Por favor intenta nuevamente.');
+    } finally {
+      setIsProcessingTrial(false);
+    }
+  };
 
   const handleSubscribe = async () => {
     if (!session) {
@@ -246,23 +284,49 @@ const NonSubscriberView: React.FC<{
                 Servicio de alertas de compra y venta con estrategia de corto plazo, informes detallados y seguimiento activo, para que puedas invertir en CEDEARs y acciones de forma simple y estratégica. Ideal para quienes buscan grandes rendimientos.
               </p>
               <div className={styles.heroFeatures}>
-                <button 
-                  className={styles.heroFeature}
-                  onClick={handleSubscribe}
-                  disabled={isProcessing}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader size={20} />
-                      Procesando...
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle size={20} />
-                      <span>Quiero Suscribirme</span>
-                    </>
-                  )}
-                </button>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button 
+                    className={styles.heroFeature}
+                    onClick={handleTrial}
+                    disabled={isProcessingTrial}
+                    style={{ 
+                      backgroundColor: '#10b981', 
+                      borderColor: '#10b981',
+                      flex: '1',
+                      minWidth: '200px'
+                    }}
+                  >
+                    {isProcessingTrial ? (
+                      <>
+                        <Loader size={20} />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={20} />
+                        <span>Probar por $2 - 30 días</span>
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    className={styles.heroFeature}
+                    onClick={handleSubscribe}
+                    disabled={isProcessing}
+                    style={{ flex: '1', minWidth: '200px' }}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader size={20} />
+                        Procesando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={20} />
+                        <span>Suscribirme Completo</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className={styles.heroPricing}>
                   <span className={styles.price}>
                     {pricingLoading ? (
@@ -395,22 +459,44 @@ const NonSubscriberView: React.FC<{
               <p className={styles.finalCtaDescription}>
                 Únete a nuestra comunidad y comienza construir tu libertad financiera
               </p>
-              <button 
-                className={styles.finalCtaButton}
-                onClick={handleSubscribe}
-                disabled={isProcessing}
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader size={16} className={styles.spinner} />
-                    Procesando...
-                  </>
-                ) : session ? (
-                  'Quiero Suscribirme >'
-                ) : (
-                  'Iniciar Sesión y Suscribirme >'
-                )}
-              </button>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button 
+                  className={styles.finalCtaButton}
+                  onClick={handleTrial}
+                  disabled={isProcessingTrial}
+                  style={{ 
+                    backgroundColor: '#10b981', 
+                    borderColor: '#10b981',
+                    minWidth: '200px'
+                  }}
+                >
+                  {isProcessingTrial ? (
+                    <>
+                      <Loader size={16} className={styles.spinner} />
+                      Procesando...
+                    </>
+                  ) : (
+                    'Probar por $2 - 30 días >'
+                  )}
+                </button>
+                <button 
+                  className={styles.finalCtaButton}
+                  onClick={handleSubscribe}
+                  disabled={isProcessing}
+                  style={{ minWidth: '200px' }}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader size={16} className={styles.spinner} />
+                      Procesando...
+                    </>
+                  ) : session ? (
+                    'Suscribirme Completo >'
+                  ) : (
+                    'Iniciar Sesión y Suscribirme >'
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>

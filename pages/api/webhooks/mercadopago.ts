@@ -304,6 +304,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
     const isBooking = externalRef && externalRef.startsWith('booking_');
     const isIndicator = service === 'MediasMovilesAutomaticas';
     const isMonthlyTrainingSubscription = externalRef && externalRef.startsWith('MTS_');
+    
+    // Detectar si es un trial basado en metadata o external_reference
+    const isTrial = payment.metadata?.subscriptionType === 'trial' || 
+                    (externalRef && externalRef.startsWith('trial_'));
 
     if (isSubscription) {
       // Detectar si existe suscripción activa antes de renovar
@@ -313,8 +317,30 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       const previousExpiry = existingActiveSub ? new Date(existingActiveSub.expiryDate) : null;
       const isRenewal = !!previousExpiry;
       
-      // Procesar suscripción
-      await user.renewSubscription(service, amount, currency, paymentInfo.id);
+      // Procesar suscripción o trial
+      if (isTrial) {
+        // Para trials, usar el método específico que previene múltiples trials
+        try {
+          await user.addTrialSubscription(service, amount, currency, paymentInfo.id);
+          console.log('✅ Trial agregado exitosamente:', {
+            user: user.email,
+            service,
+            amount,
+            currency
+          });
+        } catch (error: any) {
+          console.error('❌ Error agregando trial:', error.message);
+          // Si ya tiene un trial, no hacer nada más y retornar
+          return res.status(200).json({ 
+            success: true, 
+            message: 'Trial ya utilizado anteriormente',
+            error: error.message 
+          });
+        }
+      } else {
+        // Procesar suscripción normal
+        await user.renewSubscription(service, amount, currency, paymentInfo.id, 'full');
+      }
       
       // Recargar el usuario para obtener las fechas actualizadas
       await user.reload();
@@ -326,10 +352,12 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       console.log('✅ Suscripción activada:', {
         user: user.email,
         service,
+        isTrial,
         isRenewal,
         previousExpiry: previousExpiry?.toISOString(),
         newStartDate: updatedSub?.startDate,
-        newExpiryDate: updatedSub?.expiryDate
+        newExpiryDate: updatedSub?.expiryDate,
+        subscriptionType: updatedSub?.subscriptionType
       });
 
       // ✅ La suscripción ya está activada en user.activeSubscriptions

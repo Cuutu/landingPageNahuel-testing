@@ -45,6 +45,7 @@ export interface IUser extends Document {
     mercadopagoPaymentId?: string;
     amount: number;
     currency: string;
+    subscriptionType?: 'full' | 'trial'; // Tipo de suscripción: completa o prueba
   }>;
   entrenamientos: Array<{
     tipo: 'SwingTrading';
@@ -188,6 +189,11 @@ const UserSchema: Schema = new Schema({
     currency: {
       type: String,
       default: 'ARS'
+    },
+    subscriptionType: {
+      type: String,
+      enum: ['full', 'trial'],
+      default: 'full'
     }
   }],
   entrenamientos: [{
@@ -313,12 +319,56 @@ UserSchema.methods.addActiveSubscription = function(
   return this.save();
 };
 
+// Método para agregar una suscripción de prueba (trial)
+UserSchema.methods.addTrialSubscription = function(
+  service: string,
+  amount: number,
+  currency: string = 'ARS',
+  mercadopagoPaymentId?: string
+) {
+  // Verificar si ya tiene un trial activo o completo para este servicio
+  const hasExistingTrial = this.activeSubscriptions.some(
+    (sub: any) => sub.service === service && sub.subscriptionType === 'trial'
+  );
+  
+  if (hasExistingTrial) {
+    throw new Error(`Ya has utilizado tu prueba de ${service}. Solo puedes tener una prueba por servicio.`);
+  }
+
+  const startDate = new Date();
+  const expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 días
+  
+  this.activeSubscriptions.push({
+    service,
+    startDate,
+    expiryDate,
+    isActive: true,
+    mercadopagoPaymentId,
+    amount,
+    currency,
+    subscriptionType: 'trial'
+  });
+  
+  // Actualizar fecha de expiración general
+  this.subscriptionExpiry = expiryDate;
+  this.lastPaymentDate = startDate;
+  
+  // ✅ IMPORTANTE: Actualizar el rol del usuario a 'suscriptor'
+  if (this.role === 'normal') {
+    this.role = 'suscriptor';
+    console.log('✅ Rol del usuario actualizado a suscriptor:', this.email);
+  }
+  
+  return this.save();
+};
+
 // Método para renovar suscripción con APILADO DE TIEMPO
 UserSchema.methods.renewSubscription = function(
   service: string,
   amount: number,
   currency: string = 'ARS',
-  mercadopagoPaymentId?: string
+  mercadopagoPaymentId?: string,
+  subscriptionType: 'full' | 'trial' = 'full'
 ) {
   const now = new Date();
   let startDate: Date;
@@ -367,6 +417,7 @@ UserSchema.methods.renewSubscription = function(
     existingActiveSub.mercadopagoPaymentId = mercadopagoPaymentId;
     existingActiveSub.amount = amount;
     existingActiveSub.currency = currency;
+    existingActiveSub.subscriptionType = subscriptionType;
   } else {
     // Agregar nueva suscripción
     this.activeSubscriptions.push({
@@ -376,7 +427,8 @@ UserSchema.methods.renewSubscription = function(
       isActive: true,
       mercadopagoPaymentId,
       amount,
-      currency
+      currency,
+      subscriptionType
     });
   }
   
