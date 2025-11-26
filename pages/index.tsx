@@ -11,9 +11,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Carousel from '@/components/Carousel';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import UnderConstruction from '@/components/UnderConstruction';
 import { usePopupFrequency } from '@/hooks/usePopupFrequency';
 import { usePricing } from '@/hooks/usePricing';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import styles from '@/styles/Home.module.css';
 
 interface Training {
@@ -126,6 +128,8 @@ interface HomeProps {
   entrenamientos: Training[];
   courseCards: CourseCard[];
   initialPricing?: any;
+  /** @param isAdmin - Indica si el usuario es administrador */
+  isAdmin: boolean;
 }
 
 /**
@@ -217,7 +221,11 @@ const YouTubeAutoCarousel: React.FC = () => {
 /**
  * Página principal del sitio web de Nahuel Lozano
  */
-export default function Home({ session: serverSession, siteConfig, entrenamientos, courseCards, initialPricing }: HomeProps) {
+export default function Home({ session: serverSession, siteConfig, entrenamientos, courseCards, initialPricing, isAdmin }: HomeProps) {
+  // Si el usuario no es administrador, mostrar página de construcción
+  if (!isAdmin) {
+    return <UnderConstruction />;
+  }
   console.log('🏠 Renderizando página principal');
   console.log('🔧 siteConfig:', siteConfig);
   console.log('🎯 servicios visible:', siteConfig?.servicios?.visible);
@@ -1393,6 +1401,26 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   console.log('🔄 Ejecutando getServerSideProps en página principal');
   
   try {
+    // Verificar si el usuario es administrador
+    const adminVerification = await verifyAdminAccess(context);
+    const isAdmin = adminVerification.isAdmin || false;
+    
+    console.log('👤 Usuario es admin:', isAdmin);
+    
+    // Si no es admin, devolver solo la flag isAdmin sin cargar datos pesados
+    if (!isAdmin) {
+      return {
+        props: {
+          session: null,
+          siteConfig: {},
+          entrenamientos: [],
+          courseCards: [],
+          initialPricing: null,
+          isAdmin: false
+        },
+      };
+    }
+    
     const session = await getSession(context);
     console.log('✅ Sesión obtenida:', session ? 'Usuario autenticado' : 'Usuario no autenticado');
     
@@ -1547,7 +1575,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         siteConfig,
         entrenamientos,
         courseCards,
-        initialPricing
+        initialPricing,
+        isAdmin: true
       },
     };
   } catch (error) {
@@ -1556,6 +1585,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     return {
       props: {
         session: null,
+        isAdmin: false,
         siteConfig: {
           heroVideo: {
             youtubeId: 'dQw4w9WgXcQ',
@@ -1632,7 +1662,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             activo: true
           }
         ],
-        courseCards: []
+        courseCards: [],
+        isAdmin: false
       },
     };
   }
