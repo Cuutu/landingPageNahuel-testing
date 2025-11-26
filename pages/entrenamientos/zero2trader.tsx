@@ -416,7 +416,8 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
     const updateCountdown = () => {
       // Priorizar entrenamientos mensuales
       if (monthlyTrainings.length > 0) {
-        // Encontrar la próxima clase para mostrar la fecha
+        // Encontrar la primera clase disponible (futura o la más próxima)
+        let firstClass = null;
         let nextClass = null;
         const now = new Date();
 
@@ -425,8 +426,21 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           if (!training.classes || training.classes.length === 0) continue;
           
           for (const classItem of training.classes) {
+            if (classItem.status !== 'scheduled') continue;
+            
             const classDate = new Date(classItem.date);
-            if (classDate > now && classItem.status === 'scheduled') {
+            
+            // Guardar la primera clase encontrada (sin importar fecha)
+            if (!firstClass || classDate < firstClass.date) {
+              firstClass = {
+                date: classDate,
+                title: classItem.title,
+                training: training.title
+              };
+            }
+            
+            // Guardar la próxima clase futura para el countdown
+            if (classDate > now) {
               if (!nextClass || classDate < nextClass.date) {
                 nextClass = {
                   date: classDate,
@@ -438,28 +452,37 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           }
         }
 
-        if (nextClass) {
+        // Usar la próxima clase futura si existe, sino usar la primera clase disponible
+        const classToShow = nextClass || firstClass;
+
+        if (classToShow) {
           // Solo actualizar si la clase cambió o es la primera vez
-          if (!currentNextClass || currentNextClass.date.getTime() !== nextClass.date.getTime()) {
-            currentNextClass = nextClass;
+          if (!currentNextClass || currentNextClass.date.getTime() !== classToShow.date.getTime()) {
+            currentNextClass = classToShow;
             
-            const newCountdown = calculateCountdownFromTrainings();
-            setCountdown(newCountdown);
+            // Si hay una clase futura, calcular countdown, sino mostrar solo la fecha
+            if (nextClass) {
+              const newCountdown = calculateCountdownFromTrainings();
+              setCountdown(newCountdown);
+            } else {
+              setCountdown({ days: 0, hours: 0, minutes: 0 });
+            }
             
             // Adjust for Argentina timezone (UTC-3)
-            const argentinaDate = new Date(nextClass.date.getTime() - (3 * 60 * 60 * 1000));
+            const argentinaDate = new Date(classToShow.date.getTime() - (3 * 60 * 60 * 1000));
             
             const formattedDate = argentinaDate.toLocaleDateString('es-ES', {
               day: 'numeric',
-              month: 'long'
+              month: 'long',
+              year: 'numeric'
             });
             const formattedTime = argentinaDate.toLocaleTimeString('es-ES', {
               hour: '2-digit',
               minute: '2-digit'
             });
             setStartDateText(`${formattedDate} a las ${formattedTime} hs`);
-          } else {
-            // Solo actualizar el countdown, no el texto de fecha
+          } else if (nextClass) {
+            // Solo actualizar el countdown si hay una clase futura
             const newCountdown = calculateCountdownFromTrainings();
             setCountdown(newCountdown);
           }
@@ -641,29 +664,55 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
         const nextDate = findNextTrainingDate(dates);
         setNextTrainingDate(nextDate);
         
-        // Actualizar el countdown y texto de fecha
-        if (nextDate) {
-          const dateOptions: Intl.DateTimeFormatOptions = { 
-            day: 'numeric', 
-            month: 'long' 
-          };
-          const formattedDate = nextDate.date.toLocaleDateString('es-ES', dateOptions);
-          setStartDateText(`${formattedDate} a las ${nextDate.time} hs`);
-        } else {
-          setStartDateText('Próximamente - Fechas por confirmar');
+        // Solo actualizar el texto de fecha si no hay entrenamientos mensuales con clases
+        // (los entrenamientos mensuales tienen prioridad)
+        const hasMonthlyTrainingClasses = monthlyTrainings.some(
+          training => training.classes && training.classes.length > 0 && 
+          training.classes.some(c => c.status === 'scheduled')
+        );
+        
+        if (!hasMonthlyTrainingClasses) {
+          if (nextDate) {
+            const dateOptions: Intl.DateTimeFormatOptions = { 
+              day: 'numeric', 
+              month: 'long' 
+            };
+            const formattedDate = nextDate.date.toLocaleDateString('es-ES', dateOptions);
+            setStartDateText(`${formattedDate} a las ${nextDate.time} hs`);
+          } else {
+            setStartDateText('Próximamente - Fechas por confirmar');
+          }
         }
       } else {
         console.log('📭 No hay fechas específicas configuradas');
         setTrainingDates([]);
         setNextTrainingDate(null);
-        setStartDateText('Próximamente - Fechas por confirmar');
+        
+        // Solo actualizar si no hay entrenamientos mensuales con clases
+        const hasMonthlyTrainingClasses = monthlyTrainings.some(
+          training => training.classes && training.classes.length > 0 && 
+          training.classes.some(c => c.status === 'scheduled')
+        );
+        
+        if (!hasMonthlyTrainingClasses) {
+          setStartDateText('Próximamente - Fechas por confirmar');
+        }
       }
       
     } catch (error) {
       console.error('❌ Error cargando fechas:', error);
       setTrainingDates([]);
       setNextTrainingDate(null);
-      setStartDateText('Próximamente - Fechas por confirmar');
+      
+      // Solo actualizar si no hay entrenamientos mensuales con clases
+      const hasMonthlyTrainingClasses = monthlyTrainings.some(
+        training => training.classes && training.classes.length > 0 && 
+        training.classes.some(c => c.status === 'scheduled')
+      );
+      
+      if (!hasMonthlyTrainingClasses) {
+        setStartDateText('Próximamente - Fechas por confirmar');
+      }
     }
   };
 

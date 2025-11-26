@@ -37,6 +37,16 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
     fetchAvailabilityData();
   }, [trainingType]);
 
+  // Efecto para auto-seleccionar el primer mes disponible cuando cambian los datos
+  useEffect(() => {
+    if (availabilityData.length > 0 && (!selectedMonth || !selectedYear)) {
+      const firstAvailableMonth = availabilityData.find(m => m.available);
+      if (firstAvailableMonth) {
+        onMonthSelect(firstAvailableMonth.month, firstAvailableMonth.year);
+      }
+    }
+  }, [availabilityData, selectedMonth, selectedYear, onMonthSelect]);
+
   const fetchAvailabilityData = async () => {
     try {
       setLoading(true);
@@ -49,7 +59,22 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
         throw new Error(data.error || 'Error al cargar disponibilidad');
       }
       
-      setAvailabilityData(data.data);
+      // Ordenar los meses por fecha (más próximo primero)
+      const sortedData = data.data.sort((a: AvailabilityData, b: AvailabilityData) => {
+        const dateA = new Date(a.year, a.month - 1);
+        const dateB = new Date(b.year, b.month - 1);
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setAvailabilityData(sortedData);
+      
+      // Si no hay un mes seleccionado, seleccionar automáticamente el primer mes disponible
+      if (!selectedMonth || !selectedYear) {
+        const firstAvailableMonth = sortedData.find((m: AvailabilityData) => m.available);
+        if (firstAvailableMonth) {
+          onMonthSelect(firstAvailableMonth.month, firstAvailableMonth.year);
+        }
+      }
     } catch (err) {
       console.error('Error fetching availability:', err);
       setError(err instanceof Error ? err.message : 'Error desconocido');
