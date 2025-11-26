@@ -80,7 +80,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .filter(t => {
           // Verificar que tenga al menos una clase con fecha válida
           return t.classes && t.classes.length > 0 && 
-                 t.classes.some(c => c.date && c.date instanceof Date);
+                 t.classes.some((c: { date?: Date | string }) => {
+                   const date = c.date instanceof Date ? c.date : (c.date ? new Date(c.date) : null);
+                   return date && date instanceof Date && !isNaN(date.getTime());
+                 });
         })
         .map(t => `${t.year}-${t.month}`)
     );
