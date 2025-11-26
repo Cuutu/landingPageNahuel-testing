@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from '@/styles/YouTubePlayer.module.css';
 
 interface YouTubePlayerProps {
@@ -12,6 +12,7 @@ interface YouTubePlayerProps {
   height?: string;
   className?: string;
   fillContainer?: boolean; // Prop para indicar si debe llenar el contenedor padre
+  volume?: number; // Volumen del video (0-100)
 }
 
 /**
@@ -36,10 +37,12 @@ export default function YouTubePlayer({
   width = '100%',
   height = '100%',
   className = '',
-  fillContainer = false // Por defecto usar el comportamiento estándar con padding-bottom
+  fillContainer = false, // Por defecto usar el comportamiento estándar con padding-bottom
+  volume = 20 // Volumen por defecto 20%
 }: YouTubePlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Construir la URL del video con parámetros
   const buildVideoUrl = () => {
@@ -59,6 +62,44 @@ export default function YouTubePlayer({
 
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   };
+
+  // Establecer volumen usando la API de YouTube IFrame
+  useEffect(() => {
+    if (!iframeRef.current || isLoading || muted) return;
+
+    const setVolume = () => {
+      try {
+        const iframe = iframeRef.current;
+        if (!iframe || !iframe.contentWindow) return;
+
+        // La API de YouTube IFrame requiere que el video esté cargado
+        // Usamos postMessage para comunicarnos con el iframe
+        // El formato correcto es enviar un objeto JSON como string
+        iframe.contentWindow.postMessage(
+          JSON.stringify({
+            event: 'command',
+            func: 'setVolume',
+            args: [volume]
+          }),
+          'https://www.youtube.com'
+        );
+      } catch (error) {
+        console.error('Error estableciendo volumen:', error);
+      }
+    };
+
+    // Esperar a que el iframe esté completamente cargado
+    // Intentar múltiples veces para asegurar que funcione
+    const timers: NodeJS.Timeout[] = [];
+    [500, 1000, 2000].forEach((delay) => {
+      const timer = setTimeout(setVolume, delay);
+      timers.push(timer);
+    });
+
+    return () => {
+      timers.forEach(timer => clearTimeout(timer));
+    };
+  }, [volume, isLoading, muted]);
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -94,6 +135,7 @@ export default function YouTubePlayer({
       )}
       
       <iframe
+        ref={iframeRef}
         src={buildVideoUrl()}
         title={title}
         frameBorder="0"

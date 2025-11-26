@@ -46,6 +46,7 @@ interface VideoConfig {
     autoplay: boolean;
     muted: boolean;
     loop: boolean;
+    volume?: number;
   };
   learningVideo: {
     youtubeId: string;
@@ -54,6 +55,7 @@ interface VideoConfig {
     autoplay: boolean;
     muted: boolean;
     loop: boolean;
+    volume?: number;
   };
   serviciosVideos: {
     alertas: {
@@ -63,6 +65,7 @@ interface VideoConfig {
       autoplay: boolean;
       muted: boolean;
       loop: boolean;
+      volume?: number;
     };
     entrenamientos: {
       youtubeId: string;
@@ -71,6 +74,7 @@ interface VideoConfig {
       autoplay: boolean;
       muted: boolean;
       loop: boolean;
+      volume?: number;
     };
     asesorias: {
       youtubeId: string;
@@ -79,6 +83,7 @@ interface VideoConfig {
       autoplay: boolean;
       muted: boolean;
       loop: boolean;
+      volume?: number;
     };
   };
   trainingVideos: {
@@ -90,6 +95,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -98,6 +104,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
     dowJones: {
@@ -108,6 +115,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -116,6 +124,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
     advanced: {
@@ -126,6 +135,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -134,6 +144,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
   };
@@ -156,6 +167,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       testimonialsVideo?: {
         youtubeId: string;
@@ -164,6 +176,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
     cuentaAsesorada: {
@@ -182,6 +195,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
   };
@@ -202,6 +216,7 @@ interface VideoConfig {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
     };
     traderCall: {
@@ -243,6 +258,7 @@ interface VideoConfig {
       autoplay: boolean;
       muted: boolean;
       loop: boolean;
+      volume?: number;
     };
   };
 }
@@ -889,6 +905,19 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
                             />
                             Repetir
                           </label>
+                        </div>
+                        
+                        <div className={styles.inputGroup}>
+                          <label>Volumen:</label>
+                          <select
+                            value={video.volume || 20}
+                            onChange={(e) => handleInputChange(section.path, 'volume', parseInt(e.target.value))}
+                            className={styles.input}
+                          >
+                            <option value={10}>10%</option>
+                            <option value={20}>20%</option>
+                            <option value={30}>30%</option>
+                          </select>
                         </div>
                       </div>
 

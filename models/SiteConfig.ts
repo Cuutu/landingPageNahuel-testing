@@ -10,6 +10,7 @@ interface SiteConfigDocument extends Document {
     autoplay: boolean;
     muted: boolean;
     loop: boolean;
+    volume?: number;
   };
   learningVideo: {
     youtubeId: string;
@@ -19,23 +20,26 @@ interface SiteConfigDocument extends Document {
     autoplay: boolean;
     muted: boolean;
     loop: boolean;
+    volume?: number;
   };
   serviciosVideos: {
     alertas: {
       youtubeId: string;
       title: string;
       description: string;
-      autoplay: boolean;
-      muted: boolean;
-      loop: boolean;
+    autoplay: boolean;
+    muted: boolean;
+    loop: boolean;
+    volume?: number;
     };
     entrenamientos: {
       youtubeId: string;
       title: string;
       description: string;
-      autoplay: boolean;
-      muted: boolean;
-      loop: boolean;
+    autoplay: boolean;
+    muted: boolean;
+    loop: boolean;
+    volume?: number;
     };
     asesorias: {
       youtubeId: string;
@@ -56,6 +60,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -74,6 +79,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -92,6 +98,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       promoVideo?: {
         youtubeId: string;
@@ -113,6 +120,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       testimonialsVideo?: {
         youtubeId: string;
@@ -131,6 +139,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       finalVideo?: {
         youtubeId: string;
@@ -152,6 +161,7 @@ interface SiteConfigDocument extends Document {
         autoplay: boolean;
         muted: boolean;
         loop: boolean;
+        volume?: number;
       };
       communityVideo?: {
         youtubeId: string;
@@ -313,7 +323,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     thumbnail: { type: String },
     autoplay: { type: Boolean, default: true },
     muted: { type: Boolean, default: true },
-    loop: { type: Boolean, default: true }
+    loop: { type: Boolean, default: true },
+    volume: { type: Number, default: 20, min: 0, max: 100 }
   },
   learningVideo: {
     youtubeId: { type: String, required: true },
@@ -322,7 +333,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     thumbnail: { type: String },
     autoplay: { type: Boolean, default: false },
     muted: { type: Boolean, default: true },
-    loop: { type: Boolean, default: false }
+    loop: { type: Boolean, default: false },
+    volume: { type: Number, default: 20, min: 0, max: 100 }
   },
   serviciosVideos: {
     alertas: {
@@ -331,7 +343,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
       description: { type: String, default: 'Descubre cómo funcionan nuestras alertas de trading' },
       autoplay: { type: Boolean, default: false },
       muted: { type: Boolean, default: true },
-      loop: { type: Boolean, default: false }
+      loop: { type: Boolean, default: false },
+      volume: { type: Number, default: 20, min: 0, max: 100 }
     },
     entrenamientos: {
       youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -359,7 +372,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el programa completo de Zero 2 Trader' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -367,7 +381,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Video adicional del programa Zero 2 Trader' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     },
     dowJones: {
@@ -377,7 +392,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el programa completo de Dow Jones' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -385,7 +401,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Video adicional del programa Dow Jones' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     },
     advanced: {
@@ -395,7 +412,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el programa avanzado de trading' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -416,7 +434,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Conoce nuestro consultorio financiero personalizado' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       testimonialsVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -434,7 +453,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre nuestro servicio de cuenta asesorada' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       finalVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -455,7 +475,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre nuestras alertas de trading' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       },
       communityVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -463,7 +484,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Únete a nuestra comunidad de YouTube' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     },
     traderCall: {
@@ -473,7 +495,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el servicio Trader Call' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     },
     smartMoney: {
@@ -483,7 +506,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el servicio Smart Money' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     },
     cashFlow: {
@@ -493,7 +517,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         description: { type: String, default: 'Descubre el servicio Cash Flow' },
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
-        loop: { type: Boolean, default: false }
+        loop: { type: Boolean, default: false },
+        volume: { type: Number, default: 20, min: 0, max: 100 }
       }
     }
   },
@@ -505,7 +530,8 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
       description: { type: String, default: 'Recursos y herramientas para trading' },
       autoplay: { type: Boolean, default: false },
       muted: { type: Boolean, default: true },
-      loop: { type: Boolean, default: false }
+      loop: { type: Boolean, default: false },
+      volume: { type: Number, default: 20, min: 0, max: 100 }
     }
   },
   statistics: {
