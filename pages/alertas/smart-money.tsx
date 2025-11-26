@@ -56,6 +56,7 @@ import { usePricing } from '@/hooks/usePricing';
 import ScreenshotProtection from '@/components/ScreenshotProtection';
 import OperationsTable from '@/components/OperationsTable';
 import { toast } from 'react-hot-toast';
+import TrialUsedModal from '@/components/TrialUsedModal';
 
 interface AlertExample {
   id: string;
@@ -143,6 +144,7 @@ const NonSubscriberView: React.FC<{
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessingTrial, setIsProcessingTrial] = useState(false);
+  const [showTrialUsedModal, setShowTrialUsedModal] = useState(false);
   // Rango de rentabilidad (vista pública)
   const [publicPortfolioRange, setPublicPortfolioRange] = useState('30d');
 
@@ -173,7 +175,12 @@ const NonSubscriberView: React.FC<{
         window.location.href = data.checkoutUrl;
       } else {
         console.error('Error creando checkout:', data.error);
-        alert(data.error || 'Error al procesar el pago. Por favor intenta nuevamente.');
+        // Si el error es que ya usó el trial, mostrar el modal
+        if (data.error && data.error.includes('Ya has utilizado tu prueba')) {
+          setShowTrialUsedModal(true);
+        } else {
+          alert(data.error || 'Error al procesar el pago. Por favor intenta nuevamente.');
+        }
       }
     } catch (error) {
       console.error('Error:', error);
@@ -262,6 +269,12 @@ const NonSubscriberView: React.FC<{
 
   return (
     <div className={styles.nonSubscriberView}>
+      <TrialUsedModal
+        isOpen={showTrialUsedModal}
+        onClose={() => setShowTrialUsedModal(false)}
+        onSubscribe={handleSubscribe}
+        serviceName="SmartMoney"
+      />
       {/* Hero Section con Imagen de Fondo */}
       <section className={styles.heroSection}>
         {/* Image Background */}
@@ -308,24 +321,24 @@ const NonSubscriberView: React.FC<{
                       </>
                     )}
                   </button>
-                  <button 
-                    className={styles.heroFeature}
-                    onClick={handleSubscribe}
-                    disabled={isProcessing}
+                <button 
+                  className={styles.heroFeature}
+                  onClick={handleSubscribe}
+                  disabled={isProcessing}
                     style={{ flex: '1', minWidth: '200px' }}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader size={20} />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={20} />
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader size={20} />
+                      Procesando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={20} />
                         <span>Suscribirme Completo</span>
-                      </>
-                    )}
-                  </button>
+                    </>
+                  )}
+                </button>
                 </div>
                 <div className={styles.heroPricing}>
                   <span className={styles.price}>
@@ -479,23 +492,23 @@ const NonSubscriberView: React.FC<{
                     'Probar por $2 - 30 días >'
                   )}
                 </button>
-                <button 
-                  className={styles.finalCtaButton}
-                  onClick={handleSubscribe}
-                  disabled={isProcessing}
+              <button 
+                className={styles.finalCtaButton}
+                onClick={handleSubscribe}
+                disabled={isProcessing}
                   style={{ minWidth: '200px' }}
-                >
-                  {isProcessing ? (
-                    <>
-                      <Loader size={16} className={styles.spinner} />
-                      Procesando...
-                    </>
-                  ) : session ? (
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader size={16} className={styles.spinner} />
+                    Procesando...
+                  </>
+                ) : session ? (
                     'Suscribirme Completo >'
-                  ) : (
-                    'Iniciar Sesión y Suscribirme >'
-                  )}
-                </button>
+                ) : (
+                  'Iniciar Sesión y Suscribirme >'
+                )}
+              </button>
               </div>
             </div>
           </motion.div>
