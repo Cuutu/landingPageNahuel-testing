@@ -255,6 +255,7 @@ interface VideoSection {
   color: string;
   category: string;
   path: string;
+  hidden?: boolean; // Videos que no se usan en ninguna página
 }
 
 interface VideoConfigProps {
@@ -337,7 +338,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Star size={20} />,
       color: '#dc2626',
       category: 'trainings',
-      path: 'trainingVideos.swingTrading.promoVideo'
+      path: 'trainingVideos.swingTrading.promoVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'trainingVideos.dowJones.heroVideo',
@@ -346,7 +348,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <BarChart3 size={20} />,
       color: '#059669',
       category: 'trainings',
-      path: 'trainingVideos.dowJones.heroVideo'
+      path: 'trainingVideos.dowJones.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'trainingVideos.dowJones.promoVideo',
@@ -355,7 +358,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Star size={20} />,
       color: '#059669',
       category: 'trainings',
-      path: 'trainingVideos.dowJones.promoVideo'
+      path: 'trainingVideos.dowJones.promoVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'trainingVideos.advanced.heroVideo',
@@ -364,7 +368,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Zap size={20} />,
       color: '#7c3aed',
       category: 'trainings',
-      path: 'trainingVideos.advanced.heroVideo'
+      path: 'trainingVideos.advanced.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'trainingVideos.advanced.promoVideo',
@@ -373,7 +378,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Star size={20} />,
       color: '#7c3aed',
       category: 'trainings',
-      path: 'trainingVideos.advanced.promoVideo'
+      path: 'trainingVideos.advanced.promoVideo',
+      hidden: true // No se usa en ninguna página
     },
     // Videos de asesorías
     {
@@ -383,7 +389,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Briefcase size={20} />,
       color: '#8b5cf6',
       category: 'advisory',
-      path: 'advisoryVideos.index.heroVideo'
+      path: 'advisoryVideos.index.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'advisoryVideos.consultorioFinanciero.heroVideo',
@@ -392,7 +399,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <MessageCircle size={20} />,
       color: '#0891b2',
       category: 'advisory',
-      path: 'advisoryVideos.consultorioFinanciero.heroVideo'
+      path: 'advisoryVideos.consultorioFinanciero.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'advisoryVideos.consultorioFinanciero.testimonialsVideo',
@@ -401,7 +409,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Users size={20} />,
       color: '#0891b2',
       category: 'advisory',
-      path: 'advisoryVideos.consultorioFinanciero.testimonialsVideo'
+      path: 'advisoryVideos.consultorioFinanciero.testimonialsVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'advisoryVideos.cuentaAsesorada.heroVideo',
@@ -410,7 +419,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Shield size={20} />,
       color: '#16a34a',
       category: 'advisory',
-      path: 'advisoryVideos.cuentaAsesorada.heroVideo'
+      path: 'advisoryVideos.cuentaAsesorada.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'advisoryVideos.cuentaAsesorada.finalVideo',
@@ -419,7 +429,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Target size={20} />,
       color: '#16a34a',
       category: 'advisory',
-      path: 'advisoryVideos.cuentaAsesorada.finalVideo'
+      path: 'advisoryVideos.cuentaAsesorada.finalVideo',
+      hidden: true // No se usa en ninguna página
     },
     // Videos de alertas
     {
@@ -438,7 +449,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <Users size={20} />,
       color: '#dc2626',
       category: 'alerts',
-      path: 'alertsVideos.index.communityVideo'
+      path: 'alertsVideos.index.communityVideo',
+      hidden: true // No se usa en ninguna página
     },
     {
       id: 'alertsVideos.traderCall.heroVideo',
@@ -465,7 +477,8 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
       icon: <TrendingUp size={20} />,
       color: '#3b82f6',
       category: 'alerts',
-      path: 'alertsVideos.cashFlow.heroVideo'
+      path: 'alertsVideos.cashFlow.heroVideo',
+      hidden: true // No se usa en ninguna página
     },
     // Videos de recursos
     {
@@ -611,8 +624,11 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     fetchConfig();
   }, []);
 
-  // Filtrar secciones
+  // Filtrar secciones (excluir videos ocultos que no se usan)
   const filteredSections = videoSections.filter(section => {
+    // Excluir videos ocultos
+    if (section.hidden) return false;
+    
     const matchesSearch = section.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          section.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = filterCategory === 'all' || section.category === filterCategory;

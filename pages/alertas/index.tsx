@@ -174,7 +174,17 @@ const AlertService: React.FC<AlertServiceProps> = ({
   );
 };
 
-const AlertasPage: React.FC = () => {
+interface AlertasPageProps {
+  alertsHeroVideo?: {
+    youtubeId?: string;
+    title?: string;
+    autoplay?: boolean;
+    muted?: boolean;
+    loop?: boolean;
+  };
+}
+
+const AlertasPage: React.FC<AlertasPageProps> = ({ alertsHeroVideo }) => {
   const router = useRouter();
   const alertServices = [
     {
@@ -282,11 +292,11 @@ const AlertasPage: React.FC = () => {
               >
                 <div className={styles.videoContainer}>
                   <YouTubePlayer
-                    videoId="dQw4w9WgXcQ"
-                    title="Alertas de Trading - Introducción"
-                    autoplay={false}
-                    muted={true}
-                    loop={false}
+                    videoId={alertsHeroVideo?.youtubeId || "dQw4w9WgXcQ"}
+                    title={alertsHeroVideo?.title || "Alertas de Trading - Introducción"}
+                    autoplay={alertsHeroVideo?.autoplay ?? false}
+                    muted={alertsHeroVideo?.muted ?? true}
+                    loop={alertsHeroVideo?.loop ?? false}
                     controls={true}
                     fillContainer={true}
                   />
@@ -443,6 +453,28 @@ const AlertasPage: React.FC = () => {
       <Footer />
     </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const siteConfigRes = await fetch(`${baseUrl}/api/site-config`);
+    const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
+    const alertsHeroVideo = siteConfig?.alertsVideos?.index?.heroVideo || null;
+
+    return {
+      props: {
+        alertsHeroVideo
+      }
+    };
+  } catch (error) {
+    console.error('Error obteniendo configuración del sitio:', error);
+    return {
+      props: {
+        alertsHeroVideo: null
+      }
+    };
+  }
 };
 
 export default AlertasPage; 
