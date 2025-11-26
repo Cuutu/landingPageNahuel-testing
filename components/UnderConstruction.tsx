@@ -1,13 +1,12 @@
 import Head from 'next/head';
 import { motion } from 'framer-motion';
 import { Construction, Wrench, Clock } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
 import styles from '@/styles/UnderConstruction.module.css';
 
 /**
  * Componente de página "EN CONSTRUCCIÓN"
  * Se muestra cuando el usuario no es administrador
+ * Página completamente plana sin Navbar ni Footer
  */
 export default function UnderConstruction() {
   return (
@@ -18,8 +17,6 @@ export default function UnderConstruction() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <Navbar />
 
       <main className={styles.main}>
         <div className={styles.container}>
@@ -86,8 +83,6 @@ export default function UnderConstruction() {
           </motion.div>
         </div>
       </main>
-
-      <Footer />
     </>
   );
 }
