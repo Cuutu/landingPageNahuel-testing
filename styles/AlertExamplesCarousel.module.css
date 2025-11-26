@@ -39,19 +39,22 @@
 }
 
 .alertCard {
-  background: white;
+  background: rgba(31, 41, 55, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
   height: 280px;
-  border: none; /* Removido el contorno blanco */
+  backdrop-filter: blur(10px);
 }
 
 .alertCard:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.2); /* Sombra verde en hover */
+  box-shadow: 0 8px 30px rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(31, 41, 55, 0.95);
 }
 
 .chartContainer {
