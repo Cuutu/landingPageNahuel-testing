@@ -1662,8 +1662,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             activo: true
           }
         ],
-        courseCards: [],
-        isAdmin: false
+        courseCards: []
       },
     };
   }
