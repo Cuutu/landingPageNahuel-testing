@@ -190,7 +190,7 @@ export async function sendMonthlyTrainingConfirmationEmail(params: {
 
             <!-- CTA Button -->
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/entrenamientos/swing-trading" 
+              <a href="${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/entrenamientos/zero2trader" 
                  style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
                 Ver Detalles del Entrenamiento
               </a>

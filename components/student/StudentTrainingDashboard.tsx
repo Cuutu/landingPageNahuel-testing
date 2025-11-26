@@ -205,7 +205,7 @@ export default function StudentTrainingDashboard() {
           <BookOpen size={64} />
           <h2>No tienes entrenamientos</h2>
           <p>Inscríbete a un entrenamiento mensual para comenzar tu aprendizaje</p>
-          <Link href="/entrenamientos/swing-trading" className={styles.enrollButton}>
+          <Link href="/entrenamientos/zero2trader" className={styles.enrollButton}>
             Ver Entrenamientos Disponibles
           </Link>
         </div>

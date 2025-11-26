@@ -470,7 +470,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       tagClass: 'tagEntrenamientos',
       rating: '4,8',
       precio: swingPriceStr,
-      href: '/entrenamientos/swing-trading',
+      href: '/entrenamientos/zero2trader',
       external: false,
       separator: false,
       rocketIcon: false

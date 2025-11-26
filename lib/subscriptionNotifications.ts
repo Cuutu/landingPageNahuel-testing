@@ -146,7 +146,7 @@ function getRenewalUrl(service: string): string {
     'TraderCall': 'https://lozanonahuel.vercel.app/alertas/trader-call',
     'SmartMoney': 'https://lozanonahuel.vercel.app/alertas/smart-money',
 
-    'SwingTrading': 'https://lozanonahuel.vercel.app/entrenamientos/swing-trading',
+    'SwingTrading': 'https://lozanonahuel.vercel.app/entrenamientos/zero2trader',
     'DayTrading': 'https://lozanonahuel.vercel.app/entrenamientos'
   };
   

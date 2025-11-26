@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
+import MonthlyTraining from '../../../models/MonthlyTraining';
 import { z } from 'zod';
 import dbConnect from '../../../lib/mongodb';
 
@@ -62,25 +63,42 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Obtener disponibilidad para cada mes con timeout
+    // Obtener entrenamientos mensuales que tienen clases (fechas) configuradas
+    const monthlyTrainingsWithClasses = await MonthlyTraining.find({
+      type: 'swing-trading',
+      'classes.0': { $exists: true }, // Solo meses que tienen al menos una clase
+      status: { $in: ['open', 'full', 'in-progress'] }
+    }).select('month year classes');
+
+    // Crear un Set de meses/años que tienen clases
+    const monthsWithClasses = new Set(
+      monthlyTrainingsWithClasses.map(t => `${t.year}-${t.month}`)
+    );
+
+    // Obtener disponibilidad solo para meses que tienen clases configuradas
     const availabilityData = await Promise.all(
-      monthsToCheck.map(async ({ month: checkMonth, year: checkYear }) => {
-        const availability = await withTimeout(
-          (MonthlyTrainingSubscription as any).checkAvailability(
-            trainingType,
-            checkYear,
-            checkMonth,
-            maxSubscribers
-          )
-        );
-        
-        return {
-          month: checkMonth,
-          year: checkYear,
-          monthName: new Date(checkYear, checkMonth - 1).toLocaleString('es-ES', { month: 'long' }),
-          ...(availability || { available: false, currentSubscribers: 0, maxSubscribers, remainingSlots: 0 })
-        };
-      })
+      monthsToCheck
+        .filter(({ month: checkMonth, year: checkYear }) => {
+          // Solo incluir meses que tienen clases configuradas
+          return monthsWithClasses.has(`${checkYear}-${checkMonth}`);
+        })
+        .map(async ({ month: checkMonth, year: checkYear }) => {
+          const availability = await withTimeout(
+            (MonthlyTrainingSubscription as any).checkAvailability(
+              trainingType,
+              checkYear,
+              checkMonth,
+              maxSubscribers
+            )
+          );
+          
+          return {
+            month: checkMonth,
+            year: checkYear,
+            monthName: new Date(checkYear, checkMonth - 1).toLocaleString('es-ES', { month: 'long' }),
+            ...(availability || { available: false, currentSubscribers: 0, maxSubscribers, remainingSlots: 0 })
+          };
+        })
     );
 
     return res.status(200).json({

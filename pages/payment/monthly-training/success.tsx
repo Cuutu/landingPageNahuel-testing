@@ -119,7 +119,7 @@ export default function MonthlyTrainingPaymentSuccess() {
         <div className={styles.errorCard}>
           <h2>Error</h2>
           <p>{error || 'Información del entrenamiento no disponible'}</p>
-          <Link href="/entrenamientos/swing-trading" className={styles.backButton}>
+          <Link href="/entrenamientos/zero2trader" className={styles.backButton}>
             Volver a Zero 2 Trader
           </Link>
         </div>
@@ -248,7 +248,7 @@ export default function MonthlyTrainingPaymentSuccess() {
         </div>
 
         <div className={styles.actions}>
-          <Link href="/entrenamientos/swing-trading" className={styles.primaryButton}>
+          <Link href="/entrenamientos/zero2trader" className={styles.primaryButton}>
             <ArrowRight size={20} />
             Ver Más Entrenamientos
           </Link>

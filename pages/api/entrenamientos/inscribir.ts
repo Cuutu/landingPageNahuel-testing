@@ -151,7 +151,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       data: {
         entrenamiento: nuevoEntrenamiento,
         transactionId,
-        redirectUrl: `/entrenamientos/swing-trading`
+        redirectUrl: `/entrenamientos/zero2trader`
       }
     });
 

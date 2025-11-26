@@ -222,9 +222,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       external_reference: paymentId,
       notification_url: `${process.env.NEXTAUTH_URL}/api/webhooks/mercadopago`,
       back_urls: {
-        success: `${process.env.NEXTAUTH_URL}/entrenamientos/swing-trading/pago-exitoso`,
-        failure: `${process.env.NEXTAUTH_URL}/entrenamientos/swing-trading/pago-fallido`,
-        pending: `${process.env.NEXTAUTH_URL}/entrenamientos/swing-trading/pago-pendiente`
+        success: `${process.env.NEXTAUTH_URL}/entrenamientos/zero2trader/pago-exitoso`,
+        failure: `${process.env.NEXTAUTH_URL}/entrenamientos/zero2trader/pago-fallido`,
+        pending: `${process.env.NEXTAUTH_URL}/entrenamientos/zero2trader/pago-pendiente`
       },
       auto_return: 'approved',
       metadata: {

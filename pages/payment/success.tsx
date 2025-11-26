@@ -48,7 +48,7 @@ export default function PaymentSuccess() {
       'SmartMoney': { url: '/alertas/smart-money', text: 'Ir a mis alertas' },
       'TraderCall': { url: '/alertas/trader-call', text: 'Ir a mis alertas' },
       'CashFlow': { url: '/alertas/cashflow', text: 'Ir a mis alertas' },
-      'SwingTrading': { url: '/entrenamientos/swing-trading', text: 'Ir a mis entrenamientos' },
+      'SwingTrading': { url: '/entrenamientos/zero2trader', text: 'Ir a mis entrenamientos' },
       'DowJones': { url: '/entrenamientos/dow-jones', text: 'Ir a mis entrenamientos' },
       'Consulta Financiera': { url: '/asesorias/consultorio-financiero', text: 'Ir a consultorio financiero' },
       'Asesoría': { url: '/asesorias/consultorio-financiero', text: 'Ir a consultorio financiero' },

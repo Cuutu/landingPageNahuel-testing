@@ -71,7 +71,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       label: 'Entrenamientos',
       href: '/entrenamientos',
       dropdown: [
-        { label: 'Zero 2 Trader', href: '/entrenamientos/swing-trading' },
+        { label: 'Zero 2 Trader', href: '/entrenamientos/zero2trader' },
       ],
     },
     {

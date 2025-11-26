@@ -161,7 +161,7 @@ export default function MonthlyTrainingPaymentPending() {
             )}
           </button>
           
-          <Link href="/entrenamientos/swing-trading" className={styles.secondaryButton}>
+          <Link href="/entrenamientos/zero2trader" className={styles.secondaryButton}>
             <ArrowLeft size={20} />
             Volver a Entrenamientos
           </Link>

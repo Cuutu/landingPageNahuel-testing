@@ -183,7 +183,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                 <p className={styles.heroDescription}>
                   Experiencia premium, intensiva y personalizada con acompañamiento en cada paso de tu camino como trader profesional.
                 </p>
-                <Link href="https://lozanonahuel.vercel.app/entrenamientos/swing-trading" className={styles.heroCTA}>
+                <Link href="https://lozanonahuel.vercel.app/entrenamientos/zero2trader" className={styles.heroCTA}>
                   Empezá Ahora &gt;
                 </Link>
               </motion.div>
@@ -310,7 +310,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                 </div>
 
                 {/* Botón CTA */}
-                <Link href="/entrenamientos/swing-trading" className={styles.swingTradingCTA}>
+                <Link href="/entrenamientos/zero2trader" className={styles.swingTradingCTA}>
                   Quiero saber más &gt;
                 </Link>
               </div>
@@ -334,7 +334,7 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
               <p className={styles.ctaDescription}>
                 Únete a nuestra comunidad y comienza a construir tu libertad financiera
               </p>
-              <Link href="/entrenamientos/swing-trading" className={styles.ctaButton}>
+              <Link href="/entrenamientos/zero2trader" className={styles.ctaButton}>
                 Zero 2 Trader <ArrowRight size={20} />
               </Link>
             </motion.div>
@@ -443,7 +443,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           'Acceso a comunidad privada',
           'Certificado de completación'
         ],
-        href: '/entrenamientos/swing-trading',
+        href: '/entrenamientos/zero2trader',
         image: '/entrenamientos/swing-trading.jpg',
         badge: 'Más Popular'
       }
@@ -498,7 +498,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           'Acceso a comunidad privada',
           'Certificado de completación'
         ],
-        href: '/entrenamientos/swing-trading',
+        href: '/entrenamientos/zero2trader',
         image: '/entrenamientos/swing-trading.jpg',
         badge: 'Más Popular'
       }
