@@ -324,7 +324,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     autoplay: { type: Boolean, default: true },
     muted: { type: Boolean, default: true },
     loop: { type: Boolean, default: true },
-    volume: { type: Number, default: 20, min: 0, max: 100 }
+    volume: { type: Number, default: 25 }
   },
   learningVideo: {
     youtubeId: { type: String, required: true },
@@ -334,7 +334,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
     autoplay: { type: Boolean, default: false },
     muted: { type: Boolean, default: true },
     loop: { type: Boolean, default: false },
-    volume: { type: Number, default: 20, min: 0, max: 100 }
+    volume: { type: Number, default: 25 }
   },
   serviciosVideos: {
     alertas: {
@@ -344,7 +344,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
       autoplay: { type: Boolean, default: false },
       muted: { type: Boolean, default: true },
       loop: { type: Boolean, default: false },
-      volume: { type: Number, default: 20, min: 0, max: 100 }
+      volume: { type: Number, default: 25 }
     },
     entrenamientos: {
       youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -373,7 +373,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -382,7 +382,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     },
     dowJones: {
@@ -393,7 +393,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -402,7 +402,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     },
     advanced: {
@@ -413,7 +413,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       promoVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -435,7 +435,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       testimonialsVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -454,7 +454,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       finalVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -476,7 +476,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       },
       communityVideo: {
         youtubeId: { type: String, default: 'dQw4w9WgXcQ' },
@@ -485,7 +485,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     },
     traderCall: {
@@ -496,7 +496,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     },
     smartMoney: {
@@ -507,7 +507,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     },
     cashFlow: {
@@ -518,7 +518,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
         autoplay: { type: Boolean, default: false },
         muted: { type: Boolean, default: true },
         loop: { type: Boolean, default: false },
-        volume: { type: Number, default: 20, min: 0, max: 100 }
+        volume: { type: Number, default: 25 }
       }
     }
   },
@@ -531,7 +531,7 @@ const siteConfigSchema = new Schema<SiteConfigDocument>({
       autoplay: { type: Boolean, default: false },
       muted: { type: Boolean, default: true },
       loop: { type: Boolean, default: false },
-      volume: { type: Number, default: 20, min: 0, max: 100 }
+      volume: { type: Number, default: 25 }
     }
   },
   statistics: {

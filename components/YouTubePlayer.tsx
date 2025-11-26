@@ -38,7 +38,7 @@ export default function YouTubePlayer({
   height = '100%',
   className = '',
   fillContainer = false, // Por defecto usar el comportamiento estándar con padding-bottom
-  volume = 20 // Volumen por defecto 20%
+  volume = 25 // Volumen por defecto 25%
 }: YouTubePlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -67,6 +67,9 @@ export default function YouTubePlayer({
   useEffect(() => {
     if (!iframeRef.current || isLoading || muted) return;
 
+    // Usar 25% como volumen por defecto si no se especifica
+    const videoVolume = volume !== undefined ? volume : 25;
+
     const setVolume = () => {
       try {
         const iframe = iframeRef.current;
@@ -79,7 +82,7 @@ export default function YouTubePlayer({
           JSON.stringify({
             event: 'command',
             func: 'setVolume',
-            args: [volume]
+            args: [videoVolume]
           }),
           'https://www.youtube.com'
         );

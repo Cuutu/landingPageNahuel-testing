@@ -1432,7 +1432,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         description: 'Conoce más sobre nuestros servicios de trading',
         autoplay: true,
         muted: true,
-        loop: true
+        loop: true,
+        volume: 25
       },
       servicios: { orden: 1, visible: true },
       cursos: { orden: 2, visible: true, destacados: [] },
@@ -1442,7 +1443,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         description: 'Conoce más sobre nuestros cursos de trading',
         autoplay: true,
         muted: true,
-        loop: true
+        loop: true,
+        volume: 25
       },
       statistics: {
         visible: true,
@@ -1460,21 +1462,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           title: 'Video de Alertas',
           autoplay: false,
           muted: true,
-          loop: false
+          loop: false,
+          volume: 25
         },
         entrenamientos: {
           youtubeId: 'dQw4w9WgXcQ',
           title: 'Video de Entrenamientos',
           autoplay: false,
           muted: true,
-          loop: false
+          loop: false,
+          volume: 25
         },
         asesorias: {
           youtubeId: 'dQw4w9WgXcQ',
           title: 'Video de Asesorías',
           autoplay: false,
           muted: true,
-          loop: false
+          loop: false,
+          volume: 25
         }
       }
     };
@@ -1593,7 +1598,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             description: 'Conoce más sobre nuestros servicios de trading',
             autoplay: true,
             muted: true,
-            loop: true
+            loop: true,
+            volume: 25
           },
           servicios: { orden: 1, visible: true },
           cursos: { orden: 2, visible: true, destacados: [] },
@@ -1603,7 +1609,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
             description: 'Conoce más sobre nuestros cursos de trading',
             autoplay: true,
             muted: true,
-            loop: true
+            loop: true,
+            volume: 25
           },
           statistics: {
             visible: true,
@@ -1621,21 +1628,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
               title: 'Video de Alertas',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             },
             entrenamientos: {
               youtubeId: 'dQw4w9WgXcQ',
               title: 'Video de Entrenamientos',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             },
             asesorias: {
               youtubeId: 'dQw4w9WgXcQ',
               title: 'Video de Asesorías',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             }
           }
         },

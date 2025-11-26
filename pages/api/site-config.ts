@@ -47,7 +47,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: 'Conoce más sobre nuestros servicios de trading',
             autoplay: true,
             muted: true,
-            loop: true
+            loop: true,
+            volume: 25
           },
           learningVideo: {
             youtubeId: 'dQw4w9WgXcQ',
@@ -55,7 +56,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: 'Aprende a invertir desde cero con nuestros cursos especializados',
             autoplay: false,
             muted: true,
-            loop: false
+            loop: false,
+            volume: 25
           },
           serviciosVideos: {
             alertas: {
@@ -64,7 +66,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               description: 'Descubre cómo funcionan nuestras alertas de trading',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             },
             entrenamientos: {
               youtubeId: 'dQw4w9WgXcQ',
@@ -72,7 +75,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               description: 'Conoce nuestros programas de formación especializados',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             },
             asesorias: {
               youtubeId: 'dQw4w9WgXcQ',
@@ -80,7 +84,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               description: 'Asesorías personalizadas para optimizar tu portafolio',
               autoplay: false,
               muted: true,
-              loop: false
+              loop: false,
+              volume: 25
             }
           },
           statistics: {

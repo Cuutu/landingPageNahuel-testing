@@ -543,7 +543,15 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     }
     
     // Actualizar el último nivel
-    current[keys[keys.length - 1]] = { ...current[keys[keys.length - 1]], ...updates };
+    const existingVideo = current[keys[keys.length - 1]] || {};
+    // Asegurar que siempre tenga volume: 25 por defecto (fijo, no configurable)
+    const updatedVideo = { 
+      ...existingVideo, 
+      ...updates,
+      volume: 25 // Siempre 25%, no configurable
+    };
+    
+    current[keys[keys.length - 1]] = updatedVideo;
     
     setConfig(newConfig);
   };
@@ -585,12 +593,15 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     
     setSaving(true);
     try {
+      // Asegurar que todos los videos tengan volume: 25 antes de guardar
+      const configToSave = ensureVolumeDefaults(config);
+      
       const response = await fetch('/api/site-config', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(config)
+        body: JSON.stringify(configToSave)
       });
       
       if (response.ok) {
@@ -621,6 +632,30 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
     setTimeout(() => setCopiedId(''), 2000);
   };
 
+  // Función para asegurar que todos los videos tengan volume: 25
+  const ensureVolumeDefaults = (configData: any): any => {
+    if (!configData) return configData;
+    
+    const setVolumeIfMissing = (obj: any): any => {
+      if (!obj || typeof obj !== 'object') return obj;
+      
+      if (obj.youtubeId !== undefined && obj.volume === undefined) {
+        obj.volume = 25;
+      }
+      
+      // Recursivamente aplicar a objetos anidados
+      for (const key in obj) {
+        if (typeof obj[key] === 'object' && obj[key] !== null) {
+          obj[key] = setVolumeIfMissing(obj[key]);
+        }
+      }
+      
+      return obj;
+    };
+    
+    return setVolumeIfMissing(JSON.parse(JSON.stringify(configData)));
+  };
+
   // Cargar configuración
   useEffect(() => {
     const fetchConfig = async () => {
@@ -628,7 +663,9 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
         const response = await fetch('/api/site-config');
         if (response.ok) {
           const data = await response.json();
-          setConfig(data);
+          // Asegurar que todos los videos tengan volume: 25
+          const configWithVolume = ensureVolumeDefaults(data);
+          setConfig(configWithVolume);
         }
       } catch (error) {
         console.error('Error fetching config:', error);
@@ -905,19 +942,6 @@ const VideoConfig: React.FC<VideoConfigProps> = ({ user }) => {
                             />
                             Repetir
                           </label>
-                        </div>
-                        
-                        <div className={styles.inputGroup}>
-                          <label>Volumen:</label>
-                          <select
-                            value={video.volume || 20}
-                            onChange={(e) => handleInputChange(section.path, 'volume', parseInt(e.target.value))}
-                            className={styles.input}
-                          >
-                            <option value={10}>10%</option>
-                            <option value={20}>20%</option>
-                            <option value={30}>30%</option>
-                          </select>
                         </div>
                       </div>
 
