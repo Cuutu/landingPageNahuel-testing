@@ -66,13 +66,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Obtener entrenamientos mensuales que tienen clases (fechas) configuradas
     const monthlyTrainingsWithClasses = await MonthlyTraining.find({
       type: 'swing-trading',
-      'classes.0': { $exists: true }, // Solo meses que tienen al menos una clase
+      classes: { 
+        $elemMatch: { 
+          date: { $exists: true, $ne: null, $type: 'date' } // Al menos una clase con fecha válida
+        }
+      },
       status: { $in: ['open', 'full', 'in-progress'] }
     }).select('month year classes');
 
-    // Crear un Set de meses/años que tienen clases
+    // Crear un Set de meses/años que tienen clases con fechas válidas
     const monthsWithClasses = new Set(
-      monthlyTrainingsWithClasses.map(t => `${t.year}-${t.month}`)
+      monthlyTrainingsWithClasses
+        .filter(t => {
+          // Verificar que tenga al menos una clase con fecha válida
+          return t.classes && t.classes.length > 0 && 
+                 t.classes.some(c => c.date && c.date instanceof Date);
+        })
+        .map(t => `${t.year}-${t.month}`)
     );
 
     // Obtener disponibilidad solo para meses que tienen clases configuradas

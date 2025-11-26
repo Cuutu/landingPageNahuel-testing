@@ -111,57 +111,70 @@ const MonthlyTrainingSelector: React.FC<MonthlyTrainingSelectorProps> = ({
         Tu acceso será válido durante todo el mes seleccionado.
       </p>
 
-      <div className={styles.monthsGrid}>
-        {availabilityData.map((monthData) => {
-          const isSelected = selectedMonth === monthData.month && selectedYear === monthData.year;
-          const isCurrentMonth = monthData.month === new Date().getMonth() + 1 && monthData.year === new Date().getFullYear();
-          const isDisabled = !monthData.available || disabled;
-          
-          return (
-            <button
-              key={`${monthData.year}-${monthData.month}`}
-              className={`${styles.monthCard} ${isSelected ? styles.selected : ''} ${isCurrentMonth ? styles.currentMonth : ''} ${isDisabled ? styles.disabled : ''}`}
-              onClick={() => !isDisabled && handleMonthChange(monthData.month, monthData.year)}
-              disabled={isDisabled}
-            >
-              <div className={styles.monthContent}>
-                <div className={styles.monthLabel}>{monthData.monthName} {monthData.year}</div>
-                
-                {/* Badges de estado */}
-                <div className={styles.badgesContainer}>
-                  {isCurrentMonth && (
-                    <div className={styles.currentBadge}>
-                      <CheckCircle size={14} />
-                      Actual
-                    </div>
-                  )}
-                  {isSelected && (
-                    <div className={styles.selectedBadge}>
-                      <CheckCircle size={16} />
-                      Seleccionado
-                    </div>
-                  )}
-                  {!monthData.available && (
-                    <div className={styles.fullBadge}>
-                      <UserX size={14} />
-                      Completo
-                    </div>
-                  )}
+      {availabilityData.length === 0 ? (
+        <div className={styles.infoBox}>
+          <AlertCircle size={16} />
+          <div className={styles.infoContent}>
+            <strong>No hay meses disponibles</strong>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.9rem' }}>
+              Por el momento no hay entrenamientos programados con fechas confirmadas. 
+              Vuelve a revisar más adelante o contacta con nosotros para más información.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className={styles.monthsGrid}>
+          {availabilityData.map((monthData) => {
+            const isSelected = selectedMonth === monthData.month && selectedYear === monthData.year;
+            const isCurrentMonth = monthData.month === new Date().getMonth() + 1 && monthData.year === new Date().getFullYear();
+            const isDisabled = !monthData.available || disabled;
+            
+            return (
+              <button
+                key={`${monthData.year}-${monthData.month}`}
+                className={`${styles.monthCard} ${isSelected ? styles.selected : ''} ${isCurrentMonth ? styles.currentMonth : ''} ${isDisabled ? styles.disabled : ''}`}
+                onClick={() => !isDisabled && handleMonthChange(monthData.month, monthData.year)}
+                disabled={isDisabled}
+              >
+                <div className={styles.monthContent}>
+                  <div className={styles.monthLabel}>{monthData.monthName} {monthData.year}</div>
+                  
+                  {/* Badges de estado */}
+                  <div className={styles.badgesContainer}>
+                    {isCurrentMonth && (
+                      <div className={styles.currentBadge}>
+                        <CheckCircle size={14} />
+                        Actual
+                      </div>
+                    )}
+                    {isSelected && (
+                      <div className={styles.selectedBadge}>
+                        <CheckCircle size={16} />
+                        Seleccionado
+                      </div>
+                    )}
+                    {!monthData.available && (
+                      <div className={styles.fullBadge}>
+                        <UserX size={14} />
+                        Completo
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Información de cupos */}
+                  <div className={styles.capacityInfo}>
+                    <Users size={14} />
+                    <span>
+                      {monthData.currentSubscribers}/{monthData.maxSubscribers} 
+                      {monthData.remainingSlots > 0 && ` (${monthData.remainingSlots} disponibles)`}
+                    </span>
+                  </div>
                 </div>
-                
-                {/* Información de cupos */}
-                <div className={styles.capacityInfo}>
-                  <Users size={14} />
-                  <span>
-                    {monthData.currentSubscribers}/{monthData.maxSubscribers} 
-                    {monthData.remainingSlots > 0 && ` (${monthData.remainingSlots} disponibles)`}
-                  </span>
-                </div>
-              </div>
-            </button>
-          );
-        })}
-      </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       <div className={styles.infoBox}>
         <AlertCircle size={16} />
