@@ -361,7 +361,7 @@
 }
 
 .serviceButton {
-  display: inline-block;
+  display: block;
   background: white;
   color: #8B6914;
   padding: 0.75rem 1.5rem;
@@ -374,11 +374,11 @@
   font-family: inherit;
   font-size: 0.9rem;
   outline: none;
-  align-self: center;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   letter-spacing: 0.025em;
   width: 100%;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .serviceButton:hover {
@@ -390,12 +390,13 @@
 
 .buttonContainer {
   margin-top: auto;
-  padding-top: 1rem;
+  padding: 1rem 1rem 1rem 1rem;
   position: relative;
   z-index: 5;
   width: 100%;
   display: flex;
   justify-content: center;
+  box-sizing: border-box;
 }
 
 .asesoriasGrid {

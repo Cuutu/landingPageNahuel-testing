@@ -228,8 +228,8 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
               viewport={{ once: true }}
               transition={{ duration: 0.8 }}
             >
-              {/* Video Player */}
-              <div className={styles.swingTradingVideo}>
+              {/* Video Player con Overlay */}
+              <div className={styles.videoPlayerContainer}>
                 {swingTradingVideoConfig && swingTradingVideoConfig.youtubeId && swingTradingVideoConfig.youtubeId !== 'dQw4w9WgXcQ' ? (
                   <YouTubePlayer
                     videoId={swingTradingVideoConfig.youtubeId}
@@ -248,71 +248,50 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
                     <p>Video no configurado</p>
                   </div>
                 )}
+
+                {/* Overlay con información */}
+                <div className={styles.videoOverlay}>
+                  <div className={styles.videoInfo}>
+                    <h3 className={styles.videoTitle}>Zero 2 Trader</h3>
+                    <span className={styles.videoTag}>Entrenamiento</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Contenido */}
-              <div className={styles.swingTradingContent}>
-                {/* Título y nivel */}
-                <div className={styles.swingTradingHeader}>
-                  <h2 className={styles.swingTradingTitle}>Zero 2 Trader</h2>
-                  <span className={styles.swingTradingLevel}>Avanzado - Experto</span>
-                </div>
-
-                {/* Descripción */}
-                <p className={styles.swingTradingDescription}>
+              {/* Main Content */}
+              <div className={styles.serviceContent}>
+                <p className={styles.serviceDescription}>
                   Experiencia de entrenamiento integral para llevarte de cero a operar con independencia total. Aprendés a analizar el mercado como un profesional, aplicás una estrategia de trading probada y operás en un entorno real con acompañamiento en cada paso.
                 </p>
 
-                {/* Información del curso */}
-                <div className={styles.courseInfoCard}>
-                  <div className={styles.courseInfoGrid}>
-                    <div className={styles.courseInfoItem}>
-                      <Clock size={20} />
-                      <span>3 meses de duración</span>
-                    </div>
-                    <div className={styles.courseInfoItem}>
-                      <Users size={20} />
-                      <span>Grupo Reducido</span>
-                    </div>
-                    <div className={styles.courseInfoItem}>
-                      <BookOpen size={20} />
-                      <span>Material didáctico y ejecutable</span>
-                    </div>
-                    <div className={styles.courseInfoItem}>
-                      <PlayCircle size={20} />
-                      <span>Clases semanales en vivo</span>
-                    </div>
-                  </div>
-                </div>
+                <ul className={styles.featureList}>
+                  <li className={styles.featureItem}>
+                    <span className={styles.checkmark}>✓</span>
+                    Estrategias de análisis técnico de temporalidades medias (días y semanas)
+                  </li>
+                  <li className={styles.featureItem}>
+                    <span className={styles.checkmark}>✓</span>
+                    Análisis de riesgo del portafolio completo según contexto de los principales mercados
+                  </li>
+                  <li className={styles.featureItem}>
+                    <span className={styles.checkmark}>✓</span>
+                    Indicadores de momentum y lectura chartista
+                  </li>
+                  <li className={styles.featureItem}>
+                    <span className={styles.checkmark}>✓</span>
+                    Actualización de status diario y ejecución de operaciones durante toda la jornada
+                  </li>
+                  <li className={styles.featureItem}>
+                    <span className={styles.checkmark}>✓</span>
+                    Búsqueda de movimientos largos y altamente rentables
+                  </li>
+                </ul>
 
-                {/* Lista de características */}
-                <div className={styles.featuresList}>
-                  <div className={styles.featureItem}>
-                    <CheckCircle size={16} />
-                    <span>Estrategias de análisis técnico de temporalidades medias (días y semanas)</span>
-                  </div>
-                  <div className={styles.featureItem}>
-                    <CheckCircle size={16} />
-                    <span>Análisis de riesgo del portafolio completo según contexto de los principales mercados</span>
-                  </div>
-                  <div className={styles.featureItem}>
-                    <CheckCircle size={16} />
-                    <span>Indicadores de momentum y lectura chartista</span>
-                  </div>
-                  <div className={styles.featureItem}>
-                    <CheckCircle size={16} />
-                    <span>Actualización de status diario y ejecución de operaciones durante toda la jornada</span>
-                  </div>
-                  <div className={styles.featureItem}>
-                    <CheckCircle size={16} />
-                    <span>Búsqueda de movimientos largos y altamente rentables</span>
-                  </div>
+                <div className={styles.buttonContainer}>
+                  <Link href="/entrenamientos/zero2trader" className={styles.serviceButton}>
+                    Quiero saber más &gt;
+                  </Link>
                 </div>
-
-                {/* Botón CTA */}
-                <Link href="/entrenamientos/zero2trader" className={styles.swingTradingCTA}>
-                  Quiero saber más &gt;
-                </Link>
               </div>
             </motion.div>
           </div>
