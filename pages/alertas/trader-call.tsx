@@ -2758,29 +2758,37 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   };
 
   const renderSeguimientoAlertas = () => {
-    // ✅ NUEVA LÓGICA: Mostrar TODAS las alertas activas en seguimiento (marcadas y desmarcadas)
-    // Todas las alertas aparecen en Seguimiento, independientemente del checkbox
-    // Los clientes deben poder seguir cualquier alerta que hayan comprado
-    // ✅ NUEVO: Incluir alertas descartadas del día actual
-    // ✅ NUEVO: Excluir alertas creadas HOY que aún no tienen finalPriceSetAt (aún no confirmadas a las 18:30)
+    // ✅ NUEVA LÓGICA: Mostrar TODAS las alertas activas en seguimiento
+    // - Alertas con PRECIO ESPECÍFICO: siempre aparecen en SEGUIMIENTO (incluso si fueron creadas hoy)
+    // - Alertas con RANGO: aparecen en SEGUIMIENTO solo si están confirmadas (tienen finalPriceSetAt) o no fueron creadas hoy
+    // - Alertas descartadas del día actual también aparecen
     const today = new Date();
     const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
     
     const alertasEnSeguimiento = realAlerts.filter(alert => {
-      // ✅ NUEVA LÓGICA: Incluir TODAS las alertas activas (marcadas y desmarcadas)
-      // EXCEPTO las alertas creadas HOY que aún no tienen finalPriceSetAt (aún no confirmadas)
       if (alert.status === 'ACTIVE') {
+        // Verificar si la alerta tiene rango o precio específico
+        const hasRange = alert.tipoAlerta === 'rango' || 
+                        (alert.entryPriceRange && (alert.entryPriceRange.min || alert.entryPriceRange.max)) ||
+                        (alert.precioMinimo && alert.precioMaximo);
+        
+        // Si tiene PRECIO ESPECÍFICO (sin rango), SIEMPRE mostrarla en SEGUIMIENTO
+        if (!hasRange) {
+          return true;
+        }
+        
+        // Si tiene RANGO, verificar si está confirmada
         // Verificar si la alerta fue creada hoy
         const alertDate = new Date(alert.date || alert.createdAt);
         const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
         
-        // Si fue creada hoy y no tiene finalPriceSetAt, no mostrarla (aún no confirmada a las 18:30)
+        // Si tiene rango y fue creada hoy, solo mostrarla si tiene finalPriceSetAt (confirmada)
         if (isCreatedToday && !alert.finalPriceSetAt) {
           return false;
         }
         
-        // Mostrar todas las demás alertas activas
+        // Mostrar todas las demás alertas activas (con rango confirmado o sin rango)
         return true;
       }
 
