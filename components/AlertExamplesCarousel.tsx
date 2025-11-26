@@ -142,10 +142,6 @@ const AlertExamplesCarousel: React.FC<AlertExamplesCarouselProps> = ({
                             <div className={styles.candlesticks}></div>
                           </div>
                         )}
-                        {/* Simple overlay with ticker */}
-                        <div className={styles.chartOverlay}>
-                          <span className={styles.tickerLabel}>{example.ticker}</span>
-                        </div>
                       </div>
                     </div>
                   ))}

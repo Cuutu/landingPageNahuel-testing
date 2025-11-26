@@ -173,99 +173,63 @@ const AsesoriasPage: React.FC<AsesoriasPageProps> = ({ session, asesorias, faqs 
               Elige la modalidad que mejor se adapte a tus objetivos financieros
             </motion.p>
             
-            <div className={styles.asesoriasGrid}>
+            <div className={styles.servicesGrid}>
               {asesorias.map((asesoria, index) => (
-                <motion.div 
+                <motion.div
                   key={asesoria.id}
-                  className={styles.asesoriaCard}
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 50 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.2 }}
+                  transition={{ duration: 0.6, delay: index * 0.2 }}
                 >
-                  {/* Video Promocional */}
-                  <div className={styles.asesoriaVideo}>
-                    <YouTubePlayer
-                      videoId={asesoria.videoId || "dQw4w9WgXcQ"}
-                      title={asesoria.videoTitle || `${asesoria.title} - Video Promocional`}
-                      autoplay={false}
-                      muted={true}
-                      loop={false}
-                      className={styles.videoPlayer}
-                      fillContainer={true}
-                    />
-                  </div>
+                  <motion.div
+                    className={styles.serviceCard}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {/* Video Player con Overlay */}
+                    <div className={styles.videoPlayerContainer}>
+                      <YouTubePlayer
+                        videoId={asesoria.videoId || "dQw4w9WgXcQ"}
+                        title={`${asesoria.title} - Introducción`}
+                        autoplay={false}
+                        muted={true}
+                        loop={false}
+                        className={styles.videoPlayer}
+                      />
 
-                  {/* Información de la Asesoría */}
-                  <div className={styles.asesoriaInfo}>
-                    <h3 className={styles.asesoriaTitle}>{asesoria.title}</h3>
-                    <p className={styles.asesoriaDescription}>{asesoria.description}</p>
-                  </div>
-
-                  {/* Contenedor con Información de la Imagen */}
-                  <div className={styles.asesoriaInfoContainer}>
-                    <div className={styles.infoGrid}>
-                      <div className={styles.infoItem}>
-                        <Clock size={20} />
-                        <span>{asesoria.duration}</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <Users size={20} />
-                        <span>Reunión individual</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <Globe size={20} />
-                        <span>Modalidad virtual y en vivo</span>
-                      </div>
-                      <div className={styles.infoItem}>
-                        <FileText size={20} />
-                        <span>Entregable personalizado</span>
+                      {/* Overlay con información */}
+                      <div className={styles.videoOverlay}>
+                        <div className={styles.videoInfo}>
+                          <h3 className={styles.videoTitle}>{asesoria.title}</h3>
+                          <span className={styles.videoTag}>Asesoría</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* 5 Puntos de Información */}
-                  <div className={styles.asesoriaPoints}>
-                    <h4>Características Destacadas:</h4>
-                    <div className={styles.pointsList}>
-                      {asesoria.infoPoints && asesoria.infoPoints.length > 0 ? (
-                        asesoria.infoPoints.map((point, idx) => (
-                          <div key={idx} className={styles.point}>
-                            <CheckCircle size={16} />
-                            <span>{point}</span>
-                          </div>
-                        ))
-                      ) : (
-                        // Puntos por defecto si no hay configuración
-                        asesoria.features.slice(0, 5).map((feature, idx) => (
-                          <div key={idx} className={styles.point}>
-                            <CheckCircle size={16} />
-                            <span>{feature}</span>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                    {/* Main Content */}
+                    <div className={styles.serviceContent}>
+                      <p className={styles.serviceDescription}>{asesoria.description}</p>
 
-                  {/* Footer con Precio y Botón */}
-                  <div className={styles.asesoriaFooter}>
-                    <div className={styles.asesoriaPrice}>
-                      <span className={styles.priceLabel}>Desde</span>
-                      <span className={styles.price}>
-                        {pricingLoading ? (
-                          'Cargando...'
-                        ) : pricing ? (
-                          `${pricing.currency === 'ARS' ? '$' : '$'}${pricing.asesorias.consultorioFinanciero.price} ${pricing.currency}`
-                        ) : (
-                          `$${asesoria.price} ARS`
-                        )}
-                      </span>
+                      <ul className={styles.featureList}>
+                        {(asesoria.infoPoints && asesoria.infoPoints.length > 0 
+                          ? asesoria.infoPoints 
+                          : asesoria.features.slice(0, 5)
+                        ).map((feature, idx) => (
+                          <li key={idx} className={styles.featureItem}>
+                            <span className={styles.checkmark}>✓</span>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className={styles.buttonContainer}>
+                        <Link href={asesoria.href} className={styles.serviceButton}>
+                          Quiero saber más &gt;
+                        </Link>
+                      </div>
                     </div>
-                    <Link href={asesoria.href} className={styles.asesoriaButton}>
-                      Solicitar Asesoría
-                      <ArrowRight size={18} />
-                    </Link>
-                  </div>
+                  </motion.div>
                 </motion.div>
               ))}
             </div>
