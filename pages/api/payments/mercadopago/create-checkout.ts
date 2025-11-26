@@ -71,15 +71,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
       
-      // Para trials, verificar si ya tuvo un trial anteriormente
+      // Para trials, verificar si ya usó el trial (incluso si expiró)
       if (type === 'trial') {
-        const hasExistingTrial = user.activeSubscriptions.some(
-          (sub: any) => sub.service === service && sub.subscriptionType === 'trial'
-        );
-        if (hasExistingTrial) {
+        // Inicializar trialsUsed si no existe
+        if (!user.trialsUsed) {
+          user.trialsUsed = {
+            TraderCall: false,
+            SmartMoney: false,
+            CashFlow: false
+          };
+        }
+
+        // Verificar si ya usó el trial para este servicio
+        if (user.trialsUsed[service as keyof typeof user.trialsUsed]) {
           return res.status(409).json({ 
             success: false,
             error: `Ya has utilizado tu prueba de ${service}. Solo puedes tener una prueba por servicio.` 
+          });
+        }
+
+        // También verificar si tiene un trial activo actualmente
+        const hasActiveTrial = user.activeSubscriptions.some(
+          (sub: any) => sub.service === service && sub.subscriptionType === 'trial' && sub.isActive && new Date(sub.expiryDate) > new Date()
+        );
+        if (hasActiveTrial) {
+          return res.status(409).json({ 
+            success: false,
+            error: `Ya tienes una prueba activa de ${service}.` 
           });
         }
       }

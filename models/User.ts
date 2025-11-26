@@ -37,6 +37,11 @@ export interface IUser extends Document {
   subscriptionExpiry?: Date; // Fecha de expiración de suscripción (30 días desde último pago)
   lastPaymentDate?: Date; // Fecha del último pago exitoso
   mercadopagoCustomerId?: string; // ID de cliente en MercadoPago
+  trialsUsed?: {
+    TraderCall?: boolean; // Si ya usó el trial de TraderCall
+    SmartMoney?: boolean; // Si ya usó el trial de SmartMoney
+    CashFlow?: boolean; // Si ya usó el trial de CashFlow
+  };
   activeSubscriptions: Array<{
     service: 'TraderCall' | 'SmartMoney' | 'CashFlow';
     startDate: Date;
@@ -159,6 +164,20 @@ const UserSchema: Schema = new Schema({
   mercadopagoCustomerId: {
     type: String,
     default: null
+  },
+  trialsUsed: {
+    TraderCall: {
+      type: Boolean,
+      default: false
+    },
+    SmartMoney: {
+      type: Boolean,
+      default: false
+    },
+    CashFlow: {
+      type: Boolean,
+      default: false
+    }
   },
   activeSubscriptions: [{
     service: {
@@ -326,13 +345,27 @@ UserSchema.methods.addTrialSubscription = function(
   currency: string = 'ARS',
   mercadopagoPaymentId?: string
 ) {
-  // Verificar si ya tiene un trial activo o completo para este servicio
-  const hasExistingTrial = this.activeSubscriptions.some(
-    (sub: any) => sub.service === service && sub.subscriptionType === 'trial'
+  // Inicializar trialsUsed si no existe
+  if (!this.trialsUsed) {
+    this.trialsUsed = {
+      TraderCall: false,
+      SmartMoney: false,
+      CashFlow: false
+    };
+  }
+
+  // Verificar si ya usó el trial para este servicio (incluso si expiró)
+  if (this.trialsUsed[service as keyof typeof this.trialsUsed]) {
+    throw new Error(`Ya has utilizado tu prueba de ${service}. Solo puedes tener una prueba por servicio.`);
+  }
+
+  // Verificar si tiene un trial activo actualmente
+  const hasActiveTrial = this.activeSubscriptions.some(
+    (sub: any) => sub.service === service && sub.subscriptionType === 'trial' && sub.isActive && new Date(sub.expiryDate) > new Date()
   );
   
-  if (hasExistingTrial) {
-    throw new Error(`Ya has utilizado tu prueba de ${service}. Solo puedes tener una prueba por servicio.`);
+  if (hasActiveTrial) {
+    throw new Error(`Ya tienes una prueba activa de ${service}.`);
   }
 
   const startDate = new Date();
@@ -348,6 +381,9 @@ UserSchema.methods.addTrialSubscription = function(
     currency,
     subscriptionType: 'trial'
   });
+  
+  // ✅ MARCAR QUE YA USÓ EL TRIAL (permanente, incluso si expira)
+  this.trialsUsed[service as keyof typeof this.trialsUsed] = true;
   
   // Actualizar fecha de expiración general
   this.subscriptionExpiry = expiryDate;
