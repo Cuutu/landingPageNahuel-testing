@@ -366,7 +366,7 @@ const NonSubscriberView: React.FC<{
                     ) : (
                       <>
                         <CheckCircle size={20} />
-                        <span>Probar por $1 - 30 días</span>
+                        <span>Probar por 30 días</span>
                       </>
                     )}
                   </button>
@@ -384,11 +384,21 @@ const NonSubscriberView: React.FC<{
                   ) : (
                     <>
                       <CheckCircle size={20} />
-                        <span>Suscribirme Completo</span>
+                        <span>Suscribirme</span>
                     </>
                   )}
                 </button>
                 </div>
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  textAlign: 'center',
+                  marginTop: '8px',
+                  fontStyle: 'italic',
+                  lineHeight: '1.4'
+                }}>
+                  * El pago es a modo de comprobación de identidad
+                </p>
                 <div className={styles.heroPricing}>
                   <span className={styles.price}>
                     {pricingLoading ? (
@@ -538,7 +548,7 @@ const NonSubscriberView: React.FC<{
                       Procesando...
                     </>
                   ) : (
-                    'Probar por $1 - 30 días >'
+                    'Probar por 30 días >'
                   )}
                 </button>
               <button 
@@ -553,12 +563,22 @@ const NonSubscriberView: React.FC<{
                     Procesando...
                   </>
                 ) : session ? (
-                    'Suscribirme Completo >'
+                    'Suscribirme >'
                 ) : (
                   'Iniciar Sesión y Suscribirme >'
                 )}
               </button>
               </div>
+              <p style={{
+                fontSize: '0.75rem',
+                color: '#94a3b8',
+                textAlign: 'center',
+                marginTop: '12px',
+                fontStyle: 'italic',
+                lineHeight: '1.4'
+              }}>
+                * El pago es a modo de comprobación de identidad
+              </p>
             </div>
           </motion.div>
         </div>
