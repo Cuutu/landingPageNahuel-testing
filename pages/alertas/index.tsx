@@ -120,11 +120,10 @@ const AlertService: React.FC<AlertServiceProps> = ({
   return (
     <motion.div 
       className={styles.serviceCard}
-      style={{ backgroundColor }}
       whileHover={{ scale: 1.02, y: -5 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Video Player */}
+      {/* Video Player con Overlay */}
       <div className={styles.videoPlayerContainer}>
         <YouTubePlayer
           videoId={videoId}
@@ -134,15 +133,18 @@ const AlertService: React.FC<AlertServiceProps> = ({
           loop={false}
           className={styles.videoPlayer}
         />
+
+        {/* Overlay con información */}
+        <div className={styles.videoOverlay}>
+          <div className={styles.videoInfo}>
+            <h3 className={styles.videoTitle}>{title}</h3>
+            <span className={styles.videoTag}>{tag}</span>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
       <div className={styles.serviceContent}>
-        <div className={styles.serviceHeader}>
-          <h3 className={styles.serviceTitle}>{title}</h3>
-          <span className={styles.serviceTag}>{tag}</span>
-        </div>
-        
         <p className={styles.serviceDescription}>{description}</p>
         
         <ul className={styles.featureList}>
@@ -160,14 +162,9 @@ const AlertService: React.FC<AlertServiceProps> = ({
         </div>
         
         <div className={styles.buttonContainer}>
-          <button 
-            className={styles.serviceButton}
-            onClick={handleButtonClick}
-            type="button"
-            style={{ color: buttonTextColor }}
-          >
+          <Link href={href} className={styles.serviceButton}>
             Quiero saber más &gt;
-          </button>
+          </Link>
         </div>
       </div>
     </motion.div>
@@ -182,9 +179,21 @@ interface AlertasPageProps {
     muted?: boolean;
     loop?: boolean;
   };
+  traderCallVideo?: {
+    youtubeId?: string;
+    title?: string;
+  };
+  smartMoneyVideo?: {
+    youtubeId?: string;
+    title?: string;
+  };
 }
 
-const AlertasPage: React.FC<AlertasPageProps> = ({ alertsHeroVideo }) => {
+const AlertasPage: React.FC<AlertasPageProps> = ({ 
+  alertsHeroVideo,
+  traderCallVideo,
+  smartMoneyVideo
+}) => {
   const router = useRouter();
   const alertServices = [
     {
@@ -200,7 +209,7 @@ const AlertasPage: React.FC<AlertasPageProps> = ({ alertsHeroVideo }) => {
       backgroundColor: '#0f766e',
       buttonTextColor: '#10b981',
       tag: 'Corto Plazo',
-      videoId: 'dQw4w9WgXcQ'
+      videoId: traderCallVideo?.youtubeId || 'dQw4w9WgXcQ'
     },
     {
       title: 'Smart Money',
@@ -215,7 +224,7 @@ const AlertasPage: React.FC<AlertasPageProps> = ({ alertsHeroVideo }) => {
       backgroundColor: '#7f1d1d',
       buttonTextColor: '#dc2626',
       tag: 'Mediano y Largo Plazo',
-      videoId: 'dQw4w9WgXcQ'
+      videoId: smartMoneyVideo?.youtubeId || 'dQw4w9WgXcQ'
     },
 
   ];
@@ -461,17 +470,23 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const siteConfigRes = await fetch(`${baseUrl}/api/site-config`);
     const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
     const alertsHeroVideo = siteConfig?.alertsVideos?.index?.heroVideo || null;
+    const traderCallVideo = siteConfig?.alertsVideos?.traderCall?.heroVideo || null;
+    const smartMoneyVideo = siteConfig?.alertsVideos?.smartMoney?.heroVideo || null;
 
     return {
       props: {
-        alertsHeroVideo
+        alertsHeroVideo,
+        traderCallVideo,
+        smartMoneyVideo
       }
     };
   } catch (error) {
     console.error('Error obteniendo configuración del sitio:', error);
     return {
       props: {
-        alertsHeroVideo: null
+        alertsHeroVideo: null,
+        traderCallVideo: null,
+        smartMoneyVideo: null
       }
     };
   }
