@@ -113,7 +113,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
           case '15d': return 15;
           case '30d': return 30;
           case '6m': return 180;
-          case '1y': return 365;
+          case '1y': return 365; 
           default: return 30;
         }
       };
