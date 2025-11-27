@@ -73,52 +73,80 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
     }
   };
 
-  // Convertir período a días (igual que PortfolioTimeRange)
-  const periodToDays = (period: string): number => {
+  // Convertir período a clave del endpoint de returns
+  const periodToReturnsKey = (period: string): string => {
     switch (period) {
-      case '1d': return 1;
-      case '7d': return 7;
-      case '15d': return 15;
-      case '30d': return 30;
-      case '6m': return 180;
-      case '1y': return 365;
-      default: return 30;
+      case '1d': return '1d';
+      case '7d': return '7d';
+      case '15d': return '15d';
+      case '30d': return '30d';
+      case '6m': return '180d';
+      case '1y': return '365d';
+      default: return '30d';
     }
   };
 
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
-      // Usar el mismo endpoint que PortfolioTimeRange
-      const days = periodToDays(selectedPeriod);
-      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
+      // ✅ NUEVO: Usar el nuevo endpoint de rendimientos basado en valorTotalCartera y valorActualCartera
+      const response = await fetch(`/api/portfolio/returns?pool=${serviceType}`);
 
       if (!response.ok) {
         throw new Error('Error al obtener métricas del servicio');
       }
 
-      const portfolioData = await response.json();
+      const returnsData = await response.json();
 
-      if (!portfolioData.success || !portfolioData.data || portfolioData.data.length === 0) {
+      if (!returnsData.success || !returnsData.data) {
         throw new Error('No hay datos disponibles para el período seleccionado');
       }
 
-      // Calcular rendimiento de la misma manera que PortfolioTimeRange
-      const firstValue = portfolioData.data[0]?.value || 10000;
-      const lastValue = portfolioData.data[portfolioData.data.length - 1]?.value || 10000;
-      const change = lastValue - firstValue;
-      const totalReturnPercent = firstValue ? (change / firstValue) * 100 : 0;
+      // Obtener el rendimiento para el período seleccionado
+      const returnsKey = periodToReturnsKey(selectedPeriod);
+      const totalReturnPercent = returnsData.data.returns[returnsKey] ?? 0;
+
+      // Obtener datos adicionales del portfolio-evolution para estadísticas
+      const periodToDays = (period: string): number => {
+        switch (period) {
+          case '1d': return 1;
+          case '7d': return 7;
+          case '15d': return 15;
+          case '30d': return 30;
+          case '6m': return 180;
+          case '1y': return 365;
+          default: return 30;
+        }
+      };
+
+      const days = periodToDays(selectedPeriod);
+      const portfolioResponse = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
+      
+      let activeAlerts = 0;
+      let closedAlerts = 0;
+      let winRate = 0;
+      let totalTrades = 0;
+
+      if (portfolioResponse.ok) {
+        const portfolioData = await portfolioResponse.json();
+        if (portfolioData.success && portfolioData.stats) {
+          activeAlerts = portfolioData.stats.totalAlerts || 0;
+          closedAlerts = portfolioData.stats.closedAlerts || 0;
+          winRate = portfolioData.stats.winRate || 0;
+          totalTrades = portfolioData.stats.totalAlerts || 0;
+        }
+      }
 
       const serviceData: ServicePerformanceData = {
         totalReturnPercent: parseFloat(totalReturnPercent.toFixed(2)),
         relativePerformanceVsSP500: 0, // Se calculará después cuando sp500Data esté disponible
-        activeAlerts: portfolioData.stats?.totalAlerts || 0,
-        closedAlerts: portfolioData.stats?.closedAlerts || 0,
+        activeAlerts,
+        closedAlerts,
         winningAlerts: 0, // No disponible en portfolio-evolution
         losingAlerts: 0, // No disponible en portfolio-evolution
-        winRate: portfolioData.stats?.winRate || 0,
+        winRate,
         averageGain: 0, // No disponible en portfolio-evolution
         averageLoss: 0, // No disponible en portfolio-evolution
-        totalTrades: portfolioData.stats?.totalAlerts || 0,
+        totalTrades,
         period: selectedPeriod
       };
 
