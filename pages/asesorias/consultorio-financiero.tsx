@@ -8,6 +8,7 @@ import { generateCircularAvatarDataURL } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Carousel from '@/components/Carousel';
+import ComingSoon from '@/components/ComingSoon';
 import { motion } from 'framer-motion';
 import { 
   CheckCircle,
@@ -579,6 +580,11 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       </Head>
 
       <Navbar />
+
+      <ComingSoon 
+        title="Próximamente"
+        message="Estamos trabajando en esta sección. Muy pronto estará disponible."
+      />
 
       <main className={styles.main}>
         {/* Hero Section */}
