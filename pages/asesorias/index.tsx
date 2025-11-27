@@ -23,6 +23,7 @@ import VideoPlayerMux from '@/components/VideoPlayerMux';
 import { usePricing } from '@/hooks/usePricing';
 import BackgroundVideo from '@/components/BackgroundVideo';
 import YouTubePlayer from '@/components/YouTubePlayer';
+import ComingSoon from '@/components/ComingSoon';
 import styles from '@/styles/AsesoriasIndex.module.css';
 
 interface AsesoriasPageProps {
@@ -91,6 +92,11 @@ const AsesoriasPage: React.FC<AsesoriasPageProps> = ({ session, asesorias, faqs 
       </Head>
 
       <Navbar />
+
+      <ComingSoon 
+        title="Próximamente"
+        message="Estamos trabajando en esta sección. Muy pronto estará disponible."
+      />
 
       <main className={styles.main}>
         {/* Hero Section con Video Explicativo */}

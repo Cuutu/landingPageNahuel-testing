@@ -6,6 +6,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import BackgroundVideo from '@/components/BackgroundVideo';
+import ComingSoon from '@/components/ComingSoon';
 import { motion } from 'framer-motion';
 import { 
   TrendingUp, 
@@ -154,6 +155,11 @@ const EntrenamientosPage: React.FC<EntrenamientosPageProps> = ({ trainings, vide
       </Head>
 
       <Navbar />
+      
+      <ComingSoon 
+        title="Próximamente"
+        message="Estamos trabajando en esta sección. Muy pronto estará disponible."
+      />
       
       <main className={styles.main}>
         {/* Hero Section - Nuevo diseño basado en la imagen */}
