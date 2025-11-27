@@ -90,6 +90,15 @@ const Footer: React.FC = () => {
               © {currentYear} Nahuel Lozano. Todos los derechos reservados.
             </p>
             
+            <a 
+              href="https://l40s.vercel.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={styles.devStudioLink}
+            >
+              L40S dev studio
+            </a>
+            
             <div className={styles.socialLinks}>
               <a href="https://www.youtube.com/@LozanoNahuel" target="_blank" rel="noopener noreferrer" className={styles.socialLink}>
                 <div className={styles.socialIcon} style={{ backgroundColor: '#FF0000' }}>

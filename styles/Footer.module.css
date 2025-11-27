@@ -161,12 +161,41 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 2rem;
 }
 
 .copyright {
   color: var(--text-muted);
   font-size: 0.9rem;
   margin: 0;
+}
+
+.devStudioLink {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  position: relative;
+}
+
+.devStudioLink:hover {
+  color: var(--primary-color);
+}
+
+.devStudioLink::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--primary-color);
+  transition: width 0.3s ease;
+}
+
+.devStudioLink:hover::after {
+  width: 100%;
 }
 
 /* Redes sociales */
@@ -272,8 +301,20 @@
   
   .footerBottomContent {
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
     text-align: center;
+  }
+  
+  .devStudioLink {
+    order: 2;
+  }
+  
+  .copyright {
+    order: 1;
+  }
+  
+  .socialLinks {
+    order: 3;
   }
 }
 
