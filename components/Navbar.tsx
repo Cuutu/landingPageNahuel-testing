@@ -11,13 +11,15 @@ import styles from '@/styles/Navbar.module.css';
 interface NavbarProps {
   /** @param className - Clases CSS adicionales */
   className?: string;
+  /** @param noSticky - Si es true, la navbar no será sticky (no seguirá al hacer scroll) */
+  noSticky?: boolean;
 }
 
 /**
  * Componente de navegación principal
  * Incluye menú desplegable para servicios y autenticación con Google
  */
-const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
+const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => {
   const { data: session, status } = useSession();
   const { isFeatureEnabled } = useSiteConfig();
   const { isContactModalOpen, openContactModal, closeContactModal } = useContact();
@@ -26,6 +28,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Obtener conteo de notificaciones
   const fetchNotificationCount = async () => {
@@ -57,6 +60,30 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
       }
     };
   }, [hoverTimeout]);
+
+  // Detectar scroll para aplicar efecto visual (solo si noSticky es false)
+  useEffect(() => {
+    if (noSticky) {
+      setIsScrolled(false);
+      return;
+    }
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY || document.documentElement.scrollTop;
+      setIsScrolled(scrollPosition > 10);
+    };
+
+    // Agregar listener de scroll
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Verificar posición inicial
+    handleScroll();
+
+    // Limpiar listener al desmontar
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [noSticky]);
 
   const navItems = [
     {
@@ -161,7 +188,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '' }) => {
 
   return (
     <>
-      <nav className={`${styles.navbar} ${className}`}>
+      <nav className={`${styles.navbar} ${isScrolled ? styles.scrolled : ''} ${noSticky ? styles.noSticky : ''} ${className}`}>
         <div className={styles.container}>
           {/* Logo Principal - Ahora con imagen */}
           <Link href="/" className={styles.logo}>

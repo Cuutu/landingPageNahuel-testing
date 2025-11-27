@@ -6039,7 +6039,7 @@ const SmartMoneyPage: React.FC<SmartMoneyPageProps> = ({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
-      <Navbar />
+      <Navbar noSticky={isSubscribed} />
       
       <main className={styles.main}>
         {isSubscribed ? (
