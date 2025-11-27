@@ -27,11 +27,8 @@ export async function calculateCurrentPortfolioValue(pool: 'TraderCall' | 'Smart
     throw new Error('Usuario administrador no encontrado');
   }
 
-  // Obtener todos los documentos de liquidez del pool
-  const liquidityDocs: any[] = await Liquidity.find({ 
-    createdBy: adminUser._id, 
-    pool 
-  }).lean();
+  // Obtener todos los documentos de liquidez del pool (no solo del admin, sino de todo el pool)
+  const liquidityDocs: any[] = await Liquidity.find({ pool }).lean();
 
   // Calcular liquidez inicial global
   let liquidezInicialGlobal = 0;
@@ -47,6 +44,11 @@ export async function calculateCurrentPortfolioValue(pool: 'TraderCall' | 'Smart
   } else if (liquidityDocs.length > 0) {
     const firstDoc = liquidityDocs[0];
     liquidezInicialGlobal = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
+  }
+
+  // Si no hay liquidez configurada, loguear un warning pero continuar con 0
+  if (liquidezInicialGlobal === 0 && liquidityDocs.length === 0) {
+    console.warn(`⚠️ [PORTFOLIO] No hay documentos de liquidez configurados para el pool ${pool}. El valor de la cartera será 0.`);
   }
 
   // Calcular totales de todas las distribuciones

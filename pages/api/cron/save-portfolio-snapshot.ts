@@ -65,6 +65,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // Calcular valor actual de la cartera
         const portfolioValue = await calculateCurrentPortfolioValue(pool);
+        
+        // Log detallado del cálculo
+        console.log(`📊 [${pool}] Valores calculados:`, {
+          valorTotalCartera: portfolioValue.valorTotalCartera,
+          liquidezInicial: portfolioValue.liquidezInicial,
+          liquidezTotal: portfolioValue.liquidezTotal,
+          liquidezDistribuida: portfolioValue.liquidezDistribuida,
+          totalProfitLoss: portfolioValue.totalProfitLoss
+        });
 
         // Verificar si ya existe un snapshot para esta fecha y pool
         // Buscar en un rango del mismo día
