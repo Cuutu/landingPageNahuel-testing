@@ -14,10 +14,6 @@
     {
       "path": "/api/cron/training-reminders",
       "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/save-portfolio-snapshot",
-      "schedule": "30 19 * * 1-5"
     }
   ]
 }

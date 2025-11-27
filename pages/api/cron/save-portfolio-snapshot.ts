@@ -5,22 +5,43 @@ import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
 
 /**
  * API para guardar el valor de la cartera diariamente a las 16:30
- * Este endpoint se ejecuta automáticamente mediante cron job
+ * Este endpoint se ejecuta automáticamente mediante cron job externo (cron-job.org)
  */
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Permitir GET para cronjobs externos (cron-job.org) y POST para otros usos
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return res.status(405).json({ 
+      success: false,
+      error: 'Método no permitido. Use GET o POST.' 
+    });
+  }
+
   try {
-    // Verificar autorización
+    // ✅ NUEVO: Detectar cron jobs externos por User-Agent
     const authHeader = req.headers.authorization;
-    const token = authHeader?.replace('Bearer ', '');
+    const userAgent = req.headers['user-agent'] || '';
+    const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
+    const cronSecret = process.env.CRON_SECRET || process.env.CRON_SECRET_TOKEN;
     
     // Permitir acceso manual para testing (solo en desarrollo)
     const isManualTest = req.query.test === 'true' && process.env.NODE_ENV === 'development';
     
-    if (!isManualTest && token !== process.env.CRON_SECRET_TOKEN) {
+    // Permitir cron jobs externos sin token, o con token correcto
+    if (!isManualTest && cronSecret && authHeader !== `Bearer ${cronSecret}` && !isCronJobOrg) {
       console.error('❌ Acceso no autorizado a cron job de snapshot de cartera');
       return res.status(401).json({ 
+        success: false,
         error: 'No autorizado',
-        message: 'Este endpoint solo puede ser ejecutado por Vercel Cron o en modo test'
+        message: 'Este endpoint requiere autenticación o debe ser ejecutado desde cron-job.org'
+      });
+    }
+    
+    if (isCronJobOrg) {
+      console.log('🌐 CRON PÚBLICO DETECTADO (save-portfolio-snapshot):', {
+        timestamp: new Date().toISOString(),
+        userAgent: req.headers['user-agent'],
+        method: req.method,
+        url: req.url
       });
     }
 
