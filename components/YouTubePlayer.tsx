@@ -54,10 +54,23 @@ export default function YouTubePlayer({
       origin: window.location.origin
     });
 
-    if (autoplay) params.append('autoplay', '1');
-    if (muted) params.append('mute', '1');
-    if (loop) params.append('loop', '1');
-    if (loop) params.append('playlist', videoId); // Necesario para el loop
+    // ✅ IMPORTANTE: Para que autoplay funcione, el video DEBE estar silenciado
+    // Los navegadores modernos bloquean autoplay con sonido
+    const shouldMute = muted || autoplay; // Si autoplay está activo, forzar muted
+    
+    if (autoplay) {
+      params.append('autoplay', '1');
+      // Forzar muted si autoplay está activo (requisito de los navegadores)
+      params.append('mute', '1');
+    } else if (muted) {
+      params.append('mute', '1');
+    }
+    
+    if (loop) {
+      params.append('loop', '1');
+      params.append('playlist', videoId); // Necesario para el loop
+    }
+    
     if (!controls) params.append('controls', '0');
 
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;

@@ -418,9 +418,9 @@ const NonSubscriberView: React.FC<{
                   <YouTubePlayer
                     videoId={traderHeroVideo.youtubeId}
                     title={traderHeroVideo.title || 'Trader Call - Video'}
-                    autoplay={!!traderHeroVideo.autoplay}
-                    muted={!!traderHeroVideo.muted}
-                    loop={!!traderHeroVideo.loop}
+                    autoplay={traderHeroVideo.autoplay !== undefined ? !!traderHeroVideo.autoplay : true}
+                    muted={traderHeroVideo.muted !== undefined ? !!traderHeroVideo.muted : true}
+                    loop={traderHeroVideo.loop !== undefined ? !!traderHeroVideo.loop : true}
                     controls={true}
                     className={styles.video}
                     fillContainer={true}
