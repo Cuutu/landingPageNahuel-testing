@@ -152,6 +152,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         );
 
         console.log(`✅ Suscripción ${tipo} agregada/renovada para usuario ${user.email} (${subscriptionDays} días)`);
+        console.log(`🔍 [DEBUG] Detalles de suscripción guardada:`, {
+          email: user.email,
+          service: tipo,
+          expiryDate: updatedSub?.expiryDate,
+          isActive: updatedSub?.isActive,
+          startDate: updatedSub?.startDate,
+          daysUntilExpiry: updatedSub ? Math.ceil((new Date(updatedSub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null
+        });
 
         // 📧 Enviar emails de notificación
         try {

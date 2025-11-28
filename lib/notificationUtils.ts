@@ -66,6 +66,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
 
     // Buscar usuarios con suscripciones activas al servicio específico para validar
     // ✅ IMPORTANTE: Buscar en TODOS los sistemas de suscripciones
+    const now = new Date();
+    
+    // ✅ MEJORADO: Consulta más explícita para activeSubscriptions
     const subscribedUsers = await User.find({
       $or: [
         {
@@ -73,7 +76,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
             $elemMatch: {
               servicio: alert.tipo,
               activa: true,
-              fechaVencimiento: { $gte: new Date() }
+              fechaVencimiento: { $gte: now }
             }
           }
         },
@@ -83,7 +86,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
               tipo: alert.tipo,
               activa: true,
               $or: [
-                { fechaFin: { $gte: new Date() } },
+                { fechaFin: { $gte: now } },
                 { fechaFin: { $exists: false } }
               ]
             }
@@ -91,25 +94,80 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         },
         {
           // ✅ NUEVO: Buscar en activeSubscriptions (sistema MercadoPago/Admin)
+          // Usar una consulta más explícita para asegurar que funcione
           'activeSubscriptions': {
             $elemMatch: {
               service: alert.tipo,
               isActive: true,
-              expiryDate: { $gte: new Date() }
+              expiryDate: { $gte: now }
             }
           }
         }
       ]
-    }, 'email name suscripciones subscriptions activeSubscriptions');
-
-    console.log('👥 [ALERT NOTIFICATION] Usuarios suscritos al servicio encontrados:', subscribedUsers.length);
+    }, 'email name suscripciones subscriptions activeSubscriptions').lean();
     
-    if (subscribedUsers.length === 0) {
+    // ✅ NUEVO: Filtrar manualmente para asegurar que las fechas sean válidas
+    // (por si acaso hay algún problema con la consulta de MongoDB)
+    const validSubscribedUsers = subscribedUsers.filter(user => {
+      // Verificar suscripciones legacy
+      const hasLegacySub = user.suscripciones?.some((sub: any) => 
+        sub.servicio === alert.tipo && 
+        sub.activa === true && 
+        new Date(sub.fechaVencimiento) >= now
+      );
+      
+      // Verificar subscriptions intermedio
+      const hasIntermediateSub = user.subscriptions?.some((sub: any) => 
+        sub.tipo === alert.tipo && 
+        sub.activa === true && 
+        (!sub.fechaFin || new Date(sub.fechaFin) >= now)
+      );
+      
+      // Verificar activeSubscriptions (el más importante)
+      const hasActiveSub = user.activeSubscriptions?.some((sub: any) => 
+        sub.service === alert.tipo && 
+        sub.isActive === true && 
+        new Date(sub.expiryDate) >= now
+      );
+      
+      return hasLegacySub || hasIntermediateSub || hasActiveSub;
+    });
+
+    console.log('👥 [ALERT NOTIFICATION] Usuarios encontrados por query:', subscribedUsers.length);
+    console.log('👥 [ALERT NOTIFICATION] Usuarios válidos después de filtrado:', validSubscribedUsers.length);
+    console.log('🔍 [ALERT NOTIFICATION] Tipo de alerta buscado:', alert.tipo);
+    console.log('🔍 [ALERT NOTIFICATION] Fecha actual para comparación:', new Date().toISOString());
+    
+    // Usar validSubscribedUsers en lugar de subscribedUsers
+    const finalSubscribedUsers = validSubscribedUsers;
+    
+    if (finalSubscribedUsers.length === 0) {
       console.log('⚠️ [ALERT NOTIFICATION] No hay usuarios suscritos al servicio:', alert.tipo);
       
       // Debug: Ver si hay usuarios en la DB
       const totalUsers = await User.countDocuments();
       console.log('📊 [ALERT NOTIFICATION] Total usuarios en DB:', totalUsers);
+      
+      // ✅ NUEVO: Buscar usuarios con activeSubscriptions para el tipo específico
+      const usersWithActiveSubs = await User.find({
+        'activeSubscriptions.service': alert.tipo
+      }, 'email activeSubscriptions').limit(5);
+      
+      console.log('🔍 [ALERT NOTIFICATION] Usuarios con activeSubscriptions para', alert.tipo, ':', usersWithActiveSubs.length);
+      usersWithActiveSubs.forEach(u => {
+        const subs = u.activeSubscriptions?.filter((sub: any) => sub.service === alert.tipo) || [];
+        console.log(`  - ${u.email}:`, {
+          totalActiveSubs: u.activeSubscriptions?.length || 0,
+          matchingSubs: subs.length,
+          subs: subs.map((sub: any) => ({
+            service: sub.service,
+            isActive: sub.isActive,
+            expiryDate: sub.expiryDate,
+            isExpired: new Date(sub.expiryDate) < new Date(),
+            daysUntilExpiry: Math.ceil((new Date(sub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
+          }))
+        });
+      });
       
       // Debug: Ver algunos usuarios y sus suscripciones
       const sampleUsers = await User.find({}, 'email suscripciones subscriptions activeSubscriptions').limit(3);
@@ -118,13 +176,23 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         console.log(`  - ${u.email}:`, {
           suscripciones: u.suscripciones?.length || 0,
           subscriptions: u.subscriptions?.length || 0,
-          activeSubscriptions: u.activeSubscriptions?.length || 0
+          activeSubscriptions: u.activeSubscriptions?.length || 0,
+          activeSubsDetails: u.activeSubscriptions?.map((sub: any) => ({
+            service: sub.service,
+            isActive: sub.isActive,
+            expiryDate: sub.expiryDate
+          })) || []
         });
       });
     } else {
       console.log('✅ [ALERT NOTIFICATION] Usuarios que recibirán email:');
-      subscribedUsers.forEach(u => {
-        console.log(`  - ${u.email}`);
+      finalSubscribedUsers.forEach(u => {
+        const matchingSub = u.activeSubscriptions?.find((sub: any) => sub.service === alert.tipo && sub.isActive);
+        console.log(`  - ${u.email}:`, {
+          hasActiveSub: !!matchingSub,
+          expiryDate: matchingSub?.expiryDate,
+          daysUntilExpiry: matchingSub ? Math.ceil((new Date(matchingSub.expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null
+        });
       });
     }
 
@@ -236,7 +304,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log('📧 [ALERT NOTIFICATION] Creando notificación global:', {
       title: notification.title,
       targetUsers: notification.targetUsers,
-      subscribedUsers: subscribedUsers.length,
+      subscribedUsers: finalSubscribedUsers.length,
       hasImage: !!notification.metadata?.imageUrl
     });
 
@@ -245,13 +313,13 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     await notificationDoc.save();
 
     console.log(`✅ [ALERT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
-    console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${subscribedUsers.length} usuarios suscritos al servicio ${alert.tipo}`);
+    console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo}`);
 
     // Enviar emails a usuarios suscritos
     let emailsSent = 0;
     const emailErrors: string[] = [];
 
-    for (const user of subscribedUsers) {
+    for (const user of finalSubscribedUsers) {
       try {
         const emailSuccess = await sendEmailNotification(user, notificationDoc);
         if (emailSuccess) {
@@ -265,7 +333,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       }
     }
 
-    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${subscribedUsers.length}`);
+    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${finalSubscribedUsers.length}`);
     
     if (emailErrors.length > 0) {
       console.error('❌ [ALERT NOTIFICATION] Errores de email:', emailErrors.slice(0, 3));
