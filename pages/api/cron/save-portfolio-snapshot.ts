@@ -2,6 +2,8 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import PortfolioSnapshot from '@/models/PortfolioSnapshot';
 import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
+import Alert from '@/models/Alert';
+import Liquidity from '@/models/Liquidity';
 
 /**
  * API para guardar el valor de la cartera diariamente a las 16:30
@@ -50,11 +52,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startTime = Date.now();
     await dbConnect();
 
-    // Crear fecha normalizada a las 16:30 de hoy
-    // El cron se ejecuta a las 16:30, así que guardamos con la fecha de hoy
-    const now = new Date();
-    const snapshotDate = new Date(now);
-    snapshotDate.setHours(16, 30, 0, 0); // 16:30:00
+    /**
+     * Obtiene el inicio del día en Uruguay (UTC-3)
+     */
+    function getStartOfDayUruguay(date: Date = new Date()): Date {
+      const uruguayOffset = -3 * 60; // UTC-3 en minutos
+      const utcTime = date.getTime();
+      const localTime = utcTime + uruguayOffset * 60 * 1000;
+      const localDate = new Date(localTime);
+      localDate.setHours(0, 0, 0, 0);
+      const utcStartOfDay = new Date(localDate.getTime() - uruguayOffset * 60 * 1000);
+      return utcStartOfDay;
+    }
+
+    // Crear fecha normalizada al inicio del día en Uruguay
+    const todayStart = getStartOfDayUruguay();
+    const snapshotDate = new Date(todayStart);
+    snapshotDate.setHours(16, 30, 0, 0); // 16:30:00 hora de Uruguay
 
     const pools: ('TraderCall' | 'SmartMoney')[] = ['TraderCall', 'SmartMoney'];
     const results = [];
@@ -62,6 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const pool of pools) {
       try {
         console.log(`📊 Calculando valor de cartera para ${pool}...`);
+        
+        // ✅ NUEVO: Actualizar precios de alertas activas antes de calcular el valor
+        console.log(`🔄 Actualizando precios de alertas activas para ${pool}...`);
+        await updatePricesForPool(pool);
         
         // Calcular valor actual de la cartera
         const portfolioValue = await calculateCurrentPortfolioValue(pool);
@@ -76,17 +94,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
 
         // Verificar si ya existe un snapshot para esta fecha y pool
-        // Buscar en un rango del mismo día
-        const startOfDay = new Date(snapshotDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(snapshotDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        
+        // Buscar exactamente por la fecha normalizada (inicio del día en Uruguay)
         const existingSnapshot = await PortfolioSnapshot.findOne({
           pool,
           snapshotDate: {
-            $gte: startOfDay,
-            $lte: endOfDay
+            $gte: todayStart,
+            $lt: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000) // Menos de 24 horas después
           }
         });
 
@@ -157,6 +170,81 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       error: 'Error interno del servidor',
       message: error instanceof Error ? error.message : 'Error desconocido'
     });
+  }
+}
+
+/**
+ * Actualiza los precios de las alertas activas de un pool y sus distribuciones de liquidez
+ */
+async function updatePricesForPool(pool: 'TraderCall' | 'SmartMoney'): Promise<void> {
+  try {
+    // Obtener alertas activas del pool
+    const activeAlerts = await Alert.find({
+      status: 'ACTIVE',
+      tipo: pool
+    });
+
+    if (activeAlerts.length === 0) {
+      console.log(`ℹ️ No hay alertas activas para ${pool}`);
+      return;
+    }
+
+    console.log(`🔄 Actualizando ${activeAlerts.length} alertas activas para ${pool}...`);
+
+    // Procesar en lotes para evitar sobrecarga
+    const batchSize = 5;
+    for (let i = 0; i < activeAlerts.length; i += batchSize) {
+      const batch = activeAlerts.slice(i, i + batchSize);
+      
+      await Promise.all(batch.map(async (alert) => {
+        try {
+          // Obtener precio actual
+          const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stock-price?symbol=${alert.symbol}`, {
+            headers: {
+              'Cache-Control': 'no-cache',
+              'Pragma': 'no-cache'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const newPrice = data.price;
+
+            if (newPrice && !data.isSimulated) {
+              // Actualizar precio en la alerta
+              alert.currentPrice = newPrice;
+              alert.calculateProfit();
+              await alert.save();
+
+              // Actualizar distribuciones de liquidez
+              const liquidityDocs = await Liquidity.find({
+                pool,
+                'distributions.alertId': alert._id.toString()
+              });
+
+              for (const liquidityDoc of liquidityDocs) {
+                const distribution = liquidityDoc.distributions.find(
+                  (d: any) => d.alertId.toString() === alert._id.toString()
+                );
+
+                if (distribution && distribution.isActive) {
+                  liquidityDoc.updateDistribution(alert._id.toString(), newPrice);
+                  await liquidityDoc.save();
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error(`⚠️ Error actualizando precio para ${alert.symbol}:`, error);
+          // Continuar con la siguiente alerta
+        }
+      }));
+    }
+
+    console.log(`✅ Precios actualizados para ${pool}`);
+  } catch (error) {
+    console.error(`❌ Error actualizando precios para ${pool}:`, error);
+    // No lanzar error para que el snapshot se guarde de todas formas
   }
 }
 
