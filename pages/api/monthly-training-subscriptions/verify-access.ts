@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth';
-import authOptions from '../auth/[...nextauth]';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/googleAuth';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import { z } from 'zod';
 import dbConnect from '../../../lib/mongodb';
@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await dbConnect();
     
     // Verificar autenticación
-    const session = await getServerSession(req, res, authOptions);
+    const session = await getServerSession(req as any, res as any, authOptions);
     if (!(session as any)?.user?.email) {
       return res.status(401).json({ error: 'No autorizado' });
     }

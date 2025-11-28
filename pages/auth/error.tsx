@@ -31,7 +31,8 @@ const AuthError: React.FC<AuthErrorProps> = () => {
       case 'ClientError':
         return 'Error en el cliente de autenticación';
       case 'Callback':
-        return 'Error en el callback de autenticación. Intenta iniciar sesión nuevamente.';
+      case 'OAuthCallback':
+        return 'Error en el callback de autenticación. Esto puede deberse a una configuración incorrecta de las URIs de redirección en Google Cloud Console.';
       default:
         return 'Error de autenticación. Intenta nuevamente.';
     }
@@ -47,6 +48,17 @@ const AuthError: React.FC<AuthErrorProps> = () => {
             'Cierra todas las pestañas del navegador',
             'Borra las cookies del sitio (Configuración → Privacidad → Cookies)',
             'Intenta iniciar sesión nuevamente',
+            'Si el problema persiste, contacta al administrador'
+          ],
+          action: 'Limpiar Datos'
+        };
+      case 'Callback':
+      case 'OAuthCallback':
+        return {
+          steps: [
+            'Verifica que las URIs de redirección estén correctamente configuradas en Google Cloud Console',
+            'Asegúrate de que NEXTAUTH_URL esté configurado correctamente en Vercel',
+            'Borra las cookies del sitio y intenta nuevamente',
             'Si el problema persiste, contacta al administrador'
           ],
           action: 'Limpiar Datos'

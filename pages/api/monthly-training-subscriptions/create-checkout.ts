@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { getServerSession } from 'next-auth';
-import authOptions from '../auth/[...nextauth]';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/googleAuth';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import MonthlyTrainingSubscription from '../../../models/MonthlyTrainingSubscription';
 import Pricing from '../../../models/Pricing';
@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('✅ Conectado a la base de datos');
     
     // Verificar autenticación
-    const session = await getServerSession(req, res, authOptions);
+    const session = await getServerSession(req as any, res as any, authOptions);
     console.log('👤 Session:', session ? 'Autenticado' : 'No autenticado');
     
     if (!(session as any)?.user?.email) {

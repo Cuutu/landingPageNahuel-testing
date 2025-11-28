@@ -29,6 +29,8 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account, profile }) {
       console.log('🔐 [SIGNIN] Iniciando sesión:', user.email);
+      console.log('🔐 [SIGNIN] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+      console.log('🔐 [SIGNIN] Account provider:', account?.provider);
       
       try {
         await dbConnect();
