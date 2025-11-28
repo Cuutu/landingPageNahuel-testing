@@ -6,6 +6,19 @@ import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
 
 /**
+ * Obtiene el inicio del día en Uruguay (UTC-3)
+ */
+function getStartOfDayUruguay(date: Date = new Date()): Date {
+  const uruguayOffset = -3 * 60; // UTC-3 en minutos
+  const utcTime = date.getTime();
+  const localTime = utcTime + uruguayOffset * 60 * 1000;
+  const localDate = new Date(localTime);
+  localDate.setHours(0, 0, 0, 0);
+  const utcStartOfDay = new Date(localDate.getTime() - uruguayOffset * 60 * 1000);
+  return utcStartOfDay;
+}
+
+/**
  * API para guardar el valor de la cartera diariamente a las 16:30
  * Este endpoint se ejecuta automáticamente mediante cron job externo (cron-job.org)
  */
@@ -51,19 +64,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const startTime = Date.now();
     await dbConnect();
-
-    /**
-     * Obtiene el inicio del día en Uruguay (UTC-3)
-     */
-    function getStartOfDayUruguay(date: Date = new Date()): Date {
-      const uruguayOffset = -3 * 60; // UTC-3 en minutos
-      const utcTime = date.getTime();
-      const localTime = utcTime + uruguayOffset * 60 * 1000;
-      const localDate = new Date(localTime);
-      localDate.setHours(0, 0, 0, 0);
-      const utcStartOfDay = new Date(localDate.getTime() - uruguayOffset * 60 * 1000);
-      return utcStartOfDay;
-    }
 
     // Crear fecha normalizada al inicio del día en Uruguay
     const todayStart = getStartOfDayUruguay();
