@@ -52,9 +52,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Construir la URI de redirección exactamente como el script
   // IMPORTANTE: Debe coincidir EXACTAMENTE con la que está en Google Cloud Console
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+  // FORZAR el uso de lozanonahuel.com (dominio principal) en lugar de vercel.app
   const redirectUri = process.env.GOOGLE_REDIRECT_URI 
-    || `${baseUrl}/api/admin/google-callback`;
+    || 'https://lozanonahuel.com/api/admin/google-callback';
   
   // Asegurarse de que no tenga barra final
   const cleanRedirectUri = redirectUri.replace(/\/$/, '');

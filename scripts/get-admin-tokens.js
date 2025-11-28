@@ -7,9 +7,9 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 // Usar un endpoint separado que NO interfiere con NextAuth (fuera de /api/auth/)
 // IMPORTANTE: Esta URI debe coincidir EXACTAMENTE con la que está en Google Cloud Console
-const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+// FORZAR el uso de lozanonahuel.com (dominio principal) en lugar de vercel.app
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI 
-  || `${baseUrl}/api/admin/google-callback`;
+  || 'https://lozanonahuel.com/api/admin/google-callback';
 
 // Asegurarse de que no tenga barra final
 const cleanRedirectUri = REDIRECT_URI.replace(/\/$/, '');
