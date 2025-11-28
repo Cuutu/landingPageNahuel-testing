@@ -6,9 +6,13 @@ require('dotenv').config({ path: '.env.local' });
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 // Usar un endpoint separado que NO interfiere con NextAuth (fuera de /api/auth/)
+// IMPORTANTE: Esta URI debe coincidir EXACTAMENTE con la que está en Google Cloud Console
+const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI 
-  || (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api/admin/google-callback` : null)
-  || 'https://lozanonahuel.com/api/admin/google-callback';
+  || `${baseUrl}/api/admin/google-callback`;
+
+// Asegurarse de que no tenga barra final
+const cleanRedirectUri = REDIRECT_URI.replace(/\/$/, '');
 
 // Scopes correctos para Google Calendar API
 const SCOPES = [
@@ -19,7 +23,7 @@ const SCOPES = [
 const oauth2Client = new google.auth.OAuth2(
   CLIENT_ID,
   CLIENT_SECRET,
-  REDIRECT_URI
+  cleanRedirectUri
 );
 
 async function getTokens() {
@@ -46,16 +50,23 @@ async function getTokens() {
   });
 
   console.log('📋 PASO 1: Verificar configuración');
-  console.log('\n🔗 URI de redirección que se usará:');
-  console.log('   ' + REDIRECT_URI);
-  console.log('\n⚠️  ANTES DE CONTINUAR: Verifica que esta URI EXACTA esté en Google Cloud Console');
-  console.log('   1. Ve a: https://console.cloud.google.com/apis/credentials');
+  console.log('\n' + '='.repeat(70));
+  console.log('🔗 URI de redirección que se usará (COPIA ESTA EXACTA):');
+  console.log('='.repeat(70));
+  console.log(cleanRedirectUri);
+  console.log('='.repeat(70));
+  console.log('\n⚠️  ANTES DE CONTINUAR: Esta URI DEBE estar en Google Cloud Console');
+  console.log('\n📝 Instrucciones paso a paso:');
+  console.log('   1. Abre: https://console.cloud.google.com/apis/credentials');
   console.log('   2. Selecciona tu proyecto');
   console.log('   3. Haz clic en tu OAuth 2.0 Client ID');
-  console.log('   4. En "URIs de redirección autorizados", verifica que esté EXACTAMENTE:');
-  console.log('      ' + REDIRECT_URI);
-  console.log('   5. Si NO está, agrégala y GUARDA');
-  console.log('   6. Espera 2-3 minutos después de guardar\n');
+  console.log('   4. En "URIs de redirección autorizados", busca esta URI:');
+  console.log('      ' + cleanRedirectUri);
+  console.log('   5. Si NO está, haz clic en "+ Agregar URI"');
+  console.log('   6. COPIA Y PEGA exactamente esta URI (sin espacios, sin barra final):');
+  console.log('      ' + cleanRedirectUri);
+  console.log('   7. Haz clic en GUARDAR');
+  console.log('   8. Espera 2-3 minutos después de guardar\n');
   
   const rl2 = readline.createInterface({
     input: process.stdin,
@@ -63,12 +74,15 @@ async function getTokens() {
   });
 
   await new Promise((resolve) => {
-    rl2.question('✅ ¿Ya verificaste que la URI esté en Google Cloud Console? (s/n): ', (answer) => {
+    rl2.question('\n✅ ¿Ya agregaste esta URI EXACTA en Google Cloud Console y guardaste? (s/n): ', (answer) => {
       rl2.close();
       if (answer.toLowerCase() !== 's' && answer.toLowerCase() !== 'si' && answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
-        console.log('\n⚠️  Por favor, agrega la URI en Google Cloud Console primero y luego ejecuta el script nuevamente.\n');
+        console.log('\n⚠️  Por favor, agrega la URI en Google Cloud Console primero:');
+        console.log('   URI a agregar: ' + cleanRedirectUri);
+        console.log('   Luego espera 2-3 minutos y ejecuta el script nuevamente.\n');
         process.exit(1);
       }
+      console.log('\n⏳ Espera 2-3 minutos para que los cambios se propaguen...\n');
       resolve(null);
     });
   });
@@ -151,7 +165,7 @@ async function getTokens() {
     console.log('- Verifica que Google Calendar API esté habilitada en tu proyecto');
     console.log('- Verifica que las credenciales OAuth (CLIENT_ID y CLIENT_SECRET) sean válidas');
     console.log('- Verifica que la URI de redirección esté en Google Cloud Console:');
-    console.log('  ' + REDIRECT_URI);
+    console.log('  ' + cleanRedirectUri);
     console.log('- Si recibes error "deleted_client", las credenciales fueron eliminadas - crea nuevas en Google Cloud Console');
     console.log('- Intenta generar un nuevo código\n');
   }

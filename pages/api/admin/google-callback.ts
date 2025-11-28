@@ -51,20 +51,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Configurar cliente OAuth2
-    // Usar la misma lógica que el script para construir la URI
+    // Construir la URI de redirección exactamente como el script
+    // IMPORTANTE: Debe coincidir EXACTAMENTE con la que está en Google Cloud Console
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
     const redirectUri = process.env.GOOGLE_REDIRECT_URI 
-      || (process.env.NEXTAUTH_URL ? `${process.env.NEXTAUTH_URL}/api/admin/google-callback` : null)
-      || 'https://lozanonahuel.com/api/admin/google-callback';
+      || `${baseUrl}/api/admin/google-callback`;
     
-    console.log('🔗 [ADMIN-CALLBACK] URI de redirección esperada:', redirectUri);
+    // Asegurarse de que no tenga barra final
+    const cleanRedirectUri = redirectUri.replace(/\/$/, '');
+    
+    console.log('🔗 [ADMIN-CALLBACK] URI de redirección que se usará:', cleanRedirectUri);
     console.log('🔗 [ADMIN-CALLBACK] Host recibido:', req.headers.host);
     console.log('🔗 [ADMIN-CALLBACK] URL completa:', req.url);
+    console.log('🔗 [ADMIN-CALLBACK] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+    console.log('🔗 [ADMIN-CALLBACK] GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
     
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
-      redirectUri
+      cleanRedirectUri
     );
 
     // Intercambiar código por tokens
