@@ -65,6 +65,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log('🔔 [ALERT NOTIFICATION] Fecha actual:', new Date().toISOString());
 
     // Buscar usuarios con suscripciones activas al servicio específico para validar
+    // ✅ IMPORTANTE: Buscar en TODOS los sistemas de suscripciones
     const subscribedUsers = await User.find({
       $or: [
         {
@@ -87,9 +88,19 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
               ]
             }
           }
+        },
+        {
+          // ✅ NUEVO: Buscar en activeSubscriptions (sistema MercadoPago/Admin)
+          'activeSubscriptions': {
+            $elemMatch: {
+              service: alert.tipo,
+              isActive: true,
+              expiryDate: { $gte: new Date() }
+            }
+          }
         }
       ]
-    }, 'email name suscripciones subscriptions');
+    }, 'email name suscripciones subscriptions activeSubscriptions');
 
     console.log('👥 [ALERT NOTIFICATION] Usuarios suscritos al servicio encontrados:', subscribedUsers.length);
     
@@ -101,12 +112,13 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       console.log('📊 [ALERT NOTIFICATION] Total usuarios en DB:', totalUsers);
       
       // Debug: Ver algunos usuarios y sus suscripciones
-      const sampleUsers = await User.find({}, 'email suscripciones subscriptions').limit(3);
+      const sampleUsers = await User.find({}, 'email suscripciones subscriptions activeSubscriptions').limit(3);
       console.log('🔍 [ALERT NOTIFICATION] Muestra de usuarios:');
       sampleUsers.forEach(u => {
         console.log(`  - ${u.email}:`, {
           suscripciones: u.suscripciones?.length || 0,
-          subscriptions: u.subscriptions?.length || 0
+          subscriptions: u.subscriptions?.length || 0,
+          activeSubscriptions: u.activeSubscriptions?.length || 0
         });
       });
     } else {
