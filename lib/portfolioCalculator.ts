@@ -1,7 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Liquidity from '@/models/Liquidity';
 import Alert from '@/models/Alert';
-import User from '@/models/User';
 
 export interface PortfolioValue {
   valorTotalCartera: number;
@@ -19,13 +18,6 @@ export interface PortfolioValue {
  */
 export async function calculateCurrentPortfolioValue(pool: 'TraderCall' | 'SmartMoney'): Promise<PortfolioValue> {
   await dbConnect();
-
-  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-  const adminUser = await User.findOne({ email: ADMIN_EMAIL });
-
-  if (!adminUser) {
-    throw new Error('Usuario administrador no encontrado');
-  }
 
   // Obtener todos los documentos de liquidez del pool (no solo del admin, sino de todo el pool)
   const liquidityDocs: any[] = await Liquidity.find({ pool }).lean();
