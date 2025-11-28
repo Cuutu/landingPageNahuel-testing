@@ -721,6 +721,14 @@
   border-color: var(--primary-color);
 }
 
+.formHint {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 /* User Details */
 .userDetails {
   space-y: 1rem;

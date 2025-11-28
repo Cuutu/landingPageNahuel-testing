@@ -101,7 +101,8 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
 
   // Datos para agregar suscripción (sin precio, se obtiene dinámicamente)
   const [newSubscription, setNewSubscription] = useState({
-    tipo: 'TraderCall'
+    tipo: 'TraderCall',
+    days: 30 // ✅ NUEVO: Días de suscripción (default 30)
   });
 
   // Componente para el avatar del usuario
@@ -253,6 +254,7 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
         },
         body: JSON.stringify({
           userId: selectedUser._id,
+          days: newSubscription.days, // ✅ NUEVO: Enviar días de suscripción
           tipo: newSubscription.tipo,
           precio: precio
         }),
@@ -261,7 +263,7 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
       if (response.ok) {
         toast.success('Suscripción agregada correctamente');
         setShowSubscriptionModal(false);
-        setNewSubscription({ tipo: 'TraderCall' });
+        setNewSubscription({ tipo: 'TraderCall', days: 30 });
         fetchUsers(currentPage);
         fetchSubscriptionStats();
       } else {
@@ -904,6 +906,23 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                       </span>
                     )}
                   </div>
+                </div>
+                
+                {/* Campo para días de suscripción */}
+                <div className={styles.formGroup}>
+                  <label>Días de Suscripción</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    value={newSubscription.days}
+                    onChange={(e) => setNewSubscription({ ...newSubscription, days: parseInt(e.target.value) || 30 })}
+                    placeholder="30"
+                    className={styles.formInput}
+                  />
+                  <small className={styles.formHint}>
+                    Número de días de suscripción (por defecto: 30 días)
+                  </small>
                 </div>
               </div>
               

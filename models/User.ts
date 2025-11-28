@@ -404,7 +404,8 @@ UserSchema.methods.renewSubscription = function(
   amount: number,
   currency: string = 'ARS',
   mercadopagoPaymentId?: string,
-  subscriptionType: 'full' | 'trial' = 'full'
+  subscriptionType: 'full' | 'trial' = 'full',
+  days: number = 30 // ✅ NUEVO: Días de suscripción (default 30)
 ) {
   const now = new Date();
   let startDate: Date;
@@ -420,7 +421,7 @@ UserSchema.methods.renewSubscription = function(
     // 🎯 RENOVACIÓN ANTICIPADA: Apilar tiempo sobre la suscripción actual
     // La nueva suscripción empieza cuando termina la actual
     startDate = new Date(existingActiveSub.expiryDate);
-    expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    expiryDate = new Date(startDate.getTime() + days * 24 * 60 * 60 * 1000);
     
     console.log('🔄 Renovación anticipada detectada:', {
       email: this.email,
@@ -428,18 +429,20 @@ UserSchema.methods.renewSubscription = function(
       currentExpiry: existingActiveSub.expiryDate,
       newStart: startDate,
       newExpiry: expiryDate,
+      days,
       message: 'Tiempo apilado - sin pérdida de días actuales'
     });
   } else {
     // 🆕 PRIMERA SUSCRIPCIÓN o YA EXPIRÓ: Empezar desde HOY
     startDate = now;
-    expiryDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    expiryDate = new Date(startDate.getTime() + days * 24 * 60 * 60 * 1000);
     
     console.log('✨ Nueva suscripción o renovación post-expiración:', {
       email: this.email,
       service,
       startDate,
       expiryDate,
+      days,
       message: 'Inicia desde hoy'
     });
   }

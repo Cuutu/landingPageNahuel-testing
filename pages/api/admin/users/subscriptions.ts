@@ -99,7 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const { userId, tipo, precio } = req.body;
+        const { userId, tipo, precio, days } = req.body; // ✅ NUEVO: days opcional
 
         if (!userId || !tipo) {
           return res.status(400).json({ error: 'userId y tipo son requeridos' });
@@ -110,42 +110,86 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: 'Usuario no encontrado' });
         }
 
-        // Verificar si ya tiene esta suscripción
-        const existingSub = user.subscriptions?.find(
+        // Verificar si ya tiene esta suscripción activa
+        const existingActiveSub = user.activeSubscriptions?.find(
+          (sub: any) => sub.service === tipo && sub.isActive && new Date(sub.expiryDate) > new Date()
+        );
+
+        const existingLegacySub = user.subscriptions?.find(
           (sub: any) => sub.tipo === tipo && sub.activa
         );
 
-        if (existingSub) {
-          return res.status(400).json({ 
-            error: 'El usuario ya tiene una suscripción activa para este tipo de alerta' 
-          });
-        }
+        // Si tiene suscripción activa, permitir renovación/apilado (no bloquear)
+        // El método renewSubscription manejará el apilado automáticamente
 
-        // Agregar nueva suscripción
-        const newSubscription = {
-          tipo,
-          precio: precio || 99,
-          fechaInicio: new Date(),
-          fechaFin: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Expira en 30 días
-          activa: true
-        };
-
-        // Solo cambiar a 'suscriptor' si el usuario no es admin
-        const updateData: any = {
-          $push: { subscriptions: newSubscription }
-        };
+        // Usar renewSubscription para mantener consistencia con el sistema
+        const subscriptionDays = days || 30; // Default 30 días
+        const subscriptionPrice = precio || 99;
         
-        if (user.role !== 'admin') {
-          updateData.role = 'suscriptor';
+        // Guardar fecha de expiración anterior para detectar renovación
+        const previousExpiry = existingActiveSub 
+          ? new Date(existingActiveSub.expiryDate) 
+          : undefined;
+        const isRenewal: boolean | undefined = existingActiveSub !== undefined && previousExpiry && previousExpiry > new Date() ? true : undefined;
+
+        // Usar renewSubscription que actualiza ambos sistemas (activeSubscriptions y subscriptions)
+        await user.renewSubscription(
+          tipo,
+          subscriptionPrice,
+          'ARS',
+          undefined, // No hay paymentId para asignación manual
+          'full',
+          subscriptionDays
+        );
+
+        // Recargar usuario para obtener fechas actualizadas
+        await user.save();
+        const updatedUser = await User.findById(userId);
+
+        // Obtener la suscripción actualizada para las fechas
+        const updatedSub = updatedUser?.activeSubscriptions?.find(
+          (sub: any) => sub.service === tipo && sub.isActive
+        );
+
+        console.log(`✅ Suscripción ${tipo} agregada/renovada para usuario ${user.email} (${subscriptionDays} días)`);
+
+        // 📧 Enviar emails de notificación
+        try {
+          const { sendAdminNewSubscriberEmail, sendSubscriptionConfirmationEmail } = await import('@/lib/emailNotifications');
+          
+          // Email al admin
+          await sendAdminNewSubscriberEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: tipo as 'TraderCall' | 'SmartMoney' | 'CashFlow',
+            amount: subscriptionPrice,
+            currency: 'ARS',
+            transactionDate: new Date(),
+            expiryDate: updatedSub?.expiryDate || updatedUser?.subscriptionExpiry
+          });
+
+          // Email al usuario
+          await sendSubscriptionConfirmationEmail({
+            userEmail: user.email,
+            userName: user.name || user.email,
+            service: tipo as 'TraderCall' | 'SmartMoney' | 'CashFlow',
+            expiryDate: updatedSub?.expiryDate || updatedUser?.subscriptionExpiry,
+            startDate: updatedSub?.startDate,
+            isRenewal: isRenewal || undefined,
+            previousExpiry: previousExpiry || undefined
+          });
+
+          console.log(`✅ Emails enviados para suscripción ${tipo} de ${user.email}`);
+        } catch (emailError) {
+          console.error('❌ Error enviando emails (suscripción asignada correctamente):', emailError);
+          // No fallar la operación si los emails fallan
         }
-
-        await User.findByIdAndUpdate(userId, updateData);
-
-        console.log(`✅ Suscripción ${tipo} agregada para usuario ${user.email}`);
 
         return res.status(200).json({
           success: true,
-          message: 'Suscripción agregada exitosamente'
+          message: `Suscripción ${tipo} ${isRenewal ? 'renovada' : 'agregada'} exitosamente (${subscriptionDays} días)`,
+          expiryDate: updatedSub?.expiryDate || updatedUser?.subscriptionExpiry,
+          isRenewal
         });
       } catch (error) {
         console.error('Error al agregar suscripción:', error);

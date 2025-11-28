@@ -154,9 +154,10 @@ export default async function handler(
     return res.status(200).json(result);
   } catch (error) {
     console.error("Error al verificar cálculo de liquidez:", error);
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Detalles del error:", errorMessage);
     return res.status(500).json({ 
-      error: "Error interno del servidor",
-      message: error instanceof Error ? error.message : "Error desconocido"
+      error: "Error interno del servidor"
     });
   }
 }
