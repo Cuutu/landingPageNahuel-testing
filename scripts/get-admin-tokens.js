@@ -50,23 +50,36 @@ async function getTokens() {
   });
 
   console.log('📋 PASO 1: Verificar configuración');
-  console.log('\n' + '='.repeat(70));
+  console.log('\n' + '='.repeat(80));
   console.log('🔗 URI de redirección que se usará (COPIA ESTA EXACTA):');
-  console.log('='.repeat(70));
-  console.log(cleanRedirectUri);
-  console.log('='.repeat(70));
-  console.log('\n⚠️  ANTES DE CONTINUAR: Esta URI DEBE estar en Google Cloud Console');
-  console.log('\n📝 Instrucciones paso a paso:');
-  console.log('   1. Abre: https://console.cloud.google.com/apis/credentials');
-  console.log('   2. Selecciona tu proyecto');
-  console.log('   3. Haz clic en tu OAuth 2.0 Client ID');
-  console.log('   4. En "URIs de redirección autorizados", busca esta URI:');
-  console.log('      ' + cleanRedirectUri);
-  console.log('   5. Si NO está, haz clic en "+ Agregar URI"');
-  console.log('   6. COPIA Y PEGA exactamente esta URI (sin espacios, sin barra final):');
-  console.log('      ' + cleanRedirectUri);
-  console.log('   7. Haz clic en GUARDAR');
-  console.log('   8. Espera 2-3 minutos después de guardar\n');
+  console.log('='.repeat(80));
+  console.log('');
+  console.log('   ' + cleanRedirectUri);
+  console.log('');
+  console.log('='.repeat(80));
+  console.log('\n⚠️  CRÍTICO: Esta URI EXACTA debe estar en Google Cloud Console');
+  console.log('\n📝 Instrucciones DETALLADAS:');
+  console.log('\n   1. Abre esta URL en tu navegador:');
+  console.log('      https://console.cloud.google.com/apis/credentials');
+  console.log('\n   2. Selecciona tu proyecto de Google Cloud');
+  console.log('\n   3. En la lista de credenciales, busca "OAuth 2.0 Client IDs"');
+  console.log('      Haz clic en el nombre de tu cliente OAuth');
+  console.log('\n   4. En la sección "URIs de redirección autorizados":');
+  console.log('      - Busca si existe esta URI EXACTA:');
+  console.log('        ' + cleanRedirectUri);
+  console.log('      - Compara CARÁCTER POR CARÁCTER');
+  console.log('      - Verifica que NO tenga espacios al inicio o final');
+  console.log('      - Verifica que NO tenga barra final (/)');
+  console.log('      - Verifica que use https:// (no http://)');
+  console.log('\n   5. Si NO está o es diferente:');
+  console.log('      - Haz clic en el botón de editar (lápiz) o "+ Agregar URI"');
+  console.log('      - Si existe una similar pero incorrecta, ELIMÍNALA primero');
+  console.log('      - Agrega EXACTAMENTE esta URI (copia desde aquí):');
+  console.log('        ' + cleanRedirectUri);
+  console.log('      - NO agregues espacios, NO agregues barra final');
+  console.log('\n   6. Haz clic en GUARDAR (Save)');
+  console.log('\n   7. Espera 2-3 minutos para que los cambios se propaguen');
+  console.log('      (Google puede tardar unos minutos en actualizar)\n');
   
   const rl2 = readline.createInterface({
     input: process.stdin,

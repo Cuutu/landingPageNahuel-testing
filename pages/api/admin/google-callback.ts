@@ -50,22 +50,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `);
   }
 
+  // Construir la URI de redirección exactamente como el script
+  // IMPORTANTE: Debe coincidir EXACTAMENTE con la que está en Google Cloud Console
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI 
+    || `${baseUrl}/api/admin/google-callback`;
+  
+  // Asegurarse de que no tenga barra final
+  const cleanRedirectUri = redirectUri.replace(/\/$/, '');
+  
+  console.log('🔗 [ADMIN-CALLBACK] URI de redirección que se usará:', cleanRedirectUri);
+  console.log('🔗 [ADMIN-CALLBACK] Host recibido:', req.headers.host);
+  console.log('🔗 [ADMIN-CALLBACK] URL completa:', req.url);
+  console.log('🔗 [ADMIN-CALLBACK] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+  console.log('🔗 [ADMIN-CALLBACK] GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
+
   try {
-    // Construir la URI de redirección exactamente como el script
-    // IMPORTANTE: Debe coincidir EXACTAMENTE con la que está en Google Cloud Console
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI 
-      || `${baseUrl}/api/admin/google-callback`;
-    
-    // Asegurarse de que no tenga barra final
-    const cleanRedirectUri = redirectUri.replace(/\/$/, '');
-    
-    console.log('🔗 [ADMIN-CALLBACK] URI de redirección que se usará:', cleanRedirectUri);
-    console.log('🔗 [ADMIN-CALLBACK] Host recibido:', req.headers.host);
-    console.log('🔗 [ADMIN-CALLBACK] URL completa:', req.url);
-    console.log('🔗 [ADMIN-CALLBACK] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-    console.log('🔗 [ADMIN-CALLBACK] GOOGLE_REDIRECT_URI:', process.env.GOOGLE_REDIRECT_URI);
-    
     const oauth2Client = new google.auth.OAuth2(
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
@@ -73,7 +73,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
 
     // Intercambiar código por tokens
+    console.log('🔄 [ADMIN-CALLBACK] Intercambiando código por tokens...');
+    console.log('🔄 [ADMIN-CALLBACK] Código recibido:', code.substring(0, 20) + '...');
+    
     const { tokens } = await oauth2Client.getToken(code);
+    
+    console.log('✅ [ADMIN-CALLBACK] Tokens obtenidos exitosamente');
 
     // Mostrar los tokens en la página
     return res.status(200).send(`
@@ -137,6 +142,63 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     `);
   } catch (error: any) {
     console.error('❌ Error al obtener tokens:', error);
+    console.error('❌ [ADMIN-CALLBACK] Detalles del error:', {
+      message: error.message,
+      code: error.code,
+      response: error.response?.data
+    });
+    
+    // Si es redirect_uri_mismatch, dar instrucciones específicas
+    if (error.message?.includes('redirect_uri_mismatch') || error.response?.data?.error === 'redirect_uri_mismatch') {
+      return res.status(500).send(`
+        <html>
+          <head>
+            <title>Error: redirect_uri_mismatch</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+              .error { background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+              .solution { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+              code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+            </style>
+          </head>
+          <body>
+            <div class="error">
+              <h1>❌ Error: redirect_uri_mismatch</h1>
+              <p>La URI de redirección no coincide con la configurada en Google Cloud Console.</p>
+            </div>
+            
+            <div class="solution">
+              <h2>🔧 Solución:</h2>
+              <p><strong>URI que se está usando:</strong></p>
+              <code>${cleanRedirectUri}</code>
+              
+              <ol>
+                <li>Ve a <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console - Credenciales</a></li>
+                <li>Selecciona tu proyecto</li>
+                <li>Haz clic en tu OAuth 2.0 Client ID</li>
+                <li>En "URIs de redirección autorizados", verifica que esté EXACTAMENTE:</li>
+                <li><code>${cleanRedirectUri}</code></li>
+                <li>Si NO está, agrégala y GUARDA</li>
+                <li>Espera 2-3 minutos y vuelve a intentar</li>
+              </ol>
+            </div>
+            
+            <div>
+              <h2>💡 Método Alternativo (Más Simple):</h2>
+              <p>Si sigues teniendo problemas, puedes usar <strong>OAuth 2.0 Playground</strong>:</p>
+              <ol>
+                <li>Ve a <a href="https://developers.google.com/oauthplayground/" target="_blank">OAuth 2.0 Playground</a></li>
+                <li>Configura tus credenciales OAuth</li>
+                <li>Selecciona los scopes de Calendar</li>
+                <li>Autoriza y obtén los tokens directamente</li>
+              </ol>
+              <p>Ver instrucciones completas en: <code>scripts/get-admin-tokens-alternative.md</code></p>
+            </div>
+          </body>
+        </html>
+      `);
+    }
+    
     return res.status(500).send(`
       <html>
         <head><title>Error</title></head>
@@ -144,6 +206,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           <h1>Error al Obtener Tokens</h1>
           <p>Error: ${error.message || 'Error desconocido'}</p>
           <p>Por favor, intenta nuevamente.</p>
+          <p><strong>URI usada:</strong> ${cleanRedirectUri}</p>
         </body>
       </html>
     `);
