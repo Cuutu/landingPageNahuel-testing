@@ -220,6 +220,11 @@
   z-index: 1;
 }
 
+.serviciosGrid > * {
+  max-width: 450px;
+  margin: 0 auto;
+}
+
 .servicioCard {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 20px;
@@ -2813,6 +2818,10 @@
   margin-top: auto;
 }
 
+.destacadoUnificadoFooter.proximamenteFooter {
+  justify-content: flex-end;
+}
+
 .destacadoUnificadoPrecio {
   font-size: 1.25rem;
   font-weight: 700;
@@ -2869,12 +2878,16 @@
 
 .proximamenteLine {
   position: absolute;
-  width: 120%;
-  height: 4px;
+  width: 180%;
+  height: 60px;
   background: #fbbf24;
   transform: rotate(-25deg);
   transform-origin: center;
-  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+  top: 50%;
+  left: 50%;
+  margin-top: -30px;
+  margin-left: -90%;
 }
 
 .proximamenteText {

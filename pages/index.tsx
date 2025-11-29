@@ -1188,10 +1188,12 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       
                       {item.separator && <div className={styles.destacadoUnificadoSeparator}></div>}
                       
-                      <div className={styles.destacadoUnificadoFooter}>
-                        <div className={styles.destacadoUnificadoPrecio}>
-                          {item.precio}
-                        </div>
+                      <div className={`${styles.destacadoUnificadoFooter} ${item.proximamente ? styles.proximamenteFooter : ''}`}>
+                        {!item.proximamente && (
+                          <div className={styles.destacadoUnificadoPrecio}>
+                            {item.precio}
+                          </div>
+                        )}
                         {item.proximamente ? (
                           <span className={`${styles.destacadoUnificadoButton} ${styles.proximamenteButton}`}>
                             PROXIMAMENTE
