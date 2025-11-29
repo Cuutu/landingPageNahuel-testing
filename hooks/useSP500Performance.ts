@@ -88,6 +88,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
+      console.log(`📊 [SP500] Calculando rendimiento para serviceType: ${serviceType}, período: ${selectedPeriod}`);
       // ✅ NUEVO: Usar el nuevo endpoint de rendimientos basado en valorTotalCartera y valorActualCartera
       const response = await fetch(`/api/portfolio/returns?pool=${serviceType}`);
 
@@ -119,6 +120,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       };
 
       const days = periodToDays(selectedPeriod);
+      console.log(`📊 [SP500] Obteniendo portfolio-evolution para tipo: ${serviceType}, días: ${days}`);
       const portfolioResponse = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
       
       let activeAlerts = 0;
@@ -176,7 +178,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   };
 
   const refreshData = async (selectedPeriod: string) => {
-    console.log(`🔄 [SP500] refreshData iniciado para período: ${selectedPeriod}`);
+    console.log(`🔄 [SP500] refreshData iniciado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
     setLoading(true);
     setError(null);
     
@@ -185,7 +187,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         fetchSP500Data(selectedPeriod),
         calculateServicePerformance(selectedPeriod)
       ]);
-      console.log(`✅ [SP500] refreshData completado para período: ${selectedPeriod}`);
+      console.log(`✅ [SP500] refreshData completado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
     } catch (err) {
       console.error('❌ [SP500] Error en refreshData:', err);
       setError(err instanceof Error ? err.message : 'Error al actualizar datos');
@@ -195,10 +197,10 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   };
 
   useEffect(() => {
-    console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}`);
+    console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}, serviceType: ${serviceType}`);
     refreshData(period);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period]);
+  }, [period, serviceType]);
 
   // Recalcular rendimiento relativo cuando sp500Data cambie
   useEffect(() => {
