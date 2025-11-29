@@ -224,12 +224,16 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
               ) : serviceData ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
                   {(() => {
-                    const percentValue = serviceData.totalReturnPercent ?? 0;
+                    const percentValue = typeof serviceData.totalReturnPercent === 'number' 
+                      ? serviceData.totalReturnPercent 
+                      : 0;
                     console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
                       serviceType,
                       totalReturnPercent: serviceData.totalReturnPercent,
                       period: serviceData.period,
-                      finalValue: percentValue
+                      selectedPeriod,
+                      finalValue: percentValue,
+                      isNumber: typeof serviceData.totalReturnPercent === 'number'
                     });
                     return (
                       <>

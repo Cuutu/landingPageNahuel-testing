@@ -104,7 +104,14 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 
       // Obtener el rendimiento para el período seleccionado
       const returnsKey = periodToReturnsKey(selectedPeriod);
-      const totalReturnPercent = returnsData.data.returns[returnsKey] ?? 0;
+      const rawReturnValue = returnsData.data.returns[returnsKey];
+      const totalReturnPercent = rawReturnValue !== null && rawReturnValue !== undefined ? rawReturnValue : 0;
+      
+      console.log(`📊 [SP500] Rendimiento del servicio para ${returnsKey}:`, {
+        rawValue: rawReturnValue,
+        finalValue: totalReturnPercent,
+        allReturns: returnsData.data.returns
+      });
 
       // Obtener datos adicionales del portfolio-evolution para estadísticas
       const periodToDays = (period: string): number => {
@@ -139,7 +146,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       }
 
       const serviceData: ServicePerformanceData = {
-        totalReturnPercent: parseFloat(totalReturnPercent.toFixed(2)),
+        totalReturnPercent: typeof totalReturnPercent === 'number' ? parseFloat(totalReturnPercent.toFixed(2)) : 0,
         relativePerformanceVsSP500: 0, // Se calculará después cuando sp500Data esté disponible
         activeAlerts,
         closedAlerts,
@@ -151,6 +158,12 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         totalTrades,
         period: selectedPeriod
       };
+      
+      console.log(`✅ [SP500] ServiceData creado:`, {
+        totalReturnPercent: serviceData.totalReturnPercent,
+        period: serviceData.period,
+        serviceType
+      });
 
       setServiceData(serviceData);
       setError(null);
