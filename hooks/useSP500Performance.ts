@@ -102,15 +102,24 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         throw new Error('No hay datos disponibles para el período seleccionado');
       }
 
-      // Obtener el rendimiento para el período seleccionado
+      // ✅ CORREGIDO: Obtener el rendimiento para el período seleccionado específico
       const returnsKey = periodToReturnsKey(selectedPeriod);
       const rawReturnValue = returnsData.data.returns[returnsKey];
+      
+      // ✅ IMPORTANTE: Verificar que el valor no sea null antes de usarlo
+      if (rawReturnValue === null || rawReturnValue === undefined) {
+        console.warn(`⚠️ [SP500] No hay datos para período ${selectedPeriod} (${returnsKey}), usando 0`);
+      }
+      
       const totalReturnPercent = rawReturnValue !== null && rawReturnValue !== undefined ? rawReturnValue : 0;
       
-      console.log(`📊 [SP500] Rendimiento del servicio para ${returnsKey}:`, {
+      console.log(`📊 [SP500] Rendimiento del servicio para período ${selectedPeriod} (${returnsKey}):`, {
+        selectedPeriod,
+        returnsKey,
         rawValue: rawReturnValue,
         finalValue: totalReturnPercent,
-        allReturns: returnsData.data.returns
+        allReturns: returnsData.data.returns,
+        valorActualCartera: returnsData.data.valorActualCartera
       });
 
       // Obtener datos adicionales del portfolio-evolution para estadísticas
@@ -211,26 +220,38 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 
   useEffect(() => {
     console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}, serviceType: ${serviceType}`);
+    // ✅ CORREGIDO: Limpiar datos anteriores cuando cambia el período para forzar recarga
+    setServiceData(null);
+    setSp500Data(null);
+    setLoading(true);
     refreshData(period);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, serviceType]);
 
-  // Recalcular rendimiento relativo cuando sp500Data cambie
+  // Recalcular rendimiento relativo cuando sp500Data o serviceData cambien
   useEffect(() => {
     if (sp500Data && serviceData) {
       const sp500Return = sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0;
-      let relativePerformanceVsSP500 = 0;
+      const serviceReturn = serviceData.totalReturnPercent ?? 0;
       
-      if (sp500Return !== 0) {
-        relativePerformanceVsSP500 = ((serviceData.totalReturnPercent - sp500Return) / sp500Return) * 100;
-      }
+      // ✅ CORREGIDO: Calcular diferencia simple en puntos porcentuales
+      // Fórmula: Rendimiento del Servicio - Rendimiento del S&P 500
+      // Esto muestra cuántos puntos porcentuales más (o menos) rindió el servicio vs el S&P 500
+      const relativePerformanceVsSP500 = serviceReturn - sp500Return;
+      
+      console.log(`📊 [SP500] Calculando rendimiento relativo vs S&P 500:`, {
+        serviceReturn,
+        sp500Return,
+        relativePerformance: relativePerformanceVsSP500,
+        period: serviceData.period
+      });
       
       setServiceData(prev => prev ? {
         ...prev,
         relativePerformanceVsSP500: parseFloat(relativePerformanceVsSP500.toFixed(2))
       } : null);
     }
-  }, [sp500Data]);
+  }, [sp500Data, serviceData]);
 
   return {
     sp500Data,

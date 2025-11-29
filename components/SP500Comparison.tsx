@@ -225,17 +225,35 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                 <div style={{ marginTop: '0.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     {(() => {
+                      // ✅ CORREGIDO: Verificar que el período del serviceData coincida con el período seleccionado
+                      // Si no coincide, mostrar loading o el valor actual mientras se actualiza
                       const percentValue = typeof serviceData.totalReturnPercent === 'number' 
                         ? serviceData.totalReturnPercent 
                         : 0;
+                      
+                      // Verificar si el período del serviceData coincide con el seleccionado
+                      const isPeriodMatching = serviceData.period === selectedPeriod;
+                      
                       console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
                         serviceType,
                         totalReturnPercent: serviceData.totalReturnPercent,
-                        period: serviceData.period,
+                        serviceDataPeriod: serviceData.period,
                         selectedPeriod,
+                        isPeriodMatching,
                         finalValue: percentValue,
                         isNumber: typeof serviceData.totalReturnPercent === 'number'
                       });
+                      
+                      // Si el período no coincide, mostrar loading mientras se actualiza
+                      if (!isPeriodMatching && loading) {
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Loader2 size={16} className="animate-spin" />
+                            <span style={{ color: '#9CA3AF' }}>Actualizando...</span>
+                          </div>
+                        );
+                      }
+                      
                       return (
                         <>
                           {getPerformanceIcon(percentValue)}
