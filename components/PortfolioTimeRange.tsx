@@ -135,20 +135,43 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     
     try {
       // ✅ CAMBIO: Usar API global sin autenticación, incluyendo tipo de servicio
-      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // No incluir credentials para datos globales
-      });
-      const result = await response.json();
+      const [evolutionResponse, returnsResponse] = await Promise.all([
+        fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+        fetch(`/api/portfolio/returns?pool=${serviceType}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        })
+      ]);
       
-      if (result.success) {
-        setPortfolioData(result.data || []);
+      const evolutionResult = await evolutionResponse.json();
+      const returnsResult = await returnsResponse.json();
+      
+      if (evolutionResult.success) {
+        setPortfolioData(evolutionResult.data || []);
         
-        // ✅ NUEVO: Calcular estadísticas mejoradas
-        const stats = calculateEnhancedStats(result.data || [], result.stats || null);
+        // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns para consistencia
+        // Convertir días a clave de período
+        let periodKey = '30d';
+        if (days === 1) periodKey = '1d';
+        else if (days === 7) periodKey = '7d';
+        else if (days === 15) periodKey = '15d';
+        else if (days === 30) periodKey = '30d';
+        else if (days === 180) periodKey = '180d';
+        else if (days === 365) periodKey = '365d';
+        
+        const serviceReturn = returnsResult.success && returnsResult.data?.returns?.[periodKey] 
+          ? returnsResult.data.returns[periodKey] 
+          : null;
+        
+        // ✅ NUEVO: Calcular estadísticas mejoradas usando el rendimiento correcto
+        const stats = calculateEnhancedStats(
+          evolutionResult.data || [], 
+          evolutionResult.stats || null,
+          serviceReturn
+        );
         setPortfolioStats(stats);
         
         // ✅ NUEVO: Notificar al dashboard sobre la actualización
@@ -156,7 +179,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
           onPortfolioUpdate(stats);
         }
       } else {
-        setError(result.error || 'Error al cargar datos del portfolio');
+        setError(evolutionResult.error || 'Error al cargar datos del portfolio');
       }
     } catch (err) {
       console.error('Error fetching portfolio data:', err);
@@ -193,7 +216,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   }, [selectedRange]);
 
   // Calcular estadísticas usando datos del API actualizado
-  const calculateEnhancedStats = (data: PortfolioData[], baseStats: any): PortfolioStats => {
+  const calculateEnhancedStats = (data: PortfolioData[], baseStats: any, serviceReturnFromAPI: number | null = null): PortfolioStats => {
     if (!baseStats) {
       return {
         totalProfit: 0,
@@ -205,11 +228,27 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       };
     }
     
-    // ✅ CORREGIDO: Calcular rendimiento del portfolio para el período seleccionado
-    const portfolioDataForCalc = data.length > 0 ? data : [];
-    const firstValue = portfolioDataForCalc[0]?.value || 10000;
-    const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
-    const portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+    // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns si está disponible
+    // Esto asegura consistencia con el componente SP500Comparison
+    let portfolioReturn = 0;
+    
+    if (serviceReturnFromAPI !== null && serviceReturnFromAPI !== undefined) {
+      // Usar el rendimiento del API de returns (mismo que usa SP500Comparison)
+      portfolioReturn = serviceReturnFromAPI;
+      console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde /api/portfolio/returns:', portfolioReturn);
+    } else {
+      // Fallback: calcular desde los datos de evolución
+      const portfolioDataForCalc = data.length > 0 ? data : [];
+      const firstValue = portfolioDataForCalc[0]?.value || 10000;
+      const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
+      portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+      console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución:', {
+        portfolioReturn,
+        firstValue,
+        lastValue,
+        dataLength: data.length
+      });
+    }
     
     const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500 para el período seleccionado
     
@@ -222,9 +261,8 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       portfolioReturn,
       sp500Return,
       relativePerformance: relativePerformanceVsSP500,
-      firstValue,
-      lastValue,
-      dataLength: data.length
+      serviceReturnFromAPI,
+      usingAPIData: serviceReturnFromAPI !== null
     });
     
     return {
