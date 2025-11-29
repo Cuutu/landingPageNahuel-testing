@@ -75,52 +75,95 @@ export default async function handler(
     const returns: Record<string, number | null> = {};
     const historicalValues: Record<string, number | null> = {};
 
+    // ✅ ESCALABLE: Obtener el snapshot más antiguo y más reciente para calcular días disponibles
+    const [oldestSnapshot, newestSnapshot] = await Promise.all([
+      PortfolioSnapshot.findOne({
+        pool: poolType
+      }).sort({ snapshotDate: 1 }),
+      PortfolioSnapshot.findOne({
+        pool: poolType
+      }).sort({ snapshotDate: -1 })
+    ]);
+
+    // Calcular cuántos días de datos históricos tenemos realmente
+    let availableDays = 0;
+    if (oldestSnapshot && newestSnapshot) {
+      const oldestDate = new Date(oldestSnapshot.snapshotDate);
+      const newestDate = new Date(newestSnapshot.snapshotDate);
+      availableDays = Math.floor((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    const oldestSnapshotDate = oldestSnapshot ? new Date(oldestSnapshot.snapshotDate) : null;
+    const daysSinceOldest = oldestSnapshotDate 
+      ? Math.floor((now.getTime() - oldestSnapshotDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    console.log(`📊 [Portfolio Returns] Datos históricos para ${poolType}:`, {
+      oldestDate: oldestSnapshotDate,
+      newestDate: newestSnapshot ? new Date(newestSnapshot.snapshotDate) : null,
+      availableDays,
+      daysSinceOldest,
+      oldestValorTotalCartera: oldestSnapshot?.valorTotalCartera
+    });
+
     for (const [periodKey, days] of Object.entries(periods)) {
       try {
-        // Calcular fecha objetivo (días atrás)
-        const targetDate = new Date(now);
-        targetDate.setDate(targetDate.getDate() - days);
-        targetDate.setHours(16, 30, 0, 0); // Normalizar a las 16:30
-
-        // Buscar el snapshot más cercano a la fecha objetivo
-        // Buscar en un rango de ±1 día para encontrar el snapshot más cercano
-        const startDate = new Date(targetDate);
-        startDate.setDate(startDate.getDate() - 1);
-        
-        const endDate = new Date(targetDate);
-        endDate.setDate(endDate.getDate() + 1);
-
-        const snapshot = await PortfolioSnapshot.findOne({
-          pool: poolType,
-          snapshotDate: {
-            $gte: startDate,
-            $lte: endDate
-          }
-        }).sort({ snapshotDate: -1 }); // Obtener el más reciente en el rango
-
-        if (snapshot) {
-          const valorHistorico = snapshot.valorTotalCartera;
+        // ✅ ESCALABLE: Si el período solicitado es mayor a los días disponibles, usar el snapshot más antiguo
+        if (days > availableDays && oldestSnapshot) {
+          // No hay suficientes datos históricos para este período, usar el más antiguo disponible
+          const valorHistorico = oldestSnapshot.valorTotalCartera;
           const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
           
           returns[periodKey] = Number(returnPercentage.toFixed(2));
           historicalValues[periodKey] = valorHistorico;
+          
+          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período solicitado (${days}d) > días disponibles (${availableDays}d). Usando snapshot más antiguo (${daysSinceOldest} días atrás)`);
         } else {
-          // Si no hay snapshot, buscar el más antiguo disponible
-          const oldestSnapshot = await PortfolioSnapshot.findOne({
-            pool: poolType
-          }).sort({ snapshotDate: 1 });
+          // ✅ Hay suficientes datos históricos, buscar snapshot exacto para el período
+          const targetDate = new Date(now);
+          targetDate.setDate(targetDate.getDate() - days);
+          targetDate.setHours(16, 30, 0, 0); // Normalizar a las 16:30
 
-          if (oldestSnapshot && oldestSnapshot.snapshotDate <= targetDate) {
-            // Si el snapshot más antiguo es anterior a la fecha objetivo, usarlo
+          // Buscar el snapshot más cercano a la fecha objetivo
+          // Buscar en un rango de ±1 día para encontrar el snapshot más cercano
+          const startDate = new Date(targetDate);
+          startDate.setDate(startDate.getDate() - 1);
+          
+          const endDate = new Date(targetDate);
+          endDate.setDate(endDate.getDate() + 1);
+
+          const snapshot = await PortfolioSnapshot.findOne({
+            pool: poolType,
+            snapshotDate: {
+              $gte: startDate,
+              $lte: endDate
+            }
+          }).sort({ snapshotDate: -1 }); // Obtener el más reciente en el rango
+
+          if (snapshot) {
+            // ✅ Caso ideal: encontramos un snapshot para el período exacto
+            const valorHistorico = snapshot.valorTotalCartera;
+            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+            
+            returns[periodKey] = Number(returnPercentage.toFixed(2));
+            historicalValues[periodKey] = valorHistorico;
+            
+            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot exacto del ${snapshot.snapshotDate.toISOString().split('T')[0]}`);
+          } else if (oldestSnapshot) {
+            // Fallback: no encontramos snapshot exacto pero hay datos históricos, usar el más antiguo
             const valorHistorico = oldestSnapshot.valorTotalCartera;
             const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
             historicalValues[periodKey] = valorHistorico;
+            
+            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot exacto para ${days} días. Usando snapshot más antiguo (${daysSinceOldest} días atrás)`);
           } else {
-            // No hay datos históricos suficientes
+            // ❌ No hay ningún snapshot disponible
             returns[periodKey] = null;
             historicalValues[periodKey] = null;
+            
+            console.log(`❌ [Portfolio Returns] ${periodKey}: No hay snapshots disponibles`);
           }
         }
       } catch (error) {

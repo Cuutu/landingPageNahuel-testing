@@ -222,29 +222,59 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                   <span style={{ color: '#9CA3AF' }}>Cargando...</span>
                 </div>
               ) : serviceData ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                <div style={{ marginTop: '0.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {(() => {
+                      const percentValue = typeof serviceData.totalReturnPercent === 'number' 
+                        ? serviceData.totalReturnPercent 
+                        : 0;
+                      console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
+                        serviceType,
+                        totalReturnPercent: serviceData.totalReturnPercent,
+                        period: serviceData.period,
+                        selectedPeriod,
+                        finalValue: percentValue,
+                        isNumber: typeof serviceData.totalReturnPercent === 'number'
+                      });
+                      return (
+                        <>
+                          {getPerformanceIcon(percentValue)}
+                          <span
+                            className={`${styles.performanceValue} ${getPerformanceClass(percentValue)}`}
+                          >
+                            {formatPercentage(percentValue)}
+                          </span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {/* Nota informativa si el período solicitado es mayor que los datos disponibles */}
                   {(() => {
-                    const percentValue = typeof serviceData.totalReturnPercent === 'number' 
-                      ? serviceData.totalReturnPercent 
-                      : 0;
-                    console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
-                      serviceType,
-                      totalReturnPercent: serviceData.totalReturnPercent,
-                      period: serviceData.period,
-                      selectedPeriod,
-                      finalValue: percentValue,
-                      isNumber: typeof serviceData.totalReturnPercent === 'number'
-                    });
-                    return (
-                      <>
-                        {getPerformanceIcon(percentValue)}
-                        <span
-                          className={`${styles.performanceValue} ${getPerformanceClass(percentValue)}`}
-                        >
-                          {formatPercentage(percentValue)}
-                        </span>
-                      </>
-                    );
+                    const periodDays: { [key: string]: number } = {
+                      '1d': 1,
+                      '7d': 7,
+                      '15d': 15,
+                      '30d': 30,
+                      '6m': 180,
+                      '1y': 365
+                    };
+                    const requestedDays = periodDays[selectedPeriod] || 30;
+                    // Si el período solicitado es mayor a 7 días y el valor es 0 o muy bajo, 
+                    // probablemente estamos usando el snapshot más antiguo disponible
+                    // Nota: Esto es una aproximación, podríamos mejorar agregando metadata al response
+                    if (requestedDays > 7 && serviceData.totalReturnPercent !== null && Math.abs(serviceData.totalReturnPercent) < 0.01) {
+                      return (
+                        <div style={{ 
+                          marginTop: '0.5rem', 
+                          fontSize: '0.75rem', 
+                          color: '#9CA3AF',
+                          fontStyle: 'italic'
+                        }}>
+                          * Cálculo basado en datos disponibles
+                        </div>
+                      );
+                    }
+                    return null;
                   })()}
                 </div>
               ) : (
