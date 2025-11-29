@@ -481,7 +481,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       href: '/entrenamientos/zero2trader',
       external: false,
       separator: false,
-      rocketIcon: false
+      rocketIcon: false,
+      proximamente: true
     },
     {
       id: 'consultorio-financiero',
@@ -494,7 +495,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       href: '/asesorias/consultorio-financiero',
       external: false,
       separator: true,
-      rocketIcon: false
+      rocketIcon: false,
+      proximamente: true
     },
     {
       id: 'lista-wall-street',
@@ -820,8 +822,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                     </div>
                   </motion.div>
 
-                  {/* Entrenamientos */}
-                  <motion.div
+                  {/* Entrenamientos - Oculto temporalmente */}
+                  {/* <motion.div
                     className={styles.servicioCard}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -849,10 +851,10 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         Quiero saber más &gt;
                       </Link>
                     </div>
-                  </motion.div>
+                  </motion.div> */}
 
-                  {/* Asesorías */}
-                  <motion.div
+                  {/* Asesorías - Oculto temporalmente */}
+                  {/* <motion.div
                     className={styles.servicioCard}
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -880,7 +882,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         Quiero saber más &gt;
                       </Link>
                     </div>
-                  </motion.div>
+                  </motion.div> */}
                 </div>
               </motion.div>
             </div>
@@ -1156,7 +1158,16 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       whileInView={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.6, delay: index * 0.1 }}
                       viewport={{ once: true }}
+                      style={{ position: 'relative', overflow: 'hidden' }}
                     >
+                      {/* Línea amarilla con "PROXIMAMENTE" */}
+                      {item.proximamente && (
+                        <div className={styles.proximamenteOverlay}>
+                          <div className={styles.proximamenteLine}></div>
+                          <span className={styles.proximamenteText}>PROXIMAMENTE</span>
+                        </div>
+                      )}
+                      
                       <div className={styles.destacadoUnificadoCardHeader}>
                         <h3>{item.titulo}</h3>
                         <div className={styles.destacadoUnificadoCardMeta}>
@@ -1181,7 +1192,12 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         <div className={styles.destacadoUnificadoPrecio}>
                           {item.precio}
                         </div>
-                        {item.external ? (
+                        {item.proximamente ? (
+                          <span className={`${styles.destacadoUnificadoButton} ${styles.proximamenteButton}`}>
+                            PROXIMAMENTE
+                            <ChevronRight size={16} />
+                          </span>
+                        ) : item.external ? (
                           <a 
                             href={item.href} 
                             target="_blank" 

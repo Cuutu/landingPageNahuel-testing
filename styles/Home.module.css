@@ -2853,6 +2853,56 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+/* Estilos para "PROXIMAMENTE" */
+.proximamenteOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.proximamenteLine {
+  position: absolute;
+  width: 120%;
+  height: 4px;
+  background: #fbbf24;
+  transform: rotate(-25deg);
+  transform-origin: center;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.proximamenteText {
+  position: relative;
+  background: #fbbf24;
+  color: #1a1a1a;
+  font-weight: 800;
+  font-size: 1.1rem;
+  padding: 0.5rem 1.5rem;
+  border-radius: 8px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+  z-index: 11;
+}
+
+.proximamenteButton {
+  cursor: not-allowed !important;
+  opacity: 0.7;
+  background: #6b7280 !important;
+}
+
+.proximamenteButton:hover {
+  background: #6b7280 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
 .destacadosUnificadosIndicators {
   display: flex;
   justify-content: center;
