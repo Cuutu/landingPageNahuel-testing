@@ -31,6 +31,7 @@ interface PortfolioTimeRangeProps {
   selectedRange: string;
   onRangeChange: (range: string, days: number) => void;
   onPortfolioUpdate?: (stats: PortfolioStats) => void; // ✅ NUEVO: Callback para actualizar dashboard
+  serviceType?: 'TraderCall' | 'SmartMoney'; // ✅ NUEVO: Tipo de servicio para filtrar datos
 }
 
 // ✅ NUEVO: Opciones de rango actualizadas según requerimientos
@@ -70,8 +71,11 @@ const timeRangeOptions: TimeRangeOption[] = [
 const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   selectedRange,
   onRangeChange,
-  onPortfolioUpdate
+  onPortfolioUpdate,
+  serviceType = 'TraderCall' // ✅ NUEVO: Valor por defecto para compatibilidad
 }) => {
+  // ✅ NUEVO: Nombre del servicio para mostrar en textos
+  const serviceName = serviceType === 'SmartMoney' ? 'Smart Money' : 'Trader Call';
   const [portfolioData, setPortfolioData] = useState<PortfolioData[]>([]);
   const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -130,8 +134,8 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     setError(null);
     
     try {
-      // ✅ CAMBIO: Usar API global sin autenticación
-      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}`, {
+      // ✅ CAMBIO: Usar API global sin autenticación, incluyendo tipo de servicio
+      const response = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -202,13 +206,18 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     }
     
     // Calcular rendimiento relativo vs S&P 500 usando la fórmula correcta
-    const traderCallReturn = performance.percentage; // Rendimiento del portfolio
+    // ✅ CORREGIDO: Usar calculatePerformance para obtener el rendimiento
+    const portfolioDataForCalc = data.length > 0 ? data : [];
+    const firstValue = portfolioDataForCalc[0]?.value || 10000;
+    const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
+    const portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
+    
     const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500
     
-    // Fórmula: ((Trader Call − S&P500) / S&P500) × 100
+    // Fórmula: ((Servicio − S&P500) / S&P500) × 100
     let relativePerformanceVsSP500 = 0;
     if (sp500Return !== 0) {
-      relativePerformanceVsSP500 = ((traderCallReturn - sp500Return) / sp500Return) * 100;
+      relativePerformanceVsSP500 = ((portfolioReturn - sp500Return) / sp500Return) * 100;
     }
     
     return {
@@ -345,9 +354,9 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                 Estadísticas Generales
               </h4>
               <div className={styles.explanationBox}>
-                <p><strong>Rendimiento vs S&P 500:</strong> Comparación relativa del rendimiento del portfolio respecto al índice S&P 500. Fórmula: ((Trader Call − S&P500) / S&P500) × 100</p>
+                <p><strong>Rendimiento vs S&P 500:</strong> Comparación relativa del rendimiento del portfolio respecto al índice S&P 500. Fórmula: (({serviceName} − S&P500) / S&P500) × 100</p>
                 <p><strong>Win Rate:</strong> Proporción de operaciones ganadoras sobre el total de operaciones ejecutadas. Fórmula: (Cantidad de trades ganadores / Cantidad total de trades) × 100</p>
-                <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio Trader Call en el rango de fechas seleccionado</p>a
+                <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio {serviceName} en el rango de fechas seleccionado</p>
               </div>
               <div className={styles.globalStatsGrid}>
                 <div className={styles.globalStatItem}>

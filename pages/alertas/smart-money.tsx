@@ -428,6 +428,7 @@ const NonSubscriberView: React.FC<{
           <PortfolioTimeRange 
             selectedRange={publicPortfolioRange}
             onRangeChange={(range) => setPublicPortfolioRange(range)}
+            serviceType="SmartMoney"
           />
         </div>
       </section>
@@ -2662,6 +2663,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           <PortfolioTimeRange 
             selectedRange={portfolioRange}
             onRangeChange={handlePortfolioRangeChange}
+            serviceType="SmartMoney"
           />
         </div>
 
