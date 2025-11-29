@@ -205,20 +205,27 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       };
     }
     
-    // Calcular rendimiento relativo vs S&P 500 usando la fórmula correcta
-    // ✅ CORREGIDO: Usar calculatePerformance para obtener el rendimiento
+    // ✅ CORREGIDO: Calcular rendimiento del portfolio para el período seleccionado
     const portfolioDataForCalc = data.length > 0 ? data : [];
     const firstValue = portfolioDataForCalc[0]?.value || 10000;
     const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
     const portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
     
-    const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500
+    const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500 para el período seleccionado
     
-    // Fórmula: ((Servicio − S&P500) / S&P500) × 100
-    let relativePerformanceVsSP500 = 0;
-    if (sp500Return !== 0) {
-      relativePerformanceVsSP500 = ((portfolioReturn - sp500Return) / sp500Return) * 100;
-    }
+    // ✅ CORREGIDO: Calcular diferencia simple en puntos porcentuales
+    // Fórmula: Rendimiento del Portfolio - Rendimiento del S&P 500
+    // Esto muestra cuántos puntos porcentuales más (o menos) rindió el portfolio vs el S&P 500
+    const relativePerformanceVsSP500 = portfolioReturn - sp500Return;
+    
+    console.log('📊 [PortfolioTimeRange] Calculando rendimiento relativo vs S&P 500:', {
+      portfolioReturn,
+      sp500Return,
+      relativePerformance: relativePerformanceVsSP500,
+      firstValue,
+      lastValue,
+      dataLength: data.length
+    });
     
     return {
       totalProfit: baseStats.totalProfit || 0,
@@ -238,6 +245,15 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     
     const change = lastValue - firstValue;
     const percentage = firstValue ? (change / firstValue) * 100 : 0;
+    
+    console.log('📊 [PortfolioTimeRange] Calculando rendimiento del portfolio:', {
+      firstValue,
+      lastValue,
+      change,
+      percentage,
+      dataLength: portfolioData.length,
+      selectedRange
+    });
     
     return { change, percentage, currentValue: lastValue };
   };
@@ -354,7 +370,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                 Estadísticas Generales
               </h4>
               <div className={styles.explanationBox}>
-                <p><strong>Rendimiento vs S&P 500:</strong> Comparación relativa del rendimiento del portfolio respecto al índice S&P 500. Fórmula: (({serviceName} − S&P500) / S&P500) × 100</p>
+                <p><strong>Rendimiento vs S&P 500:</strong> Diferencia en puntos porcentuales entre el rendimiento del portfolio y el índice S&P 500. Fórmula: Rendimiento del Portfolio - Rendimiento del S&P 500</p>
                 <p><strong>Win Rate:</strong> Proporción de operaciones ganadoras sobre el total de operaciones ejecutadas. Fórmula: (Cantidad de trades ganadores / Cantidad total de trades) × 100</p>
                 <p><strong>Total de Alertas:</strong> Número absoluto de alertas de compra efectivamente ejecutadas por el servicio {serviceName} en el rango de fechas seleccionado</p>
               </div>
