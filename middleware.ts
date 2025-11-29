@@ -5,6 +5,39 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
+  // Filtrar rutas sospechosas (bots/scanners buscando archivos sensibles)
+  // Estas rutas devuelven 404 silencioso sin pasar por _error.tsx
+  const suspiciousPaths = [
+    '/.env',
+    '/.env.local',
+    '/.env.development',
+    '/.env.production',
+    '/.env.bak',
+    '/.env.example',
+    '/config',
+    '/config.json',
+    '/config.js',
+    '/config.yml',
+    '/config.yaml',
+    '/config.ini',
+    '/settings',
+    '/settings.json',
+    '/app.config.js',
+    '/configuration',
+    '/sitemap_index.xml',
+    '/.git/config',
+    '/env',
+    '/env.json',
+    '/env.yml',
+    '/env.yaml',
+    '/estrategiaymetododetrading', // Ruta específica que aparece en los logs
+  ];
+  
+  // Si es una ruta sospechosa, devolver 404 silencioso
+  if (suspiciousPaths.some(path => pathname === path || pathname.startsWith(path))) {
+    return new NextResponse(null, { status: 404 });
+  }
+  
   // Verificar token para todas las rutas (no solo admin)
   const token = await getToken({ 
     req: request, 

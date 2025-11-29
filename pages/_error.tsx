@@ -60,10 +60,55 @@ function Error({ statusCode, hasGetInitialPropsRun, err }: ErrorProps) {
   );
 }
 
-Error.getInitialProps = ({ res, err }: NextPageContext) => {
+Error.getInitialProps = ({ res, err, req }: NextPageContext) => {
   const statusCode = res ? res.statusCode : err ? err.statusCode ?? 500 : 404;
   
-  console.error('🚨 Error getInitialProps:', { statusCode, err: err?.message });
+  // Lista de rutas sospechosas que no deberían loguearse (bots/scanners)
+  const suspiciousPaths = [
+    '/.env',
+    '/.env.local',
+    '/.env.development',
+    '/.env.production',
+    '/.env.bak',
+    '/.env.example',
+    '/config',
+    '/config.json',
+    '/config.js',
+    '/config.yml',
+    '/config.yaml',
+    '/config.ini',
+    '/settings',
+    '/settings.json',
+    '/app.config.js',
+    '/configuration',
+    '/sitemap_index.xml',
+    '/.git/config',
+    '/env',
+    '/env.json',
+    '/env.yml',
+    '/env.yaml',
+  ];
+  
+  // Obtener la ruta actual si está disponible
+  let currentPath = '';
+  try {
+    if (req?.url) {
+      // req.url puede ser una ruta relativa o absoluta
+      const url = req.url.startsWith('http') ? req.url : `http://localhost${req.url}`;
+      currentPath = new URL(url).pathname;
+    }
+  } catch (e) {
+    // Si hay error parseando la URL, ignorar
+  }
+  
+  const isSuspiciousPath = suspiciousPaths.some(path => 
+    currentPath === path || currentPath.startsWith(path)
+  );
+  
+  // Solo loguear errores que no sean rutas sospechosas o que sean errores del servidor (500+)
+  if (!isSuspiciousPath || statusCode >= 500) {
+    console.error('🚨 Error getInitialProps:', { statusCode, err: err?.message, path: currentPath });
+  }
   
   return { statusCode, hasGetInitialPropsRun: true, err };
 };
