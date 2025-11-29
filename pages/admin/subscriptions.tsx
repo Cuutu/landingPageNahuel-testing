@@ -82,6 +82,7 @@ export default function AdminSubscriptionsPage() {
     lastProcessed: string | null;
   } | null>(null);
   const [processingNotifications, setProcessingNotifications] = useState(false);
+  const [sendingBulkNotifications, setSendingBulkNotifications] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -218,13 +219,18 @@ export default function AdminSubscriptionsPage() {
         body: JSON.stringify({ userEmail, service })
       });
       
-      if (response.ok) {
-        toast.success('Email de recordatorio enviado exitosamente');
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        toast.success(data.message || 'Email de recordatorio enviado exitosamente');
       } else {
-        toast.error('Error enviando email de recordatorio');
+        const errorMessage = data.error || 'Error enviando email de recordatorio';
+        toast.error(errorMessage);
+        console.error('Error en respuesta:', data);
       }
     } catch (error) {
-      toast.error('Error enviando email de recordatorio');
+      console.error('Error enviando recordatorio:', error);
+      toast.error('Error de conexión al enviar email de recordatorio');
     }
   };
 
@@ -282,6 +288,37 @@ export default function AdminSubscriptionsPage() {
     } catch (error) {
       console.error('Error cleaning up notifications:', error);
       toast.error('Error al limpiar notificaciones');
+    }
+  };
+
+  const sendBulkNotifications = async () => {
+    try {
+      setSendingBulkNotifications(true);
+      
+      const response = await fetch('/api/admin/send-bulk-notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success(data.message || `Notificaciones enviadas: ${data.results.sent} exitosas, ${data.results.failed} fallidas`);
+        if (data.results.errors.length > 0) {
+          console.error('Errores en envío masivo:', data.results.errors);
+        }
+        // Recargar datos
+        await fetchData();
+      } else {
+        toast.error(data.error || 'Error al enviar notificaciones masivas');
+      }
+    } catch (error) {
+      console.error('Error sending bulk notifications:', error);
+      toast.error('Error de conexión al enviar notificaciones masivas');
+    } finally {
+      setSendingBulkNotifications(false);
     }
   };
 
@@ -448,6 +485,25 @@ export default function AdminSubscriptionsPage() {
                   <>
                     <Mail size={20} />
                     Procesar Notificaciones
+                  </>
+                )}
+              </button>
+              
+              <button 
+                onClick={sendBulkNotifications}
+                disabled={sendingBulkNotifications}
+                className={styles.processButton}
+                style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' }}
+              >
+                {sendingBulkNotifications ? (
+                  <>
+                    <div className={styles.spinner}></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Mail size={20} />
+                    Enviar Notificaciones (≤7 días)
                   </>
                 )}
               </button>

@@ -102,13 +102,12 @@ const useDashboardSections = () => {
     {
       id: 'roadmaps',
       title: 'Gestión de Roadmaps',
-      description: 'Crea y gestiona los roadmaps de aprendizaje para Zero 2 Trader, Day Trading y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado.',
+      description: 'Crea y gestiona los roadmaps de aprendizaje para Zero 2 Trader y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado.',
       icon: <Map size={32} />,
       color: 'from-cyan-500 to-blue-500',
       links: [
         { label: 'Gestionar Roadmaps', href: '#roadmaps-modal', icon: <Map size={16} /> },
-        { label: 'Zero 2 Trader', href: '#roadmaps-modal', icon: <TrendingUp size={16} /> },
-        { label: 'Day Trading', href: '#roadmaps-modal', icon: <Target size={16} /> }
+        { label: 'Zero 2 Trader', href: '#roadmaps-modal?tipo=SwingTrading', icon: <TrendingUp size={16} /> }
       ]
     },
     {
@@ -125,18 +124,19 @@ const useDashboardSections = () => {
         { label: 'Ver Landing', href: '/', icon: <TrendingUp size={16} /> }
       ]
     },
-    {
-      id: 'lecciones',
-      title: 'Gestión de Lecciones',
-      description: 'Crea, edita y administra las lecciones de los entrenamientos Zero 2 Trader y DayTrading. Sistema completo de contenido educativo con soporte para videos, PDFs, imágenes y más.',
-      icon: <BookOpen size={32} />,
-      color: 'from-red-500 to-rose-500',
-      links: [
-        { label: 'Gestionar Lecciones', href: '/admin/lecciones', icon: <BookOpen size={16} /> },
-        { label: 'Zero 2 Trader', href: '/admin/lecciones?tipo=SwingTrading', icon: <FileText size={16} /> },
-        { label: 'Day Trading', href: '/admin/lecciones?tipo=DayTrading', icon: <TrendingUp size={16} /> }
-      ]
-    },
+    // Ocultado - No se está utilizando
+    // {
+    //   id: 'lecciones',
+    //   title: 'Gestión de Lecciones',
+    //   description: 'Crea, edita y administra las lecciones de los entrenamientos Zero 2 Trader y DayTrading. Sistema completo de contenido educativo con soporte para videos, PDFs, imágenes y más.',
+    //   icon: <BookOpen size={32} />,
+    //   color: 'from-red-500 to-rose-500',
+    //   links: [
+    //     { label: 'Gestionar Lecciones', href: '/admin/lecciones', icon: <BookOpen size={16} /> },
+    //     { label: 'Zero 2 Trader', href: '/admin/lecciones?tipo=SwingTrading', icon: <FileText size={16} /> },
+    //     { label: 'Day Trading', href: '/admin/lecciones?tipo=DayTrading', icon: <TrendingUp size={16} /> }
+    //   ]
+    // },
     {
       id: 'users',
       title: 'Gestión de Usuarios',
@@ -151,16 +151,16 @@ const useDashboardSections = () => {
     },
     {
       id: 'schedules',
-      title: 'Gestión de Horarios',
+      title: 'Gestión de Asesorías y Entrenamientos',
       description: 'Envío centralizado de links de reunión para asesorías y entrenamientos programados. Lista de sesiones próximas ordenadas por proximidad para gestión eficiente.',
       icon: <Calendar size={32} />,
       color: 'from-indigo-500 to-purple-500',
       links: [
         { label: 'Horarios Asesorías', href: '/admin/asesorias-horarios', icon: <Clock size={16} /> },
-        { label: 'Fechas Asesorías', href: '/admin/asesorias-fechas', icon: <Calendar size={16} /> },
-        { label: 'Entrenamientos Swing-Trading', href: '/admin/monthly-trainings', icon: <Calendar size={16} /> },
+        { label: 'Fechas consultorio financiero', href: '/admin/asesorias-fechas', icon: <Calendar size={16} /> },
+        { label: 'Fechas de Clases Entrenamientos', href: '/admin/monthly-trainings', icon: <Calendar size={16} /> },
         { label: 'Enviar Link de Reunión', href: '/admin/horarios', icon: <Settings size={16} /> },
-        { label: 'Próximas Sesiones Swing', href: '/admin/upcoming-training', icon: <Calendar size={16} /> }
+        { label: 'Gestión de Clases Entrenamientos', href: '/admin/upcoming-training', icon: <Calendar size={16} /> }
       ]
     },
     {
@@ -170,9 +170,9 @@ const useDashboardSections = () => {
       icon: <BookOpen size={32} />,
       color: 'from-emerald-500 to-teal-500',
       links: [
-        { label: 'Gestionar Suscripciones', href: '/admin/monthly-training-subscriptions', icon: <Users size={16} /> },
-        { label: 'Enviar Recordatorios', href: '/admin/monthly-training-subscriptions', icon: <Mail size={16} /> },
-        { label: 'Estadísticas Mensuales', href: '/admin/monthly-training-subscriptions', icon: <TrendingUp size={16} /> }
+        { label: 'Gestionar Suscripciones', href: '/admin/monthly-training-subscriptions#suscripciones', icon: <Users size={16} /> },
+        { label: 'Enviar Recordatorios', href: '/admin/monthly-training-subscriptions#recordatorios', icon: <Mail size={16} /> },
+        { label: 'Estadísticas Mensuales', href: '/admin/monthly-training-subscriptions#estadisticas', icon: <TrendingUp size={16} /> }
       ]
     },
     {
@@ -819,7 +819,18 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   // Manejar click en links de roadmaps
   const handleRoadmapLinkClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
-    if (href === '#roadmaps-modal') {
+    if (href.startsWith('#roadmaps-modal')) {
+      // Extraer el tipo del query string si existe
+      const url = new URL(href, window.location.href);
+      const tipo = url.searchParams.get('tipo');
+      
+      // Establecer el tipo antes de abrir el modal
+      if (tipo) {
+        setSelectedType(tipo);
+      } else {
+        setSelectedType('all');
+      }
+      
       setShowRoadmapsModal(true);
       fetchRoadmaps();
     }
@@ -828,6 +839,13 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   useEffect(() => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
+
+  // Recargar roadmaps cuando cambie el tipo y el modal esté abierto
+  useEffect(() => {
+    if (showRoadmapsModal) {
+      fetchRoadmaps();
+    }
+  }, [selectedType, showRoadmapsModal, fetchRoadmaps]);
 
   // Memoizar las estadísticas para evitar re-renders
   const statsCards = useMemo(() => [

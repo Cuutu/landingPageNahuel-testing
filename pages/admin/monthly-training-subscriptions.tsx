@@ -86,6 +86,24 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
     fetchSubscriptions();
   }, [filters]);
 
+  // Scroll automático a la sección cuando hay hash en la URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash;
+      if (hash) {
+        // Esperar a que el contenido se cargue
+        setTimeout(() => {
+          const element = document.querySelector(hash);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Ajustar un poco más arriba para compensar el navbar
+            window.scrollBy(0, -80);
+          }
+        }, 500);
+      }
+    }
+  }, [loading]); // Ejecutar cuando termine de cargar
+
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
@@ -390,7 +408,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
 
             {/* Estadísticas */}
             {stats && (
-              <div style={{ 
+              <div id="estadisticas" style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
                 gap: '24px',
@@ -561,7 +579,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
             )}
 
             {/* Panel de Recordatorios */}
-            <div className={styles.card} style={{
+            <div id="recordatorios" className={styles.card} style={{
               background: 'linear-gradient(135deg, #1f2937 0%, #111827 100%)',
               border: 'none',
               color: 'white',
@@ -686,7 +704,7 @@ export default function MonthlyTrainingSubscriptionsPage({ user }: MonthlyTraini
             </div>
 
             {/* Lista de Suscripciones */}
-            <div className={styles.card}>
+            <div id="suscripciones" className={styles.card}>
               <h3 style={{ marginTop: 0, marginBottom: 16 }}>
                 Suscripciones - {getMonthName(filters.month)} {filters.year}
                 {filters.trainingType !== 'all' && ` - ${getTrainingDisplayName(filters.trainingType)}`}

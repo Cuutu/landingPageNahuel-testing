@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Verificar si es admin
     const adminUser = await User.findOne({ email: session.user.email });
-    if (!adminUser || !adminUser.isAdmin) {
+    if (!adminUser || adminUser.role !== 'admin') {
       return res.status(403).json({ error: 'Acceso denegado' });
     }
 

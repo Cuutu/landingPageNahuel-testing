@@ -37,7 +37,7 @@ export default function AdminBulkEmailPage() {
     message: '',
     recipients: 'all', // all, suscriptores, admins
     buttonText: 'Visitar Sitio Web',
-    buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://landingpagenahuel.vercel.app'
+    buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://lozanonahuel.com'
   });
   const [testEmail, setTestEmail] = useState('');
   const [testLoading, setTestLoading] = useState(false);
@@ -292,7 +292,7 @@ export default function AdminBulkEmailPage() {
           message: '', 
           recipients: 'all',
           buttonText: 'Visitar Sitio Web',
-          buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://landingpagenahuel.vercel.app'
+          buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://lozanonahuel.com'
         });
         setEmailImages([]);
       } else {
