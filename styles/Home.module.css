@@ -2879,14 +2879,15 @@
 .proximamenteLine {
   position: absolute;
   width: 180%;
-  height: 60px;
+  height: 36px;
   background: #fbbf24;
+  opacity: 0.6;
   transform: rotate(-25deg);
   transform-origin: center;
-  box-shadow: 0 0 15px rgba(251, 191, 36, 0.6);
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
   top: 50%;
   left: 50%;
-  margin-top: -30px;
+  margin-top: -18px;
   margin-left: -90%;
 }
 
