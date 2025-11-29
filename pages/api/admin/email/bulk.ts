@@ -40,6 +40,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { 
       recipients, 
       recipientType, 
+      serviceFilter = 'all', // Filtro por servicio de alertas
       subject, 
       message, 
       emailType = 'general',
@@ -104,9 +105,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Determinar destinatarios usando la nueva base de datos de emails
     if (finalRecipientType === 'all') {
       console.log('👥 [BULK EMAIL] Obteniendo todos los emails de la lista...');
-      const emailList = await (EmailList as any).getActiveEmails();
+      let emailList;
+      
+      // Si hay filtro por servicio, obtener usuarios con ese servicio activo
+      if (serviceFilter && serviceFilter !== 'all') {
+        console.log(`🔍 [BULK EMAIL] Filtrando por servicio: ${serviceFilter}`);
+        const usersWithService = await User.find({
+          'activeSubscriptions.isActive': true,
+          'activeSubscriptions.service': serviceFilter
+        }).select('email');
+        
+        const userEmails = usersWithService.map((user: any) => user.email);
+        emailList = await EmailList.find({
+          email: { $in: userEmails },
+          isActive: true
+        });
+        console.log(`👥 [BULK EMAIL] Emails encontrados con servicio ${serviceFilter}:`, emailList.length);
+      } else {
+        emailList = await (EmailList as any).getActiveEmails();
+        console.log('👥 [BULK EMAIL] Emails encontrados en la lista:', emailList.length);
+      }
+      
       targetEmails = emailList.map((item: any) => item.email);
-      console.log('👥 [BULK EMAIL] Emails encontrados en la lista:', emailList.length);
     } else if (finalRecipientType === 'custom' && finalRecipients) {
       console.log('👥 [BULK EMAIL] Validando emails personalizados...');
       // Validar emails individuales
@@ -115,15 +135,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       console.log('👥 [BULK EMAIL] Emails válidos de la lista personalizada:', targetEmails.length, 'de', finalRecipients.length);
     } else if (finalRecipientType === 'subscribers' || finalRecipientType === 'suscriptores') {
       console.log('👥 [BULK EMAIL] Obteniendo emails de suscriptores...');
-      // Buscar emails de usuarios con role 'suscriptor' O con suscripciones activas
-      const subscribers = await User.find({
+      
+      // Construir query base para suscriptores
+      let subscriberQuery: any = {
         $or: [
           { role: 'suscriptor' },
           { 'activeSubscriptions.isActive': true },
           { 'subscriptions.activa': true },
           { 'suscripciones.activa': true }
         ]
-      }, 'email');
+      };
+      
+      // Si hay filtro por servicio, agregar condición adicional
+      if (serviceFilter && serviceFilter !== 'all') {
+        console.log(`🔍 [BULK EMAIL] Filtrando suscriptores por servicio: ${serviceFilter}`);
+        subscriberQuery = {
+          $and: [
+            {
+              $or: [
+                { role: 'suscriptor' },
+                { 'activeSubscriptions.isActive': true },
+                { 'subscriptions.activa': true },
+                { 'suscripciones.activa': true }
+              ]
+            },
+            {
+              'activeSubscriptions': {
+                $elemMatch: {
+                  service: serviceFilter,
+                  isActive: true
+                }
+              }
+            }
+          ]
+        };
+      }
+      
+      // Buscar emails de usuarios con role 'suscriptor' O con suscripciones activas
+      const subscribers = await User.find(subscriberQuery, 'email');
       
       // Obtener emails de la lista que coincidan con suscriptores
       const subscriberEmails = subscribers.map((user: any) => user.email);

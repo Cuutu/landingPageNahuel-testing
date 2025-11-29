@@ -11,7 +11,9 @@ import {
   RefreshCw,
   AlertCircle,
   CheckCircle,
-  Clock
+  Clock,
+  Plus,
+  X
 } from 'lucide-react';
 import styles from '@/styles/OperationsTable.module.css';
 
@@ -19,9 +21,10 @@ interface OperationsTableProps {
   system: 'TraderCall' | 'SmartMoney';
   className?: string;
   refreshTrigger?: number; // Cuando cambia, refresca las operaciones
+  userRole?: string; // Rol del usuario para mostrar botones de admin
 }
 
-const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '', refreshTrigger = 0 }) => {
+const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '', refreshTrigger = 0, userRole = '' }) => {
   const { 
     operations, 
     summary, 
@@ -30,8 +33,23 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     loading, 
     error, 
     fetchOperations, 
-    refreshOperations 
+    refreshOperations,
+    createOperation
   } = useOperations();
+
+  // Estado para el modal de crear operación manual
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingOperation, setCreatingOperation] = useState(false);
+  const [formData, setFormData] = useState({
+    ticker: '',
+    operationType: 'COMPRA' as 'COMPRA' | 'VENTA',
+    quantity: '',
+    price: '',
+    date: new Date().toISOString().split('T')[0],
+    portfolioPercentage: '',
+    notes: '',
+    alertId: '' // Opcional para operaciones antiguas
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'COMPRA' | 'VENTA'>('ALL');
@@ -99,6 +117,62 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   const getOperationBgColor = (type: 'COMPRA' | 'VENTA') => {
     return type === 'COMPRA' ? 'bg-green-50' : 'bg-red-50';
+  };
+
+  // Función para manejar la creación de operación manual
+  const handleCreateManualOperation = async () => {
+    if (!formData.ticker || !formData.quantity || !formData.price || !formData.date) {
+      alert('Por favor completa todos los campos requeridos');
+      return;
+    }
+
+    setCreatingOperation(true);
+    try {
+      const operationData: any = {
+        ticker: formData.ticker.toUpperCase(),
+        operationType: formData.operationType,
+        quantity: parseFloat(formData.quantity),
+        price: parseFloat(formData.price),
+        system: system,
+        date: formData.date,
+        notes: formData.notes || `Operación manual registrada - ${formData.operationType}`,
+        isManual: true // Marcar como operación manual
+      };
+
+      // Si hay alertId, agregarlo; si no, crear operación sin alerta
+      if (formData.alertId) {
+        operationData.alertId = formData.alertId;
+      }
+
+      if (formData.portfolioPercentage) {
+        operationData.portfolioPercentage = parseFloat(formData.portfolioPercentage);
+      }
+
+      const result = await createOperation(operationData);
+      
+      if (result) {
+        alert('✅ Operación creada exitosamente');
+        setShowCreateModal(false);
+        setFormData({
+          ticker: '',
+          operationType: 'COMPRA',
+          quantity: '',
+          price: '',
+          date: new Date().toISOString().split('T')[0],
+          portfolioPercentage: '',
+          notes: '',
+          alertId: ''
+        });
+        await fetchOperations(system);
+      } else {
+        alert('❌ Error al crear la operación');
+      }
+    } catch (error) {
+      console.error('Error creating manual operation:', error);
+      alert('❌ Error al crear la operación: ' + (error instanceof Error ? error.message : 'Error desconocido'));
+    } finally {
+      setCreatingOperation(false);
+    }
   };
 
   // ✅ NUEVO: Función para determinar el estado de la operación
@@ -243,6 +317,34 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           </div>
         </div>
       </div>
+
+      {/* Botón para crear operación manual (solo admin) */}
+      {userRole === 'admin' && (
+        <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.75rem 1.5rem',
+              backgroundColor: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              transition: 'background-color 0.2s'
+            }}
+            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+          >
+            <Plus size={16} />
+            Agregar Operación Manual
+          </button>
+        </div>
+      )}
 
       {/* Filtros y búsqueda */}
       <div className={styles.filters}>
@@ -402,6 +504,250 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         </table>
       </div>
 
+      {/* Modal para crear operación manual */}
+      {showCreateModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+            maxHeight: '90vh',
+            overflowY: 'auto'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>Agregar Operación Manual</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0.5rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Ticker <span style={{ color: 'red' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.ticker}
+                  onChange={(e) => setFormData({ ...formData, ticker: e.target.value.toUpperCase() })}
+                  placeholder="AAPL"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Tipo de Operación <span style={{ color: 'red' }}>*</span>
+                </label>
+                <select
+                  value={formData.operationType}
+                  onChange={(e) => setFormData({ ...formData, operationType: e.target.value as 'COMPRA' | 'VENTA' })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="COMPRA">Compra</option>
+                  <option value="VENTA">Venta</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Cantidad <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.quantity}
+                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                    placeholder="100"
+                    min="0"
+                    step="0.01"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                    Precio <span style={{ color: 'red' }}>*</span>
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="150.00"
+                    min="0"
+                    step="0.01"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid #ddd',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Fecha <span style={{ color: 'red' }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  % de Cartera (opcional)
+                </label>
+                <input
+                  type="number"
+                  value={formData.portfolioPercentage}
+                  onChange={(e) => setFormData({ ...formData, portfolioPercentage: e.target.value })}
+                  placeholder="10"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  ID de Alerta (opcional - dejar vacío para operaciones antiguas)
+                </label>
+                <input
+                  type="text"
+                  value={formData.alertId}
+                  onChange={(e) => setFormData({ ...formData, alertId: e.target.value })}
+                  placeholder="Dejar vacío si no hay alerta asociada"
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                  Notas (opcional)
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Operación manual registrada..."
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    border: '1px solid #ddd',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button
+                  onClick={handleCreateManualOperation}
+                  disabled={creatingOperation}
+                  style={{
+                    flex: 1,
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: creatingOperation ? '#9ca3af' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: creatingOperation ? 'not-allowed' : 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                >
+                  {creatingOperation ? 'Creando...' : 'Crear Operación'}
+                </button>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  disabled={creatingOperation}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#e5e7eb',
+                    color: '#374151',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    cursor: creatingOperation ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

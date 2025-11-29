@@ -7,11 +7,13 @@ import User from "@/models/User";
 import Alert from "@/models/Alert";
 
 interface CreateOperationRequest {
-  alertId: string;
+  alertId?: string; // ✅ NUEVO: Opcional para operaciones manuales
+  ticker?: string; // ✅ NUEVO: Ticker para operaciones sin alerta
   operationType: 'COMPRA' | 'VENTA';
   quantity: number;
   price: number;
   system: 'TraderCall' | 'SmartMoney';
+  date?: string; // ✅ NUEVO: Fecha opcional
   isPartialSale?: boolean;
   partialSalePercentage?: number;
   originalQuantity?: number;
@@ -23,6 +25,7 @@ interface CreateOperationRequest {
     realizedProfit?: number;
   };
   notes?: string;
+  isManual?: boolean; // ✅ NUEVO: Flag para operaciones manuales
 }
 
 interface CreateOperationResponse {
@@ -58,19 +61,29 @@ export default async function handler(
       quantity,
       price,
       system,
+      date, // ✅ NUEVO: Fecha opcional para operaciones manuales
       isPartialSale = false,
       partialSalePercentage,
       originalQuantity,
       portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
       liquidityData,
-      notes
-    }: CreateOperationRequest = req.body;
+      notes,
+      isManual = false // ✅ NUEVO: Flag para operaciones manuales
+    }: CreateOperationRequest & { date?: string; isManual?: boolean } = req.body;
 
     // Validaciones
-    if (!alertId || !operationType || !quantity || !price || !system) {
+    if (!operationType || !quantity || !price || !system) {
       return res.status(400).json({
         success: false,
-        error: "Faltan campos requeridos: alertId, operationType, quantity, price, system"
+        error: "Faltan campos requeridos: operationType, quantity, price, system"
+      });
+    }
+
+    // ✅ NUEVO: Para operaciones manuales, alertId es opcional
+    if (!isManual && !alertId) {
+      return res.status(400).json({
+        success: false,
+        error: "alertId es requerido para operaciones automáticas"
       });
     }
 
@@ -88,18 +101,27 @@ export default async function handler(
       });
     }
 
-    // Verificar que la alerta existe
-    const alert = await Alert.findById(alertId);
-    if (!alert) {
-      return res.status(404).json({ success: false, error: "Alerta no encontrada" });
-    }
+    // ✅ NUEVO: Verificar alerta solo si se proporciona alertId
+    let alert = null;
+    let alertSymbol = '';
+    
+    if (alertId) {
+      alert = await Alert.findById(alertId);
+      if (!alert) {
+        return res.status(404).json({ success: false, error: "Alerta no encontrada" });
+      }
 
-    // Verificar que la alerta pertenece al sistema correcto
-    if (alert.tipo !== system) {
-      return res.status(400).json({
-        success: false,
-        error: `La alerta pertenece al sistema ${alert.tipo}, no a ${system}`
-      });
+      // Verificar que la alerta pertenece al sistema correcto
+      if (alert.tipo !== system) {
+        return res.status(400).json({
+          success: false,
+          error: `La alerta pertenece al sistema ${alert.tipo}, no a ${system}`
+        });
+      }
+      alertSymbol = alert.symbol;
+    } else if (isManual) {
+      // Para operaciones manuales sin alerta, usar el ticker como alertSymbol
+      alertSymbol = req.body.ticker || '';
     }
 
     // Obtener el balance actual del usuario para este sistema
@@ -116,17 +138,23 @@ export default async function handler(
       newBalance = currentBalance + (quantity * price); // Sumar la venta
     }
 
+    // ✅ NUEVO: Usar ticker del body si es operación manual, sino usar el de la alerta
+    const ticker = isManual && req.body.ticker ? req.body.ticker.toUpperCase() : (alert?.symbol || alertSymbol);
+    
+    // ✅ NUEVO: Usar fecha proporcionada o fecha actual
+    const operationDate = date ? new Date(date) : new Date();
+
     // Crear la operación
     const operation = new Operation({
-      ticker: alert.symbol,
+      ticker: ticker,
       operationType,
       quantity: operationType === 'VENTA' ? -Math.abs(quantity) : Math.abs(quantity), // Negativo para ventas
       price,
       amount: quantity * price,
-      date: new Date(),
+      date: operationDate,
       balance: newBalance,
-      alertId: alert._id,
-      alertSymbol: alert.symbol,
+      alertId: alert?._id || null, // ✅ NUEVO: Permitir null para operaciones sin alerta
+      alertSymbol: alertSymbol || ticker,
       system,
       createdBy: user._id,
       isPartialSale,
@@ -135,8 +163,8 @@ export default async function handler(
       portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
       liquidityData,
       executedBy: session.user.email,
-      executionMethod: 'MANUAL',
-      notes
+      executionMethod: isManual ? 'MANUAL' : 'ADMIN',
+      notes: notes || (isManual ? 'Operación manual registrada' : '')
     });
 
     await operation.save();

@@ -4590,7 +4590,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           {activeTab === 'seguimiento' && renderSeguimientoAlertas()}
           {activeTab === 'operaciones' && (
             <div className="p-6">
-              <OperationsTable system="SmartMoney" refreshTrigger={refreshOperationsTrigger} />
+              <OperationsTable system="SmartMoney" refreshTrigger={refreshOperationsTrigger} userRole={userRole} />
             </div>
           )}
           {activeTab === 'vigentes' && renderAlertasVigentes()}

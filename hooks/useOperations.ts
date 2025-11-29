@@ -60,11 +60,13 @@ interface UseOperationsReturn {
 }
 
 interface CreateOperationData {
-  alertId: string;
+  alertId?: string; // ✅ NUEVO: Opcional para operaciones manuales
+  ticker?: string; // ✅ NUEVO: Ticker para operaciones sin alerta
   operationType: 'COMPRA' | 'VENTA';
   quantity: number;
   price: number;
   system: 'TraderCall' | 'SmartMoney';
+  date?: string; // ✅ NUEVO: Fecha opcional
   isPartialSale?: boolean;
   partialSalePercentage?: number;
   originalQuantity?: number;
@@ -76,6 +78,7 @@ interface CreateOperationData {
     realizedProfit?: number;
   };
   notes?: string;
+  isManual?: boolean; // ✅ NUEVO: Flag para operaciones manuales
 }
 
 export const useOperations = (): UseOperationsReturn => {

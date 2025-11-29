@@ -139,6 +139,86 @@ export default async function handler(
 
     console.log('✅ Posición cerrada por usuario:', user.name || user.email, alertId);
 
+    // ✅ NUEVO: Registrar operación de venta SIEMPRE, incluso sin liquidez
+    try {
+      const OperationModule = await import('@/models/Operation');
+      const Operation = OperationModule.default;
+      
+      const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+      const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+      
+      if (!adminUser) {
+        console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+      } else {
+        const pool = updatedAlert?.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+        
+        // Buscar la operación de compra original
+        const buyOperation = await Operation.findOne({ 
+          alertId: alertId, 
+          operationType: 'COMPRA',
+          system: pool
+        }).sort({ date: -1 });
+        
+        // Si hay liquidez, usar valores reales; si no, usar valores estimados de la compra original
+        let operationQuantity = 0;
+        let operationAmount = 0;
+        let realizedProfit = 0;
+        let entryPrice = updatedAlert?.entryPrice || currentPrice;
+        
+        if (buyOperation && buyOperation.quantity) {
+          operationQuantity = Math.abs(buyOperation.quantity);
+          operationAmount = operationQuantity * currentPrice;
+          if (buyOperation.price) {
+            realizedProfit = (currentPrice - buyOperation.price) * operationQuantity;
+          }
+          entryPrice = buyOperation.price || entryPrice;
+        } else {
+          // Si no hay operación de compra, usar valores estimados (1 acción)
+          operationQuantity = 1;
+          operationAmount = currentPrice;
+          entryPrice = updatedAlert?.entryPrice || currentPrice;
+        }
+        
+        // Obtener balance actual del admin para este sistema
+        const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+          .sort({ date: -1 })
+          .select('balance');
+        const currentBalance = currentBalanceDoc?.balance || 0;
+        const newBalance = currentBalance + operationAmount;
+
+        const operation = new Operation({
+          ticker: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
+          operationType: 'VENTA',
+          quantity: -operationQuantity, // Negativo para ventas
+          price: currentPrice,
+          amount: operationAmount,
+          date: new Date(),
+          balance: newBalance,
+          alertId: alertId,
+          alertSymbol: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
+          system: pool,
+          createdBy: adminUser._id,
+          isPartialSale: false,
+          portfolioPercentage: buyOperation?.portfolioPercentage,
+          liquidityData: buyOperation?.liquidityData ? {
+            allocatedAmount: 0,
+            shares: 0,
+            entryPrice: entryPrice,
+            realizedProfit: realizedProfit
+          } : undefined,
+          executedBy: user.email,
+          executionMethod: 'MANUAL',
+          notes: `Cierre manual de alerta - ${updatedAlert?.symbol} - Razón: ${reason}`
+        });
+
+        await operation.save();
+        console.log(`✅ Operación de cierre registrada: ${updatedAlert?.symbol} - ${operationQuantity} acciones por $${currentPrice}`);
+      }
+    } catch (operationError) {
+      console.error('⚠️ Error registrando operación de cierre:', operationError);
+      // No fallar el cierre por un error en la operación
+    }
+
     // Integrar con Liquidez: vender acciones asignadas y devolver efectivo
     try {
       // ✅ CORREGIDO: Buscar liquidez por pool específico
@@ -157,67 +237,6 @@ export default async function handler(
           // ✅ CORREGIDO: Si se vendieron todas las acciones, remover la distribución
           if (remainingShares === 0) {
             liquidity.removeDistribution(alertId);
-          }
-
-          // ✅ NUEVO: Registrar operación de venta automáticamente
-          try {
-            const OperationModule = await import('@/models/Operation');
-            const Operation = OperationModule.default;
-            
-            // ✅ CORREGIDO: Usar el ADMIN_EMAIL para asegurar que las operaciones se vean en la lista
-            // Esto es importante porque list.ts busca operaciones por ADMIN_EMAIL
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-            const adminUser = await User.findOne({ email: ADMIN_EMAIL });
-            
-            if (!adminUser) {
-              console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
-              throw new Error('Admin user not found');
-            }
-            
-            // Obtener balance actual del admin para este sistema
-            const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
-              .sort({ date: -1 })
-              .select('balance');
-            const currentBalance = currentBalanceDoc?.balance || 0;
-            const newBalance = currentBalance + returnedCash;
-            
-            // ✅ NUEVO: Buscar la operación de compra original para obtener el portfolioPercentage
-            const buyOperation = await Operation.findOne({ 
-              alertId: alertId, 
-              operationType: 'COMPRA',
-              system: pool
-            }).sort({ date: -1 });
-
-            const operation = new Operation({
-              ticker: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
-              operationType: 'VENTA',
-              quantity: -dist.shares, // Negativo para ventas
-              price: currentPrice,
-              amount: returnedCash,
-              date: new Date(),
-              balance: newBalance,
-              alertId: alertId,
-              alertSymbol: updatedAlert?.symbol.toUpperCase() || 'UNKNOWN',
-              system: pool,
-              createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
-              isPartialSale: false,
-              portfolioPercentage: buyOperation?.portfolioPercentage, // ✅ NUEVO: Copiar el porcentaje de la compra original
-              liquidityData: {
-                allocatedAmount: 0, // Se vendió todo
-                shares: 0,
-                entryPrice: dist.entryPrice,
-                realizedProfit: realized
-              },
-              executedBy: user.email,
-              executionMethod: 'MANUAL',
-              notes: `Cierre manual de alerta - ${updatedAlert?.symbol} - Razón: ${reason}`
-            });
-
-            await operation.save();
-            console.log(`✅ Operación de cierre registrada: ${updatedAlert?.symbol} - ${dist.shares} acciones por $${currentPrice}`);
-          } catch (operationError) {
-            console.error('⚠️ Error registrando operación de cierre:', operationError);
-            // No fallar el cierre por un error en la operación
           }
           
           await liquidity.save();

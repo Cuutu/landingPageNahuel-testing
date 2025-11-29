@@ -86,7 +86,7 @@ const OperationSchema: Schema = new Schema({
   alertId: {
     type: Schema.Types.ObjectId,
     ref: 'Alert',
-    required: true
+    required: false // ✅ NUEVO: Opcional para operaciones manuales sin alerta
   },
   alertSymbol: {
     type: String,

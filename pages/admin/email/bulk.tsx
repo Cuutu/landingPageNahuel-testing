@@ -36,6 +36,7 @@ export default function AdminBulkEmailPage() {
     subject: '',
     message: '',
     recipients: 'all', // all, suscriptores, admins
+    serviceFilter: 'all', // all, TraderCall, SmartMoney, CashFlow
     buttonText: 'Visitar Sitio Web',
     buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://lozanonahuel.com'
   });
@@ -291,6 +292,7 @@ export default function AdminBulkEmailPage() {
           subject: '', 
           message: '', 
           recipients: 'all',
+          serviceFilter: 'all',
           buttonText: 'Visitar Sitio Web',
           buttonUrl: process.env.NEXT_PUBLIC_SITE_URL || 'https://lozanonahuel.com'
         });
@@ -394,7 +396,7 @@ export default function AdminBulkEmailPage() {
                         </label>
                         <select
                           value={emailData.recipients}
-                          onChange={(e) => setEmailData(prev => ({ ...prev, recipients: e.target.value }))}
+                          onChange={(e) => setEmailData(prev => ({ ...prev, recipients: e.target.value, serviceFilter: 'all' }))}
                           className={styles.searchInput}
                           style={{ width: '300px' }}
                         >
@@ -403,6 +405,29 @@ export default function AdminBulkEmailPage() {
                           <option value="admins">Solo administradores</option>
                         </select>
                       </div>
+
+                      {/* Service Filter - Solo visible para "all" o "suscriptores" */}
+                      {(emailData.recipients === 'all' || emailData.recipients === 'suscriptores') && (
+                        <div className={styles.formGroup}>
+                          <label style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', display: 'block' }}>
+                            Filtrar por Servicio de Alertas
+                          </label>
+                          <select
+                            value={emailData.serviceFilter}
+                            onChange={(e) => setEmailData(prev => ({ ...prev, serviceFilter: e.target.value }))}
+                            className={styles.searchInput}
+                            style={{ width: '300px' }}
+                          >
+                            <option value="all">Todos los servicios</option>
+                            <option value="TraderCall">Trader Call</option>
+                            <option value="SmartMoney">Smart Money</option>
+                            <option value="CashFlow">Cash Flow</option>
+                          </select>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                            Filtra los destinatarios por el servicio de alertas al que están suscritos
+                          </p>
+                        </div>
+                      )}
 
                       {/* Subject */}
                       <div className={styles.formGroup}>

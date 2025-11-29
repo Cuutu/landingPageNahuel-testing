@@ -361,58 +361,6 @@ export default async function handler(
             originalParticipationPercentage: 100
           };
 
-          // ✅ NUEVO: Registrar operación de compra automáticamente
-          try {
-            const OperationModule = await import('@/models/Operation');
-            const Operation = OperationModule.default;
-            
-            // ✅ CORREGIDO: Usar el ADMIN_EMAIL para asegurar que las operaciones se vean en la lista
-            // Esto es importante porque list.ts busca operaciones por ADMIN_EMAIL
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-            const adminUser = await User.findOne({ email: ADMIN_EMAIL });
-            
-            if (!adminUser) {
-              console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
-              throw new Error('Admin user not found');
-            }
-            
-            // Obtener balance actual del admin para este sistema
-            const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
-              .sort({ date: -1 })
-              .select('balance');
-            const currentBalance = currentBalanceDoc?.balance || 0;
-            const newBalance = currentBalance - liquidityAmount;
-
-            const operation = new Operation({
-              ticker: symbol.toUpperCase(),
-              operationType: 'COMPRA',
-              quantity: shares,
-              price: priceForShares,
-              amount: liquidityAmount,
-              date: new Date(),
-              balance: newBalance,
-              alertId: newAlert._id,
-              alertSymbol: symbol.toUpperCase(),
-              system: pool,
-              createdBy: adminUser._id, // ✅ CORREGIDO: Usar adminUser._id en lugar de user._id
-              portfolioPercentage: liquidityPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
-              liquidityData: {
-                allocatedAmount: liquidityAmount,
-                shares: shares,
-                entryPrice: priceForShares
-              },
-              executedBy: user.email,
-              executionMethod: 'AUTOMATIC',
-              notes: `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
-            });
-
-            await operation.save();
-            console.log(`✅ Operación de compra registrada: ${symbol} - ${shares} acciones por $${priceForShares}`);
-          } catch (operationError) {
-            console.error('⚠️ Error registrando operación de compra:', operationError);
-            // No fallar la creación de la alerta por un error en la operación
-          }
-
           // Agregar la distribución
           console.log(`🔍 [DEBUG] Agregando distribución:`, newDistribution);
           liquidity.distributions.push(newDistribution);
@@ -433,6 +381,55 @@ export default async function handler(
           // Guardar cambios
           await liquidity.save();
           console.log(`🔍 [DEBUG] Liquidez guardada exitosamente`);
+
+          // ✅ NUEVO: Registrar operación de compra DESPUÉS de asignar la liquidez
+          try {
+            const OperationModule = await import('@/models/Operation');
+            const Operation = OperationModule.default;
+            
+            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
+            const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+            
+            if (!adminUser) {
+              console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+            } else {
+              // Obtener balance actual del admin para este sistema
+              const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+                .sort({ date: -1 })
+                .select('balance');
+              const currentBalance = currentBalanceDoc?.balance || 0;
+              const newBalance = currentBalance - liquidityAmount;
+
+              const operation = new Operation({
+                ticker: symbol.toUpperCase(),
+                operationType: 'COMPRA',
+                quantity: shares,
+                price: priceForShares,
+                amount: liquidityAmount,
+                date: new Date(),
+                balance: newBalance,
+                alertId: newAlert._id,
+                alertSymbol: symbol.toUpperCase(),
+                system: pool,
+                createdBy: adminUser._id,
+                portfolioPercentage: liquidityPercentage,
+                liquidityData: {
+                  allocatedAmount: liquidityAmount,
+                  shares: shares,
+                  entryPrice: priceForShares
+                },
+                executedBy: user.email,
+                executionMethod: 'AUTOMATIC',
+                notes: `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
+              });
+
+              await operation.save();
+              console.log(`✅ Operación de compra registrada después de asignar liquidez: ${symbol} - ${shares} acciones por $${priceForShares}`);
+            }
+          } catch (operationError) {
+            console.error('⚠️ Error registrando operación de compra después de asignar liquidez:', operationError);
+            // No fallar la creación de la alerta por un error en la operación
+          }
 
           console.log(`✅ Distribución de liquidez creada automáticamente:`, {
             alertId: newAlert._id.toString(),
