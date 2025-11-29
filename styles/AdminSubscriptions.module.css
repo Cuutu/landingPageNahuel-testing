@@ -333,6 +333,9 @@
   display: flex;
   gap: 8px;
   align-items: center;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .actionButton {
@@ -347,12 +350,20 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .actionButton:hover {
   background: #f3f4f6;
   border-color: #9ca3af;
   color: #374151;
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .paymentId {
@@ -533,10 +544,19 @@
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .primaryButton:hover {
   background: #2563eb;
+}
+
+.primaryButton:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .secondaryButton {

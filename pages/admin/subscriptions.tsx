@@ -211,7 +211,24 @@ export default function AdminSubscriptionsPage() {
     setSelectedPayment(null);
   };
 
-  const sendReminderEmail = async (userEmail: string, service: string) => {
+  const [sendingReminder, setSendingReminder] = useState<{email: string, service: string} | null>(null);
+
+  const sendReminderEmail = async (userEmail: string, service: string, e?: React.MouseEvent) => {
+    // Prevenir comportamiento por defecto y propagación
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Evitar múltiples clicks simultáneos
+    if (sendingReminder && sendingReminder.email === userEmail && sendingReminder.service === service) {
+      console.log('⚠️ Ya se está enviando un recordatorio para este usuario');
+      return;
+    }
+
+    console.log('📧 Iniciando envío de recordatorio:', { userEmail, service });
+    setSendingReminder({ email: userEmail, service });
+
     try {
       const response = await fetch('/api/admin/send-reminder', {
         method: 'POST',
@@ -219,18 +236,23 @@ export default function AdminSubscriptionsPage() {
         body: JSON.stringify({ userEmail, service })
       });
       
+      console.log('📧 Respuesta del servidor:', response.status);
       const data = await response.json();
+      console.log('📧 Datos de respuesta:', data);
       
       if (response.ok && data.success) {
         toast.success(data.message || 'Email de recordatorio enviado exitosamente');
+        console.log('✅ Recordatorio enviado exitosamente');
       } else {
         const errorMessage = data.error || 'Error enviando email de recordatorio';
         toast.error(errorMessage);
-        console.error('Error en respuesta:', data);
+        console.error('❌ Error en respuesta:', data);
       }
     } catch (error) {
-      console.error('Error enviando recordatorio:', error);
+      console.error('❌ Error enviando recordatorio:', error);
       toast.error('Error de conexión al enviar email de recordatorio');
+    } finally {
+      setSendingReminder(null);
     }
   };
 
@@ -651,7 +673,12 @@ export default function AdminSubscriptionsPage() {
                         <button 
                           className={styles.actionButton} 
                           title="Enviar email de recordatorio"
-                          onClick={() => sendReminderEmail(subscription.userEmail, subscription.service)}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            sendReminderEmail(subscription.userEmail, subscription.service, e);
+                          }}
+                          disabled={sendingReminder?.email === subscription.userEmail && sendingReminder?.service === subscription.service}
                         >
                           <Mail size={16} />
                         </button>
@@ -874,11 +901,16 @@ export default function AdminSubscriptionsPage() {
             <div className={styles.modalFooter}>
               {selectedSubscription && (
                 <button 
-                  onClick={() => sendReminderEmail(selectedSubscription.userEmail, selectedSubscription.service)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    sendReminderEmail(selectedSubscription.userEmail, selectedSubscription.service, e);
+                  }}
                   className={styles.primaryButton}
+                  disabled={sendingReminder?.email === selectedSubscription.userEmail && sendingReminder?.service === selectedSubscription.service}
                 >
                   <Mail size={16} />
-                  Enviar Recordatorio
+                  {sendingReminder?.email === selectedSubscription.userEmail && sendingReminder?.service === selectedSubscription.service ? 'Enviando...' : 'Enviar Recordatorio'}
                 </button>
               )}
               <button 
