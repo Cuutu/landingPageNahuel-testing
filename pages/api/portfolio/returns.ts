@@ -149,6 +149,19 @@ export default async function handler(
             historicalValues[periodKey] = valorHistorico;
             
             console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot exacto del ${snapshot.snapshotDate.toISOString().split('T')[0]}`);
+          } else if (days === 1 && newestSnapshot) {
+            // ✅ CASO ESPECIAL: Para 1 día, si no hay snapshot de ayer (fin de semana), usar el último snapshot disponible
+            // Esto maneja el caso cuando el mercado está cerrado (fines de semana)
+            const valorHistorico = newestSnapshot.valorTotalCartera;
+            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+            
+            returns[periodKey] = Number(returnPercentage.toFixed(2));
+            historicalValues[periodKey] = valorHistorico;
+            
+            const newestDate = new Date(newestSnapshot.snapshotDate);
+            const daysSinceNewest = Math.floor((now.getTime() - newestDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot de ayer (probablemente fin de semana). Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`);
           } else if (oldestSnapshot) {
             // Fallback: no encontramos snapshot exacto pero hay datos históricos, usar el más antiguo
             const valorHistorico = oldestSnapshot.valorTotalCartera;
