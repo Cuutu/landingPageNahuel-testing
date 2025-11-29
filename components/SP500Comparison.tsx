@@ -216,14 +216,39 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
           <div>
             <div className={styles.performanceContainer}>
               <span className={styles.performanceLabel}>Rendimiento en el período seleccionado</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
-                {getPerformanceIcon(serviceData?.totalReturnPercent ?? 0)}
-                <span
-                  className={`${styles.performanceValue} ${getPerformanceClass(serviceData?.totalReturnPercent ?? 0)}`}
-                >
-                  {formatPercentage(serviceData?.totalReturnPercent ?? 0)}
-                </span>
-              </div>
+              {loading && !serviceData ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span style={{ color: '#9CA3AF' }}>Cargando...</span>
+                </div>
+              ) : serviceData ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  {(() => {
+                    const percentValue = serviceData.totalReturnPercent ?? 0;
+                    console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
+                      serviceType,
+                      totalReturnPercent: serviceData.totalReturnPercent,
+                      period: serviceData.period,
+                      finalValue: percentValue
+                    });
+                    return (
+                      <>
+                        {getPerformanceIcon(percentValue)}
+                        <span
+                          className={`${styles.performanceValue} ${getPerformanceClass(percentValue)}`}
+                        >
+                          {formatPercentage(percentValue)}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
+                  <AlertCircle size={16} style={{ color: '#EF4444' }} />
+                  <span style={{ color: '#EF4444' }}>No hay datos disponibles</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

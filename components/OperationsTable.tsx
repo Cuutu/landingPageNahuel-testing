@@ -40,6 +40,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   // Estado para el modal de crear operación manual
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingOperation, setCreatingOperation] = useState(false);
+  const [quantityType, setQuantityType] = useState<'shares' | 'percentage'>('shares');
   const [formData, setFormData] = useState({
     ticker: '',
     operationType: 'COMPRA' as 'COMPRA' | 'VENTA',
@@ -131,7 +132,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       const operationData: any = {
         ticker: formData.ticker.toUpperCase(),
         operationType: formData.operationType,
-        quantity: parseFloat(formData.quantity),
         price: parseFloat(formData.price),
         system: system,
         date: formData.date,
@@ -139,13 +139,24 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         isManual: true // Marcar como operación manual
       };
 
+      // Manejar cantidad según el tipo seleccionado
+      if (quantityType === 'percentage') {
+        // Si es porcentaje, guardar en portfolioPercentage
+        operationData.portfolioPercentage = parseFloat(formData.quantity);
+        // La cantidad puede ser 0 o un valor estimado basado en el porcentaje
+        operationData.quantity = 0; // O calcular basado en el balance actual si está disponible
+      } else {
+        // Si es acciones, guardar en quantity
+        operationData.quantity = parseFloat(formData.quantity);
+        // Si también hay portfolioPercentage, agregarlo
+        if (formData.portfolioPercentage) {
+          operationData.portfolioPercentage = parseFloat(formData.portfolioPercentage);
+        }
+      }
+
       // Si hay alertId, agregarlo; si no, crear operación sin alerta
       if (formData.alertId) {
         operationData.alertId = formData.alertId;
-      }
-
-      if (formData.portfolioPercentage) {
-        operationData.portfolioPercentage = parseFloat(formData.portfolioPercentage);
       }
 
       const result = await createOperation(operationData);
@@ -153,6 +164,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       if (result) {
         alert('✅ Operación creada exitosamente');
         setShowCreateModal(false);
+        setQuantityType('shares');
         setFormData({
           ticker: '',
           operationType: 'COMPRA',
@@ -506,29 +518,61 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
       {/* Modal para crear operación manual */}
       {showCreateModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '12px',
-            padding: '2rem',
-            maxWidth: '500px',
-            width: '90%',
-            maxHeight: '90vh',
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.5rem', fontWeight: '600', margin: 0 }}>Agregar Operación Manual</h3>
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCreateModal(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+            backdropFilter: 'blur(4px)'
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '2rem',
+              maxWidth: '600px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+              border: '1px solid #e5e7eb'
+            }}
+          >
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '2rem',
+              paddingBottom: '1rem',
+              borderBottom: '2px solid #f3f4f6'
+            }}>
+              <h3 style={{ 
+                fontSize: '1.75rem', 
+                fontWeight: '700', 
+                margin: 0,
+                color: '#1f2937',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <Plus size={24} style={{ color: '#3b82f6' }} />
+                Agregar Operación Manual
+              </h3>
               <button
                 onClick={() => setShowCreateModal(false)}
                 style={{
@@ -538,17 +582,34 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   padding: '0.5rem',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  borderRadius: '8px',
+                  transition: 'background-color 0.2s',
+                  color: '#6b7280'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  e.currentTarget.style.color = '#374151';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#6b7280';
                 }}
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Ticker <span style={{ color: 'red' }}>*</span>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  Ticker / Símbolo <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -557,27 +618,51 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   placeholder="AAPL"
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '1rem'
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    transition: 'border-color 0.2s',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Tipo de Operación <span style={{ color: 'red' }}>*</span>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  Tipo de Operación <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <select
                   value={formData.operationType}
                   onChange={(e) => setFormData({ ...formData, operationType: e.target.value as 'COMPRA' | 'VENTA' })}
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '1rem'
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    backgroundColor: 'white',
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 >
                   <option value="COMPRA">Compra</option>
@@ -585,31 +670,105 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 </select>
               </div>
 
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  Tipo de Cantidad <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setQuantityType('shares')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1rem',
+                      border: `2px solid ${quantityType === 'shares' ? '#3b82f6' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      backgroundColor: quantityType === 'shares' ? '#eff6ff' : 'white',
+                      color: quantityType === 'shares' ? '#3b82f6' : '#6b7280',
+                      fontWeight: quantityType === 'shares' ? '600' : '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    Acciones
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuantityType('percentage')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1rem',
+                      border: `2px solid ${quantityType === 'percentage' ? '#3b82f6' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      backgroundColor: quantityType === 'percentage' ? '#eff6ff' : 'white',
+                      color: quantityType === 'percentage' ? '#3b82f6' : '#6b7280',
+                      fontWeight: quantityType === 'percentage' ? '600' : '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    Porcentaje (%)
+                  </button>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                    Cantidad <span style={{ color: 'red' }}>*</span>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem', 
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.95rem'
+                  }}>
+                    {quantityType === 'shares' ? 'Cantidad (Acciones)' : 'Cantidad (%)'} <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
                     value={formData.quantity}
                     onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    placeholder="100"
+                    placeholder={quantityType === 'shares' ? "100" : "10"}
                     min="0"
-                    step="0.01"
+                    step={quantityType === 'shares' ? "1" : "0.01"}
                     style={{
                       width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '1rem'
+                      padding: '0.875rem 1rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      transition: 'border-color 0.2s',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#e5e7eb';
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                    Precio <span style={{ color: 'red' }}>*</span>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem', 
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.95rem'
+                  }}>
+                    Precio <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -620,18 +779,32 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     step="0.01"
                     style={{
                       width: '100%',
-                      padding: '0.75rem',
-                      border: '1px solid #ddd',
-                      borderRadius: '6px',
-                      fontSize: '1rem'
+                      padding: '0.875rem 1rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      transition: 'border-color 0.2s',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#e5e7eb';
                     }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  Fecha <span style={{ color: 'red' }}>*</span>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  Fecha <span style={{ color: '#ef4444' }}>*</span>
                 </label>
                 <input
                   type="date"
@@ -639,39 +812,69 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '1rem'
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    transition: 'border-color 0.2s',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 />
               </div>
 
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  % de Cartera (opcional)
-                </label>
-                <input
-                  type="number"
-                  value={formData.portfolioPercentage}
-                  onChange={(e) => setFormData({ ...formData, portfolioPercentage: e.target.value })}
-                  placeholder="10"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '1rem'
-                  }}
-                />
-              </div>
+              {quantityType === 'shares' && (
+                <div>
+                  <label style={{ 
+                    display: 'block', 
+                    marginBottom: '0.5rem', 
+                    fontWeight: '600',
+                    color: '#374151',
+                    fontSize: '0.95rem'
+                  }}>
+                    % de Cartera (opcional)
+                  </label>
+                  <input
+                    type="number"
+                    value={formData.portfolioPercentage}
+                    onChange={(e) => setFormData({ ...formData, portfolioPercentage: e.target.value })}
+                    placeholder="10"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    style={{
+                      width: '100%',
+                      padding: '0.875rem 1rem',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: '8px',
+                      fontSize: '1rem',
+                      transition: 'border-color 0.2s',
+                      outline: 'none'
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                    }}
+                  />
+                </div>
+              )}
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
-                  ID de Alerta (opcional - dejar vacío para operaciones antiguas)
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  ID de Alerta (opcional)
                 </label>
                 <input
                   type="text"
@@ -680,16 +883,30 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   placeholder="Dejar vacío si no hay alerta asociada"
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
-                    fontSize: '1rem'
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    transition: 'border-color 0.2s',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 />
               </div>
 
               <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
                   Notas (opcional)
                 </label>
                 <textarea
@@ -699,46 +916,103 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   rows={3}
                   style={{
                     width: '100%',
-                    padding: '0.75rem',
-                    border: '1px solid #ddd',
-                    borderRadius: '6px',
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
                     fontSize: '1rem',
-                    resize: 'vertical'
+                    resize: 'vertical',
+                    transition: 'border-color 0.2s',
+                    outline: 'none',
+                    fontFamily: 'inherit'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
                   }}
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '1rem', 
+                marginTop: '0.5rem',
+                paddingTop: '1.5rem',
+                borderTop: '2px solid #f3f4f6'
+              }}>
                 <button
                   onClick={handleCreateManualOperation}
                   disabled={creatingOperation}
                   style={{
                     flex: 1,
-                    padding: '0.75rem 1.5rem',
+                    padding: '0.875rem 1.5rem',
                     backgroundColor: creatingOperation ? '#9ca3af' : '#3b82f6',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '6px',
+                    borderRadius: '8px',
                     fontSize: '1rem',
-                    fontWeight: '500',
+                    fontWeight: '600',
                     cursor: creatingOperation ? 'not-allowed' : 'pointer',
-                    transition: 'background-color 0.2s'
+                    transition: 'all 0.2s',
+                    boxShadow: creatingOperation ? 'none' : '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!creatingOperation) {
+                      e.currentTarget.style.backgroundColor = '#2563eb';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 6px 8px -1px rgba(0, 0, 0, 0.15)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!creatingOperation) {
+                      e.currentTarget.style.backgroundColor = '#3b82f6';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.1)';
+                    }
                   }}
                 >
-                  {creatingOperation ? 'Creando...' : 'Crear Operación'}
+                  {creatingOperation ? (
+                    <>
+                      <RefreshCw size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                      Creando...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle size={18} />
+                      Crear Operación
+                    </>
+                  )}
                 </button>
                 <button
                   onClick={() => setShowCreateModal(false)}
                   disabled={creatingOperation}
                   style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#e5e7eb',
+                    padding: '0.875rem 1.5rem',
+                    backgroundColor: '#f3f4f6',
                     color: '#374151',
-                    border: 'none',
-                    borderRadius: '6px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
                     fontSize: '1rem',
-                    fontWeight: '500',
-                    cursor: creatingOperation ? 'not-allowed' : 'pointer'
+                    fontWeight: '600',
+                    cursor: creatingOperation ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!creatingOperation) {
+                      e.currentTarget.style.backgroundColor = '#e5e7eb';
+                      e.currentTarget.style.borderColor = '#d1d5db';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!creatingOperation) {
+                      e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      e.currentTarget.style.borderColor = '#e5e7eb';
+                    }
                   }}
                 >
                   Cancelar
