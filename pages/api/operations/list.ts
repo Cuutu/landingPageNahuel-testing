@@ -148,6 +148,7 @@ export default async function handler(
         executedBy: op.executedBy,
         executionMethod: op.executionMethod,
         notes: op.notes,
+        status: op.status, // ✅ NUEVO: Estado de la operación
         createdAt: op.createdAt,
         // ✅ MEJORADO: Información de la alerta para determinar el estado
         alert: alertData
