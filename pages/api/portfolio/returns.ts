@@ -115,7 +115,7 @@ export default async function handler(
           // El período solicitado excede los días disponibles desde el snapshot más antiguo
           // Usar el snapshot más antiguo disponible para mostrar el máximo período posible
           const valorHistorico = oldestSnapshot.valorTotalCartera;
-          const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+          const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico); 
           
           returns[periodKey] = Number(returnPercentage.toFixed(2));
           historicalValues[periodKey] = valorHistorico;
