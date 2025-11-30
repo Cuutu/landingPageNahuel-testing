@@ -46,31 +46,9 @@ export default async function handler(
       });
     }
 
-    // ✅ CORREGIDO: Buscar el admin principal del sistema para obtener sus operaciones
-    // Las operaciones son del pool global manejado por el admin, no individuales por usuario
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-    const adminUser = await User.findOne({ email: ADMIN_EMAIL });
-    
-    if (!adminUser) {
-      console.warn(`⚠️ No se encontró el usuario admin con email ${ADMIN_EMAIL}`);
-      // Si no hay admin, usar las operaciones del usuario actual (fallback)
-      const operations = await Operation.find({ createdBy: user._id, system })
-        .sort({ date: -1 })
-        .limit(parseInt(limit as string))
-        .skip(parseInt(skip as string))
-        .populate('alertId', 'symbol action status profit');
-
-      return res.status(200).json({
-        success: true,
-        operations: [],
-        summary: [],
-        currentBalance: 0,
-        total: 0
-      });
-    }
-
-    // Obtener operaciones del admin (pool global)
-    const operations = await Operation.find({ createdBy: adminUser._id, system })
+    // ✅ MEJORADO: Buscar operaciones por sistema/pool directamente
+    // No dependemos de un usuario admin específico, solo del pool
+    const operations = await Operation.find({ system })
       .sort({ date: -1 })
       .limit(parseInt(limit as string))
       .skip(parseInt(skip as string))
@@ -123,9 +101,9 @@ export default async function handler(
       })
     );
 
-    // Obtener resumen
+    // ✅ MEJORADO: Obtener resumen por sistema/pool
     const summary = await Operation.aggregate([
-      { $match: { createdBy: adminUser._id, system } },
+      { $match: { system } },
       {
         $group: {
           _id: '$ticker',
@@ -140,16 +118,13 @@ export default async function handler(
       { $sort: { lastOperation: -1 } }
     ]);
 
-    // Obtener balance actual
-    const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system })
+    // ✅ MEJORADO: Obtener balance actual del sistema/pool
+    const currentBalanceDoc = await Operation.findOne({ system })
       .sort({ date: -1 })
       .select('balance');
 
-    // Contar total de operaciones
-    const total = await Operation.countDocuments({
-      createdBy: adminUser._id,
-      system
-    });
+    // ✅ MEJORADO: Contar total de operaciones del sistema/pool
+    const total = await Operation.countDocuments({ system });
 
     return res.status(200).json({
       success: true,

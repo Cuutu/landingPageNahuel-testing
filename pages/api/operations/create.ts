@@ -71,10 +71,9 @@ export default async function handler(
       isManual = false // ✅ NUEVO: Flag para operaciones manuales
     }: CreateOperationRequest & { date?: string; isManual?: boolean } = req.body;
 
-    // Validaciones
-    // ✅ CORREGIDO: quantity es opcional si se proporciona portfolioPercentage
+    // Validaciones básicas
     const hasQuantity = quantity !== undefined && quantity !== null && quantity > 0;
-    const hasPortfolioPercentage = portfolioPercentage !== undefined && portfolioPercentage !== null && portfolioPercentage > 0;
+    const hasLiquidityShares = liquidityData?.shares !== undefined && liquidityData.shares > 0;
     
     if (!operationType || !price || !system) {
       return res.status(400).json({
@@ -83,11 +82,11 @@ export default async function handler(
       });
     }
     
-    // Validar que al menos uno de quantity o portfolioPercentage esté presente
-    if (!hasQuantity && !hasPortfolioPercentage) {
+    // ✅ MEJORADO: Validar que haya cantidad (desde quantity o liquidityData.shares)
+    if (!hasQuantity && !hasLiquidityShares) {
       return res.status(400).json({
         success: false,
-        error: "Debes proporcionar quantity (cantidad de acciones) o portfolioPercentage (porcentaje del portfolio)"
+        error: "Debes proporcionar quantity (cantidad de acciones) o liquidityData.shares"
       });
     }
 
@@ -136,73 +135,23 @@ export default async function handler(
       alertSymbol = req.body.ticker || '';
     }
 
-    // Obtener el balance actual del usuario para este sistema
-    const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system })
-      .sort({ date: -1 })
-      .select('balance');
-    let currentBalance = currentBalanceDoc?.balance || 0;
-
-    // ✅ CORREGIDO: Si no hay balance previo (primera operación), obtener liquidez inicial del sistema
-    if (currentBalance === 0 && hasPortfolioPercentage) {
-      const Liquidity = (await import('@/models/Liquidity')).default;
-      const liquidityDoc = await Liquidity.findOne({ createdBy: user._id, pool: system });
-      
-      if (liquidityDoc && liquidityDoc.totalLiquidity > 0) {
-        currentBalance = liquidityDoc.totalLiquidity;
-        console.log('📊 [CREATE OPERATION] Usando liquidez total como balance inicial:', {
-          system,
-          totalLiquidity: currentBalance
-        });
-      } else {
-        return res.status(400).json({
-          success: false,
-          error: `No hay liquidez configurada para el sistema ${system}. Por favor, configura la liquidez inicial primero.`
-        });
-      }
-    }
-
-    // ✅ CORREGIDO: Calcular quantity si se proporciona portfolioPercentage
+    // ✅ MEJORADO: Las operaciones son solo registro, no manejan liquidez
+    // La liquidez se maneja en /api/liquidity/distribute y /api/alerts/close
+    
+    // Determinar la cantidad final (desde quantity o portfolioPercentage si viene de liquidityData)
     let finalQuantity: number;
     
-    if (hasPortfolioPercentage && !hasQuantity) {
-      // Calcular cantidad de acciones basado en el porcentaje del portfolio
-      // Ejemplo: Portfolio = $10000, Porcentaje = 10%, Precio = $100
-      // -> Monto = $1000, Cantidad = 10 acciones
-      const portfolioAmount = (currentBalance * portfolioPercentage!) / 100;
-      finalQuantity = Math.floor(portfolioAmount / price); // Redondear hacia abajo para no exceder el monto
-      
-      console.log('📊 [CREATE OPERATION] Calculando quantity desde portfolioPercentage:', {
-        currentBalance,
-        portfolioPercentage,
-        portfolioAmount,
-        price,
-        calculatedQuantity: finalQuantity
-      });
-      
-      // Validar que se pueda comprar al menos 1 acción
-      if (finalQuantity < 1) {
-        return res.status(400).json({
-          success: false,
-          error: `El porcentaje del portfolio (${portfolioPercentage}%) no alcanza para comprar al menos 1 acción al precio de $${price}. Monto disponible: $${portfolioAmount.toFixed(2)}`
-        });
-      }
-    } else if (hasQuantity) {
-      // Usar la cantidad proporcionada
+    if (hasQuantity) {
+      // Usar la cantidad proporcionada directamente
       finalQuantity = quantity!;
+    } else if (liquidityData?.shares) {
+      // Si viene de liquidityData (asignación de alerta), usar esas shares
+      finalQuantity = liquidityData.shares;
     } else {
-      // Esto no debería pasar por la validación anterior, pero por seguridad
       return res.status(400).json({
         success: false,
-        error: "No se pudo determinar la cantidad de acciones"
+        error: "Debes proporcionar quantity (cantidad de acciones) o liquidityData.shares"
       });
-    }
-
-    // Calcular el nuevo balance
-    let newBalance: number;
-    if (operationType === 'COMPRA') {
-      newBalance = currentBalance - (finalQuantity * price); // Restar el gasto
-    } else {
-      newBalance = currentBalance + (finalQuantity * price); // Sumar la venta
     }
 
     // ✅ NUEVO: Usar ticker del body si es operación manual, sino usar el de la alerta
@@ -211,7 +160,7 @@ export default async function handler(
     // ✅ NUEVO: Usar fecha proporcionada o fecha actual
     const operationDate = date ? new Date(date) : new Date();
 
-    // Crear la operación
+    // ✅ MEJORADO: Crear la operación como registro (sin manejar balance/liquidez)
     const operation = new Operation({
       ticker: ticker,
       operationType,
@@ -219,17 +168,17 @@ export default async function handler(
       price,
       amount: finalQuantity * price,
       date: operationDate,
-      balance: newBalance,
+      balance: 0, // ✅ Las operaciones no manejan balance, solo son registro
       alertId: alert?._id || null, // ✅ NUEVO: Permitir null para operaciones sin alerta
       alertSymbol: alertSymbol || ticker,
-      system,
-      createdBy: user._id,
+      system, // ✅ MEJORADO: El sistema/pool es la clave, no el usuario
+      createdBy: user._id, // ✅ MEJORADO: Mantener quién creó la operación
       isPartialSale,
       partialSalePercentage,
       originalQuantity,
       portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
       liquidityData,
-      executedBy: session.user.email,
+      executedBy: session.user.email, // ✅ Mantener quién ejecutó la operación
       executionMethod: isManual ? 'MANUAL' : 'ADMIN',
       notes: notes || (isManual ? 'Operación manual registrada' : '')
     });
