@@ -587,7 +587,7 @@ const NonSubscriberView: React.FC<{
 
       {/* YouTube Community Section */}
       <section className={styles.youtubeSection}>
-        <div className={styles.container}>
+        <div className="container">
           <motion.div
             className={styles.youtubeContent}
             initial={{ opacity: 0, y: 20 }}
@@ -605,7 +605,7 @@ const NonSubscriberView: React.FC<{
               </p>
             </div>
 
-            <div className={styles.youtubeCarousel}>
+            <div className={styles.youtubeVideoContainer}>
               <YouTubeAutoCarousel />
             </div>
           </motion.div>
