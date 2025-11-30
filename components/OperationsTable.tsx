@@ -158,6 +158,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     if (!editingOperation) return;
 
     try {
+      console.log('📝 Guardando operación con estado:', editFormData.status);
+      
       const updateData: any = {
         ticker: editFormData.ticker,
         operationType: editFormData.operationType,
@@ -168,13 +170,44 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         status: editFormData.status
       };
 
-      await updateOperation(editingOperation._id, updateData);
+      console.log('📤 Datos a enviar:', updateData);
+
+      // ✅ Actualizar la operación (incluye el estado)
+      const result = await updateOperation(editingOperation._id, updateData);
+      
+      console.log('📥 Resultado:', result);
+      
       alert('✅ Operación actualizada exitosamente');
       setShowEditModal(false);
-      fetchOperations(system);
+      await fetchOperations(system);
     } catch (error) {
       console.error('Error updating operation:', error);
       alert('❌ Error al actualizar operación');
+    }
+  };
+
+  // ✅ NUEVO: Función para borrar operación
+  const handleDeleteOperation = async (operationId: string) => {
+    if (!window.confirm('¿Estás seguro de que quieres eliminar esta operación?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/operations/delete`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operationId })
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar operación');
+      }
+
+      alert('✅ Operación eliminada exitosamente');
+      await fetchOperations(system);
+    } catch (error) {
+      console.error('Error deleting operation:', error);
+      alert('❌ Error al eliminar operación');
     }
   };
 
@@ -569,13 +602,24 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     </td>
                     {userRole === 'admin' && (
                       <td>
-                        <button
-                          onClick={() => handleEditOperation(operation)}
-                          className={styles.editButton}
-                          title="Editar operación"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleEditOperation(operation)}
+                            className={styles.actionButton}
+                            title="Editar operación"
+                            style={{ color: '#3b82f6' }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOperation(operation._id)}
+                            className={styles.actionButton}
+                            title="Eliminar operación"
+                            style={{ color: '#ef4444' }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
