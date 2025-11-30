@@ -61,12 +61,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let amount = 0;
     let currency = 'ARS';
     
+    // ✅ CORREGIDO: Obtener precio y convertir explícitamente a número
     if (service === 'TraderCall') {
-      amount = pricing.alertas?.traderCall?.monthly || 0;
-      currency = pricing.alertas?.traderCall?.currency || 'ARS';
+      const monthlyPrice = (pricing as any).alertas?.traderCall?.monthly;
+      amount = monthlyPrice ? Number(monthlyPrice) : 0;
+      currency = (pricing as any).alertas?.traderCall?.currency || 'ARS';
+      
+      console.log('💰 [RENEWAL] Obteniendo precio TraderCall:', {
+        rawValue: monthlyPrice,
+        convertedAmount: amount,
+        type: typeof monthlyPrice,
+        currency,
+        pricingData: JSON.stringify((pricing as any).alertas?.traderCall)
+      });
     } else if (service === 'SmartMoney') {
-      amount = pricing.alertas?.smartMoney?.monthly || 0;
-      currency = pricing.alertas?.smartMoney?.currency || 'ARS';
+      const monthlyPrice = (pricing as any).alertas?.smartMoney?.monthly;
+      amount = monthlyPrice ? Number(monthlyPrice) : 0;
+      currency = (pricing as any).alertas?.smartMoney?.currency || 'ARS';
+      
+      console.log('💰 [RENEWAL] Obteniendo precio SmartMoney:', {
+        rawValue: monthlyPrice,
+        convertedAmount: amount,
+        type: typeof monthlyPrice,
+        currency,
+        pricingData: JSON.stringify((pricing as any).alertas?.smartMoney)
+      });
     } else if (service === 'CashFlow') {
       // Para CashFlow, usar un precio por defecto o agregar al modelo Pricing si es necesario
       amount = 99;
@@ -77,17 +96,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    if (!amount || amount <= 0) {
+    // ✅ VALIDACIÓN: Asegurar que el amount sea un número válido y positivo
+    if (!amount || amount <= 0 || isNaN(amount)) {
+      console.error('❌ [RENEWAL] Precio inválido obtenido:', {
+        service,
+        amount,
+        rawPricing: JSON.stringify(pricing, null, 2)
+      });
       return res.status(500).json({ 
         success: false,
-        error: `No se pudo obtener el precio para el servicio ${service}` 
+        error: `No se pudo obtener un precio válido para el servicio ${service}. Por favor, contacta al administrador.` 
       });
     }
 
-    console.log('💰 Precio obtenido para renovación:', {
+    // ✅ VALIDACIÓN: Asegurar que la moneda sea ARS (pesos argentinos)
+    if (currency !== 'ARS') {
+      console.warn('⚠️ [RENEWAL] Moneda no es ARS, forzando ARS:', currency);
+      currency = 'ARS';
+    }
+
+    console.log('✅ [RENEWAL] Precio final para renovación:', {
       service,
-      amount,
-      currency
+      amount: Number(amount),
+      currency,
+      formattedAmount: new Intl.NumberFormat('es-AR', { 
+        style: 'currency', 
+        currency: 'ARS' 
+      }).format(Number(amount))
     });
 
     // Crear registro de pago pendiente
@@ -97,7 +132,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userId: user._id,
       userEmail: user.email,
       service,
-      amount,
+      amount: Number(amount), // ✅ Asegurar que sea número
       currency,
       status: 'pending',
       externalReference: `renewal_${service}_${user._id}_${Date.now()}`,
@@ -122,9 +157,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     const baseUrl = process.env.NEXTAUTH_URL || '';
+    // ✅ Asegurar que amount sea un número válido antes de enviar a MercadoPago
+    const finalAmount = Number(amount);
+    
+    console.log('🔧 [RENEWAL] Creando preferencia MercadoPago con:', {
+      title: `Renovación - ${serviceNames[service]}`,
+      amount: finalAmount,
+      currency,
+      externalReference: payment.externalReference
+    });
+    
     const result = await createMercadoPagoPreference(
       `Renovación - ${serviceNames[service]}`,
-      amount,
+      finalAmount,
       currency,
       payment.externalReference,
       `${baseUrl}/payment/success`,
