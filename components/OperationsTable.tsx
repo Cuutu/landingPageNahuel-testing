@@ -138,6 +138,46 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     return type === 'COMPRA' ? 'bg-green-50' : 'bg-red-50';
   };
 
+  // ✅ NUEVO: Función para abrir modal de edición
+  const handleEditOperation = (operation: any) => {
+    setEditingOperation(operation);
+    setEditFormData({
+      ticker: operation.ticker,
+      operationType: operation.operationType,
+      quantity: Math.abs(operation.quantity).toString(),
+      price: operation.price.toString(),
+      date: new Date(operation.date).toISOString().split('T')[0],
+      notes: operation.notes || '',
+      status: operation.status || 'ACTIVE'
+    });
+    setShowEditModal(true);
+  };
+
+  // ✅ NUEVO: Función para guardar edición
+  const handleSaveEdit = async () => {
+    if (!editingOperation) return;
+
+    try {
+      const updateData: any = {
+        ticker: editFormData.ticker,
+        operationType: editFormData.operationType,
+        quantity: parseFloat(editFormData.quantity),
+        price: parseFloat(editFormData.price),
+        date: editFormData.date,
+        notes: editFormData.notes,
+        status: editFormData.status
+      };
+
+      await updateOperation(editingOperation._id, updateData);
+      alert('✅ Operación actualizada exitosamente');
+      setShowEditModal(false);
+      fetchOperations(system);
+    } catch (error) {
+      console.error('Error updating operation:', error);
+      alert('❌ Error al actualizar operación');
+    }
+  };
+
   // Función para manejar la creación de operación manual
   const handleCreateManualOperation = async () => {
     if (!formData.ticker || !formData.quantity || !formData.price || !formData.date) {
@@ -432,6 +472,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               <th>% Cartera</th>
               <th>Estado</th>
               <th>Fecha</th>
+              {userRole === 'admin' && <th>Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -526,6 +567,17 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     <td>
                       {formatDate(operation.date)}
                     </td>
+                    {userRole === 'admin' && (
+                      <td>
+                        <button
+                          onClick={() => handleEditOperation(operation)}
+                          className={styles.editButton}
+                          title="Editar operación"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 );
               })
@@ -1034,6 +1086,220 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   }}
                 >
                   Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ✅ NUEVO: Modal para editar operación */}
+      {showEditModal && editingOperation && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowEditModal(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+        >
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            width: '100%',
+            maxWidth: '500px',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>
+                Editar Operación
+              </h2>
+              <button onClick={() => setShowEditModal(false)} style={{ cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Ticker
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.ticker}
+                  onChange={(e) => setEditFormData({ ...editFormData, ticker: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Tipo de Operación
+                </label>
+                <select
+                  value={editFormData.operationType}
+                  onChange={(e) => setEditFormData({ ...editFormData, operationType: e.target.value as 'COMPRA' | 'VENTA' })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="COMPRA">COMPRA</option>
+                  <option value="VENTA">VENTA</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                    Cantidad
+                  </label>
+                  <input
+                    type="number"
+                    value={editFormData.quantity}
+                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                    Precio
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editFormData.price}
+                    onChange={(e) => setEditFormData({ ...editFormData, price: e.target.value })}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Fecha
+                </label>
+                <input
+                  type="date"
+                  value={editFormData.date}
+                  onChange={(e) => setEditFormData({ ...editFormData, date: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Estado
+                </label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value as any })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                >
+                  <option value="ACTIVE">Activo</option>
+                  <option value="COMPLETED">Completado</option>
+                  <option value="CANCELLED">Cancelado</option>
+                  <option value="PENDING">Pendiente</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Notas
+                </label>
+                <textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  rows={3}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem',
+                    resize: 'vertical'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button
+                  onClick={() => setShowEditModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    backgroundColor: '#f3f4f6',
+                    color: '#374151',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  style={{
+                    flex: 1,
+                    padding: '10px',
+                    backgroundColor: '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Guardar Cambios
                 </button>
               </div>
             </div>
