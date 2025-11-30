@@ -78,6 +78,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   const serviceName = serviceType === 'SmartMoney' ? 'Smart Money' : 'Trader Call';
   const [portfolioData, setPortfolioData] = useState<PortfolioData[]>([]);
   const [portfolioStats, setPortfolioStats] = useState<PortfolioStats | null>(null);
+  const [serviceReturn, setServiceReturn] = useState<number | null>(null); // ✅ NUEVO: Almacenar rendimiento del servicio por período
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userPreference, setUserPreference] = useState<string>(selectedRange);
@@ -162,15 +163,18 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
         else if (days === 180) periodKey = '180d';
         else if (days === 365) periodKey = '365d';
         
-        const serviceReturn = returnsResult.success && returnsResult.data?.returns?.[periodKey] 
+        const serviceReturnValue = returnsResult.success && returnsResult.data?.returns?.[periodKey] 
           ? returnsResult.data.returns[periodKey] 
           : null;
+        
+        // ✅ NUEVO: Guardar el rendimiento del servicio en el estado para que varíe según el período
+        setServiceReturn(serviceReturnValue);
         
         // ✅ NUEVO: Calcular estadísticas mejoradas usando el rendimiento correcto
         const stats = calculateEnhancedStats(
           evolutionResult.data || [], 
           evolutionResult.stats || null,
-          serviceReturn
+          serviceReturnValue
         );
         setPortfolioStats(stats);
         
@@ -276,6 +280,28 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   };
 
   const calculatePerformance = () => {
+    // ✅ CORREGIDO: Usar el rendimiento del servicio desde el API si está disponible
+    // Esto asegura que el rendimiento varíe según el período seleccionado
+    if (serviceReturn !== null && serviceReturn !== undefined) {
+      // Calcular el cambio y valor actual basado en el rendimiento porcentual
+      const baseValue = portfolioStats?.baseValue || 10000;
+      const percentage = serviceReturn;
+      const change = (baseValue * percentage) / 100;
+      const currentValue = baseValue + change;
+      
+      console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde API:', {
+        serviceReturn,
+        baseValue,
+        change,
+        percentage,
+        currentValue,
+        selectedRange
+      });
+      
+      return { change, percentage, currentValue };
+    }
+    
+    // Fallback: calcular desde los datos de evolución si no hay rendimiento del API
     if (portfolioData.length === 0) return { change: 0, percentage: 0, currentValue: 10000 };
     
     const firstValue = portfolioData[0]?.value || 10000;
@@ -284,7 +310,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     const change = lastValue - firstValue;
     const percentage = firstValue ? (change / firstValue) * 100 : 0;
     
-    console.log('📊 [PortfolioTimeRange] Calculando rendimiento del portfolio:', {
+    console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución (fallback):', {
       firstValue,
       lastValue,
       change,

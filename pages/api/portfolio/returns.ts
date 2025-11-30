@@ -85,18 +85,19 @@ export default async function handler(
       }).sort({ snapshotDate: -1 })
     ]);
 
-    // Calcular cuántos días de datos históricos tenemos realmente
+    // Calcular cuántos días han pasado desde el snapshot más antiguo hasta ahora
+    const oldestSnapshotDate = oldestSnapshot ? new Date(oldestSnapshot.snapshotDate) : null;
+    const daysSinceOldest = oldestSnapshotDate 
+      ? Math.floor((now.getTime() - oldestSnapshotDate.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+
+    // Calcular cuántos días de datos históricos tenemos (entre el más antiguo y el más reciente)
     let availableDays = 0;
     if (oldestSnapshot && newestSnapshot) {
       const oldestDate = new Date(oldestSnapshot.snapshotDate);
       const newestDate = new Date(newestSnapshot.snapshotDate);
       availableDays = Math.floor((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
     }
-
-    const oldestSnapshotDate = oldestSnapshot ? new Date(oldestSnapshot.snapshotDate) : null;
-    const daysSinceOldest = oldestSnapshotDate 
-      ? Math.floor((now.getTime() - oldestSnapshotDate.getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
 
     console.log(`📊 [Portfolio Returns] Datos históricos para ${poolType}:`, {
       oldestDate: oldestSnapshotDate,
@@ -108,16 +109,18 @@ export default async function handler(
 
     for (const [periodKey, days] of Object.entries(periods)) {
       try {
-        // ✅ ESCALABLE: Si el período solicitado es mayor a los días disponibles, usar el snapshot más antiguo
-        if (days > availableDays && oldestSnapshot) {
-          // No hay suficientes datos históricos para este período, usar el más antiguo disponible
+        // ✅ CORREGIDO: Si el período solicitado es mayor a los días desde el snapshot más antiguo, usar el snapshot más antiguo
+        // Esto asegura que siempre usemos el máximo período disponible cuando se solicita un período más largo
+        if (days > daysSinceOldest && oldestSnapshot) {
+          // El período solicitado excede los días disponibles desde el snapshot más antiguo
+          // Usar el snapshot más antiguo disponible para mostrar el máximo período posible
           const valorHistorico = oldestSnapshot.valorTotalCartera;
           const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
           
           returns[periodKey] = Number(returnPercentage.toFixed(2));
           historicalValues[periodKey] = valorHistorico;
           
-          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período solicitado (${days}d) > días disponibles (${availableDays}d). Usando snapshot más antiguo (${daysSinceOldest} días atrás)`);
+          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período solicitado (${days}d) > días desde snapshot más antiguo (${daysSinceOldest}d). Usando snapshot más antiguo disponible`);
         } else {
           // ✅ Hay suficientes datos históricos, buscar snapshot exacto para el período
           const targetDate = new Date(now);
