@@ -141,10 +141,10 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
       // Manejar cantidad según el tipo seleccionado
       if (quantityType === 'percentage') {
-        // Si es porcentaje, guardar en portfolioPercentage
-        operationData.portfolioPercentage = parseFloat(formData.quantity);
-        // La cantidad puede ser 0 o un valor estimado basado en el porcentaje
-        operationData.quantity = 0; // O calcular basado en el balance actual si está disponible
+        // Si es porcentaje, guardar en portfolioPercentage y no enviar quantity
+        const portfolioPercentage = parseFloat(formData.quantity);
+        operationData.portfolioPercentage = portfolioPercentage;
+        // No enviar quantity cuando se usa porcentaje (el backend lo validará)
       } else {
         // Si es acciones, guardar en quantity
         operationData.quantity = parseFloat(formData.quantity);

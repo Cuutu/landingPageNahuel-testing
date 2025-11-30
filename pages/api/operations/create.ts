@@ -72,10 +72,22 @@ export default async function handler(
     }: CreateOperationRequest & { date?: string; isManual?: boolean } = req.body;
 
     // Validaciones
-    if (!operationType || !quantity || !price || !system) {
+    // ✅ CORREGIDO: quantity es opcional si se proporciona portfolioPercentage
+    const hasQuantity = quantity !== undefined && quantity !== null && quantity > 0;
+    const hasPortfolioPercentage = portfolioPercentage !== undefined && portfolioPercentage !== null && portfolioPercentage > 0;
+    
+    if (!operationType || !price || !system) {
       return res.status(400).json({
         success: false,
-        error: "Faltan campos requeridos: operationType, quantity, price, system"
+        error: "Faltan campos requeridos: operationType, price, system"
+      });
+    }
+    
+    // Validar que al menos uno de quantity o portfolioPercentage esté presente
+    if (!hasQuantity && !hasPortfolioPercentage) {
+      return res.status(400).json({
+        success: false,
+        error: "Debes proporcionar quantity (cantidad de acciones) o portfolioPercentage (porcentaje del portfolio)"
       });
     }
 
