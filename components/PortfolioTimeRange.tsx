@@ -232,6 +232,22 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       };
     }
     
+    const totalAlerts = baseStats.totalAlerts || 0;
+    
+    // ✅ CORREGIDO: Si no hay alertas, el rendimiento relativo debe ser -100%
+    // Sin operaciones, se considera pérdida total comparado con el mercado
+    if (totalAlerts === 0) {
+      console.log('📊 [PortfolioTimeRange] No hay alertas, estableciendo rendimiento relativo en -100%');
+      return {
+        totalProfit: 0,
+        totalAlerts: 0,
+        closedAlerts: 0,
+        winRate: 0,
+        sp500Return: -100, // Rendimiento relativo = -100% cuando no hay alertas
+        baseValue: baseStats.baseValue || 10000
+      };
+    }
+    
     // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns si está disponible
     // Esto asegura consistencia con el componente SP500Comparison
     let portfolioReturn = 0;
@@ -266,12 +282,13 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       sp500Return,
       relativePerformance: relativePerformanceVsSP500,
       serviceReturnFromAPI,
-      usingAPIData: serviceReturnFromAPI !== null
+      usingAPIData: serviceReturnFromAPI !== null,
+      totalAlerts
     });
     
     return {
       totalProfit: baseStats.totalProfit || 0,
-      totalAlerts: baseStats.totalAlerts || 0,
+      totalAlerts: totalAlerts,
       closedAlerts: baseStats.closedAlerts || 0,
       winRate: baseStats.winRate || 0,
       sp500Return: relativePerformanceVsSP500, // Ahora es el rendimiento relativo

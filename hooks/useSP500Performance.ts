@@ -233,17 +233,27 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
     if (sp500Data && serviceData) {
       const sp500Return = sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0;
       const serviceReturn = serviceData.totalReturnPercent ?? 0;
+      const totalAlerts = serviceData.totalTrades || 0;
       
-      // ✅ CORREGIDO: Calcular diferencia simple en puntos porcentuales
-      // Fórmula: Rendimiento del Servicio - Rendimiento del S&P 500
-      // Esto muestra cuántos puntos porcentuales más (o menos) rindió el servicio vs el S&P 500
-      const relativePerformanceVsSP500 = serviceReturn - sp500Return;
+      // ✅ CORREGIDO: Si no hay alertas, el rendimiento relativo debe ser -100%
+      // Sin operaciones, se considera pérdida total comparado con el mercado
+      let relativePerformanceVsSP500 = -100;
+      
+      if (totalAlerts > 0) {
+        // ✅ CORREGIDO: Calcular diferencia simple en puntos porcentuales
+        // Fórmula: Rendimiento del Servicio - Rendimiento del S&P 500
+        // Esto muestra cuántos puntos porcentuales más (o menos) rindió el servicio vs el S&P 500
+        relativePerformanceVsSP500 = serviceReturn - sp500Return;
+      } else {
+        console.log(`📊 [SP500] No hay alertas (${totalAlerts}), estableciendo rendimiento relativo en -100%`);
+      }
       
       console.log(`📊 [SP500] Calculando rendimiento relativo vs S&P 500:`, {
         serviceReturn,
         sp500Return,
         relativePerformance: relativePerformanceVsSP500,
-        period: serviceData.period
+        period: serviceData.period,
+        totalAlerts
       });
       
       setServiceData(prev => prev ? {
