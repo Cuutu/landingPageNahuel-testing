@@ -25,7 +25,9 @@ interface Operation {
   executedBy?: string;
   executionMethod?: 'MANUAL' | 'AUTOMATIC' | 'ADMIN';
   notes?: string;
+  status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'; // ✅ NUEVO: Estado de la operación
   createdAt: string;
+  updatedAt?: string; // ✅ NUEVO: Fecha de última actualización
   // ✅ NUEVO: Información de la alerta para determinar el estado
   alert?: {
     status: 'ACTIVE' | 'CLOSED' | 'STOPPED' | 'DESESTIMADA' | 'DESCARTADA';
@@ -56,6 +58,8 @@ interface UseOperationsReturn {
   error: string | null;
   fetchOperations: (system: 'TraderCall' | 'SmartMoney', limit?: number, skip?: number) => Promise<void>;
   createOperation: (operationData: CreateOperationData) => Promise<Operation | null>;
+  updateOperation: (operationId: string, updateData: UpdateOperationData) => Promise<Operation | null>;
+  changeOperationStatus: (operationId: string, status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING', notes?: string) => Promise<Operation | null>;
   refreshOperations: () => Promise<void>;
 }
 
@@ -79,6 +83,16 @@ interface CreateOperationData {
   };
   notes?: string;
   isManual?: boolean; // ✅ NUEVO: Flag para operaciones manuales
+}
+
+interface UpdateOperationData {
+  ticker?: string;
+  operationType?: 'COMPRA' | 'VENTA';
+  quantity?: number;
+  price?: number;
+  date?: string;
+  notes?: string;
+  status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING';
 }
 
 export const useOperations = (): UseOperationsReturn => {
@@ -163,6 +177,88 @@ export const useOperations = (): UseOperationsReturn => {
     }
   }, []);
 
+  const updateOperation = useCallback(async (operationId: string, updateData: UpdateOperationData): Promise<Operation | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/operations/update', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ operationId, ...updateData }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al actualizar operación');
+      }
+
+      if (data.success && data.operation) {
+        // Actualizar la operación en la lista local
+        setOperations(prev => prev.map(op => 
+          op._id === operationId ? { ...op, ...data.operation } : op
+        ));
+        
+        return data.operation;
+      } else {
+        throw new Error(data.error || 'Error al actualizar operación');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      console.error('Error updating operation:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const changeOperationStatus = useCallback(async (
+    operationId: string, 
+    status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING',
+    notes?: string
+  ): Promise<Operation | null> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/operations/change-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ operationId, status, notes }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al cambiar estado de operación');
+      }
+
+      if (data.success && data.operation) {
+        // Actualizar la operación en la lista local
+        setOperations(prev => prev.map(op => 
+          op._id === operationId ? { ...op, ...data.operation } : op
+        ));
+        
+        return data.operation;
+      } else {
+        throw new Error(data.error || 'Error al cambiar estado de operación');
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
+      console.error('Error changing operation status:', err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const refreshOperations = useCallback(async () => {
     if (operations.length > 0) {
       // Determinar el sistema basándose en la primera operación
@@ -180,6 +276,8 @@ export const useOperations = (): UseOperationsReturn => {
     error,
     fetchOperations,
     createOperation,
+    updateOperation,
+    changeOperationStatus,
     refreshOperations
   };
 };

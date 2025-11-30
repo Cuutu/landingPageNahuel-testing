@@ -43,6 +43,9 @@ export interface IOperation extends Document {
   executedBy?: string; // Email del usuario que ejecutó
   executionMethod?: 'MANUAL' | 'AUTOMATIC' | 'ADMIN'; // Cómo se ejecutó
   notes?: string; // Notas adicionales
+  
+  // ✅ NUEVO: Estado de la operación
+  status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'; // Estado de la operación
 }
 
 const OperationSchema: Schema = new Schema({
@@ -150,6 +153,13 @@ const OperationSchema: Schema = new Schema({
   notes: {
     type: String,
     trim: true
+  },
+  
+  // ✅ NUEVO: Estado de la operación
+  status: {
+    type: String,
+    enum: ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING'],
+    default: 'ACTIVE'
   }
 }, { 
   timestamps: true 
