@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Payment from '@/models/Payment';
+import Pricing from '@/models/Pricing';
 import { createMercadoPagoPreference } from '@/lib/mercadopago';
 
 /**
@@ -48,14 +49,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       currentExpiry: existingActiveSub?.expiryDate
     });
 
-    // Obtener precio del servicio
-    const servicePrices: { [key: string]: number } = {
-      'TraderCall': 11,
-      'SmartMoney': 12,
-      'CashFlow': 99
-    };
+    // ✅ CORREGIDO: Obtener precio dinámico del servicio desde el modelo Pricing
+    const pricing = await Pricing.findOne().sort({ createdAt: -1 });
+    if (!pricing) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'No hay configuración de precios disponible' 
+      });
+    }
 
-    const amount = servicePrices[service] || 99;
+    let amount = 0;
+    let currency = 'ARS';
+    
+    if (service === 'TraderCall') {
+      amount = pricing.alertas?.traderCall?.monthly || 0;
+      currency = pricing.alertas?.traderCall?.currency || 'ARS';
+    } else if (service === 'SmartMoney') {
+      amount = pricing.alertas?.smartMoney?.monthly || 0;
+      currency = pricing.alertas?.smartMoney?.currency || 'ARS';
+    } else if (service === 'CashFlow') {
+      // Para CashFlow, usar un precio por defecto o agregar al modelo Pricing si es necesario
+      amount = 99;
+    } else {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Servicio inválido' 
+      });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(500).json({ 
+        success: false,
+        error: `No se pudo obtener el precio para el servicio ${service}` 
+      });
+    }
+
+    console.log('💰 Precio obtenido para renovación:', {
+      service,
+      amount,
+      currency
+    });
 
     // Crear registro de pago pendiente
     const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 días desde ahora (se ajustará en el webhook)
@@ -65,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userEmail: user.email,
       service,
       amount,
-      currency: 'ARS',
+      currency,
       status: 'pending',
       externalReference: `renewal_${service}_${user._id}_${Date.now()}`,
       paymentMethodId: '',
@@ -92,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await createMercadoPagoPreference(
       `Renovación - ${serviceNames[service]}`,
       amount,
-      'ARS',
+      currency,
       payment.externalReference,
       `${baseUrl}/payment/success`,
       `${baseUrl}/payment/failure`,
