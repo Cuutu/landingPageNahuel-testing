@@ -13,7 +13,10 @@ import {
   CheckCircle,
   Clock,
   Plus,
-  X
+  X,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import styles from '@/styles/OperationsTable.module.css';
 
@@ -34,7 +37,9 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     error, 
     fetchOperations, 
     refreshOperations,
-    createOperation
+    createOperation,
+    updateOperation,
+    changeOperationStatus
   } = useOperations();
 
   // Estado para el modal de crear operación manual
@@ -50,6 +55,19 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     portfolioPercentage: '',
     notes: '',
     alertId: '' // Opcional para operaciones antiguas
+  });
+
+  // ✅ NUEVO: Estado para editar operaciones
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingOperation, setEditingOperation] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState({
+    ticker: '',
+    operationType: 'COMPRA' as 'COMPRA' | 'VENTA',
+    quantity: '',
+    price: '',
+    date: '',
+    notes: '',
+    status: 'ACTIVE' as 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'
   });
 
   const [searchTerm, setSearchTerm] = useState('');
