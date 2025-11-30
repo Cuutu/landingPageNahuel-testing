@@ -140,14 +140,69 @@ export default async function handler(
     const currentBalanceDoc = await Operation.findOne({ createdBy: user._id, system })
       .sort({ date: -1 })
       .select('balance');
-    const currentBalance = currentBalanceDoc?.balance || 0;
+    let currentBalance = currentBalanceDoc?.balance || 0;
+
+    // ✅ CORREGIDO: Si no hay balance previo (primera operación), obtener liquidez inicial del sistema
+    if (currentBalance === 0 && hasPortfolioPercentage) {
+      const Liquidity = (await import('@/models/Liquidity')).default;
+      const liquidityDoc = await Liquidity.findOne({ createdBy: user._id, pool: system });
+      
+      if (liquidityDoc && liquidityDoc.totalLiquidity > 0) {
+        currentBalance = liquidityDoc.totalLiquidity;
+        console.log('📊 [CREATE OPERATION] Usando liquidez total como balance inicial:', {
+          system,
+          totalLiquidity: currentBalance
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `No hay liquidez configurada para el sistema ${system}. Por favor, configura la liquidez inicial primero.`
+        });
+      }
+    }
+
+    // ✅ CORREGIDO: Calcular quantity si se proporciona portfolioPercentage
+    let finalQuantity: number;
+    
+    if (hasPortfolioPercentage && !hasQuantity) {
+      // Calcular cantidad de acciones basado en el porcentaje del portfolio
+      // Ejemplo: Portfolio = $10000, Porcentaje = 10%, Precio = $100
+      // -> Monto = $1000, Cantidad = 10 acciones
+      const portfolioAmount = (currentBalance * portfolioPercentage!) / 100;
+      finalQuantity = Math.floor(portfolioAmount / price); // Redondear hacia abajo para no exceder el monto
+      
+      console.log('📊 [CREATE OPERATION] Calculando quantity desde portfolioPercentage:', {
+        currentBalance,
+        portfolioPercentage,
+        portfolioAmount,
+        price,
+        calculatedQuantity: finalQuantity
+      });
+      
+      // Validar que se pueda comprar al menos 1 acción
+      if (finalQuantity < 1) {
+        return res.status(400).json({
+          success: false,
+          error: `El porcentaje del portfolio (${portfolioPercentage}%) no alcanza para comprar al menos 1 acción al precio de $${price}. Monto disponible: $${portfolioAmount.toFixed(2)}`
+        });
+      }
+    } else if (hasQuantity) {
+      // Usar la cantidad proporcionada
+      finalQuantity = quantity!;
+    } else {
+      // Esto no debería pasar por la validación anterior, pero por seguridad
+      return res.status(400).json({
+        success: false,
+        error: "No se pudo determinar la cantidad de acciones"
+      });
+    }
 
     // Calcular el nuevo balance
     let newBalance: number;
     if (operationType === 'COMPRA') {
-      newBalance = currentBalance - (quantity * price); // Restar el gasto
+      newBalance = currentBalance - (finalQuantity * price); // Restar el gasto
     } else {
-      newBalance = currentBalance + (quantity * price); // Sumar la venta
+      newBalance = currentBalance + (finalQuantity * price); // Sumar la venta
     }
 
     // ✅ NUEVO: Usar ticker del body si es operación manual, sino usar el de la alerta
@@ -160,9 +215,9 @@ export default async function handler(
     const operation = new Operation({
       ticker: ticker,
       operationType,
-      quantity: operationType === 'VENTA' ? -Math.abs(quantity) : Math.abs(quantity), // Negativo para ventas
+      quantity: operationType === 'VENTA' ? -Math.abs(finalQuantity) : Math.abs(finalQuantity), // Negativo para ventas
       price,
-      amount: quantity * price,
+      amount: finalQuantity * price,
       date: operationDate,
       balance: newBalance,
       alertId: alert?._id || null, // ✅ NUEVO: Permitir null para operaciones sin alerta
