@@ -74,6 +74,7 @@ export default async function handler(
     // Validaciones básicas
     const hasQuantity = quantity !== undefined && quantity !== null && quantity > 0;
     const hasLiquidityShares = liquidityData?.shares !== undefined && liquidityData.shares > 0;
+    const hasPortfolioPercentage = portfolioPercentage !== undefined && portfolioPercentage !== null && portfolioPercentage > 0;
     
     if (!operationType || !price || !system) {
       return res.status(400).json({
@@ -82,11 +83,11 @@ export default async function handler(
       });
     }
     
-    // ✅ MEJORADO: Validar que haya cantidad (desde quantity o liquidityData.shares)
-    if (!hasQuantity && !hasLiquidityShares) {
+    // ✅ MEJORADO: Validar que haya cantidad (desde quantity, liquidityData.shares o portfolioPercentage)
+    if (!hasQuantity && !hasLiquidityShares && !hasPortfolioPercentage) {
       return res.status(400).json({
         success: false,
-        error: "Debes proporcionar quantity (cantidad de acciones) o liquidityData.shares"
+        error: "Debes proporcionar quantity (cantidad de acciones), liquidityData.shares o portfolioPercentage"
       });
     }
 
@@ -138,7 +139,7 @@ export default async function handler(
     // ✅ MEJORADO: Las operaciones son solo registro, no manejan liquidez
     // La liquidez se maneja en /api/liquidity/distribute y /api/alerts/close
     
-    // Determinar la cantidad final (desde quantity o portfolioPercentage si viene de liquidityData)
+    // Determinar la cantidad final (desde quantity, portfolioPercentage o liquidityData)
     let finalQuantity: number;
     
     if (hasQuantity) {
@@ -147,10 +148,15 @@ export default async function handler(
     } else if (liquidityData?.shares) {
       // Si viene de liquidityData (asignación de alerta), usar esas shares
       finalQuantity = liquidityData.shares;
+    } else if (hasPortfolioPercentage) {
+      // ✅ NUEVO: Si solo tenemos porcentaje, usarlo como placeholder
+      // La cantidad real se calculará cuando se necesite (en reportes, etc.)
+      // Por ahora guardamos el porcentaje y calculamos una cantidad simbólica
+      finalQuantity = 0; // Placeholder - se calculará después con la liquidez real
     } else {
       return res.status(400).json({
         success: false,
-        error: "Debes proporcionar quantity (cantidad de acciones) o liquidityData.shares"
+        error: "Debes proporcionar quantity (cantidad de acciones), liquidityData.shares o portfolioPercentage"
       });
     }
 
@@ -160,13 +166,23 @@ export default async function handler(
     // ✅ NUEVO: Usar fecha proporcionada o fecha actual
     const operationDate = date ? new Date(date) : new Date();
 
+    // ✅ MEJORADO: Calcular amount basado en lo que tengamos disponible
+    let calculatedAmount: number;
+    if (hasPortfolioPercentage && finalQuantity === 0) {
+      // Si solo tenemos porcentaje, el amount se calcula después con la liquidez real
+      // Por ahora guardamos 0 como placeholder
+      calculatedAmount = 0;
+    } else {
+      calculatedAmount = finalQuantity * price;
+    }
+
     // ✅ MEJORADO: Crear la operación como registro (sin manejar balance/liquidez)
     const operation = new Operation({
       ticker: ticker,
       operationType,
       quantity: operationType === 'VENTA' ? -Math.abs(finalQuantity) : Math.abs(finalQuantity), // Negativo para ventas
       price,
-      amount: finalQuantity * price,
+      amount: calculatedAmount,
       date: operationDate,
       balance: 0, // ✅ Las operaciones no manejan balance, solo son registro
       alertId: alert?._id || null, // ✅ NUEVO: Permitir null para operaciones sin alerta

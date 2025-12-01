@@ -1450,24 +1450,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
   };
 
+  // ✅ ARREGLADO: Cargar liquidez solo una vez al montar el componente
   React.useEffect(() => {
-    // Solo cargar si no hay datos de liquidez cargados
-    if (Object.keys(liquidityMap).length === 0) {
-      loadLiquidity();
-    }
-  }, [liquidityMap]);
-
-  // ✅ NUEVO: Recargar liquidez automáticamente si no se carga correctamente
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      if (Object.keys(liquidityMap).length === 0 && liquidityTotal === 0) {
-        console.log('🔄 [LIQUIDITY] Reintentando carga de liquidez después de 3 segundos...');
-        loadLiquidity();
-      }
-    }, 3000);
-
-    return () => clearTimeout(timer);
-  }, [liquidityMap, liquidityTotal]);
+    loadLiquidity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar al montar
 
   // Función para obtener precio individual de una acción (modal crear alerta)
   const fetchStockPrice = async (symbol: string) => {
