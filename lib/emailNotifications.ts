@@ -760,10 +760,12 @@ export async function sendSubscriptionConfirmationEmail(params: {
   startDate?: Date | string;
   isRenewal?: boolean;
   previousExpiry?: Date | string | null;
+  isTrial?: boolean; // ✅ NUEVO: Indicar si es prueba gratis
 }) {
   try {
     console.log('📧 Enviando confirmación de suscripción a usuario:', params.userEmail, {
       isRenewal: params.isRenewal,
+      isTrial: params.isTrial,
       previousExpiry: params.previousExpiry
     });
     const html = createSubscriptionConfirmationTemplate({
@@ -772,14 +774,21 @@ export async function sendSubscriptionConfirmationEmail(params: {
       expiryDate: params.expiryDate,
       startDate: params.startDate,
       isRenewal: params.isRenewal,
-      previousExpiry: params.previousExpiry || undefined
+      previousExpiry: params.previousExpiry || undefined,
+      isTrial: params.isTrial // ✅ NUEVO: Pasar parámetro isTrial
     });
+    
+    // ✅ NUEVO: Asunto personalizado para trials
+    const subject = params.isTrial 
+      ? `🎁 Prueba Gratis Activada - ${params.service}`
+      : `✅ ${params.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'} - ${params.service}`;
+    
     await sendEmail({
       to: params.userEmail,
-      subject: `✅ ${params.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'} - ${params.service}`,
+      subject,
       html
     });
-    console.log('✅ Confirmación de suscripción enviada al usuario');
+    console.log(`✅ Confirmación de ${params.isTrial ? 'trial' : 'suscripción'} enviada al usuario`);
   } catch (error) {
     console.error('❌ Error enviando confirmación de suscripción al usuario:', error);
   }

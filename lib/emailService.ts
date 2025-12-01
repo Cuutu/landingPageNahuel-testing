@@ -1363,6 +1363,7 @@ export function createSubscriptionConfirmationTemplate(details: {
   isRenewal?: boolean;
   previousExpiry?: Date | string;
   featuresUrl?: string;
+  isTrial?: boolean; // ✅ NUEVO: Indicar si es prueba gratis
 }): string {
   const serviceInfo: Record<string, { name: string; emoji: string; url: string }> = {
     TraderCall: { name: 'Trader Call', emoji: '📈', url: `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/trader-call` },
@@ -1384,12 +1385,25 @@ export function createSubscriptionConfirmationTemplate(details: {
     </ul>
   `;
 
-  // Mensaje específico para renovación
-  let renewalMessage = '';
-  if (details.isRenewal) {
+  // ✅ NUEVO: Mensaje específico para trial
+  let specialMessage = '';
+  if (details.isTrial) {
+    specialMessage = `
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;">
+        <p style="color: white; font-size: 24px; font-weight: bold; margin: 0;">🎁 Prueba Gratis Activa</p>
+        <p style="color: rgba(255,255,255,0.95); font-size: 16px; margin: 10px 0 0 0;">Válida hasta el ${expiryStr}</p>
+      </div>
+      <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0; color: #92400e; font-size: 14px;">
+          <strong>Importante:</strong> No se realizará ningún cargo durante tu período de prueba. Al finalizar los 30 días, si deseas continuar, podrás suscribirte desde el panel de suscripciones.
+        </p>
+      </div>
+    `;
+  } else if (details.isRenewal) {
+    // Mensaje específico para renovación
     if (previousExpiryStr && startStr) {
       // Renovación anticipada (cuando aún tenía tiempo activo)
-      renewalMessage = `
+      specialMessage = `
         <div style="background-color: #d1fae5; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0 0 8px; color: #065f46; font-weight: 600;">✅ Renovación Anticipada Confirmada</p>
           <p style="margin: 0; color: #047857; font-size: 14px;">
@@ -1402,7 +1416,7 @@ export function createSubscriptionConfirmationTemplate(details: {
       `;
     } else {
       // Renovación normal (después de expiración o primera renovación)
-      renewalMessage = `
+      specialMessage = `
         <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 4px;">
           <p style="margin: 0 0 8px; color: #1e40af; font-weight: 600;">✅ Renovación Confirmada</p>
           <p style="margin: 0; color: #1e40af; font-size: 14px;">
@@ -1414,23 +1428,32 @@ export function createSubscriptionConfirmationTemplate(details: {
     }
   }
 
+  // ✅ NUEVO: Título y mensaje personalizados para trial
+  const title = details.isTrial 
+    ? `🎁 Prueba Gratis Activada - ${svc.name}`
+    : `${svc.emoji} ${details.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'}: ${svc.name}`;
+  
+  const greeting = details.isTrial
+    ? `<p>¡Excelente noticia! 🎉</p><p><strong>${details.userName}</strong>, tu <strong>prueba gratis de 30 días</strong> para <strong>${svc.name}</strong> ha sido activada exitosamente.</p>`
+    : `<p>¡Gracias ${details.isRenewal ? 'por renovar' : 'por suscribirte'}, <strong>${details.userName}</strong>! 🎉</p><p>Tu ${details.isRenewal ? 'renovación a' : 'suscripción a'} <strong>${svc.name}</strong> fue ${details.isRenewal ? 'procesada' : 'activada'} exitosamente.</p>`;
+
   return createNotificationEmailTemplate({
-    title: `${svc.emoji} ${details.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'}: ${svc.name}`,
+    title,
     content: `
-      <p>¡Gracias ${details.isRenewal ? 'por renovar' : 'por suscribirte'}, <strong>${details.userName}</strong>! 🎉</p>
-      <p>Tu ${details.isRenewal ? 'renovación a' : 'suscripción a'} <strong>${svc.name}</strong> fue ${details.isRenewal ? 'procesada' : 'activada'} exitosamente.</p>
+      ${greeting}
       
-      ${renewalMessage}
+      ${specialMessage}
       
-      ${!details.isRenewal && expiryStr ? `<p><strong>Tu suscripción expira:</strong> ${expiryStr}</p>` : ''}
-      ${!details.isRenewal ? `<p style="color: #64748b; font-size: 14px;">💡 <em>Recordá que si renovás antes de que expire, tu tiempo actual se mantendrá y la nueva suscripción se apilará automáticamente.</em></p>` : ''}
+      ${!details.isRenewal && !details.isTrial && expiryStr ? `<p><strong>Tu suscripción expira:</strong> ${expiryStr}</p>` : ''}
+      ${!details.isRenewal && !details.isTrial ? `<p style="color: #64748b; font-size: 14px;">💡 <em>Recordá que si renovás antes de que expire, tu tiempo actual se mantendrá y la nueva suscripción se apilará automáticamente.</em></p>` : ''}
 
       <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
-        <h4 style="margin: 0 0 10px; color: #1e293b;">Funciones para suscriptores</h4>
+        <h4 style="margin: 0 0 10px; color: #1e293b;">${details.isTrial ? '¿Qué incluye tu prueba?' : 'Funciones para suscriptores'}</h4>
         ${featuresHtml}
       </div>
 
-      <p>Podés acceder desde aquí:</p>
+      ${details.isTrial ? '<p>Aprovecha estos 30 días para explorar todas las funcionalidades y ver cómo puede ayudarte a mejorar tus operaciones.</p>' : ''}
+      <p>${details.isTrial ? '¡Comienza ahora!' : 'Podés acceder desde aquí:'}</p>
     `,
     notificationType: 'success',
     urgency: 'normal',
