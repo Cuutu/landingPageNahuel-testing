@@ -4234,13 +4234,22 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     step="0.01"
                     placeholder="Precio acción"
                     value={stockPrice || ''}
-                    onChange={(e) => setStockPrice(parseFloat(e.target.value) || null)}
-                    readOnly={!!stockPrice && stockPrice !== null}
-                    className={styles.input}
-                    style={{
-                      backgroundColor: (!!stockPrice && stockPrice !== null) ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                      cursor: (!!stockPrice && stockPrice !== null) ? 'not-allowed' : 'text'
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Permitir escribir libremente - solo parsear cuando hay un valor válido
+                      if (value === '' || value === null) {
+                        setStockPrice(null);
+                      } else {
+                        const numValue = parseFloat(value);
+                        if (!isNaN(numValue)) {
+                          setStockPrice(numValue);
+                        } else {
+                          setStockPrice(null);
+                        }
+                      }
                     }}
+                    readOnly={false} // ✅ CORREGIDO: Siempre permitir edición manual
+                    className={styles.input}
                   />
                 </div>
               </div>
