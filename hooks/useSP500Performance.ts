@@ -106,23 +106,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       const returnsKey = periodToReturnsKey(selectedPeriod);
       const rawReturnValue = returnsData.data.returns[returnsKey];
       
-      // ✅ IMPORTANTE: Verificar que el valor no sea null antes de usarlo
-      if (rawReturnValue === null || rawReturnValue === undefined) {
-        console.warn(`⚠️ [SP500] No hay datos para período ${selectedPeriod} (${returnsKey}), usando 0`);
-      }
-      
-      const totalReturnPercent = rawReturnValue !== null && rawReturnValue !== undefined ? rawReturnValue : 0;
-      
-      console.log(`📊 [SP500] Rendimiento del servicio para período ${selectedPeriod} (${returnsKey}):`, {
-        selectedPeriod,
-        returnsKey,
-        rawValue: rawReturnValue,
-        finalValue: totalReturnPercent,
-        allReturns: returnsData.data.returns,
-        valorActualCartera: returnsData.data.valorActualCartera
-      });
-
-      // Obtener datos adicionales del portfolio-evolution para estadísticas
+      // Obtener datos adicionales del portfolio-evolution para estadísticas y como fallback
       const periodToDays = (period: string): number => {
         switch (period) {
           case '1d': return 1;
@@ -143,6 +127,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       let closedAlerts = 0;
       let winRate = 0;
       let totalTrades = 0;
+      let portfolioReturn = null; // ✅ NUEVO: Rendimiento desde portfolio-evolution como fallback
 
       if (portfolioResponse.ok) {
         const portfolioData = await portfolioResponse.json();
@@ -151,8 +136,54 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
           closedAlerts = portfolioData.stats.closedAlerts || 0;
           winRate = portfolioData.stats.winRate || 0;
           totalTrades = portfolioData.stats.totalAlerts || 0;
+          
+          // ✅ NUEVO: Calcular portfolioReturn desde los datos de evolución (igual que PortfolioTimeRange)
+          if (portfolioData.data && portfolioData.data.length > 0) {
+            const firstValue = portfolioData.data[0]?.value || portfolioData.stats.baseValue || 10000;
+            const lastValue = portfolioData.data[portfolioData.data.length - 1]?.value || portfolioData.stats.baseValue || 10000;
+            const change = lastValue - firstValue;
+            portfolioReturn = firstValue ? (change / firstValue) * 100 : 0;
+            
+            console.log(`📊 [SP500] Calculado portfolioReturn desde evolución:`, {
+              firstValue,
+              lastValue,
+              change,
+              portfolioReturn,
+              baseValue: portfolioData.stats.baseValue
+            });
+          } else if (portfolioData.stats) {
+            // ✅ FALLBACK: Si no hay datos de evolución, usar el cálculo del API (portfolioReturn en stats)
+            // Nota: El API portfolio-evolution calcula portfolioReturn pero no lo expone en stats
+            // Por ahora usamos el cálculo desde los datos de evolución
+            portfolioReturn = 0;
+          }
         }
       }
+      
+      // ✅ CORREGIDO: Usar portfolioReturn como fallback si rawReturnValue es null
+      // Esto asegura que el rendimiento sea el mismo que en "Evolución de Portfolio"
+      let totalReturnPercent = rawReturnValue;
+      
+      if (totalReturnPercent === null || totalReturnPercent === undefined) {
+        if (portfolioReturn !== null && portfolioReturn !== undefined) {
+          totalReturnPercent = portfolioReturn;
+          console.log(`⚠️ [SP500] No hay datos en /api/portfolio/returns para período ${selectedPeriod} (${returnsKey}), usando portfolioReturn desde evolución: ${totalReturnPercent}%`);
+        } else {
+          totalReturnPercent = 0;
+          console.warn(`⚠️ [SP500] No hay datos para período ${selectedPeriod} (${returnsKey}), usando 0`);
+        }
+      }
+      
+      console.log(`📊 [SP500] Rendimiento del servicio para período ${selectedPeriod} (${returnsKey}):`, {
+        selectedPeriod,
+        returnsKey,
+        rawValue: rawReturnValue,
+        portfolioReturn,
+        finalValue: totalReturnPercent,
+        allReturns: returnsData.data.returns,
+        valorActualCartera: returnsData.data.valorActualCartera,
+        source: rawReturnValue !== null && rawReturnValue !== undefined ? 'portfolio/returns' : 'portfolio-evolution (fallback)'
+      });
 
       const serviceData: ServicePerformanceData = {
         totalReturnPercent: typeof totalReturnPercent === 'number' ? parseFloat(totalReturnPercent.toFixed(2)) : 0,
