@@ -3087,25 +3087,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>{alert.esOperacionHistorica ? 'Fecha Entrada:' : 'Fecha:'}</span>
                       <strong>{(() => {
-                        // ✅ CORREGIDO: Para fechas históricas, mostrar solo la fecha sin conversión de timezone
+                        // ✅ CORREGIDO: Para fechas históricas, mostrar la fecha usando UTC-3 (Argentina)
                         if (alert.esOperacionHistorica && alert.fechaEntrada) {
                           const fecha = typeof alert.fechaEntrada === 'string' 
                             ? new Date(alert.fechaEntrada) 
                             : new Date(alert.fechaEntrada);
-                          // Si es string YYYY-MM-DD, parsear como fecha local
-                          if (typeof alert.fechaEntrada === 'string' && alert.fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
-                            const [year, month, day] = alert.fechaEntrada.split('-').map(Number);
-                            const fechaLocal = new Date(year, month - 1, day);
-                            return fechaLocal.toLocaleDateString('es-ES', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric'
-                            });
-                          }
+                          // Mostrar fecha usando timezone de Argentina (UTC-3)
                           return fecha.toLocaleDateString('es-ES', {
                             day: '2-digit',
                             month: '2-digit',
-                            year: 'numeric'
+                            year: 'numeric',
+                            timeZone: 'America/Argentina/Buenos_Aires'
                           });
                         }
                         return new Date(alert.date).toLocaleDateString('es-ES', {
@@ -3137,6 +3129,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         <span>Gan. Realizada:</span>
                         <strong className={alert.gananciaRealizada >= 0 ? styles.profit : styles.loss}>
                           {alert.gananciaRealizada >= 0 ? '+' : ''}{alert.gananciaRealizada.toFixed(2)}%
+                        </strong>
+                      </div>
+                    )}
+                    {/* ✅ CORREGIDO: Ocultar gananciaNoRealizada si es 0 para evitar que aparezca como "0" en el DOM */}
+                    {alert.gananciaNoRealizada !== undefined && alert.gananciaNoRealizada !== null && alert.gananciaNoRealizada !== 0 && (
+                      <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
+                        <span>Gan. No Realizada:</span>
+                        <strong className={alert.gananciaNoRealizada >= 0 ? styles.profit : styles.loss}>
+                          {alert.gananciaNoRealizada >= 0 ? '+' : ''}{alert.gananciaNoRealizada.toFixed(2)}%
                         </strong>
                       </div>
                     )}

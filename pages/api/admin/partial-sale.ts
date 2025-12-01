@@ -433,13 +433,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               const OperationModule = await import('@/models/Operation');
               const Operation = OperationModule.default;
               
-              // ✅ CORREGIDO: Usar el ADMIN_EMAIL para asegurar que las operaciones se vean en la lista
-              // Esto es importante porque list.ts busca operaciones por ADMIN_EMAIL
-              const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-              const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+              // ✅ CORREGIDO: Buscar usuario admin por rol, no por email
+              const adminUser = await User.findOne({ role: 'admin' });
               
               if (!adminUser) {
-                console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+                console.error('⚠️ No se encontró ningún usuario con rol admin');
                 throw new Error('Admin user not found');
               }
               

@@ -200,11 +200,15 @@ export default async function handler(
     }
 
     if (fechaEntrada !== undefined) {
-      // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+      // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
       const nuevaFecha = (() => {
         if (typeof fechaEntrada === 'string' && fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
           const [year, month, day] = fechaEntrada.split('-').map(Number);
-          return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+          // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+          // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+          // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+          const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+          return fechaUTC;
         }
         return new Date(fechaEntrada);
       })();
@@ -222,11 +226,15 @@ export default async function handler(
       const ventasParcialesProcesadas: any[] = [];
       
       for (const venta of ventasParciales) {
-        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+        // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
         const fechaVenta = (() => {
           if (typeof venta.fecha === 'string' && venta.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
             const [year, month, day] = venta.fecha.split('-').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+            // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+            // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+            // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+            const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+            return fechaUTC;
           }
           return new Date(venta.fecha);
         })();

@@ -191,11 +191,15 @@ export default async function handler(
     
     if (esOperacionHistorica && ventasParciales && ventasParciales.length > 0) {
       for (const venta of ventasParciales) {
-        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+        // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
         const fechaVenta = (() => {
           if (typeof venta.fecha === 'string' && venta.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
             const [year, month, day] = venta.fecha.split('-').map(Number);
-            return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+            // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+            // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+            // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+            const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+            return fechaUTC;
           }
           return new Date(venta.fecha);
         })();
@@ -252,10 +256,17 @@ export default async function handler(
       // ✅ NUEVO: Campos para operaciones históricas
       esOperacionHistorica: esOperacionHistorica || false,
       fechaEntrada: esOperacionHistorica && fechaEntrada ? (() => {
-        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
-        // Parsear YYYY-MM-DD y crear Date en hora local
-        const [year, month, day] = fechaEntrada.split('-').map(Number);
-        return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+        // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
+        // Parsear YYYY-MM-DD y crear Date en UTC-3 (America/Argentina/Buenos_Aires)
+        if (typeof fechaEntrada === 'string' && fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = fechaEntrada.split('-').map(Number);
+          // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+          // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+          // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+          const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+          return fechaUTC;
+        }
+        return new Date(fechaEntrada);
       })() : undefined,
       ventasParciales: ventasParcialesProcesadas,
       gananciaRealizada: gananciaRealizadaTotal,
@@ -484,19 +495,23 @@ export default async function handler(
             const OperationModule = await import('@/models/Operation');
             const Operation = OperationModule.default;
             
-            const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-            const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+            // ✅ CORREGIDO: Buscar usuario admin por rol, no por email
+            const adminUser = await User.findOne({ role: 'admin' });
             
             if (!adminUser) {
-              console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+              console.error('⚠️ No se encontró ningún usuario con rol admin');
             } else {
               // ✅ NUEVO: Para operaciones históricas, usar fecha de entrada
               const operationDate = esOperacionHistorica && fechaEntrada 
                 ? (() => {
-                    // Parsear fecha como local para evitar problemas de timezone
+                    // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
                     if (typeof fechaEntrada === 'string' && fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
                       const [year, month, day] = fechaEntrada.split('-').map(Number);
-                      return new Date(year, month - 1, day);
+                      // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+                      // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+                      // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+                      const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+                      return fechaUTC;
                     }
                     return new Date(fechaEntrada);
                   })()
@@ -545,7 +560,8 @@ export default async function handler(
                   entryPrice: priceForShares
                 },
                 executedBy: user.email,
-                executionMethod: esOperacionHistorica ? 'HISTORICAL' : 'AUTOMATIC',
+                executionMethod: esOperacionHistorica ? 'ADMIN' : 'AUTOMATIC',
+                status: esOperacionHistorica ? 'COMPLETED' : 'ACTIVE', // ✅ Solo operaciones históricas aparecen como "Completado"
                 notes: esOperacionHistorica 
                   ? `Operación histórica importada - ${liquidityPercentage}% de la cartera - Entrada: ${fechaEntrada}`
                   : `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
@@ -553,6 +569,15 @@ export default async function handler(
 
               await operation.save();
               console.log(`✅ Operación de compra registrada: ${symbol} - ${sharesTotales} acciones por $${priceForShares} (${esOperacionHistorica ? 'HISTÓRICA' : 'AUTOMÁTICA'})`);
+              console.log(`📋 Operación guardada con system: ${pool}, alertId: ${newAlert._id}, operationId: ${operation._id}`);
+              console.log(`🔍 [DEBUG] Operación guardada:`, {
+                _id: operation._id,
+                ticker: operation.ticker,
+                system: operation.system,
+                date: operation.date,
+                operationType: operation.operationType,
+                createdBy: operation.createdBy
+              });
               
               // ✅ NUEVO: Para operaciones históricas con ventas, registrar también las operaciones de venta
               if (esOperacionHistorica && ventasParcialesProcesadas.length > 0) {
@@ -590,7 +615,8 @@ export default async function handler(
                       entryPrice: venta.precio
                     },
                     executedBy: user.email,
-                    executionMethod: 'HISTORICAL',
+                    executionMethod: 'ADMIN',
+                    status: 'COMPLETED', // ✅ Las ventas históricas también aparecen como "Completado"
                     notes: `Venta histórica importada - ${venta.porcentajeVendido}% vendido a $${venta.precio}`
                   });
                   await ventaOperation.save();

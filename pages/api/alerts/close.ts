@@ -144,11 +144,11 @@ export default async function handler(
       const OperationModule = await import('@/models/Operation');
       const Operation = OperationModule.default;
       
-      const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-      const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+      // ✅ CORREGIDO: Buscar usuario admin por rol, no por email
+      const adminUser = await User.findOne({ role: 'admin' });
       
       if (!adminUser) {
-        console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
+        console.error('⚠️ No se encontró ningún usuario con rol admin');
       } else {
         const pool = updatedAlert?.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
         

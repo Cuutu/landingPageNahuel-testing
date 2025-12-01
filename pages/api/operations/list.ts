@@ -48,11 +48,22 @@ export default async function handler(
 
     // ✅ MEJORADO: Buscar operaciones por sistema/pool directamente
     // No dependemos de un usuario admin específico, solo del pool
+    console.log(`🔍 [OPERATIONS LIST] Buscando operaciones para system: ${system}`);
     const operations = await Operation.find({ system })
       .sort({ date: -1 })
       .limit(parseInt(limit as string))
       .skip(parseInt(skip as string))
       .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt');
+    console.log(`📊 [OPERATIONS LIST] Encontradas ${operations.length} operaciones para system: ${system}`);
+    if (operations.length > 0) {
+      console.log(`🔍 [OPERATIONS LIST] Primera operación:`, {
+        _id: operations[0]._id,
+        ticker: operations[0].ticker,
+        system: operations[0].system,
+        date: operations[0].date,
+        operationType: operations[0].operationType
+      });
+    }
 
     // ✅ MEJORADO: Obtener información de alertas que no se populan correctamente
     // Esto puede pasar si la alerta fue eliminada o si el populate falla

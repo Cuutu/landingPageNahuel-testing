@@ -108,8 +108,8 @@ export default async function handler(
     }
 
     // ✅ NUEVO: Obtener liquidez inicial y total del sistema
-    const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'franconahuelgomez2@gmail.com';
-    const adminUser = await User.findOne({ email: ADMIN_EMAIL });
+    // ✅ CORREGIDO: Buscar usuario admin por rol, no por email
+    const adminUser = await User.findOne({ role: 'admin' });
     
     let initialLiquidity = 10000; // Valor por defecto
     let totalLiquidity = 10000; // Valor por defecto
