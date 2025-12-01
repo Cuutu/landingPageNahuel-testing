@@ -3168,7 +3168,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                   {alert.analysis && (
                     <div className={styles.alertAnalysis}>
                       <h4>📊 Análisis:</h4>
-                      <p>{alert.analysis}</p>
+                      <p>{alert.analysis}</p> 
                     </div>
                   )}
                   
