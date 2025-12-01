@@ -2485,23 +2485,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const liquidity = liquidityMapByAlertId?.[alertId];
       const hasLiquidity = liquidity && liquidity.allocatedAmount > 0;
       const isActive = alert.status === 'ACTIVE';
+      const esHistorica = alert.esOperacionHistorica || false;
       
       // ✅ NUEVO: Verificar si la alerta está confirmada (misma lógica que renderSeguimientoAlertas)
-      if (isActive) {
+      // ✅ CORREGIDO: Las operaciones históricas siempre deben aparecer, sin importar cuándo se crearon
+      if (isActive && !esHistorica) {
         // Verificar si la alerta fue creada hoy
         const alertDate = new Date(alert.date || alert.createdAt);
         const isCreatedToday = alertDate >= startOfDay && alertDate <= endOfDay;
         
         // Si fue creada hoy y no tiene finalPriceSetAt, no mostrarla (aún no confirmada)
+        // PERO las operaciones históricas siempre se muestran
         if (isCreatedToday && !alert.finalPriceSetAt) {
           return false;
         }
       }
       
       if (isActive && hasLiquidity) {
-        console.log(`✅ [PIE CHART] Alerta confirmada con liquidez: ${alert.symbol} (alertId: ${alertId}) - $${liquidity.allocatedAmount}`);
+        console.log(`✅ [PIE CHART] Alerta confirmada con liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica}) - $${liquidity.allocatedAmount}`);
       } else if (isActive && !hasLiquidity) {
-        console.log(`⚠️ [PIE CHART] Alerta confirmada SIN liquidez: ${alert.symbol} (alertId: ${alertId})`);
+        console.log(`⚠️ [PIE CHART] Alerta confirmada SIN liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica})`);
       }
       
       return isActive && hasLiquidity;
@@ -3118,14 +3121,37 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                     )}
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                       <span>{alert.esOperacionHistorica ? 'Fecha Entrada:' : 'Fecha:'}</span>
-                      <strong>{new Date(alert.fechaEntrada || alert.date).toLocaleDateString('es-ES', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: alert.esOperacionHistorica ? undefined : '2-digit',
-                        minute: alert.esOperacionHistorica ? undefined : '2-digit',
-                        timeZone: 'America/Argentina/Buenos_Aires'
-                      })}</strong>
+                      <strong>{(() => {
+                        // ✅ CORREGIDO: Para fechas históricas, mostrar solo la fecha sin conversión de timezone
+                        if (alert.esOperacionHistorica && alert.fechaEntrada) {
+                          const fecha = typeof alert.fechaEntrada === 'string' 
+                            ? new Date(alert.fechaEntrada) 
+                            : new Date(alert.fechaEntrada);
+                          // Si es string YYYY-MM-DD, parsear como fecha local
+                          if (typeof alert.fechaEntrada === 'string' && alert.fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                            const [year, month, day] = alert.fechaEntrada.split('-').map(Number);
+                            const fechaLocal = new Date(year, month - 1, day);
+                            return fechaLocal.toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            });
+                          }
+                          return fecha.toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          });
+                        }
+                        return new Date(alert.date).toLocaleDateString('es-ES', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: 'America/Argentina/Buenos_Aires'
+                        });
+                      })()}</strong>
                     </div>
                     {/* Mostrar ganancia realizada para operaciones con ventas parciales */}
                     {alert.gananciaRealizada && alert.gananciaRealizada !== 0 && (

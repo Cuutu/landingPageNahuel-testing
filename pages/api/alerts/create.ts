@@ -191,7 +191,14 @@ export default async function handler(
     
     if (esOperacionHistorica && ventasParciales && ventasParciales.length > 0) {
       for (const venta of ventasParciales) {
-        const fechaVenta = new Date(venta.fecha);
+        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+        const fechaVenta = (() => {
+          if (typeof venta.fecha === 'string' && venta.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = venta.fecha.split('-').map(Number);
+            return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+          }
+          return new Date(venta.fecha);
+        })();
         const precioVenta = venta.precio;
         const porcentajeVendido = venta.porcentajeVendido;
         
@@ -244,7 +251,12 @@ export default async function handler(
       liquidityPercentage: liquidityPercentage || 0,
       // ✅ NUEVO: Campos para operaciones históricas
       esOperacionHistorica: esOperacionHistorica || false,
-      fechaEntrada: esOperacionHistorica && fechaEntrada ? new Date(fechaEntrada) : undefined,
+      fechaEntrada: esOperacionHistorica && fechaEntrada ? (() => {
+        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+        // Parsear YYYY-MM-DD y crear Date en hora local
+        const [year, month, day] = fechaEntrada.split('-').map(Number);
+        return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+      })() : undefined,
       ventasParciales: ventasParcialesProcesadas,
       gananciaRealizada: gananciaRealizadaTotal,
       gananciaNoRealizada: 0 // Se calculará después
@@ -478,17 +490,41 @@ export default async function handler(
             if (!adminUser) {
               console.error('⚠️ No se encontró el usuario admin con email', ADMIN_EMAIL);
             } else {
-              // Obtener balance actual del admin para este sistema
-              const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
-                .sort({ date: -1 })
-                .select('balance');
-              const currentBalance = currentBalanceDoc?.balance || 0;
-              const newBalance = currentBalance - liquidityAmount;
-
               // ✅ NUEVO: Para operaciones históricas, usar fecha de entrada
               const operationDate = esOperacionHistorica && fechaEntrada 
-                ? new Date(fechaEntrada) 
+                ? (() => {
+                    // Parsear fecha como local para evitar problemas de timezone
+                    if (typeof fechaEntrada === 'string' && fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                      const [year, month, day] = fechaEntrada.split('-').map(Number);
+                      return new Date(year, month - 1, day);
+                    }
+                    return new Date(fechaEntrada);
+                  })()
                 : new Date();
+              
+              // ✅ CORREGIDO: Para operaciones históricas, calcular balance basado en operaciones anteriores a esa fecha
+              // Para operaciones normales, usar el balance más reciente
+              let currentBalance = 0;
+              if (esOperacionHistorica && fechaEntrada) {
+                // Buscar el balance más reciente ANTES de la fecha histórica
+                const previousBalanceDoc = await Operation.findOne({ 
+                  createdBy: adminUser._id, 
+                  system: pool,
+                  date: { $lt: operationDate }
+                })
+                  .sort({ date: -1 })
+                  .select('balance');
+                currentBalance = previousBalanceDoc?.balance || 0;
+                console.log(`📅 [HISTORICAL] Balance antes de ${fechaEntrada}: $${currentBalance}`);
+              } else {
+                // Para operaciones normales, usar el balance más reciente
+                const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+                  .sort({ date: -1 })
+                  .select('balance');
+                currentBalance = currentBalanceDoc?.balance || 0;
+              }
+              
+              const newBalance = currentBalance - liquidityAmount;
 
               const operation = new Operation({
                 ticker: symbol.toUpperCase(),
@@ -520,8 +556,21 @@ export default async function handler(
               
               // ✅ NUEVO: Para operaciones históricas con ventas, registrar también las operaciones de venta
               if (esOperacionHistorica && ventasParcialesProcesadas.length > 0) {
-                for (const venta of ventasParcialesProcesadas) {
-                  const ventaBalance = currentBalance; // Simplificado, en producción habría que calcular
+                // Ordenar ventas por fecha para calcular balance correctamente
+                const ventasOrdenadas = [...ventasParcialesProcesadas].sort((a, b) => 
+                  new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+                );
+                
+                // Calcular balance acumulado para cada venta
+                let runningBalance = newBalance; // Balance después de la compra
+                
+                for (const venta of ventasOrdenadas) {
+                  // El balance antes de esta venta es el balance acumulado hasta ahora
+                  const balanceAntesVenta = runningBalance;
+                  // Actualizar balance acumulado sumando el monto de esta venta
+                  runningBalance += venta.sharesVendidos * venta.precio;
+                  const ventaBalance = runningBalance;
+                  
                   const ventaOperation = new Operation({
                     ticker: symbol.toUpperCase(),
                     operationType: 'VENTA',

@@ -200,7 +200,14 @@ export default async function handler(
     }
 
     if (fechaEntrada !== undefined) {
-      const nuevaFecha = new Date(fechaEntrada);
+      // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+      const nuevaFecha = (() => {
+        if (typeof fechaEntrada === 'string' && fechaEntrada.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = fechaEntrada.split('-').map(Number);
+          return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+        }
+        return new Date(fechaEntrada);
+      })();
       const fechaActual = alert.fechaEntrada ? new Date(alert.fechaEntrada) : null;
       if (!fechaActual || nuevaFecha.getTime() !== fechaActual.getTime()) {
         oldValues.fechaEntrada = alert.fechaEntrada;
@@ -215,7 +222,14 @@ export default async function handler(
       const ventasParcialesProcesadas: any[] = [];
       
       for (const venta of ventasParciales) {
-        const fechaVenta = new Date(venta.fecha);
+        // ✅ CORREGIDO: Crear fecha en zona horaria local para evitar desfase de 1 día
+        const fechaVenta = (() => {
+          if (typeof venta.fecha === 'string' && venta.fecha.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            const [year, month, day] = venta.fecha.split('-').map(Number);
+            return new Date(year, month - 1, day); // month - 1 porque Date usa 0-11 para meses
+          }
+          return new Date(venta.fecha);
+        })();
         const precioVenta = venta.precio;
         const porcentajeVendido = venta.porcentajeVendido;
         
