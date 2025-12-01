@@ -1389,13 +1389,24 @@ export function createSubscriptionConfirmationTemplate(details: {
   let specialMessage = '';
   if (details.isTrial) {
     specialMessage = `
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;">
-        <p style="color: white; font-size: 24px; font-weight: bold; margin: 0;">🎁 Prueba Gratis Activa</p>
-        <p style="color: rgba(255,255,255,0.95); font-size: 16px; margin: 10px 0 0 0;">Válida hasta el ${expiryStr}</p>
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 24px; border-radius: 12px; margin: 25px 0; text-align: center; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+        <p style="color: white; font-size: 28px; font-weight: bold; margin: 0 0 8px 0;">🎁 ¡Prueba Gratis Activada!</p>
+        <p style="color: rgba(255,255,255,0.95); font-size: 18px; margin: 0; font-weight: 600;">30 días de acceso completo</p>
+        <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 8px 0 0 0;">Válida hasta el ${expiryStr}</p>
       </div>
+      
+      <div style="background-color: #ecfdf5; border-left: 4px solid #10b981; padding: 16px; margin: 20px 0; border-radius: 4px;">
+        <p style="margin: 0 0 8px 0; color: #065f46; font-weight: 600; font-size: 15px;">✅ Durante estos 30 días:</p>
+        <ul style="margin: 8px 0 0 0; padding-left: 20px; color: #047857;">
+          <li style="margin-bottom: 6px;">Acceso completo a todas las alertas de ${svc.name}</li>
+          <li style="margin-bottom: 6px;">Sin cargos ni cobros automáticos</li>
+          <li style="margin-bottom: 6px;">Cancela cuando quieras, sin compromisos</li>
+        </ul>
+      </div>
+      
       <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 4px;">
-        <p style="margin: 0; color: #92400e; font-size: 14px;">
-          <strong>Importante:</strong> No se realizará ningún cargo durante tu período de prueba. Al finalizar los 30 días, si deseas continuar, podrás suscribirte desde el panel de suscripciones.
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+          <strong>📌 Importante:</strong> Esta es una prueba gratuita de 30 días. No se realizará ningún cargo automático al finalizar el período. Si deseas continuar con el servicio después de los 30 días, podrás suscribirte fácilmente desde tu panel de usuario.
         </p>
       </div>
     `;
@@ -1434,7 +1445,12 @@ export function createSubscriptionConfirmationTemplate(details: {
     : `${svc.emoji} ${details.isRenewal ? 'Renovación Exitosa' : 'Suscripción Activa'}: ${svc.name}`;
   
   const greeting = details.isTrial
-    ? `<p>¡Excelente noticia! 🎉</p><p><strong>${details.userName}</strong>, tu <strong>prueba gratis de 30 días</strong> para <strong>${svc.name}</strong> ha sido activada exitosamente.</p>`
+    ? `
+      <p style="font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">¡Hola ${details.userName}! 👋</p>
+      <p style="font-size: 16px; color: #475569; line-height: 1.6;">
+        Tu pago se ha procesado exitosamente. Ya tenés acceso completo a <strong>${svc.name}</strong> durante los próximos <strong style="color: #10b981;">30 días de prueba gratis</strong>.
+      </p>
+    `
     : `<p>¡Gracias ${details.isRenewal ? 'por renovar' : 'por suscribirte'}, <strong>${details.userName}</strong>! 🎉</p><p>Tu ${details.isRenewal ? 'renovación a' : 'suscripción a'} <strong>${svc.name}</strong> fue ${details.isRenewal ? 'procesada' : 'activada'} exitosamente.</p>`;
 
   return createNotificationEmailTemplate({
@@ -1448,16 +1464,28 @@ export function createSubscriptionConfirmationTemplate(details: {
       ${!details.isRenewal && !details.isTrial ? `<p style="color: #64748b; font-size: 14px;">💡 <em>Recordá que si renovás antes de que expire, tu tiempo actual se mantendrá y la nueva suscripción se apilará automáticamente.</em></p>` : ''}
 
       <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px; margin: 16px 0; border: 1px solid #e2e8f0;">
-        <h4 style="margin: 0 0 10px; color: #1e293b;">${details.isTrial ? '¿Qué incluye tu prueba?' : 'Funciones para suscriptores'}</h4>
+        <h4 style="margin: 0 0 10px; color: #1e293b;">${details.isTrial ? '🎯 ¿Qué podés hacer durante tu prueba gratis?' : 'Funciones para suscriptores'}</h4>
         ${featuresHtml}
       </div>
 
-      ${details.isTrial ? '<p>Aprovecha estos 30 días para explorar todas las funcionalidades y ver cómo puede ayudarte a mejorar tus operaciones.</p>' : ''}
-      <p>${details.isTrial ? '¡Comienza ahora!' : 'Podés acceder desde aquí:'}</p>
+      ${details.isTrial ? `
+        <div style="margin: 24px 0;">
+          <p style="font-size: 15px; color: #1e293b; margin-bottom: 8px;">
+            <strong>💡 Aprovechá al máximo tu prueba:</strong>
+          </p>
+          <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0;">
+            Durante estos 30 días, explorá todas las funcionalidades, recibí alertas en tiempo real y descubrí cómo ${svc.name} puede ayudarte a mejorar tus operaciones. No hay compromisos ni cargos automáticos.
+          </p>
+        </div>
+      ` : ''}
+      
+      <p style="font-size: 15px; font-weight: 600; color: #1e293b; margin-top: 24px;">
+        ${details.isTrial ? '¡Empezá ahora tu prueba gratis!' : 'Podés acceder desde aquí:'}
+      </p>
     `,
     notificationType: 'success',
     urgency: 'normal',
-    buttonText: `Ir a ${svc.name}`,
+    buttonText: `${details.isTrial ? 'Comenzar mi Prueba Gratis' : `Ir a ${svc.name}`}`,
     buttonUrl: svc.url
   });
 }
