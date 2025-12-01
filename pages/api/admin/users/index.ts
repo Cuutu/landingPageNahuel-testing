@@ -95,7 +95,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               precio: sub.amount || 0,
               fechaInicio: sub.startDate,
               fechaFin: sub.expiryDate,
-              activa: true
+              activa: true,
+              isTrial: sub.subscriptionType === 'trial' // ✅ NUEVO: Identificar si es trial
             }));
 
           // Combinar ambos arrays, evitando duplicados por tipo

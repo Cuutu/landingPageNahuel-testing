@@ -555,4 +555,57 @@ export function createSubscriptionExpiredTemplate({
     buttonText: 'Renovar Suscripción',
     buttonUrl: renewalUrl
   });
+}
+
+/**
+ * Template para confirmar activación de prueba gratis
+ */
+export function createTrialActivationTemplate({
+  userName,
+  serviceName,
+  expiryDate,
+  serviceUrl
+}: {
+  userName: string;
+  serviceName: string;
+  expiryDate: string;
+  serviceUrl: string;
+}) {
+  const emailContent = `
+    <p>Hola <strong>${userName}</strong>,</p>
+    
+    <p>¡Excelente noticia! 🎉</p>
+    
+    <p>Tu <strong>prueba gratis de 30 días</strong> para <strong>${serviceName}</strong> ha sido activada exitosamente.</p>
+    
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; margin: 25px 0; text-align: center;">
+      <p style="color: white; font-size: 24px; font-weight: bold; margin: 0;">🎁 Prueba Gratis Activa</p>
+      <p style="color: rgba(255,255,255,0.95); font-size: 16px; margin: 10px 0 0 0;">Válida hasta el ${expiryDate}</p>
+    </div>
+    
+    <p><strong>¿Qué incluye tu prueba?</strong></p>
+    <ul>
+      <li>✅ Acceso completo a todas las alertas de ${serviceName}</li>
+      <li>✅ Señales en tiempo real</li>
+      <li>✅ Soporte prioritario</li>
+      <li>✅ Análisis detallados y rendimiento del portafolio</li>
+    </ul>
+    
+    <p>Aprovecha estos 30 días para explorar todas las funcionalidades y ver cómo ${serviceName} puede ayudarte a mejorar tus operaciones.</p>
+    
+    <p><strong>Importante:</strong> No se realizará ningún cargo durante tu período de prueba. Al finalizar los 30 días, si deseas continuar, podrás suscribirte desde el panel de suscripciones.</p>
+    
+    <p>¡Comienza ahora y descubre todo lo que ${serviceName} tiene para ofrecerte!</p>
+    
+    <p>Saludos,<br><strong>Equipo de ${serviceName}</strong></p>
+  `;
+
+  return createNotificationEmailTemplate({
+    title: `🎉 Prueba Gratis Activada - ${serviceName}`,
+    content: emailContent,
+    notificationType: 'success',
+    urgency: 'normal',
+    buttonText: `Ir a ${serviceName}`,
+    buttonUrl: serviceUrl
+  });
 } 

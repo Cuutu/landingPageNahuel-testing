@@ -357,6 +357,52 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         subscriptionType: updatedSub?.subscriptionType
       });
 
+      // ✅ NUEVO: Enviar email de confirmación para trials
+      if (isTrial && updatedSub) {
+        try {
+          const { sendEmail } = await import('@/lib/emailService');
+          const { createTrialActivationTemplate } = await import('@/lib/email-templates');
+          
+          const serviceNames: { [key: string]: string } = {
+            'TraderCall': 'Trader Call',
+            'SmartMoney': 'Smart Money',
+            'CashFlow': 'Cash Flow'
+          };
+          
+          const serviceUrls: { [key: string]: string } = {
+            'TraderCall': 'https://lozanonahuel.com/alertas/trader-call',
+            'SmartMoney': 'https://lozanonahuel.com/alertas/smart-money',
+            'CashFlow': 'https://lozanonahuel.com/alertas'
+          };
+          
+          const serviceName = serviceNames[service] || service;
+          const serviceUrl = serviceUrls[service] || 'https://lozanonahuel.com';
+          const expiryDate = new Date(updatedSub.expiryDate).toLocaleDateString('es-AR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          
+          const html = createTrialActivationTemplate({
+            userName: user.name || user.email,
+            serviceName,
+            expiryDate,
+            serviceUrl
+          });
+
+          await sendEmail({
+            to: user.email,
+            subject: `🎉 Prueba Gratis Activada - ${serviceName}`,
+            html
+          });
+
+          console.log(`📧 Email de confirmación de trial enviado a ${user.email} para ${serviceName}`);
+        } catch (error) {
+          console.error('❌ Error enviando email de confirmación de trial:', error);
+          // No lanzar error, solo registrar - el trial ya está activado
+        }
+      }
+
       // ✅ La suscripción ya está activada en user.activeSubscriptions
       // El admin panel se puede manejar manualmente si es necesario
       console.log('✅ Suscripción procesada correctamente para:', user.email);

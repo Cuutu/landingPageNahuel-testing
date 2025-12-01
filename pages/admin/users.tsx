@@ -51,6 +51,7 @@ interface UserData {
     fechaInicio: string;
     fechaFin?: string;
     activa: boolean;
+    isTrial?: boolean; // ✅ NUEVO: Indicar si es prueba gratis
   }>;
   ingresoMensual?: number;
 }
@@ -668,6 +669,12 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                                   style={{ backgroundColor: getSubscriptionColor(sub.tipo) }}
                                 >
                                   {sub.tipo}
+                                  {sub.isTrial && <span style={{ 
+                                    marginLeft: '4px', 
+                                    fontSize: '0.7em', 
+                                    fontWeight: 'bold',
+                                    opacity: 0.85 
+                                  }}>(PRUEBA)</span>}
                                   <button
                                     onClick={() => removeSubscription(user._id, sub.tipo)}
                                     className={styles.removeSub}
@@ -1017,6 +1024,12 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                                 style={{ backgroundColor: getSubscriptionColor(sub.tipo) }}
                               >
                                 {sub.tipo}
+                                {sub.isTrial && <span style={{ 
+                                  marginLeft: '6px', 
+                                  fontSize: '0.75em', 
+                                  fontWeight: 'bold',
+                                  opacity: 0.9 
+                                }}>(PRUEBA)</span>}
                               </span>
                               <span>${sub.precio}/mes</span>
                               <span>Desde: {new Date(sub.fechaInicio).toLocaleDateString('es-ES')}</span>
