@@ -145,8 +145,31 @@ const NonSubscriberView: React.FC<{
   const [isProcessing, setIsProcessing] = useState(false);
   const [isProcessingTrial, setIsProcessingTrial] = useState(false);
   const [showTrialUsedModal, setShowTrialUsedModal] = useState(false);
+  const [hasUsedTrial, setHasUsedTrial] = useState(false); // ✅ NUEVO: Verificar si ya usó el trial
   // Rango de rentabilidad (vista pública)
   const [publicPortfolioRange, setPublicPortfolioRange] = useState('30d');
+
+  // ✅ NUEVO: Verificar si el usuario ya usó su prueba gratis
+  useEffect(() => {
+    const checkTrialStatus = async () => {
+      if (!session?.user?.email) {
+        setHasUsedTrial(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/user/trial-status?service=TraderCall');
+        if (response.ok) {
+          const data = await response.json();
+          setHasUsedTrial(data.hasUsedTrial || false);
+        }
+      } catch (error) {
+        console.error('Error verificando estado del trial:', error);
+      }
+    };
+
+    checkTrialStatus();
+  }, [session]);
 
   const handleTrial = async () => {
     if (!session) {
@@ -347,29 +370,31 @@ const NonSubscriberView: React.FC<{
               </p>
               <div className={styles.heroFeatures}>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                  <button 
-                    className={styles.heroFeature}
-                    onClick={handleTrial}
-                    disabled={isProcessingTrial}
-                    style={{ 
-                      backgroundColor: '#10b981', 
-                      borderColor: '#10b981',
-                      flex: '1',
-                      minWidth: '200px'
-                    }}
-                  >
-                    {isProcessingTrial ? (
-                      <>
-                        <Loader size={20} />
-                        Procesando...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={20} />
-                        <span>Probar por 30 días</span>
-                      </>
-                    )}
-                  </button>
+                  {!hasUsedTrial && (
+                    <button 
+                      className={styles.heroFeature}
+                      onClick={handleTrial}
+                      disabled={isProcessingTrial}
+                      style={{ 
+                        backgroundColor: '#10b981', 
+                        borderColor: '#10b981',
+                        flex: '1',
+                        minWidth: '200px'
+                      }}
+                    >
+                      {isProcessingTrial ? (
+                        <>
+                          <Loader size={20} />
+                          Procesando...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle size={20} />
+                          <span>Probar por 30 días</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 <button 
                   className={styles.heroFeature}
                   onClick={handleSubscribe}
@@ -389,16 +414,18 @@ const NonSubscriberView: React.FC<{
                   )}
                 </button>
                 </div>
-                <p style={{
-                  fontSize: '0.75rem',
-                  color: '#94a3b8',
-                  textAlign: 'center',
-                  marginTop: '8px',
-                  fontStyle: 'italic',
-                  lineHeight: '1.4'
-                }}>
-                  * El pago es a modo de comprobación de identidad
-                </p>
+                {!hasUsedTrial && (
+                  <p style={{
+                    fontSize: '0.75rem',
+                    color: '#94a3b8',
+                    textAlign: 'center',
+                    marginTop: '8px',
+                    fontStyle: 'italic',
+                    lineHeight: '1.4'
+                  }}>
+                    * El pago es a modo de comprobación de identidad
+                  </p>
+                )}
                 <div className={styles.heroPricing}>
                   <span className={styles.price}>
                     {pricingLoading ? (
@@ -533,25 +560,27 @@ const NonSubscriberView: React.FC<{
                 Únete a nuestra comunidad y comienza construir tu libertad financiera
               </p>
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button 
-                  className={styles.finalCtaButton}
-                  onClick={handleTrial}
-                  disabled={isProcessingTrial}
-                  style={{ 
-                    backgroundColor: '#10b981', 
-                    borderColor: '#10b981',
-                    minWidth: '200px'
-                  }}
-                >
-                  {isProcessingTrial ? (
-                    <>
-                      <Loader size={16} className={styles.spinner} />
-                      Procesando...
-                    </>
-                  ) : (
-                    'Probar por 30 días >'
-                  )}
-                </button>
+                {!hasUsedTrial && (
+                  <button 
+                    className={styles.finalCtaButton}
+                    onClick={handleTrial}
+                    disabled={isProcessingTrial}
+                    style={{ 
+                      backgroundColor: '#10b981', 
+                      borderColor: '#10b981',
+                      minWidth: '200px'
+                    }}
+                  >
+                    {isProcessingTrial ? (
+                      <>
+                        <Loader size={16} className={styles.spinner} />
+                        Procesando...
+                      </>
+                    ) : (
+                      'Probar por 30 días >'
+                    )}
+                  </button>
+                )}
               <button 
                 className={styles.finalCtaButton}
                 onClick={handleSubscribe}
@@ -570,16 +599,18 @@ const NonSubscriberView: React.FC<{
                 )}
               </button>
               </div>
-              <p style={{
-                fontSize: '0.75rem',
-                color: '#94a3b8',
-                textAlign: 'center',
-                marginTop: '12px',
-                fontStyle: 'italic',
-                lineHeight: '1.4'
-              }}>
-                * El pago es a modo de comprobación de identidad
-              </p>
+              {!hasUsedTrial && (
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: '#94a3b8',
+                  textAlign: 'center',
+                  marginTop: '12px',
+                  fontStyle: 'italic',
+                  lineHeight: '1.4'
+                }}>
+                  * El pago es a modo de comprobación de identidad
+                </p>
+              )}
             </div>
           </motion.div>
         </div>
