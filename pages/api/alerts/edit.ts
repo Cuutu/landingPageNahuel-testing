@@ -241,27 +241,32 @@ export default async function handler(
         const precioVenta = venta.precio;
         const porcentajeVendido = venta.porcentajeVendido;
         
-        // Calcular ganancia realizada
+        // ✅ CORREGIDO: Calcular ganancia porcentual simple (sin ajustar por porcentaje vendido)
+        // Ganancia % = (precioVenta - precioEntrada) / precioEntrada * 100
         const precioEntradaCalc = alert.entryPrice || 0;
         let gananciaVenta = 0;
         if (precioEntradaCalc > 0) {
-          const gananciaPorc = ((precioVenta - precioEntradaCalc) / precioEntradaCalc) * 100;
-          gananciaVenta = gananciaPorc * (porcentajeVendido / 100);
+          gananciaVenta = ((precioVenta - precioEntradaCalc) / precioEntradaCalc) * 100;
         }
         
         ventasParcialesProcesadas.push({
           fecha: fechaVenta,
           precio: precioVenta,
           porcentajeVendido,
-          gananciaRealizada: gananciaVenta,
+          gananciaRealizada: gananciaVenta, // ✅ Ahora es solo la ganancia porcentual simple
           sharesVendidos: 0
         });
         
         participacionRestante -= porcentajeVendido;
-        gananciaRealizadaTotal += gananciaVenta;
+        gananciaRealizadaTotal += gananciaVenta; // ✅ Se sumará para calcular promedio después
       }
       
       participacionRestante = Math.max(0, participacionRestante);
+      
+      // ✅ CORREGIDO: Calcular promedio de ganancias porcentuales (no suma)
+      if (ventasParcialesProcesadas.length > 0) {
+        gananciaRealizadaTotal = gananciaRealizadaTotal / ventasParcialesProcesadas.length;
+      }
       
       oldValues.ventasParciales = alert.ventasParciales;
       oldValues.participationPercentage = alert.participationPercentage;

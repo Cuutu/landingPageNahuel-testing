@@ -350,6 +350,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
       
+      // ✅ NUEVO: Calcular ganancia porcentual simple y agregar a ventasParciales
+      const entryPrice = alert.entryPrice || 0;
+      let gananciaPorcentual = 0;
+      if (entryPrice > 0) {
+        gananciaPorcentual = ((sellPrice - entryPrice) / entryPrice) * 100;
+      }
+      
+      // Actualizar ventasParciales en la alerta
+      if (!alert.ventasParciales) {
+        alert.ventasParciales = [];
+      }
+      alert.ventasParciales.push({
+        fecha: new Date(),
+        precio: sellPrice,
+        porcentajeVendido: percentage,
+        gananciaRealizada: gananciaPorcentual, // ✅ Ganancia porcentual simple
+        sharesVendidos: sharesToSell
+      });
+      
       // ✅ NUEVO: Guardar información de liquidez mejorada
       alert.liquidityData = {
         ...liquidityData,

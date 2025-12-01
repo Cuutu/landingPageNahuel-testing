@@ -551,10 +551,12 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
   const entryPrice = this.entryPriceRange?.min || this.entryPrice || 0;
   const currentPrice = this.currentPrice || 0;
   
-  // Ganancia realizada (de ventas parciales)
+  // ✅ CORREGIDO: Ganancia realizada = promedio de ganancias porcentuales de ventas parciales
+  // Cada venta parcial tiene su ganancia porcentual simple: (precioVenta - precioEntrada) / precioEntrada * 100
   let gananciaRealizada = 0;
   if (this.ventasParciales && this.ventasParciales.length > 0) {
-    gananciaRealizada = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
+    const sumaGanancias = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
+    gananciaRealizada = sumaGanancias / this.ventasParciales.length; // Promedio
   }
   
   // Ganancia no realizada (posición actual)
