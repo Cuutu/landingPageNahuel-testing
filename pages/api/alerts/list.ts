@@ -222,7 +222,13 @@ export default async function handler(
         exitPrice: alert.exitPrice ? `$${Number(alert.exitPrice).toFixed(2)}` : null,
         exitDate: alert.exitDate?.toISOString().split('T')[0] || null,
         exitReason: alert.exitReason || null,
-        type: Number(alert.profit || 0) >= 0 ? 'WIN' : 'LOSS' // Para alertas cerradas
+        type: Number(alert.profit || 0) >= 0 ? 'WIN' : 'LOSS', // Para alertas cerradas
+        // ✅ NUEVO: Campos para operaciones históricas
+        esOperacionHistorica: alert.esOperacionHistorica || false,
+        fechaEntrada: alert.fechaEntrada || alert.date,
+        ventasParciales: alert.ventasParciales || [],
+        gananciaRealizada: alert.gananciaRealizada || 0,
+        gananciaNoRealizada: alert.gananciaNoRealizada || 0
       };
     });
 

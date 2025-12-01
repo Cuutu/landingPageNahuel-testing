@@ -11,6 +11,13 @@ import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
 import { createAlertNotification } from '@/lib/notificationUtils';
 
+// ✅ NUEVO: Interface para ventas parciales históricas
+interface VentaParcialRequest {
+  fecha: string;
+  precio: number;
+  porcentajeVendido: number;
+}
+
 interface AlertRequest {
   symbol: string;
   action: 'BUY' | 'SELL';
@@ -28,6 +35,10 @@ interface AlertRequest {
   // ✅ NUEVO: Campos para liquidez
   liquidityPercentage?: number;
   liquidityAmount?: number;
+  // ✅ NUEVO: Campos para operaciones históricas
+  esOperacionHistorica?: boolean;
+  fechaEntrada?: string; // Fecha real de entrada (ISO string)
+  ventasParciales?: VentaParcialRequest[]; // Ventas parciales previas
   chartImage?: {
     public_id: string;
     url: string;
@@ -111,7 +122,11 @@ export default async function handler(
       emailMessage,
       emailImageUrl,
       liquidityPercentage = 0,
-      liquidityAmount = 0
+      liquidityAmount = 0,
+      // ✅ NUEVO: Campos para operaciones históricas
+      esOperacionHistorica = false,
+      fechaEntrada,
+      ventasParciales = []
     }: AlertRequest & { emailMessage?: string; emailImageUrl?: string } = req.body;
 
     if (!symbol || !action || !stopLoss || !takeProfit) {
@@ -169,6 +184,43 @@ export default async function handler(
       }
     }
 
+    // ✅ NUEVO: Procesar ventas parciales históricas si existen
+    let participacionRestante = 100;
+    let gananciaRealizadaTotal = 0;
+    const ventasParcialesProcesadas: any[] = [];
+    
+    if (esOperacionHistorica && ventasParciales && ventasParciales.length > 0) {
+      for (const venta of ventasParciales) {
+        const fechaVenta = new Date(venta.fecha);
+        const precioVenta = venta.precio;
+        const porcentajeVendido = venta.porcentajeVendido;
+        
+        // Calcular ganancia realizada de esta venta
+        // Ganancia % = (precioVenta - precioEntrada) / precioEntrada * 100
+        const precioEntradaCalc = entryPrice || 0;
+        let gananciaVenta = 0;
+        if (precioEntradaCalc > 0) {
+          const gananciaPorc = ((precioVenta - precioEntradaCalc) / precioEntradaCalc) * 100;
+          // Ajustar por el porcentaje vendido
+          gananciaVenta = gananciaPorc * (porcentajeVendido / 100);
+        }
+        
+        ventasParcialesProcesadas.push({
+          fecha: fechaVenta,
+          precio: precioVenta,
+          porcentajeVendido,
+          gananciaRealizada: gananciaVenta,
+          sharesVendidos: 0 // Se calculará después con la liquidez
+        });
+        
+        participacionRestante -= porcentajeVendido;
+        gananciaRealizadaTotal += gananciaVenta;
+      }
+      
+      // Asegurar que no sea negativo
+      participacionRestante = Math.max(0, participacionRestante);
+    }
+
     // Crear la nueva alerta en MongoDB
     const alertData: any = {
       symbol: symbol.toUpperCase(),
@@ -186,10 +238,16 @@ export default async function handler(
       chartImage: chartImage || null, // Imagen principal del gráfico
       images: images || [], // Imágenes adicionales
       // ✅ NUEVO: Inicializar porcentajes de participación
-      participationPercentage: 100, // Comenzar con 100% de participación
+      participationPercentage: participacionRestante, // Usar participación restante después de ventas
       originalParticipationPercentage: 100, // Porcentaje original al crear
       // ✅ NUEVO: Guardar porcentaje de liquidez cuando se crea la alerta
-      liquidityPercentage: liquidityPercentage || 0
+      liquidityPercentage: liquidityPercentage || 0,
+      // ✅ NUEVO: Campos para operaciones históricas
+      esOperacionHistorica: esOperacionHistorica || false,
+      fechaEntrada: esOperacionHistorica && fechaEntrada ? new Date(fechaEntrada) : undefined,
+      ventasParciales: ventasParcialesProcesadas,
+      gananciaRealizada: gananciaRealizadaTotal,
+      gananciaNoRealizada: 0 // Se calculará después
     };
 
     // Agregar campos específicos según el tipo de alerta
@@ -317,9 +375,9 @@ export default async function handler(
         );
 
         if (!existingDistribution) {
-          // ✅ CORREGIDO: Usar siempre el precio actual para asignación de liquidez
-          // Esto asegura que el precio de entrada sea consistente con el precio actual del mercado
-          const priceForShares = newAlert.currentPrice;
+          // ✅ NUEVO: Para operaciones históricas, usar el precio de entrada histórico
+          // Para operaciones normales, usar el precio actual del mercado
+          const priceForShares = esOperacionHistorica && entryPrice ? entryPrice : newAlert.currentPrice;
 
           console.log(`🔍 [DEBUG] Precios para asignación de liquidez:`, {
             symbol: symbol.toUpperCase(),
@@ -328,36 +386,63 @@ export default async function handler(
             currentMarketPrice: currentMarketPrice,
             precioMinimo: precioMinimo,
             priceForShares: priceForShares,
-            liquidityAmount: liquidityAmount
+            liquidityAmount: liquidityAmount,
+            esOperacionHistorica: esOperacionHistorica
           });
 
-          const shares = Math.floor(liquidityAmount / priceForShares);
+          // Calcular shares totales originales
+          const sharesTotales = Math.floor(liquidityAmount / priceForShares);
+          
+          // ✅ NUEVO: Para operaciones históricas con ventas, calcular shares restantes
+          const sharesRestantes = esOperacionHistorica 
+            ? Math.floor(sharesTotales * (participacionRestante / 100))
+            : sharesTotales;
+          
+          // ✅ NUEVO: Calcular monto asignado actual (después de ventas)
+          const allocatedAmountActual = esOperacionHistorica
+            ? liquidityAmount * (participacionRestante / 100)
+            : liquidityAmount;
+          
+          // ✅ NUEVO: Calcular ganancia realizada en dólares para ventas históricas
+          let realizedProfitLossUSD = 0;
+          if (esOperacionHistorica && ventasParcialesProcesadas.length > 0) {
+            // Calcular P&L realizado basado en las ventas
+            for (const venta of ventasParcialesProcesadas) {
+              const sharesVendidos = Math.floor(sharesTotales * (venta.porcentajeVendido / 100));
+              const montoVendido = sharesVendidos * venta.precio;
+              const montoOriginal = sharesVendidos * priceForShares;
+              realizedProfitLossUSD += (montoVendido - montoOriginal);
+              
+              // Actualizar sharesVendidos en la venta
+              venta.sharesVendidos = sharesVendidos;
+            }
+          }
 
           // Crear nueva distribución
           const newDistribution = {
             alertId: newAlert._id,
             symbol: symbol.toUpperCase(),
             percentage: liquidityPercentage,
-            allocatedAmount: liquidityAmount,
-            entryPrice: priceForShares,
-            currentPrice: priceForShares, // Inicialmente igual al precio de entrada
-            shares: shares,
-            profitLoss: 0, // Inicialmente 0
-            profitLossPercentage: 0, // Inicialmente 0%
-            realizedProfitLoss: 0,
-            soldShares: 0,
+            allocatedAmount: allocatedAmountActual, // Monto actual después de ventas
+            entryPrice: priceForShares, // Precio de entrada histórico o actual
+            currentPrice: newAlert.currentPrice, // Precio actual del mercado
+            shares: sharesRestantes, // Shares restantes después de ventas
+            profitLoss: 0, // Se calculará con updatePrices
+            profitLossPercentage: 0, // Se calculará con updatePrices
+            realizedProfitLoss: realizedProfitLossUSD, // Ganancia realizada de ventas previas
+            soldShares: sharesTotales - sharesRestantes, // Shares ya vendidos
             isActive: true,
-            createdAt: new Date()
+            createdAt: esOperacionHistorica && fechaEntrada ? new Date(fechaEntrada) : new Date()
           };
 
           // ✅ NUEVO: Guardar información original en la alerta para ventas futuras
           newAlert.originalParticipationPercentage = 100;
-          newAlert.participationPercentage = 100;
+          newAlert.participationPercentage = participacionRestante;
           newAlert.liquidityData = {
-            allocatedAmount: liquidityAmount,
-            shares: shares,
+            allocatedAmount: allocatedAmountActual,
+            shares: sharesRestantes,
             originalAllocatedAmount: liquidityAmount,
-            originalShares: shares,
+            originalShares: sharesTotales,
             originalParticipationPercentage: 100
           };
 
@@ -400,13 +485,18 @@ export default async function handler(
               const currentBalance = currentBalanceDoc?.balance || 0;
               const newBalance = currentBalance - liquidityAmount;
 
+              // ✅ NUEVO: Para operaciones históricas, usar fecha de entrada
+              const operationDate = esOperacionHistorica && fechaEntrada 
+                ? new Date(fechaEntrada) 
+                : new Date();
+
               const operation = new Operation({
                 ticker: symbol.toUpperCase(),
                 operationType: 'COMPRA',
-                quantity: shares,
+                quantity: sharesTotales, // Usar shares totales originales
                 price: priceForShares,
                 amount: liquidityAmount,
-                date: new Date(),
+                date: operationDate,
                 balance: newBalance,
                 alertId: newAlert._id,
                 alertSymbol: symbol.toUpperCase(),
@@ -415,16 +505,49 @@ export default async function handler(
                 portfolioPercentage: liquidityPercentage,
                 liquidityData: {
                   allocatedAmount: liquidityAmount,
-                  shares: shares,
+                  shares: sharesTotales,
                   entryPrice: priceForShares
                 },
                 executedBy: user.email,
-                executionMethod: 'AUTOMATIC',
-                notes: `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
+                executionMethod: esOperacionHistorica ? 'HISTORICAL' : 'AUTOMATIC',
+                notes: esOperacionHistorica 
+                  ? `Operación histórica importada - ${liquidityPercentage}% de la cartera - Entrada: ${fechaEntrada}`
+                  : `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
               });
 
               await operation.save();
-              console.log(`✅ Operación de compra registrada después de asignar liquidez: ${symbol} - ${shares} acciones por $${priceForShares}`);
+              console.log(`✅ Operación de compra registrada: ${symbol} - ${sharesTotales} acciones por $${priceForShares} (${esOperacionHistorica ? 'HISTÓRICA' : 'AUTOMÁTICA'})`);
+              
+              // ✅ NUEVO: Para operaciones históricas con ventas, registrar también las operaciones de venta
+              if (esOperacionHistorica && ventasParcialesProcesadas.length > 0) {
+                for (const venta of ventasParcialesProcesadas) {
+                  const ventaBalance = currentBalance; // Simplificado, en producción habría que calcular
+                  const ventaOperation = new Operation({
+                    ticker: symbol.toUpperCase(),
+                    operationType: 'VENTA',
+                    quantity: venta.sharesVendidos,
+                    price: venta.precio,
+                    amount: venta.sharesVendidos * venta.precio,
+                    date: venta.fecha,
+                    balance: ventaBalance,
+                    alertId: newAlert._id,
+                    alertSymbol: symbol.toUpperCase(),
+                    system: pool,
+                    createdBy: adminUser._id,
+                    portfolioPercentage: venta.porcentajeVendido,
+                    liquidityData: {
+                      allocatedAmount: venta.sharesVendidos * venta.precio,
+                      shares: venta.sharesVendidos,
+                      entryPrice: venta.precio
+                    },
+                    executedBy: user.email,
+                    executionMethod: 'HISTORICAL',
+                    notes: `Venta histórica importada - ${venta.porcentajeVendido}% vendido a $${venta.precio}`
+                  });
+                  await ventaOperation.save();
+                  console.log(`✅ Operación de venta histórica registrada: ${symbol} - ${venta.sharesVendidos} acciones por $${venta.precio}`);
+                }
+              }
             }
           } catch (operationError) {
             console.error('⚠️ Error registrando operación de compra después de asignar liquidez:', operationError);
@@ -436,7 +559,7 @@ export default async function handler(
             symbol: symbol.toUpperCase(),
             percentage: liquidityPercentage,
             amount: liquidityAmount,
-            shares: shares,
+            shares: sharesRestantes,
             pool: pool
           });
         } else {
@@ -451,35 +574,40 @@ export default async function handler(
     }
 
     // 🔔 Crear notificación automática (email a suscriptores)
-    try {
-      // Preparar parámetros para la notificación según el tipo de alerta
-      const notificationParams: any = {
-        message: emailMessage,
-        imageUrl: emailImageUrl || newAlert?.chartImage?.secure_url || newAlert?.chartImage?.url || undefined
-      };
-
-      // Si es alerta de rango, pasar priceRange; si no, pasar price
-      if (tipoAlerta === 'rango' && newAlert.entryPriceRange) {
-        notificationParams.priceRange = {
-          min: newAlert.entryPriceRange.min,
-          max: newAlert.entryPriceRange.max
+    // ✅ NUEVO: No enviar notificación para operaciones históricas
+    if (!esOperacionHistorica) {
+      try {
+        // Preparar parámetros para la notificación según el tipo de alerta
+        const notificationParams: any = {
+          message: emailMessage,
+          imageUrl: emailImageUrl || newAlert?.chartImage?.secure_url || newAlert?.chartImage?.url || undefined
         };
-      } else if (tipoAlerta === 'precio') {
-        notificationParams.price = typeof newAlert.entryPrice === 'number' 
-          ? newAlert.entryPrice 
-          : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined);
-      }
 
-      // ✅ NUEVO: Pasar el porcentaje de liquidez siempre para alertas de compra
-      if (newAlert.action === 'BUY') {
-        notificationParams.liquidityPercentage = liquidityPercentage;
-      }
+        // Si es alerta de rango, pasar priceRange; si no, pasar price
+        if (tipoAlerta === 'rango' && newAlert.entryPriceRange) {
+          notificationParams.priceRange = {
+            min: newAlert.entryPriceRange.min,
+            max: newAlert.entryPriceRange.max
+          };
+        } else if (tipoAlerta === 'precio') {
+          notificationParams.price = typeof newAlert.entryPrice === 'number' 
+            ? newAlert.entryPrice 
+            : (typeof newAlert.currentPrice === 'number' ? newAlert.currentPrice : undefined);
+        }
 
-      await createAlertNotification(newAlert, notificationParams);
-      console.log('✅ Notificación automática enviada para alerta:', newAlert._id);
-    } catch (notificationError) {
-      console.error('❌ Error al enviar notificación automática:', notificationError);
-      // No fallar la creación de la alerta si la notificación falla
+        // ✅ NUEVO: Pasar el porcentaje de liquidez siempre para alertas de compra
+        if (newAlert.action === 'BUY') {
+          notificationParams.liquidityPercentage = liquidityPercentage;
+        }
+
+        await createAlertNotification(newAlert, notificationParams);
+        console.log('✅ Notificación automática enviada para alerta:', newAlert._id);
+      } catch (notificationError) {
+        console.error('❌ Error al enviar notificación automática:', notificationError);
+        // No fallar la creación de la alerta si la notificación falla
+      }
+    } else {
+      console.log('📝 Operación histórica creada - No se envía notificación a suscriptores');
     }
 
     // Formatear la respuesta para el frontend - con validación de números

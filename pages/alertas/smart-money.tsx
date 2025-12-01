@@ -624,7 +624,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     horarioCierre: '17:30',
     emailMessage: '',
     emailImageUrl: '',
-    liquidityPercentage: 0 // Nuevo campo para el porcentaje de liquidez
+    liquidityPercentage: 0, // Nuevo campo para el porcentaje de liquidez
+    // ✅ NUEVO: Campos para operaciones históricas
+    esOperacionHistorica: false,
+    fechaEntrada: '',
+    ventasParciales: [] as Array<{ fecha: string; precio: string; porcentajeVendido: string }>
   });
   
   const [emailImage, setEmailImage] = useState<CloudinaryImage | null>(null);
@@ -1626,7 +1630,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           symbol: newAlert.symbol.toUpperCase(),
           action: newAlert.action,
           // ✅ CORREGIDO: Para alertas de rango, usar el precio actual obtenido como entryPrice estático
-          entryPrice: newAlert.tipoAlerta === 'precio' ? stockPrice : (currentPriceForRange || parseFloat(newAlert.precioMinimo)),
+          // Para operaciones históricas, usar el precio manual ingresado
+          entryPrice: newAlert.esOperacionHistorica 
+            ? stockPrice 
+            : (newAlert.tipoAlerta === 'precio' ? stockPrice : (currentPriceForRange || parseFloat(newAlert.precioMinimo))),
           stopLoss: parseFloat(newAlert.stopLoss),
           takeProfit: parseFloat(newAlert.takeProfit),
           analysis: newAlert.analysis || '',
@@ -1643,7 +1650,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           emailImageUrl: newAlert.emailImageUrl || (chartImage?.secure_url || chartImage?.url),
           // ✅ NUEVO: Campo de liquidez
           liquidityPercentage: newAlert.liquidityPercentage,
-          liquidityAmount: newAlert.liquidityPercentage > 0 ? (liquidityTotal * newAlert.liquidityPercentage / 100) : 0
+          liquidityAmount: newAlert.liquidityPercentage > 0 ? (liquiditySummary.liquidezTotal * newAlert.liquidityPercentage / 100) : 0,
+          // ✅ NUEVO: Campos para operaciones históricas
+          esOperacionHistorica: newAlert.esOperacionHistorica,
+          fechaEntrada: newAlert.esOperacionHistorica ? newAlert.fechaEntrada : undefined,
+          ventasParciales: newAlert.esOperacionHistorica && newAlert.ventasParciales.length > 0
+            ? newAlert.ventasParciales.map(v => ({
+                fecha: v.fecha,
+                precio: parseFloat(v.precio),
+                porcentajeVendido: parseFloat(v.porcentajeVendido)
+              }))
+            : []
         }),
       });
 
@@ -1665,7 +1682,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           horarioCierre: '17:30',
           emailMessage: '',
           emailImageUrl: '',
-          liquidityPercentage: 0
+          liquidityPercentage: 0,
+          esOperacionHistorica: false,
+          fechaEntrada: '',
+          ventasParciales: []
         });
         setStockPrice(null);
         setChartImage(null);
@@ -3062,13 +3082,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                       </div>
                     )}
                     <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
-                      <span>Fecha:</span>
-                      <strong>{new Date(alert.date).toLocaleDateString('es-ES', {
+                      <span>{alert.esOperacionHistorica ? 'Fecha Entrada:' : 'Fecha:'}</span>
+                      <strong>{new Date(alert.fechaEntrada || alert.date).toLocaleDateString('es-ES', {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
+                        hour: alert.esOperacionHistorica ? undefined : '2-digit',
+                        minute: alert.esOperacionHistorica ? undefined : '2-digit',
                         timeZone: 'America/Argentina/Buenos_Aires'
                       })}</strong>
                     </div>
@@ -3085,6 +3105,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         {alert.participationPercentage || 100}%
                       </strong>
                     </div>
+                    {/* Mostrar ganancia realizada para operaciones con ventas parciales */}
+                    {alert.gananciaRealizada && alert.gananciaRealizada !== 0 && (
+                      <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
+                        <span>Gan. Realizada:</span>
+                        <strong className={alert.gananciaRealizada >= 0 ? styles.profit : styles.loss}>
+                          {alert.gananciaRealizada >= 0 ? '+' : ''}{alert.gananciaRealizada.toFixed(2)}%
+                        </strong>
+                      </div>
+                    )}
                     {alert.status === 'DESCARTADA' && alert.descartadaMotivo && (
                       <div className={styles.alertDetail} style={{ flex: '1 1 100%', borderTop: '1px solid #e0e0e0', paddingTop: '8px', marginTop: '8px' }}>
                         <span>Motivo de descarte:</span>
@@ -4230,12 +4259,57 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
               </select>
             </div>
 
+            {/* ✅ NUEVO: Toggle para operación histórica */}
+            {userRole === 'admin' && (
+              <div className={styles.inputGroup}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={newAlert.esOperacionHistorica}
+                    onChange={(e) => setNewAlert(prev => ({ 
+                      ...prev, 
+                      esOperacionHistorica: e.target.checked,
+                      tipoAlerta: e.target.checked ? 'precio' : prev.tipoAlerta // Forzar precio para históricas
+                    }))}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
+                  <span style={{ 
+                    color: newAlert.esOperacionHistorica ? '#10B981' : 'rgba(255, 255, 255, 0.7)',
+                    fontWeight: newAlert.esOperacionHistorica ? '600' : '400'
+                  }}>
+                    📜 Es posición existente (operación histórica)
+                  </span>
+                </label>
+                {newAlert.esOperacionHistorica && (
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '4px' }}>
+                    Importar una operación ya realizada. No se enviará notificación a los suscriptores.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* ✅ NUEVO: Fecha de entrada para operaciones históricas */}
+            {newAlert.esOperacionHistorica && (
+              <div className={styles.inputGroup}>
+                <label>📅 Fecha de Entrada</label>
+                <input
+                  type="date"
+                  value={newAlert.fechaEntrada}
+                  onChange={(e) => setNewAlert(prev => ({ ...prev, fechaEntrada: e.target.value }))}
+                  className={styles.input}
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+            )}
+
             <div className={styles.inputGroup}>
               <label>Tipo de Alerta</label>
               <select
                 value={newAlert.tipoAlerta}
                 onChange={(e) => setNewAlert(prev => ({ ...prev, tipoAlerta: e.target.value as 'precio' | 'rango' }))}
                 className={`${styles.select} ${newAlert.tipoAlerta === 'rango' ? styles.rangeSelect : ''}`}
+                disabled={newAlert.esOperacionHistorica}
               >
                 <option value="precio">💰 Precio Específico</option>
                 <option value="rango">📊 Rango de Precio</option>
@@ -4313,6 +4387,149 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 className={styles.input}
               />
             </div>
+
+            {/* ✅ NUEVO: Sección de ventas parciales para operaciones históricas */}
+            {newAlert.esOperacionHistorica && (
+              <div className={styles.inputGroup}>
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>💸 Ventas Parciales Previas</span>
+                  <button
+                    type="button"
+                    onClick={() => setNewAlert(prev => ({
+                      ...prev,
+                      ventasParciales: [...prev.ventasParciales, { fecha: '', precio: '', porcentajeVendido: '' }]
+                    }))}
+                    style={{
+                      backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                      border: '1px solid rgba(139, 92, 246, 0.5)',
+                      borderRadius: '6px',
+                      padding: '4px 12px',
+                      color: '#A855F7',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    + Agregar Venta
+                  </button>
+                </label>
+                
+                {newAlert.ventasParciales.length === 0 && (
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.5)', marginTop: '8px' }}>
+                    Si ya vendiste parte de la posición, agregá las ventas aquí.
+                  </p>
+                )}
+
+                {newAlert.ventasParciales.map((venta, index) => (
+                  <div 
+                    key={index} 
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr 1fr auto',
+                      gap: '8px',
+                      marginTop: '8px',
+                      padding: '12px',
+                      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(239, 68, 68, 0.3)'
+                    }}
+                  >
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.5)' }}>Fecha de Venta</label>
+                      <input
+                        type="date"
+                        value={venta.fecha}
+                        onChange={(e) => {
+                          const updated = [...newAlert.ventasParciales];
+                          updated[index].fecha = e.target.value;
+                          setNewAlert(prev => ({ ...prev, ventasParciales: updated }));
+                        }}
+                        className={styles.input}
+                        max={new Date().toISOString().split('T')[0]}
+                        min={newAlert.fechaEntrada}
+                        style={{ fontSize: '0.875rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.5)' }}>Precio de Venta</label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="Precio"
+                        value={venta.precio}
+                        onChange={(e) => {
+                          const updated = [...newAlert.ventasParciales];
+                          updated[index].precio = e.target.value;
+                          setNewAlert(prev => ({ ...prev, ventasParciales: updated }));
+                        }}
+                        className={styles.input}
+                        style={{ fontSize: '0.875rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.7rem', color: 'rgba(255, 255, 255, 0.5)' }}>% Vendido</label>
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        max="100"
+                        placeholder="%"
+                        value={venta.porcentajeVendido}
+                        onChange={(e) => {
+                          const updated = [...newAlert.ventasParciales];
+                          updated[index].porcentajeVendido = e.target.value;
+                          setNewAlert(prev => ({ ...prev, ventasParciales: updated }));
+                        }}
+                        className={styles.input}
+                        style={{ fontSize: '0.875rem' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = newAlert.ventasParciales.filter((_, i) => i !== index);
+                        setNewAlert(prev => ({ ...prev, ventasParciales: updated }));
+                      }}
+                      style={{
+                        backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                        border: '1px solid rgba(239, 68, 68, 0.5)',
+                        borderRadius: '6px',
+                        padding: '8px',
+                        color: '#EF4444',
+                        cursor: 'pointer',
+                        alignSelf: 'end'
+                      }}
+                      title="Eliminar venta"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {/* Resumen de participación */}
+                {newAlert.ventasParciales.length > 0 && (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(16, 185, 129, 0.3)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>📊 Porcentaje vendido:</span>
+                      <strong style={{ color: '#EF4444' }}>
+                        {newAlert.ventasParciales.reduce((sum, v) => sum + (parseFloat(v.porcentajeVendido) || 0), 0)}%
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                      <span style={{ color: 'rgba(255, 255, 255, 0.7)' }}>📈 Porcentaje restante:</span>
+                      <strong style={{ color: '#10B981' }}>
+                        {100 - newAlert.ventasParciales.reduce((sum, v) => sum + (parseFloat(v.porcentajeVendido) || 0), 0)}%
+                      </strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Campo Análisis - OCULTO */}
             <div className={styles.inputGroup} style={{ display: 'none' }}>
@@ -4464,10 +4681,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             </button>
             <button 
               onClick={handleCreateAlert}
-              disabled={!newAlert.symbol || !stockPrice || loading}
+              disabled={
+                !newAlert.symbol || 
+                !stockPrice || 
+                loading || 
+                (newAlert.esOperacionHistorica && !newAlert.fechaEntrada) ||
+                (newAlert.esOperacionHistorica && newAlert.ventasParciales.reduce((sum, v) => sum + (parseFloat(v.porcentajeVendido) || 0), 0) >= 100)
+              }
               className={styles.createButton}
             >
-              {loading ? 'Creando...' : 'Crear Alerta'}
+              {loading ? 'Creando...' : (newAlert.esOperacionHistorica ? 'Importar Operación' : 'Crear Alerta')}
             </button>
           </div>
         </div>

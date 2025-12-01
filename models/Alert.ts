@@ -24,6 +24,15 @@ export interface PriceChangeAudit {
   userAgent?: string;
 }
 
+// ✅ NUEVO: Esquema para ventas parciales históricas
+export interface VentaParcial {
+  fecha: Date;
+  precio: number;
+  porcentajeVendido: number;
+  gananciaRealizada: number;
+  sharesVendidos: number;
+}
+
 export interface IAlert extends Document {
   _id: string;
   symbol: string;
@@ -89,6 +98,13 @@ export interface IAlert extends Document {
   participationPercentage: number; // Porcentaje de participación actual (100% = posición completa)
   originalParticipationPercentage: number; // Porcentaje original al crear la alerta
   
+  // ✅ NUEVO: Campos para operaciones históricas (posiciones existentes)
+  esOperacionHistorica: boolean; // Si es una operación importada/preexistente
+  fechaEntrada?: Date; // Fecha real de entrada (puede ser diferente a date)
+  ventasParciales?: VentaParcial[]; // Historial de ventas parciales
+  gananciaRealizada: number; // Ganancia total realizada de ventas parciales
+  gananciaNoRealizada: number; // Ganancia no realizada (posición actual)
+  
   // ✅ NUEVO: Métodos del esquema
   calculateProfit(): number;
   setFinalPrice(price: number, isFromLastAvailable?: boolean): number;
@@ -96,6 +112,7 @@ export interface IAlert extends Document {
   checkRangeBreak(currentPrice: number): { isBroken: boolean; reason?: string };
   discardAlert(motivo: string, precioActual: number): IAlert;
   sellPartial(percentageSold: number, sellPrice: number): IAlert;
+  calculateTotalProfit(): { realizada: number; noRealizada: number; total: number; porcentaje: number };
 }
 
 // Esquema para imágenes de Cloudinary
@@ -334,6 +351,47 @@ const AlertSchema: Schema = new Schema({
     default: 100,
     min: 0,
     max: 100
+  },
+  // ✅ NUEVO: Campos para operaciones históricas (posiciones existentes)
+  esOperacionHistorica: {
+    type: Boolean,
+    default: false
+  },
+  fechaEntrada: {
+    type: Date
+  },
+  ventasParciales: [{
+    fecha: {
+      type: Date,
+      required: true
+    },
+    precio: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    porcentajeVendido: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 100
+    },
+    gananciaRealizada: {
+      type: Number,
+      default: 0
+    },
+    sharesVendidos: {
+      type: Number,
+      default: 0
+    }
+  }],
+  gananciaRealizada: {
+    type: Number,
+    default: 0
+  },
+  gananciaNoRealizada: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true
@@ -486,6 +544,44 @@ AlertSchema.methods.sellPartial = function(this: IAlert, percentageSold: number,
   }
   
   return this;
+};
+
+// ✅ NUEVO: Método para calcular ganancia total (realizada + no realizada)
+AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
+  const entryPrice = this.entryPriceRange?.min || this.entryPrice || 0;
+  const currentPrice = this.currentPrice || 0;
+  
+  // Ganancia realizada (de ventas parciales)
+  let gananciaRealizada = 0;
+  if (this.ventasParciales && this.ventasParciales.length > 0) {
+    gananciaRealizada = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
+  }
+  
+  // Ganancia no realizada (posición actual)
+  // Calculada como: (precioActual - precioEntrada) / precioEntrada * porcentajeRestante
+  let gananciaNoRealizada = 0;
+  if (entryPrice > 0 && this.participationPercentage > 0) {
+    const cambioPorc = ((currentPrice - entryPrice) / entryPrice) * 100;
+    // Ajustar por el porcentaje de participación restante
+    gananciaNoRealizada = cambioPorc * (this.participationPercentage / 100);
+  }
+  
+  // Actualizar campos
+  this.gananciaRealizada = gananciaRealizada;
+  this.gananciaNoRealizada = gananciaNoRealizada;
+  
+  // Ganancia total
+  const total = gananciaRealizada + gananciaNoRealizada;
+  
+  // Porcentaje total basado en inversión original
+  const porcentaje = total;
+  
+  return {
+    realizada: gananciaRealizada,
+    noRealizada: gananciaNoRealizada,
+    total,
+    porcentaje
+  };
 };
 
 // Middleware para calcular profit antes de guardar

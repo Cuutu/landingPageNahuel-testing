@@ -11,6 +11,13 @@ import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
 import { createAlertNotification } from '@/lib/notificationUtils';
 
+// ✅ NUEVO: Interface para ventas parciales
+interface VentaParcialEdit {
+  fecha: string;
+  precio: number;
+  porcentajeVendido: number;
+}
+
 interface EditAlertRequest {
   alertId: string;
   symbol?: string;
@@ -25,6 +32,10 @@ interface EditAlertRequest {
   liquidityPercentage?: number;
   liquidityAmount?: number;
   quickSellPercentage?: number;
+  // ✅ NUEVO: Campos para operaciones históricas
+  esOperacionHistorica?: boolean;
+  fechaEntrada?: string;
+  ventasParciales?: VentaParcialEdit[];
 }
 
 interface AlertResponse {
@@ -84,7 +95,11 @@ export default async function handler(
       // ✅ NUEVO: Parámetros de liquidez y venta rápida
       liquidityPercentage,
       liquidityAmount,
-      quickSellPercentage
+      quickSellPercentage,
+      // ✅ NUEVO: Campos para operaciones históricas
+      esOperacionHistorica,
+      fechaEntrada,
+      ventasParciales
     }: EditAlertRequest = req.body;
 
     if (!alertId) {
@@ -176,6 +191,63 @@ export default async function handler(
     if (availableForPurchase !== undefined && availableForPurchase !== alert.availableForPurchase) {
       oldValues.availableForPurchase = alert.availableForPurchase;
       changes.availableForPurchase = availableForPurchase;
+    }
+
+    // ✅ NUEVO: Campos para operaciones históricas
+    if (esOperacionHistorica !== undefined && esOperacionHistorica !== alert.esOperacionHistorica) {
+      oldValues.esOperacionHistorica = alert.esOperacionHistorica;
+      changes.esOperacionHistorica = esOperacionHistorica;
+    }
+
+    if (fechaEntrada !== undefined) {
+      const nuevaFecha = new Date(fechaEntrada);
+      const fechaActual = alert.fechaEntrada ? new Date(alert.fechaEntrada) : null;
+      if (!fechaActual || nuevaFecha.getTime() !== fechaActual.getTime()) {
+        oldValues.fechaEntrada = alert.fechaEntrada;
+        changes.fechaEntrada = nuevaFecha;
+      }
+    }
+
+    // ✅ NUEVO: Procesar ventas parciales si se proporcionan
+    if (ventasParciales !== undefined && Array.isArray(ventasParciales)) {
+      let participacionRestante = 100;
+      let gananciaRealizadaTotal = 0;
+      const ventasParcialesProcesadas: any[] = [];
+      
+      for (const venta of ventasParciales) {
+        const fechaVenta = new Date(venta.fecha);
+        const precioVenta = venta.precio;
+        const porcentajeVendido = venta.porcentajeVendido;
+        
+        // Calcular ganancia realizada
+        const precioEntradaCalc = alert.entryPrice || 0;
+        let gananciaVenta = 0;
+        if (precioEntradaCalc > 0) {
+          const gananciaPorc = ((precioVenta - precioEntradaCalc) / precioEntradaCalc) * 100;
+          gananciaVenta = gananciaPorc * (porcentajeVendido / 100);
+        }
+        
+        ventasParcialesProcesadas.push({
+          fecha: fechaVenta,
+          precio: precioVenta,
+          porcentajeVendido,
+          gananciaRealizada: gananciaVenta,
+          sharesVendidos: 0
+        });
+        
+        participacionRestante -= porcentajeVendido;
+        gananciaRealizadaTotal += gananciaVenta;
+      }
+      
+      participacionRestante = Math.max(0, participacionRestante);
+      
+      oldValues.ventasParciales = alert.ventasParciales;
+      oldValues.participationPercentage = alert.participationPercentage;
+      oldValues.gananciaRealizada = alert.gananciaRealizada;
+      
+      changes.ventasParciales = ventasParcialesProcesadas;
+      changes.participationPercentage = participacionRestante;
+      changes.gananciaRealizada = gananciaRealizadaTotal;
     }
 
     // Verificar que haya al menos un cambio
