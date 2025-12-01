@@ -339,15 +339,19 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         await user.renewSubscription(service, amount, currency, paymentInfo.id, 'full');
       }
       
-      // Recargar el usuario para obtener las fechas actualizadas
-      await user.reload();
+      // ✅ CORREGIDO: Volver a buscar el usuario para obtener las fechas actualizadas
+      const refreshedUser = await User.findById(user._id);
+      if (!refreshedUser) {
+        console.error('❌ No se pudo recargar el usuario después de activar suscripción');
+        return;
+      }
       
-      const updatedSub = user.activeSubscriptions.find(
+      const updatedSub = refreshedUser.activeSubscriptions.find(
         (sub: any) => sub.service === service
       );
       
       console.log('✅ Suscripción activada:', {
-        user: user.email,
+        user: refreshedUser.email,
         service,
         isTrial,
         isRenewal,
@@ -359,7 +363,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
 
       // ✅ La suscripción ya está activada en user.activeSubscriptions
       // El admin panel se puede manejar manualmente si es necesario
-      console.log('✅ Suscripción procesada correctamente para:', user.email);
+      console.log('✅ Suscripción procesada correctamente para:', refreshedUser.email);
 
       // 📧 Notificar al admin sobre el nuevo suscriptor
       try {
@@ -367,14 +371,14 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
         if (!payment.metadata.adminNewSubscriberNotified) {
           const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
           await sendAdminNewSubscriberEmail({
-            userEmail: user.email,
-            userName: user.name || user.email,
+            userEmail: refreshedUser.email,
+            userName: refreshedUser.name || refreshedUser.email,
             service: service,
             amount,
             currency,
             paymentId: paymentInfo.id,
             transactionDate: new Date(),
-            expiryDate: user.subscriptionExpiry
+            expiryDate: refreshedUser.subscriptionExpiry
           });
           payment.metadata.adminNewSubscriberNotified = true;
           await payment.save();
@@ -402,10 +406,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           });
           
           await sendSubscriptionConfirmationEmail({
-            userEmail: user.email,
-            userName: user.name || user.email,
+            userEmail: refreshedUser.email,
+            userName: refreshedUser.name || refreshedUser.email,
             service: service,
-            expiryDate: updatedSub?.expiryDate || user.subscriptionExpiry,
+            expiryDate: updatedSub?.expiryDate || refreshedUser.subscriptionExpiry,
             startDate: updatedSub?.startDate,
             isRenewal,
             previousExpiry: previousExpiry || undefined, // Convertir null a undefined
@@ -414,7 +418,7 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
           payment.metadata.userSubscriptionConfirmationSent = true;
           await payment.save();
           
-          console.log(`✅ Email de ${isTrial ? 'TRIAL' : isRenewal ? 'RENOVACIÓN' : 'CONFIRMACIÓN'} enviado a ${user.email}`);
+          console.log(`✅ Email de ${isTrial ? 'TRIAL' : isRenewal ? 'RENOVACIÓN' : 'CONFIRMACIÓN'} enviado a ${refreshedUser.email}`);
         } else {
           console.log('ℹ️ Confirmación de suscripción al usuario ya enviada previamente.');
         }
