@@ -369,6 +369,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       try {
         if (!payment.metadata) payment.metadata = {};
         if (!payment.metadata.adminNewSubscriberNotified) {
+          // ✅ MEJORADO: Marcar como enviado ANTES de enviar para evitar duplicados en caso de error
+          payment.metadata.adminNewSubscriberNotified = true;
+          await payment.save();
+          
           const { sendAdminNewSubscriberEmail } = await import('@/lib/emailNotifications');
           await sendAdminNewSubscriberEmail({
             userEmail: refreshedUser.email,
@@ -380,8 +384,6 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             transactionDate: new Date(),
             expiryDate: refreshedUser.subscriptionExpiry
           });
-          payment.metadata.adminNewSubscriberNotified = true;
-          await payment.save();
         } else {
           console.log('ℹ️ Notificación admin ya enviada previamente para este pago.');
         }
@@ -395,6 +397,10 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
       try {
         if (!payment.metadata) payment.metadata = {};
         if (!payment.metadata.userSubscriptionConfirmationSent) {
+          // ✅ MEJORADO: Marcar como enviado ANTES de enviar para evitar duplicados en caso de error
+          payment.metadata.userSubscriptionConfirmationSent = true;
+          await payment.save();
+          
           const { sendSubscriptionConfirmationEmail } = await import('@/lib/emailNotifications');
           
           console.log('📧 Preparando email de confirmación:', {
@@ -415,8 +421,6 @@ async function processSuccessfulPayment(payment: any, paymentInfo: any) {
             previousExpiry: previousExpiry || undefined, // Convertir null a undefined
             isTrial // ✅ NUEVO: Pasar parámetro isTrial
           });
-          payment.metadata.userSubscriptionConfirmationSent = true;
-          await payment.save();
           
           console.log(`✅ Email de ${isTrial ? 'TRIAL' : isRenewal ? 'RENOVACIÓN' : 'CONFIRMACIÓN'} enviado a ${refreshedUser.email}`);
         } else {
