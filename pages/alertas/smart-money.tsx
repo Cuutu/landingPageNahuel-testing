@@ -4633,7 +4633,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 </div>
 
                 <div className={styles.liquiditySelector}>
-                  {[0, 5, 10, 15, 20].map((percentage) => (
+                  {[0, 2.5, 5, 10, 15, 20].map((percentage) => (
                     <button
                       key={percentage}
                       type="button"
