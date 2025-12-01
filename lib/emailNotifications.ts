@@ -813,8 +813,8 @@ export async function sendPaymentSuccessEmail(
     console.log('📧 Enviando email de confirmación de pago exitoso a:', userEmail);
 
     const serviceNames: { [key: string]: string } = {
-      'TraderCall': 'TraderCall Premium',
-      'SmartMoney': 'SmartMoney Alerts',
+      'TraderCall': 'TraderCall',
+      'SmartMoney': 'SmartMoney',
       'CashFlow': 'CashFlow Analysis',
       'SwingTrading': 'Entrenamiento Zero 2 Trader',
       'DowJones': 'Entrenamiento Dow Jones',
@@ -953,8 +953,8 @@ export async function sendPaymentFailedEmail(
     console.log('📧 Enviando email de notificación de pago fallido a:', userEmail);
 
     const serviceNames: { [key: string]: string } = {
-      'TraderCall': 'TraderCall Premium',
-      'SmartMoney': 'SmartMoney Alerts',
+      'TraderCall': 'TraderCall',
+      'SmartMoney': 'SmartMoney',
       'CashFlow': 'CashFlow Analysis',
       'SwingTrading': 'Entrenamiento Zero 2 Trader',
       'DowJones': 'Entrenamiento Dow Jones',
