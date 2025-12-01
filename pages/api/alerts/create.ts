@@ -159,6 +159,11 @@ export default async function handler(
       return res.status(400).json({ error: 'Stop Loss y Take Profit deben ser mayores a 0' });
     }
 
+    // ✅ NUEVO: Validar que el porcentaje de liquidez no sea 0
+    if (liquidityPercentage <= 0) {
+      return res.status(400).json({ error: 'El porcentaje de liquidez debe ser mayor a 0' });
+    }
+
     // ✅ NUEVO: Obtener precio actual del mercado para asignación de liquidez
     let currentMarketPrice = entryPrice; // Valor por defecto
     
