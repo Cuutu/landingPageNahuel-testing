@@ -3123,15 +3123,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         {alert.participationPercentage || 100}%
                       </strong>
                     </div>
-                    {/* Mostrar ganancia realizada para operaciones con ventas parciales */}
-                    {alert.gananciaRealizada && alert.gananciaRealizada !== 0 && (
+                    {/* ✅ CORREGIDO: Ocultar gananciaRealizada si es 0 para evitar que aparezca como "0" en el DOM */}
+                    {(alert.gananciaRealizada !== undefined && alert.gananciaRealizada !== null && alert.gananciaRealizada !== 0) ? (
                       <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
                         <span>Gan. Realizada:</span>
                         <strong className={alert.gananciaRealizada >= 0 ? styles.profit : styles.loss}>
                           {alert.gananciaRealizada >= 0 ? '+' : ''}{alert.gananciaRealizada.toFixed(2)}%
                         </strong>
                       </div>
-                    )}
+                    ) : null}
                     {/* ✅ CORREGIDO: Ocultar gananciaNoRealizada si es 0 para evitar que aparezca como "0" en el DOM */}
                     {(alert.gananciaNoRealizada !== undefined && alert.gananciaNoRealizada !== null && alert.gananciaNoRealizada !== 0) ? (
                       <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
