@@ -1069,7 +1069,7 @@ export async function sendPaymentFailedEmail(
             
             <div class="support">
               <h4>💬 ¿Necesitas ayuda?</h4>
-              <p>Si el problema persiste, nuestro equipo de soporte está aquí para ayudarte. Contáctanos en <strong>Soporte@lozanonahuel.com</strong> o por WhatsApp.</p>
+              <p>Si el problema persiste, nuestro equipo de soporte está aquí para ayudarte. Contáctanos en <strong>Soporte@lozanonahuel.com</strong>.</p>
             </div>
           </div>
           
