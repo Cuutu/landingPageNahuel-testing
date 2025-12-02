@@ -120,8 +120,17 @@ export default async function handler(
       // Sumar solo la liquidez distribuida (de todas las distribuciones activas)
       liquidezDistribuidaSum += doc.distributedLiquidity || 0;
       
-      // Sumar todas las ganancias/pérdidas (realizadas + no realizadas)
-      gananciaTotalSum += doc.totalProfitLoss || 0;
+      // ✅ CORREGIDO: Calcular ganancias directamente desde TODAS las distribuciones (activas e inactivas)
+      // Esto asegura que las ganancias realizadas de distribuciones vendidas completamente se incluyan
+      const allDocDistributions = doc.distributions || [];
+      allDocDistributions.forEach((d: any) => {
+        // Sumar ganancias no realizadas (solo de distribuciones activas)
+        if (d.isActive) {
+          gananciaTotalSum += d.profitLoss || 0;
+        }
+        // Sumar ganancias realizadas (de todas las distribuciones, activas e inactivas)
+        gananciaTotalSum += d.realizedProfitLoss || 0;
+      });
 
       const activeDistributions = (doc.distributions || [])
         .filter((d: any) => d.isActive)
@@ -170,7 +179,8 @@ export default async function handler(
     // Liquidez Disponible = Total - Distribuida
     liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
 
-    // Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
+    // ✅ CORREGIDO: Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
+    // El signo debe ser correcto: positivo para ganancias, negativo para pérdidas
     const gananciaPorcentaje = liquidezInicialGlobal > 0 
       ? (gananciaTotalSum / liquidezInicialGlobal) * 100 
       : 0;
@@ -180,6 +190,18 @@ export default async function handler(
       ? (liquidezDistribuidaSum * 100) / liquidezInicialGlobal 
       : 0;
 
+    // ✅ DEBUG: Log detallado de distribuciones para verificar ganancias realizadas
+    const allDistributionsDebug = liquidityDocs.flatMap((doc) => doc.distributions || []);
+    const realizedProfitsDebug = allDistributionsDebug
+      .filter((d: any) => (d.realizedProfitLoss || 0) !== 0)
+      .map((d: any) => ({
+        symbol: d.symbol,
+        alertId: d.alertId,
+        isActive: d.isActive,
+        realizedProfitLoss: d.realizedProfitLoss || 0,
+        profitLoss: d.profitLoss || 0
+      }));
+    
     console.log(`📊 [LIQUIDITY SUMMARY] Resumen calculado para ${pool}:`, {
       liquidezInicial: liquidezInicialGlobal,  // ✅ Valor único global, no suma
       liquidezTotal: liquidezTotalSum,
@@ -188,7 +210,9 @@ export default async function handler(
       ganancia: gananciaTotalSum,
       gananciaPorcentaje,
       porcentajeRestante,
-      distributionsCount: consolidatedDistributions.length
+      distributionsCount: consolidatedDistributions.length,
+      realizedProfitsCount: realizedProfitsDebug.length,
+      realizedProfitsDetails: realizedProfitsDebug
     });
 
     const payload = {

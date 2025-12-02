@@ -211,7 +211,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             amount: payment.amount,
             currency: payment.currency,
             transactionDate: payment.transactionDate,
-            automatic: true
+            automatic: true,
+            userEmail: session.user.email // ✅ CORREGIDO: Incluir email del usuario para filtrar notificaciones
           }
         })
       });

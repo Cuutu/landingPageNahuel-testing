@@ -54,9 +54,14 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
     let query: any = {
       isActive: true,
       createdAt: { $gte: userCreatedAt }, // Solo notificaciones creadas después del registro del usuario
-      $or: [
-        { expiresAt: null },
-        { expiresAt: { $gt: now } }
+      $and: [
+        // Filtro de expiración
+        {
+          $or: [
+            { expiresAt: null },
+            { expiresAt: { $gt: now } }
+          ]
+        }
       ]
     };
 
@@ -99,7 +104,16 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
 
     // Filtros adicionales
     if (type) {
-      query.type = type;
+      // ✅ CORREGIDO: Si el usuario no es admin y pide ver sistema/pago, no devolver nada
+      if (userRole !== 'admin' && ['sistema', 'pago'].includes(type as string)) {
+        query.type = { $in: [] }; // Query imposible - no devolverá resultados
+      } else {
+        query.type = type;
+      }
+    } else if (userRole !== 'admin') {
+      // ✅ CORREGIDO: Las notificaciones de sistema/pago solo se muestran a administradores
+      // Si no hay filtro de tipo específico y el usuario no es admin, excluir sistema y pago
+      query.type = { $nin: ['sistema', 'pago'] };
     }
 
     if (priority) {

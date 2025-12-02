@@ -3110,19 +3110,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         });
                       })()}</strong>
                     </div>
-                    <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
-                      <span>Participación:</span>
-                      <strong style={{ 
-                        color: alert.participationPercentage === 100 ? '#10b981' : // Verde fuerte
-                               alert.participationPercentage >= 75 ? '#34d399' : // Verde claro
-                               alert.participationPercentage >= 50 ? '#fbbf24' : // Amarillo
-                               '#f97316', // Naranja
-                        fontSize: '1.1em',
-                        fontWeight: '700'
-                      }}>
-                        {alert.participationPercentage || 100}%
-                      </strong>
-                    </div>
                     {/* ✅ CORREGIDO: Ocultar gananciaRealizada si es 0 para evitar que aparezca como "0" en el DOM */}
                     {(alert.gananciaRealizada !== undefined && alert.gananciaRealizada !== null && alert.gananciaRealizada !== 0) ? (
                       <div className={styles.alertDetail} style={{ flex: '1 1 50%' }}>
