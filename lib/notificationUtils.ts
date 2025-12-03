@@ -326,6 +326,18 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       hasImage: !!notification.metadata?.imageUrl
     });
 
+    // ✅ CORREGIDO: Verificar si ya existe una notificación para esta alerta para evitar duplicados
+    const existingNotification = await Notification.findOne({
+      relatedAlertId: alert._id.toString(),
+      targetUsers: notification.targetUsers,
+      isActive: true
+    });
+
+    if (existingNotification) {
+      console.log(`⚠️ [ALERT NOTIFICATION] Ya existe una notificación para esta alerta (${alert._id}), no se creará duplicado`);
+      return;
+    }
+
     // Crear UNA notificación global que se muestre a todos los usuarios del grupo
     const notificationDoc = new Notification(notification);
     await notificationDoc.save();
@@ -534,6 +546,21 @@ export async function createReportNotification(report: any): Promise<void> {
       subscribedUsers: finalSubscribedUsers.length,
       trialUsers: trialUsers.length
     });
+
+    // ✅ CORREGIDO: Verificar si ya existe una notificación para este informe para evitar duplicados
+    // Usar metadata.reportTitle y targetUsers para identificar duplicados
+    const existingNotification = await Notification.findOne({
+      'metadata.reportTitle': report.title,
+      targetUsers: notification.targetUsers,
+      type: 'actualizacion',
+      isActive: true,
+      createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } // Últimas 24 horas
+    });
+
+    if (existingNotification) {
+      console.log(`⚠️ [REPORT NOTIFICATION] Ya existe una notificación para este informe (${report.title}), no se creará duplicado`);
+      return;
+    }
 
     // Crear UNA notificación global que se muestre a todos los usuarios del grupo
     const notificationDoc = new Notification(notification);

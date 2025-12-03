@@ -65,19 +65,82 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
       ]
     };
 
-    // Obtener suscripciones activas del usuario
-    const activeSubscriptions = await UserSubscription.find({
-      userId: user._id,
-      status: 'active',
-      endDate: { $gt: now }
+    // ✅ CORREGIDO: Obtener suscripciones activas de AMBAS fuentes
+    // 1. UserSubscription (modelo separado) - usa userEmail, no userId
+    const userSubscriptions = await UserSubscription.find({
+      userEmail: user.email.toLowerCase().trim(),
     }).lean();
+
+    // 2. User.activeSubscriptions (suscripciones de MercadoPago)
+    const userActiveSubscriptions = user.activeSubscriptions || [];
+    
+    // ✅ CORREGIDO: Combinar suscripciones de ambas fuentes
+    const allActiveSubscriptions: Array<{ serviceType: string }> = [];
+    
+    // Agregar de UserSubscription si tiene suscripciones activas
+    userSubscriptions.forEach((us: any) => {
+      if (us.subscriptions?.alertas_trader) {
+        allActiveSubscriptions.push({ serviceType: 'TraderCall' });
+      }
+      if (us.subscriptions?.alertas_smart) {
+        allActiveSubscriptions.push({ serviceType: 'SmartMoney' });
+      }
+      if (us.subscriptions?.alertas_cashflow) {
+        allActiveSubscriptions.push({ serviceType: 'CashFlow' });
+      }
+    });
+    
+    // ✅ CORREGIDO: Agregar de User.activeSubscriptions (MercadoPago)
+    userActiveSubscriptions.forEach((activeSub: any) => {
+      if (activeSub.isActive && new Date(activeSub.expiryDate) >= now) {
+        // Evitar duplicados
+        const alreadyExists = allActiveSubscriptions.some(
+          sub => sub.serviceType === activeSub.service
+        );
+        if (!alreadyExists) {
+          allActiveSubscriptions.push({ serviceType: activeSub.service });
+        }
+      }
+    });
+    
+    // ✅ CORREGIDO: También verificar suscripciones legacy en User
+    if (user.suscripciones && Array.isArray(user.suscripciones)) {
+      user.suscripciones.forEach((sub: any) => {
+        if (sub.activa && new Date(sub.fechaVencimiento) >= now) {
+          const alreadyExists = allActiveSubscriptions.some(
+            s => s.serviceType === sub.servicio
+          );
+          if (!alreadyExists) {
+            allActiveSubscriptions.push({ serviceType: sub.servicio });
+          }
+        }
+      });
+    }
+    
+    // ✅ CORREGIDO: También verificar subscriptions intermedio en User
+    if (user.subscriptions && Array.isArray(user.subscriptions)) {
+      user.subscriptions.forEach((sub: any) => {
+        if (sub.activa && (!sub.fechaFin || new Date(sub.fechaFin) >= now)) {
+          const alreadyExists = allActiveSubscriptions.some(
+            s => s.serviceType === sub.tipo
+          );
+          if (!alreadyExists) {
+            allActiveSubscriptions.push({ serviceType: sub.tipo });
+          }
+        }
+      });
+    }
+
+    console.log(`📊 [NOTIFICATIONS GET] Usuario: ${user.email}, Rol: ${userRole}`);
+    console.log(`📊 [NOTIFICATIONS GET] Suscripciones activas encontradas:`, allActiveSubscriptions.map(s => s.serviceType));
 
     // Crear array con los tipos de alertas permitidos según suscripciones
     const allowedAlertTypes: string[] = ['todos']; // Todos los usuarios ven 'todos'
 
     // Filtrar por tipo de usuario
     if (userRole === 'admin') {
-      // Admin ve todo
+      // ✅ CORREGIDO: Admin ve todo, pero sin duplicados
+      // Si el admin también tiene suscripciones, no duplicar los tipos
       query.targetUsers = { 
         $in: ['todos', 'admin', 'alertas_trader', 'alertas_smart', 'alertas_cashflow'] 
       };
@@ -87,16 +150,18 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
         allowedAlertTypes.push('suscriptores');
       }
 
-      // Agregar tipos de alertas según suscripciones activas
-      for (const subscription of activeSubscriptions) {
-        if (subscription.serviceType === 'TraderCall') {
+      // ✅ CORREGIDO: Agregar tipos de alertas según suscripciones activas de TODAS las fuentes
+      for (const subscription of allActiveSubscriptions) {
+        if (subscription.serviceType === 'TraderCall' && !allowedAlertTypes.includes('alertas_trader')) {
           allowedAlertTypes.push('alertas_trader');
-        } else if (subscription.serviceType === 'SmartMoney') {
+        } else if (subscription.serviceType === 'SmartMoney' && !allowedAlertTypes.includes('alertas_smart')) {
           allowedAlertTypes.push('alertas_smart');
-        } else if (subscription.serviceType === 'CashFlow') {
+        } else if (subscription.serviceType === 'CashFlow' && !allowedAlertTypes.includes('alertas_cashflow')) {
           allowedAlertTypes.push('alertas_cashflow');
         }
       }
+
+      console.log(`📊 [NOTIFICATIONS GET] Tipos de alertas permitidos para ${user.email}:`, allowedAlertTypes);
 
       // Solo mostrar notificaciones de tipos permitidos
       query.targetUsers = { $in: allowedAlertTypes };
@@ -128,22 +193,32 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
       query.readBy = { $ne: userEmail };
     }
 
-    // Obtener notificaciones
+    // ✅ CORREGIDO: Obtener notificaciones sin duplicados
+    // Usar distinct para evitar duplicados por ID
     const notifications = await Notification.find(query)
       .sort({ priority: -1, createdAt: -1 }) // Prioridad alta primero, luego por fecha
       .limit(limitNum)
       .skip(skip)
       .lean();
+    
+    // ✅ CORREGIDO: Eliminar duplicados por _id (por si acaso hay algún problema en la query)
+    const uniqueNotifications = notifications.filter((notif: any, index: number, self: any[]) => 
+      index === self.findIndex((n: any) => String(n._id) === String(notif._id))
+    );
 
-    // Contar total para paginación
-    const total = await Notification.countDocuments(query);
+    // Contar total para paginación (usar query sin duplicados)
+    const total = uniqueNotifications.length;
 
     // Contar no leídas
     const unreadQuery = { ...query, readBy: { $ne: userEmail } };
-    const unreadCount = await Notification.countDocuments(unreadQuery);
+    const unreadNotifications = await Notification.find(unreadQuery).lean();
+    const uniqueUnreadNotifications = unreadNotifications.filter((notif: any, index: number, self: any[]) => 
+      index === self.findIndex((n: any) => String(n._id) === String(notif._id))
+    );
+    const unreadCount = uniqueUnreadNotifications.length;
 
-    // Formatear las notificaciones
-    const formattedNotifications = notifications.map(notification => ({
+    // Formatear las notificaciones (usar uniqueNotifications)
+    const formattedNotifications = uniqueNotifications.map(notification => ({
       id: notification._id,
       title: notification.title,
       message: notification.message,
