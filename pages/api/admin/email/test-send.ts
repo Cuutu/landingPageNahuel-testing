@@ -25,23 +25,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('📧 Email destino:', email);
     
     // AGREGADO: Debug de variables de entorno
+    const hasBrevo = !!process.env.BREVO_API_KEY;
+    const hasSmtp = !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
+    
     console.log('📧 Variables de entorno de email:', {
-      SMTP_HOST: process.env.SMTP_HOST,
-      SMTP_PORT: process.env.SMTP_PORT,
-      SMTP_USER: process.env.SMTP_USER,
-      EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS,
-      EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME,
-      ADMIN_EMAIL: process.env.ADMIN_EMAIL
+      BREVO_API_KEY: hasBrevo ? '✅ Configurada' : '❌ No configurada',
+      BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL || 'No configurado',
+      BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME || 'No configurado',
+      SMTP_HOST: process.env.SMTP_HOST || 'No configurado',
+      SMTP_PORT: process.env.SMTP_PORT || 'No configurado',
+      SMTP_USER: process.env.SMTP_USER || 'No configurado',
+      EMAIL_FROM_ADDRESS: process.env.EMAIL_FROM_ADDRESS || 'No configurado',
+      EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME || 'No configurado',
+      EMAIL_TESTING_MODE: process.env.EMAIL_TESTING_MODE || 'false'
     });
 
     // Verificar configuración
     const isConfigured = await verifyEmailConfiguration();
-    console.log('📧 Configuración SMTP:', isConfigured ? 'Válida' : 'Inválida');
+    const provider = hasBrevo ? 'Brevo API' : (hasSmtp ? 'SMTP' : 'Ninguno');
+    console.log(`📧 Configuración de email (${provider}):`, isConfigured ? '✅ Válida' : '❌ Inválida');
 
     if (!isConfigured) {
       return res.status(400).json({ 
-        error: 'Configuración SMTP no válida',
-        details: 'Revisa las variables de entorno SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS'
+        error: 'Configuración de email no válida',
+        details: hasBrevo 
+          ? 'Revisa BREVO_API_KEY y BREVO_SENDER_EMAIL'
+          : 'Revisa las variables de entorno SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS o configura Brevo',
+        provider
       });
     }
 
@@ -91,8 +101,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             <p><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES')}</p>
             <p><strong>Sistema:</strong> Notificaciones de Reservas</p>
             <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3>✅ Configuración SMTP Funcionando</h3>
+              <h3>✅ Configuración de Email Funcionando</h3>
               <p>Tu sistema de email está configurado correctamente y funcionando.</p>
+              <p><strong>Proveedor:</strong> ${hasBrevo ? 'Brevo API' : 'SMTP'}</p>
+              ${process.env.EMAIL_TESTING_MODE === 'true' ? '<p style="color: #f59e0b;"><strong>⚠️ Modo Testing:</strong> Solo se envían emails a administradores</p>' : ''}
             </div>
           `
         });
@@ -101,7 +113,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log('✅ Test de email completado exitosamente');
-    return res.status(200).json(result);
+    return res.status(200).json({
+      ...result,
+      provider: hasBrevo ? 'Brevo API' : 'SMTP',
+      testingMode: process.env.EMAIL_TESTING_MODE === 'true'
+    });
 
   } catch (error) {
     console.error('❌ Error en test de email:', error);
