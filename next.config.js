@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
+  poweredByHeader: false, // 🔒 Deshabilitar el header X-Powered-By
   images: {
     domains: ['image.mux.com', 'lh3.googleusercontent.com'],
   },
@@ -15,7 +16,7 @@ const nextConfig = {
   generateBuildId: () => {
     return Math.random().toString(36).substring(2, 15);
   },
-  // Headers para deshabilitar cache
+  // Headers para deshabilitar cache y ocultar Next.js
   async headers() {
     return [
       {
@@ -32,6 +33,28 @@ const nextConfig = {
           {
             key: 'Expires',
             value: '0',
+          },
+          // 🔒 Seguridad: Ocultar que usamos Next.js
+          {
+            key: 'X-Powered-By',
+            value: '', // Eliminar el header X-Powered-By: Next.js
+          },
+          // 🛡️ Headers de seguridad adicionales
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN', // Prevenir clickjacking
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff', // Prevenir MIME sniffing
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block', // Protección XSS
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin', // Control de referrer
           },
         ],
       },
