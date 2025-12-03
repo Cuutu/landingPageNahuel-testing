@@ -103,11 +103,12 @@ export default async function handler(
       ]
     };
 
-    // Filtrar por tipo si se proporciona
+    // ✅ CORREGIDO: Filtrar por tipo - SIEMPRE debe tener un valor para diferenciar entre servicios
+    // Si no se proporciona tipo, usar 'TraderCall' por defecto
     const poolType = tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney') ? tipo : 'TraderCall';
-    if (tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney')) {
-      alertQuery.tipo = tipo;
-    }
+    
+    // ✅ CORREGIDO: SIEMPRE filtrar alertas por tipo para evitar mezclar servicios
+    alertQuery.tipo = poolType;
 
     // ✅ CORREGIDO: Usar calculateCurrentPortfolioValue para obtener valorTotalCartera actual
     // Esto mantiene consistencia con /api/portfolio/returns y otros endpoints
@@ -116,16 +117,16 @@ export default async function handler(
     const initialLiquidity = currentPortfolioValue.liquidezInicial;
     const totalProfitLoss = currentPortfolioValue.totalProfitLoss;
 
-    console.log(`📊 [PORTFOLIO] Usando valorTotalCartera: $${valorTotalCarteraActual.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Pool: ${poolType}, valorTotalCartera: $${valorTotalCarteraActual.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Total Profit/Loss: $${totalProfitLoss.toFixed(2)}`);
 
-    // ✅ NUEVO: Obtener TODAS las alertas del tipo (no solo las del rango de fechas)
+    // ✅ CORREGIDO: Obtener TODAS las alertas del tipo específico (SIEMPRE filtrar por poolType)
     // Necesitamos todas para calcular el portfolio completo en tiempo real
-    const allAlertsQuery: any = {};
-    if (tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney')) {
-      allAlertsQuery.tipo = tipo;
-    }
+    // ✅ IMPORTANTE: SIEMPRE filtrar por tipo para evitar mezclar TraderCall y SmartMoney
+    const allAlertsQuery: any = {
+      tipo: poolType // ✅ SIEMPRE filtrar por tipo para diferenciar servicios
+    };
     let allAlerts = await Alert.find(allAlertsQuery).sort({ createdAt: 1 }).lean();
     
     // ✅ NOTA: Los precios de las alertas activas ya están actualizados por el cron job

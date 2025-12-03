@@ -3680,13 +3680,23 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   // Componente separado para el Chat de Comunidad (memoizado para evitar parpadeo)
   const CommunityChat = React.memo(() => {
-    const [message, setMessage] = useState('');
+    // ✅ NUEVO: Cargar mensaje desde localStorage al iniciar para preservar texto
+    const [message, setMessage] = useState(() => {
+      if (typeof window !== 'undefined') {
+        const savedMessage = localStorage.getItem('smart-money-chat-draft');
+        return savedMessage || '';
+      }
+      return '';
+    });
     const [messages, setMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [initialLoading, setInitialLoading] = useState(true); // Nueva estado para carga inicial
     const [replyingTo, setReplyingTo] = useState<any>(null);
+    const [isTyping, setIsTyping] = useState(false); // ✅ NUEVO: Detectar si el usuario está escribiendo
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
+    const messageInputRef = useRef<HTMLTextAreaElement>(null); // ✅ NUEVO: Ref para el input
+    const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // ✅ NUEVO: Timeout para detectar cuando deja de escribir
 
     const scrollToBottom = () => {
       // Hacer scroll solo dentro del contenedor del chat, no de toda la página
@@ -3781,8 +3791,39 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       return () => clearTimeout(timer);
     }, []);
 
+    // ✅ NUEVO: Auto-refresh de mensajes cada 10 segundos, pero solo si el usuario NO está escribiendo
+    useEffect(() => {
+      const interval = setInterval(() => {
+        if (!isTyping) {
+          fetchMessages();
+        }
+      }, 10000); // 10 segundos
+
+      return () => clearInterval(interval);
+    }, [isTyping]);
+
+    // ✅ NUEVO: Limpiar timeout al desmontar
+    useEffect(() => {
+      return () => {
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      };
+    }, []);
+
     const fetchMessages = async () => {
+      // ✅ NUEVO: No recargar si el usuario está escribiendo
+      if (isTyping) {
+        return;
+      }
+
       try {
+        // ✅ NUEVO: Guardar el texto actual antes de recargar
+        const currentMessage = messageInputRef.current?.value || message;
+        if (currentMessage.trim()) {
+          localStorage.setItem('smart-money-chat-draft', currentMessage);
+        }
+
         // Intentar cargar mensajes desde localStorage primero
         const cachedMessages = localStorage.getItem('smart-money-chat-messages');
         const cacheTimestamp = localStorage.getItem('smart-money-chat-timestamp');
@@ -3792,6 +3833,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         if (cachedMessages && cacheTimestamp && (now - parseInt(cacheTimestamp)) < 300000) {
           setMessages(JSON.parse(cachedMessages));
           setLoading(false);
+          // ✅ NUEVO: Restaurar el texto después de actualizar mensajes
+          restoreMessage();
           return;
         }
 
@@ -3806,6 +3849,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           localStorage.setItem('smart-money-chat-timestamp', now.toString());
           
           setMessages(messages);
+          // ✅ NUEVO: Restaurar el texto después de actualizar mensajes
+          restoreMessage();
         }
       } catch (error) {
         // console.error('Error cargando mensajes:', error);
@@ -3814,8 +3859,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         if (cachedMessages) {
           setMessages(JSON.parse(cachedMessages));
         }
+        // ✅ NUEVO: Restaurar el texto incluso si hay error
+        restoreMessage();
       } finally {
         setLoading(false);
+      }
+    };
+
+    // ✅ NUEVO: Función para restaurar el mensaje desde localStorage
+    const restoreMessage = () => {
+      const savedMessage = localStorage.getItem('smart-money-chat-draft');
+      if (savedMessage && messageInputRef.current) {
+        setMessage(savedMessage);
+        // Restaurar el valor del textarea directamente
+        messageInputRef.current.value = savedMessage;
       }
     };
 
@@ -3853,7 +3910,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             localStorage.setItem('smart-money-chat-messages', JSON.stringify(updatedMessages));
             localStorage.setItem('smart-money-chat-timestamp', Date.now().toString());
             
+            // ✅ NUEVO: Limpiar el draft después de enviar
             setMessage('');
+            localStorage.removeItem('smart-money-chat-draft');
+            setIsTyping(false);
             setReplyingTo(null); // Limpiar la respuesta
           } else {
             alert('Error al enviar mensaje');
@@ -4038,10 +4098,30 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             
             <div className={styles.inputContainer}>
               <textarea
+                ref={messageInputRef}
                 className={`${styles.messageInput} messageInput`}
                 placeholder="Escribe tu mensaje..."
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setMessage(newValue);
+                  // ✅ NUEVO: Guardar en localStorage mientras escribe
+                  if (newValue.trim()) {
+                    localStorage.setItem('smart-money-chat-draft', newValue);
+                  } else {
+                    localStorage.removeItem('smart-money-chat-draft');
+                  }
+                  // ✅ NUEVO: Detectar que el usuario está escribiendo
+                  setIsTyping(true);
+                  // Limpiar timeout anterior
+                  if (typingTimeoutRef.current) {
+                    clearTimeout(typingTimeoutRef.current);
+                  }
+                  // Marcar como "no escribiendo" después de 2 segundos de inactividad
+                  typingTimeoutRef.current = setTimeout(() => {
+                    setIsTyping(false);
+                  }, 2000);
+                }}
                 onKeyPress={handleKeyPress}
                 rows={1}
               />
