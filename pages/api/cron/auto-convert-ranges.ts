@@ -106,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         let oldSellRange = 'N/A';
         
         if (hasEntryRange) {
-          oldEntryRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
+            oldEntryRange = `$${alert.entryPriceRange.min}-$${alert.entryPriceRange.max}`;
         }
         
         if (hasSellRange) {
@@ -159,26 +159,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               }
             }
             
-            await Alert.updateOne(
-              { _id: alert._id },
-              { 
-                $set: { 
-                  status: 'DESCARTADA', 
-                  descartadaAt: new Date(),
+          await Alert.updateOne(
+            { _id: alert._id },
+            { 
+              $set: { 
+                status: 'DESCARTADA',
+                descartadaAt: new Date(),
                   descartadaMotivo: motivo,
-                  descartadaPrecio: closePrice
-                }
+                descartadaPrecio: closePrice
               }
-            );
+            }
+          );
 
-            conversionDetails.push({
-              symbol: alert.symbol,
-              type: 'discarded',
-              oldRange: oldEntryRange,
-              newPrice: closePrice,
+          conversionDetails.push({
+            symbol: alert.symbol,
+            type: 'discarded',
+            oldRange: oldEntryRange,
+            newPrice: closePrice,
               reason: motivo
             });
-            
+          
             // Enviar notificación de compra descartada
             await sendDiscardedBuyNotification(alert, closePrice, entryRangeMin, entryRangeMax, motivo);
             
@@ -208,15 +208,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango $${sellRangeMin}-$${sellRangeMax} → EJECUTANDO VENTA`);
             
             // Buscar venta programada pendiente
-            const liquidityData = alert.liquidityData || {};
-            const partialSales = liquidityData.partialSales || [];
+          const liquidityData = alert.liquidityData || {};
+          const partialSales = liquidityData.partialSales || [];
             
             console.log(`🔍 ${alert.symbol}: Buscando ventas programadas (total: ${partialSales.length})`);
             
             // Buscar cualquier venta pendiente (no ejecutada)
             const pendingSale = partialSales.find((sale: any) => !sale.executed);
-            
-            if (pendingSale) {
+          
+          if (pendingSale) {
               console.log(`✅ ${alert.symbol}: Ejecutando venta programada: ${pendingSale.percentage}%`);
               
               // Ejecutar la venta programada
@@ -233,7 +233,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               } else {
                 if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
                   updateFields.participationPercentage = saleResult.newParticipationPercentage;
-                }
+                  }
                 console.log(`📊 ${alert.symbol}: Venta parcial - Participación restante: ${saleResult.newParticipationPercentage}%`);
               }
               
@@ -245,14 +245,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
               
             } else {
-              // Si NO hay venta programada pero el precio está en rango, limpiar rangos
-              console.log(`⚠️ ${alert.symbol}: Precio en rango pero no hay venta programada - Limpiando rangos`);
+              // ✅ Si NO hay venta programada pero el precio está en rango, 
+              // ejecutar venta del porcentaje restante (participationPercentage actual)
+              const remainingPercentage = alert.participationPercentage || 100;
+              console.log(`✅ ${alert.symbol}: Precio en rango sin venta programada - Ejecutando venta del ${remainingPercentage}% restante`);
+              
+              // Crear venta sintética para ejecutar
+              const syntheticSale = {
+                percentage: remainingPercentage,
+                isCompleteSale: true, // Siempre es venta completa de lo que queda
+                scheduledAt: new Date(),
+                priceRange: { min: sellRangeMin, max: sellRangeMax }
+              };
+              
+              // Ejecutar la venta
+              const saleResult = await executeScheduledSale(alert, syntheticSale, closePrice, adminUser);
+              
+              if (saleResult.shouldClose) {
+                updateFields.status = 'CLOSED';
+                updateFields.exitPrice = closePrice;
+                updateFields.exitDate = new Date();
+                updateFields.exitReason = 'AUTOMATIC';
+                updateFields.participationPercentage = 0;
+                updateFields.profit = saleResult.profitPercentage;
+                console.log(`🔒 ${alert.symbol}: Posición CERRADA - Profit: ${saleResult.profitPercentage.toFixed(2)}%`);
+              }
               
               updateFields.sellPrice = closePrice;
               unsetFields.sellRangeMin = 1;
               unsetFields.sellRangeMax = 1;
               
-              await sendConversionNotification(alert, closePrice, oldSellRange);
+              // Enviar notificación de VENTA ejecutada (no solo conversión)
+              await sendSaleNotification(alert, closePrice, remainingPercentage, saleResult.profitPercentage);
             }
           } else {
             // ❌ Precio FUERA del rango → DESCARTAR la venta programada (no ejecutar)
@@ -265,7 +289,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             // Limpiar la venta programada (marcar como descartada)
             const liquidityData = alert.liquidityData || {};
             const partialSales = liquidityData.partialSales || [];
-            
+                    
             // Marcar todas las ventas pendientes como descartadas
             const updatedPartialSales = partialSales.map((sale: any) => {
               if (!sale.executed) {
@@ -311,13 +335,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
         // Actualizar la alerta
         if (Object.keys(updateFields).length > 0 || Object.keys(unsetFields).length > 0) {
-          await Alert.updateOne(
-            { _id: alert._id },
-            { 
-              $set: updateFields,
+        await Alert.updateOne(
+          { _id: alert._id },
+          { 
+            $set: updateFields,
               ...(Object.keys(unsetFields).length > 0 ? { $unset: unsetFields } : {})
-            }
-          );
+          }
+        );
         }
 
         // Agregar detalles de conversión
@@ -499,57 +523,57 @@ async function registerSaleOperation(
   percentage: number,
   isCompleteSale: boolean
 ) {
-  try {
-    const OperationModule = await import('@/models/Operation');
-    const Operation = OperationModule.default;
-    
-    const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
-      .sort({ date: -1 })
-      .select('balance');
-    const currentBalance = currentBalanceDoc?.balance || 0;
+      try {
+        const OperationModule = await import('@/models/Operation');
+        const Operation = OperationModule.default;
+        
+        const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+          .sort({ date: -1 })
+          .select('balance');
+        const currentBalance = currentBalanceDoc?.balance || 0;
     const liquidityReleased = sharesToSell * closePrice;
     const newBalance = currentBalance + liquidityReleased;
-    
-    const buyOperation = await Operation.findOne({ 
-      alertId: alert._id, 
-      operationType: 'COMPRA',
-      system: pool
-    }).sort({ date: -1 });
-    
+        
+        const buyOperation = await Operation.findOne({ 
+          alertId: alert._id, 
+          operationType: 'COMPRA',
+          system: pool
+        }).sort({ date: -1 });
+        
     const entryPrice = alert.entryPrice || closePrice;
     const realizedProfit = (closePrice - entryPrice) * sharesToSell;
-    
-    const operation = new Operation({
-      ticker: alert.symbol.toUpperCase(),
-      operationType: 'VENTA',
+        
+        const operation = new Operation({
+          ticker: alert.symbol.toUpperCase(),
+          operationType: 'VENTA',
       quantity: -sharesToSell,
-      price: closePrice,
+          price: closePrice,
       amount: liquidityReleased,
-      date: new Date(),
-      balance: newBalance,
-      alertId: alert._id,
-      alertSymbol: alert.symbol.toUpperCase(),
-      system: pool,
-      createdBy: adminUser._id,
+          date: new Date(),
+          balance: newBalance,
+          alertId: alert._id,
+          alertSymbol: alert.symbol.toUpperCase(),
+          system: pool,
+          createdBy: adminUser._id,
       isPartialSale: !isCompleteSale,
       partialSalePercentage: percentage,
       portfolioPercentage: buyOperation?.portfolioPercentage,
-      liquidityData: {
-        entryPrice: entryPrice,
+          liquidityData: {
+            entryPrice: entryPrice,
         realizedProfit: realizedProfit
-      },
-      executedBy: 'SYSTEM',
-      executionMethod: 'AUTOMATIC',
+          },
+          executedBy: 'SYSTEM',
+          executionMethod: 'AUTOMATIC',
       notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente - ${alert.symbol}`
-    });
-    
-    await operation.save();
+        });
+        
+        await operation.save();
     console.log(`✅ ${alert.symbol}: Operación de venta registrada`);
   } catch (error) {
     console.error(`⚠️ Error registrando operación de venta para ${alert.symbol}:`, error);
   }
-}
-
+      }
+      
 /**
  * Envía notificación de VENTA ejecutada
  */
@@ -566,16 +590,16 @@ async function sendSaleNotification(
     const message = percentage >= 100
       ? `✅ VENTA EJECUTADA: Se cerró completamente la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`
       : `✅ VENTA PARCIAL EJECUTADA: Se vendió el ${percentage}% de la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`;
-    
+        
     await createAlertNotification(alert, {
       message: message,
-      price: closePrice,
+          price: closePrice,
       action: 'SELL', // ✅ Siempre SELL para ventas
       skipDuplicateCheck: true,
       title: `✅ Venta Ejecutada: ${alert.symbol}`,
       soldPercentage: percentage
-    });
-    
+        });
+        
     console.log(`✅ ${alert.symbol}: Notificación de venta enviada`);
   } catch (error) {
     console.error(`⚠️ Error enviando notificación de venta para ${alert.symbol}:`, error);
