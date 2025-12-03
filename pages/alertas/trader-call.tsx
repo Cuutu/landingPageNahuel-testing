@@ -164,7 +164,7 @@ const NonSubscriberView: React.FC<{
           setHasUsedTrial(data.hasUsedTrial || false);
         }
       } catch (error) {
-        console.error('Error verificando estado del trial:', error);
+        // console.error('Error verificando estado del trial:', error);
       }
     };
 
@@ -197,7 +197,7 @@ const NonSubscriberView: React.FC<{
       if (data.success && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        console.error('Error creando checkout:', data.error);
+        // console.error('Error creando checkout:', data.error);
         // Si el error es que ya usó el trial, mostrar el modal
         if (data.error && data.error.includes('Ya has utilizado tu prueba')) {
           setShowTrialUsedModal(true);
@@ -206,7 +206,7 @@ const NonSubscriberView: React.FC<{
         }
       }
     } catch (error) {
-      console.error('Error:', error);
+      // console.error('Error:', error);
       alert('Error al procesar el pago. Por favor intenta nuevamente.');
     } finally {
       setIsProcessingTrial(false);
@@ -243,11 +243,11 @@ const NonSubscriberView: React.FC<{
       if (data.success && data.checkoutUrl) {
         window.location.href = data.checkoutUrl;
       } else {
-        console.error('Error creando checkout:', data.error);
+        // console.error('Error creando checkout:', data.error);
         alert('Error al procesar el pago. Por favor intenta nuevamente.');
       }
     } catch (error) {
-      console.error('Error:', error);
+      // console.error('Error:', error);
       alert('Error al procesar el pago. Por favor intenta nuevamente.');
     } finally {
       setIsProcessing(false);
@@ -255,7 +255,7 @@ const NonSubscriberView: React.FC<{
   };
 
   const handleExportPDF = () => {
-    console.log('Exportando PDF...');
+    // console.log('Exportando PDF...');
   };
 
   const exampleImages = [
@@ -688,7 +688,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     setEmailImage(image);
     setNewAlert(prev => ({ ...prev, emailImageUrl: image.secure_url }));
     setUploadingImage(false);
-    console.log('✅ Imagen de email subida:', image.public_id);
+    // console.log('✅ Imagen de email subida:', image.public_id);
   };
 
   const handleImageUploadStart = () => {
@@ -806,8 +806,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   React.useEffect(() => {
     const checkUserRole = async () => {
       try {
-        console.log('🔍 Verificando rol del usuario...');
-        console.log('🔍 Sesión actual:', session);
+        // console.log('🔍 Verificando rol del usuario...');
+        // console.log('🔍 Sesión actual:', session);
         
         const response = await fetch('/api/profile/get', {
           credentials: 'same-origin',
@@ -815,37 +815,37 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         
         if (response.ok) {
           const data = await response.json();
-          console.log('✅ Datos del perfil obtenidos:', {
-            email: data.user?.email,
-            role: data.user?.role,
-            success: data.success,
-            fullResponse: data
-          });
+          // console.log('✅ Datos del perfil obtenidos:', {
+          //   email: data.user?.email,
+          //   role: data.user?.role,
+          //   success: data.success,
+          //   fullResponse: data
+          // });
           
           if (data.success && data.user?.role) {
             setUserRole(data.user.role);
-            console.log('👤 Rol del usuario establecido:', data.user.role);
-            console.log('👤 Estado userRole actualizado:', data.user.role);
+            // console.log('👤 Rol del usuario establecido:', data.user.role);
+            // console.log('👤 Estado userRole actualizado:', data.user.role);
           } else {
-            console.warn('⚠️ No se pudo obtener el rol del usuario:', data);
+            // console.warn('⚠️ No se pudo obtener el rol del usuario:', data);
             setUserRole('');
           }
         } else {
-          console.error('❌ Error al obtener perfil:', response.status, response.statusText);
+          // console.error('❌ Error al obtener perfil:', response.status, response.statusText);
           const errorData = await response.json().catch(() => ({}));
-          console.error('❌ Detalles del error:', errorData);
+          // console.error('❌ Detalles del error:', errorData);
         }
       } catch (error) {
-        console.error('❌ Error al verificar rol:', error);
+        // console.error('❌ Error al verificar rol:', error);
         setUserRole('');
       }
     };
 
     if (session?.user) {
-      console.log('🔐 Sesión activa, verificando rol para:', session.user.email);
+      // console.log('🔐 Sesión activa, verificando rol para:', session.user.email);
       checkUserRole();
     } else {
-      console.log('❌ No hay sesión activa');
+      // console.log('❌ No hay sesión activa');
       setUserRole('');
     }
   }, [session]);
@@ -1023,13 +1023,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('📊 [GLOBAL] Alertas vigentes cargadas:', data.alerts?.length || 0);
+        // console.log('📊 [GLOBAL] Alertas vigentes cargadas:', data.alerts?.length || 0);
       } else {
-        console.error('Error al cargar alertas vigentes:', response.status);
+        // console.error('Error al cargar alertas vigentes:', response.status);
         setRealAlerts([]); // Establecer array vacío en caso de error
       }
     } catch (error) {
-      console.error('Error al cargar alertas vigentes:', error);
+      // console.error('Error al cargar alertas vigentes:', error);
       setRealAlerts([]); // Establecer array vacío en caso de error
     } finally {
       setLoadingAlerts(false);
@@ -1038,7 +1038,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   // ✅ Función para cargar TODAS las alertas (para seguimiento) - Todas las alertas aparecen en seguimiento
   const loadSeguimientoAlerts = async () => {
-    console.log('🔄 Cargando alertas de seguimiento - versión actualizada');
+    // console.log('🔄 Cargando alertas de seguimiento - versión actualizada');
     setLoadingAlerts(true);
     try {
       // ✅ CAMBIO: Usar API global para datos consistentes
@@ -1053,13 +1053,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       if (response.ok) {
         const data = await response.json();
         setRealAlerts(data.alerts || []);
-        console.log('📊 [GLOBAL] Alertas de seguimiento cargadas:', data.alerts?.length || 0);
+        // console.log('📊 [GLOBAL] Alertas de seguimiento cargadas:', data.alerts?.length || 0);
       } else {
-        console.error('Error al cargar alertas de seguimiento:', response.status);
+        // console.error('Error al cargar alertas de seguimiento:', response.status);
         setRealAlerts([]); // Establecer array vacío en caso de error
       }
     } catch (error) {
-      console.error('Error al cargar alertas de seguimiento:', error);
+      // console.error('Error al cargar alertas de seguimiento:', error);
       setRealAlerts([]); // Establecer array vacío en caso de error
     } finally {
       setLoadingAlerts(false);
@@ -1078,8 +1078,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         // El gráfico necesita todas las alertas activas con liquidez, no solo las vigentes
         await loadSeguimientoAlerts();
       }
-    } catch (error) {
-      console.error('Error cargando alertas:', error);
+      } catch (error) {
+      // console.error('Error cargando alertas:', error);
       // Continuar sin alertas si hay error
     }
   };
@@ -1096,7 +1096,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Precios actualizados:', data.updated, 'alertas');
+        // console.log('Precios actualizados:', data.updated, 'alertas');
         setLastPriceUpdate(new Date());
         
         // Actualizar información del mercado
@@ -1106,10 +1106,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         // Recargar alertas para mostrar los nuevos precios
         await loadAlerts();
       } else {
-        console.error('Error al actualizar precios:', response.status);
+        // console.error('Error al actualizar precios:', response.status);
       }
     } catch (error) {
-      console.error('Error al actualizar precios:', error);
+      // console.error('Error al actualizar precios:', error);
     } finally {
       if (!silent) setUpdatingPrices(false);
     }
@@ -1131,12 +1131,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setTotalPages(data.data?.pagination?.totalPages || 1);
         setTotalInformes(data.data?.pagination?.total || 0);
         setCurrentPage(page);
-        console.log('Informes Trader Call cargados:', data.data?.reports?.length || 0, 'Página:', page);
+        // console.log('Informes Trader Call cargados:', data.data?.reports?.length || 0, 'Página:', page);
       } else {
-        console.error('Error al cargar informes:', response.status);
+        // console.error('Error al cargar informes:', response.status);
       }
     } catch (error) {
-      console.error('Error al cargar informes:', error);
+      // console.error('Error al cargar informes:', error);
     } finally {
       setLoadingInformes(false);
     }
@@ -1164,13 +1164,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // Función para abrir informe completo - Ahora redirige a la página de reportes
   const openReport = async (reportId: string) => {
     try {
-      console.log('🔍 Redirigiendo a informe:', reportId);
+      // console.log('🔍 Redirigiendo a informe:', reportId);
       
       // Redirigir directamente a la página de reportes individuales
       router.push(`/reports/${reportId}`);
       
     } catch (error) {
-      console.error('Error al redirigir al informe:', error);
+      // console.error('Error al redirigir al informe:', error);
       alert('Error al abrir el informe. Intenta nuevamente.');
     }
   };
@@ -1190,14 +1190,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         category: 'trader-call' // Asignar categoría Trader Call
       };
 
-      console.log('📤 Enviando datos del informe:', {
-        title: dataToSend.title,
-        type: dataToSend.type,
-        category: dataToSend.category,
-        readTime: dataToSend.readTime,
-        hasArticles: !!dataToSend.articles,
-        articlesCount: dataToSend.articles?.length || 0
-      });
+      // console.log('📤 Enviando datos del informe:', {
+      //   title: dataToSend.title,
+      //   type: dataToSend.type,
+      //   category: dataToSend.category,
+      //   readTime: dataToSend.readTime,
+      //   hasArticles: !!dataToSend.articles,
+      //   articlesCount: dataToSend.articles?.length || 0
+      // });
       
       const response = await fetch('/api/reports/create', {
         method: 'POST',
@@ -1207,11 +1207,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         body: JSON.stringify(dataToSend),
       });
 
-      console.log('📡 Respuesta recibida del servidor:', response.status);
+      // console.log('📡 Respuesta recibida del servidor:', response.status);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Informe Trader Call creado exitosamente:', result);
+        // console.log('✅ Informe Trader Call creado exitosamente:', result);
         const newReport = result.data.report;
         setInformes(prev => [newReport, ...prev]);
         setShowCreateReportModal(false);
@@ -1219,31 +1219,31 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         alert('Informe creado exitosamente.');
       } else {
         const errorData = await response.json();
-        console.error('❌ Error del servidor:', errorData);
+        // console.error('❌ Error del servidor:', errorData);
         alert(`Error: ${errorData.message || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al crear informe:', error);
+      // console.error('❌ Error al crear informe:', error);
       alert('Error al crear el informe: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
-      console.log('🔄 Finalizando creación de informe...');
+      // console.log('🔄 Finalizando creación de informe...');
       setCreatingReport(false);
     }
   };
 
   const handleEditReportClick = async (report: any) => {
-    console.log('✏️ Editando informe:', report.title);
+    // console.log('✏️ Editando informe:', report.title);
     
     // Obtener el informe completo desde la API para asegurar que tenemos el contenido completo
     try {
       const reportId = report._id || report.id;
       if (!reportId) {
-        console.error('❌ No se pudo obtener el ID del informe');
+        // console.error('❌ No se pudo obtener el ID del informe');
         alert('Error: No se pudo identificar el informe a editar');
         return;
       }
 
-      console.log('📥 Obteniendo informe completo desde API:', reportId);
+      // console.log('📥 Obteniendo informe completo desde API:', reportId);
       const response = await fetch(`/api/reports/${reportId}`, {
         method: 'GET',
         credentials: 'same-origin',
@@ -1254,26 +1254,26 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         const fullReport = result.data?.report;
         
         if (fullReport) {
-          console.log('✅ Informe completo obtenido:', {
-            title: fullReport.title,
-            contentLength: fullReport.content?.length || 0,
-            hasContent: !!fullReport.content
-          });
+          // console.log('✅ Informe completo obtenido:', {
+          //   title: fullReport.title,
+          //   contentLength: fullReport.content?.length || 0,
+          //   hasContent: !!fullReport.content
+          // });
           
           setEditingReport(fullReport);
           setShowEditReportModal(true);
         } else {
-          console.error('❌ No se encontró el informe en la respuesta');
+          // console.error('❌ No se encontró el informe en la respuesta');
           alert('Error: No se pudo cargar el informe completo');
         }
       } else {
-        console.error('❌ Error al obtener informe:', response.status);
+        // console.error('❌ Error al obtener informe:', response.status);
         // Si falla, intentar con el reporte que ya tenemos
         setEditingReport(report);
         setShowEditReportModal(true);
       }
     } catch (error) {
-      console.error('❌ Error al obtener informe completo:', error);
+      // console.error('❌ Error al obtener informe completo:', error);
       // Si falla, intentar con el reporte que ya tenemos
       setEditingReport(report);
       setShowEditReportModal(true);
@@ -1285,7 +1285,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     setCreatingReport(true);
     try {
-      console.log('📝 Editando informe:', editingReport._id || editingReport.id);
+      // console.log('📝 Editando informe:', editingReport._id || editingReport.id);
 
       // Convertir el contenido de texto plano a HTML antes de enviar
       const dataToSend = {
@@ -1294,11 +1294,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         category: 'trader-call' // Mantener categoría Trader Call
       };
 
-      console.log('📤 Enviando datos para actualizar:', {
-        title: dataToSend.title,
-        contentLength: dataToSend.content?.length || 0,
-        contentPreview: dataToSend.content?.substring(0, 100)
-      });
+      // console.log('📤 Enviando datos para actualizar:', {
+      //   title: dataToSend.title,
+      //   contentLength: dataToSend.content?.length || 0,
+      //   contentPreview: dataToSend.content?.substring(0, 100)
+      // });
 
       const response = await fetch(`/api/reports/${editingReport._id || editingReport.id}`, {
         method: 'PUT',
@@ -1310,7 +1310,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Informe editado exitosamente:', result);
+        // console.log('✅ Informe editado exitosamente:', result);
         const updatedReport = result.data.report;
 
         // Actualizar el informe en la lista
@@ -1328,11 +1328,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         alert('Informe actualizado exitosamente.');
       } else {
         const errorData = await response.json();
-        console.error('❌ Error del servidor:', errorData);
+        // console.error('❌ Error del servidor:', errorData);
         alert(`Error: ${errorData.message || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al editar informe:', error);
+      // console.error('❌ Error al editar informe:', error);
       alert('Error al editar el informe: ' + (error instanceof Error ? error.message : 'Error desconocido'));
     } finally {
       setCreatingReport(false);
@@ -1348,9 +1348,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         loadAlerts(),
         loadInformes()
       ]);
-      console.log('✅ Actividad actualizada correctamente');
+      // console.log('✅ Actividad actualizada correctamente');
     } catch (error) {
-      console.error('❌ Error al actualizar actividad:', error);
+      // console.error('❌ Error al actualizar actividad:', error);
     } finally {
       setRefreshingActivity(false);
     }
@@ -1435,7 +1435,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // ✅ NUEVO: Cargar resumen completo de liquidez con los 5 conceptos
   const loadLiquidity = async () => {
     try {
-      console.log('🔄 [LIQUIDITY] Iniciando carga de resumen de liquidez para TraderCall...');
+      // console.log('🔄 [LIQUIDITY] Iniciando carga de resumen de liquidez para TraderCall...');
       
       // Agregar timestamp para evitar cache del browser
       const timestamp = new Date().getTime();
@@ -1443,19 +1443,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       
       if (res.ok) {
         const json = await res.json();
-        console.log('✅ [LIQUIDITY] Respuesta de API recibida:', {
-          success: json.success,
-          hasData: !!json.data,
-          liquidezTotal: json.data?.liquidezTotal,
-          distributionsCount: json.data?.distributions?.length || 0
-        });
+        // console.log('✅ [LIQUIDITY] Respuesta de API recibida:', {
+        //   success: json.success,
+        //   hasData: !!json.data,
+        //   liquidezTotal: json.data?.liquidezTotal,
+        //   distributionsCount: json.data?.distributions?.length || 0
+        // });
         
         if (json.success && json.data) {
           // ✅ Mapa consolidado por símbolo (para compatibilidad)
           const map: Record<string, any> = {};
           (json.data?.distributions || []).forEach((d: any) => {
             map[d.symbol] = d;
-            console.log(`📊 [LIQUIDITY] Distribución consolidada cargada: ${d.symbol} - $${d.allocatedAmount}`);
+            // console.log(`📊 [LIQUIDITY] Distribución consolidada cargada: ${d.symbol} - $${d.allocatedAmount}`);
           });
           
           // ✅ NUEVO: Mapa individual por alertId (para el gráfico de torta)
@@ -1463,7 +1463,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           (json.data?.individualDistributions || []).forEach((d: any) => {
             if (d.alertId) {
               mapByAlertId[d.alertId] = d;
-              console.log(`📊 [LIQUIDITY] Distribución individual cargada: ${d.symbol} (alertId: ${d.alertId}) - $${d.allocatedAmount}`);
+              // console.log(`📊 [LIQUIDITY] Distribución individual cargada: ${d.symbol} (alertId: ${d.alertId}) - $${d.allocatedAmount}`);
             }
           });
           
@@ -1483,22 +1483,22 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             porcentajeRestante: json.data.porcentajeRestante || 0  // ✅ NUEVO: % restante
           });
           
-          console.log('✅ [LIQUIDITY] Resumen de liquidez cargado exitosamente:', {
-            mapKeys: Object.keys(map).length,
-            liquidezInicial: json.data.liquidezInicial,
-            liquidezTotal: json.data.liquidezTotal,
-            liquidezDisponible: json.data.liquidezDisponible,
-            liquidezDistribuida: json.data.liquidezDistribuida,
-            ganancia: json.data.ganancia
-          });
+          // console.log('✅ [LIQUIDITY] Resumen de liquidez cargado exitosamente:', {
+          //   mapKeys: Object.keys(map).length,
+          //   liquidezInicial: json.data.liquidezInicial,
+          //   liquidezTotal: json.data.liquidezTotal,
+          //   liquidezDisponible: json.data.liquidezDisponible,
+          //   liquidezDistribuida: json.data.liquidezDistribuida,
+          //   ganancia: json.data.ganancia
+          // });
         } else {
-          console.warn('⚠️ [LIQUIDITY] Respuesta de API sin datos de liquidez');
+          // console.warn('⚠️ [LIQUIDITY] Respuesta de API sin datos de liquidez');
         }
       } else {
-        console.error('❌ [LIQUIDITY] Error en respuesta de API:', res.status, res.statusText);
+        // console.error('❌ [LIQUIDITY] Error en respuesta de API:', res.status, res.statusText);
       }
     } catch (e) {
-      console.error('❌ [LIQUIDITY] Error cargando liquidez:', e);
+      // console.error('❌ [LIQUIDITY] Error cargando liquidez:', e);
     }
   };
 
@@ -1519,7 +1519,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     setStockPrice(null);
     
     try {
-      console.log(`🔍 Obteniendo precio para: ${symbol}`);
+      // console.log(`🔍 Obteniendo precio para: ${symbol}`);
       
       const response = await fetch(`/api/stock-price?symbol=${symbol.toUpperCase()}`, {
         method: 'GET',
@@ -1528,8 +1528,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`💰 Precio obtenido para ${symbol}: $${data.price}`);
-        console.log(`📊 Estado del mercado: ${data.marketStatus}`);
+        // console.log(`💰 Precio obtenido para ${symbol}: $${data.price}`);
+        // console.log(`📊 Estado del mercado: ${data.marketStatus}`);
         
         const price = data.price;
         setStockPrice(price);
@@ -1540,11 +1540,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         }
         
       } else {
-        console.error('Error al obtener precio:', response.status);
+        // console.error('Error al obtener precio:', response.status);
         alert('Error al obtener el precio. Intenta nuevamente.');
       }
     } catch (error) {
-      console.error('Error al obtener precio:', error);
+      // console.error('Error al obtener precio:', error);
       alert('Error de conexión. Verifica tu internet e intenta nuevamente.');
     } finally {
       setPriceLoading(false);
@@ -1555,13 +1555,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const handleChartImageUploaded = (image: CloudinaryImage) => {
     setChartImage(image);
     setUploadingChart(false);
-    console.log('✅ Gráfico de TradingView subido:', image.public_id);
+    // console.log('✅ Gráfico de TradingView subido:', image.public_id);
   };
 
   const handleAdditionalImageUploaded = (image: CloudinaryImage) => {
     setAdditionalImages(prev => [...prev, image]);
     setUploadingImages(false);
-    console.log('✅ Imagen adicional subida:', image.public_id);
+    // console.log('✅ Imagen adicional subida:', image.public_id);
   };
 
   const removeChartImage = () => {
@@ -1632,7 +1632,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     let currentPriceForRange: number | undefined = undefined;
     if (newAlert.tipoAlerta === 'rango') {
       try {
-        console.log(`🔍 Obteniendo precio actual para alerta de rango: ${newAlert.symbol.toUpperCase()}`);
+        // console.log(`🔍 Obteniendo precio actual para alerta de rango: ${newAlert.symbol.toUpperCase()}`);
         const priceResponse = await fetch(`/api/stock-price?symbol=${newAlert.symbol.toUpperCase()}`, {
           method: 'GET',
           credentials: 'same-origin',
@@ -1641,29 +1641,29 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         if (priceResponse.ok) {
           const priceData = await priceResponse.json();
           currentPriceForRange = priceData.price;
-          console.log(`✅ Precio actual obtenido para rango: $${currentPriceForRange}`);
+          // console.log(`✅ Precio actual obtenido para rango: $${currentPriceForRange}`);
         } else {
-          console.warn('⚠️ No se pudo obtener precio actual, se usará el precio mínimo del rango');
+          // console.warn('⚠️ No se pudo obtener precio actual, se usará el precio mínimo del rango');
           // Si no se puede obtener, usar el precio mínimo como fallback
           currentPriceForRange = parseFloat(newAlert.precioMinimo);
         }
       } catch (error) {
-        console.error('Error obteniendo precio actual para rango:', error);
+        // console.error('Error obteniendo precio actual para rango:', error);
         // Si falla, usar el precio mínimo como fallback
         currentPriceForRange = parseFloat(newAlert.precioMinimo);
       }
     }
     
     // ✅ DEBUG: Log de datos antes de enviar
-    console.log('🔍 [DEBUG] Datos de liquidez antes de enviar:', {
-      liquidityPercentage: newAlert.liquidityPercentage,
-      liquidityTotal,
-      liquidityAmount,
-      availableLiquidity: liquiditySummary.liquidezDisponible,
-      symbol: newAlert.symbol.toUpperCase(),
-      tipoAlerta: newAlert.tipoAlerta,
-      currentPriceForRange: currentPriceForRange
-    });
+    // console.log('🔍 [DEBUG] Datos de liquidez antes de enviar:', {
+    //   liquidityPercentage: newAlert.liquidityPercentage,
+    //   liquidityTotal,
+    //   liquidityAmount,
+    //   availableLiquidity: liquiditySummary.liquidezDisponible,
+    //   symbol: newAlert.symbol.toUpperCase(),
+    //   tipoAlerta: newAlert.tipoAlerta,
+    //   currentPriceForRange: currentPriceForRange
+    // });
     
     setLoading(true);
     try {
@@ -1714,7 +1714,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Alerta Trader Call creada:', result.alert);
+        // console.log('✅ Alerta Trader Call creada:', result.alert);
         
         // Recargar alertas y limpiar formulario
         await loadAlerts();
@@ -1750,11 +1750,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         alert('¡Alerta de Trader Call creada exitosamente!');
       } else {
         const error = await response.json();
-        console.error('❌ Error del servidor:', error);
+        // console.error('❌ Error del servidor:', error);
         alert(`Error: ${error.error || error.message || 'No se pudo crear la alerta'}`);
       }
     } catch (error) {
-      console.error('Error creating alert:', error);
+      // console.error('Error creating alert:', error);
       alert('Error al crear la alerta');
     } finally {
       setLoading(false);
@@ -1770,7 +1770,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [uploadingCloseImage, setUploadingCloseImage] = useState<boolean>(false);
 
   const handleClosePosition = async (alertId: string, currentPrice: string) => {
-    console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
+    // console.log('🔍 handleClosePosition llamado con:', { alertId, currentPrice, userRole });
     setConfirmClose({ open: true, alertId, price: currentPrice });
   };
 
@@ -1841,9 +1841,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setUploadingCloseImage(true);
         try {
           finalImageUrl = await uploadImageToCloudinary(closeEmailImageFile);
-          console.log('✅ Imagen subida exitosamente:', finalImageUrl);
+          // console.log('✅ Imagen subida exitosamente:', finalImageUrl);
         } catch (uploadError) {
-          console.error('❌ Error subiendo imagen:', uploadError);
+          // console.error('❌ Error subiendo imagen:', uploadError);
           alert('❌ Error al subir la imagen. Se procederá sin imagen.');
           finalImageUrl = undefined;
         } finally {
@@ -1873,7 +1873,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
       else { alert(result?.error || result?.message || '❌ No se pudo cerrar la posición'); }
     } catch (error) {
-      console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
+      // console.error('❌ Error al cerrar posición:', error); alert('❌ Error inesperado al cerrar la posición.');
     } finally { 
       setConfirmClose({ open: false }); 
       setCloseEmailMessage(''); 
@@ -1891,7 +1891,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
 
     try {
-      console.log('🧪 Iniciando prueba de cierre de mercado...');
+      // console.log('🧪 Iniciando prueba de cierre de mercado...');
       
       const response = await fetch('/api/cron/market-close?test=true', {
         method: 'POST',
@@ -1903,17 +1903,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Prueba de cierre exitosa:', result);
+        // console.log('✅ Prueba de cierre exitosa:', result);
         alert(`✅ Prueba de cierre completada!\n\nProcesadas: ${result.processedCount} alertas\nTiempo: ${result.executionTime}ms\n\n${result.message}`);
         
         // Recargar las alertas para mostrar los cambios
         await loadAlerts();
       } else {
-        console.error('❌ Error en prueba de cierre:', result);
+        // console.error('❌ Error en prueba de cierre:', result);
         alert(`❌ Error en prueba de cierre: ${result.error || result.message}`);
       }
     } catch (error) {
-      console.error('❌ Error al probar cierre de mercado:', error);
+      // console.error('❌ Error al probar cierre de mercado:', error);
       alert('❌ Error al probar cierre de mercado. Verifica la consola para más detalles.');
     }
   };
@@ -1925,7 +1925,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
 
     try {
-      console.log('🔄 Iniciando conversión de rangos...');
+      // console.log('🔄 Iniciando conversión de rangos...');
       
       const response = await fetch('/api/test-market-close', {
         method: 'POST',
@@ -1937,7 +1937,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Conversión exitosa:', result);
+        // console.log('✅ Conversión exitosa:', result);
         
         // Mostrar detalles de la conversión
         let detailsMessage = '';
@@ -1952,11 +1952,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         // Recargar las alertas para mostrar los cambios
         await loadAlerts();
       } else {
-        console.error('❌ Error en conversión:', result);
+        // console.error('❌ Error en conversión:', result);
         alert(`❌ Error en conversión: ${result.error || result.message}`);
       }
     } catch (error) {
-      console.error('❌ Error al convertir rangos:', error);
+      // console.error('❌ Error al convertir rangos:', error);
       alert('❌ Error al convertir rangos. Verifica la consola para más detalles.');
     }
   };
@@ -1968,7 +1968,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
 
     try {
-      console.log('🔄 Verificando estado del mercado y ejecutando conversión automática...');
+      // console.log('🔄 Verificando estado del mercado y ejecutando conversión automática...');
       
       const response = await fetch('/api/auto-convert-ranges', {
         method: 'POST',
@@ -1980,7 +1980,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Verificación completada:', result);
+        // console.log('✅ Verificación completada:', result);
         
         let message = `📊 Estado del mercado: ${result.marketStatus.isOpen ? 'ABIERTO' : 'CERRADO'}\n${result.marketStatus.message}`;
         
@@ -2004,11 +2004,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         
         alert(message);
       } else {
-        console.error('❌ Error en verificación automática:', result);
+        // console.error('❌ Error en verificación automática:', result);
         alert(`❌ Error: ${result.error || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al verificar mercado:', error);
+      // console.error('❌ Error al verificar mercado:', error);
       alert('❌ Error al verificar estado del mercado. Verifica la consola para más detalles.');
     }
   };
@@ -2020,7 +2020,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
 
     try {
-      console.log('🔄 Probando cron job de conversión automática...');
+      // console.log('🔄 Probando cron job de conversión automática...');
       
       const response = await fetch('/api/test-cron-conversion', {
         method: 'POST',
@@ -2032,7 +2032,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Prueba de cron job exitosa:', result);
+        // console.log('✅ Prueba de cron job exitosa:', result);
         
         let message = `🧪 PRUEBA DE CRON JOB COMPLETADA\n\n`;
         
@@ -2054,18 +2054,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         
         alert(message);
       } else {
-        console.error('❌ Error en prueba de cron job:', result);
+        // console.error('❌ Error en prueba de cron job:', result);
         alert(`❌ Error: ${result.error || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al probar cron job:', error);
+      // console.error('❌ Error al probar cron job:', error);
       alert('❌ Error al probar cron job. Verifica la consola para más detalles.');
     }
   };
 
   // Función para manejar la edición de alertas
   const handleEditAlert = (alert: any) => {
-    console.log('🔍 Editando alerta:', alert);
+    // console.log('🔍 Editando alerta:', alert);
 
     // Preparar los datos de la alerta para edición
     setEditingAlert(alert);
@@ -2088,7 +2088,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
   // Función para abrir modal de venta parcial
   const handlePartialSale = (alert: any) => {
-    console.log('💰 Iniciando venta parcial para:', alert);
+    // console.log('💰 Iniciando venta parcial para:', alert);
     setPartialSaleAlert(alert);
     setShowPartialSaleModal(true);
     
@@ -2135,13 +2135,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // ✅ NUEVO: Función para ejecutar venta con rango de precios
   const executeSellWithRange = async () => {
     if (!partialSaleAlert) {
-      console.error('❌ No hay alerta seleccionada para la venta');
+      // console.error('❌ No hay alerta seleccionada para la venta');
       alert('❌ No hay alerta seleccionada para la venta');
       return;
     }
 
     if (!partialSaleAlert._id && !partialSaleAlert.id) {
-      console.error('❌ La alerta no tiene ID válido:', partialSaleAlert);
+      // console.error('❌ La alerta no tiene ID válido:', partialSaleAlert);
       alert('❌ Error: La alerta no tiene ID válido');
       return;
     }
@@ -2173,13 +2173,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     try {
       setPartialSaleLoading(true);
       const alertId = partialSaleAlert._id || partialSaleAlert.id;
-      console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, alertId);
-      console.log('🔍 Datos de la alerta:', {
-        _id: partialSaleAlert._id,
-        id: partialSaleAlert.id,
-        symbol: partialSaleAlert.symbol,
-        entryPrice: partialSaleAlert.entryPrice
-      });
+      // console.log(`💰 Ejecutando venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} para alerta:`, alertId);
+      // console.log('🔍 Datos de la alerta:', {
+      //   _id: partialSaleAlert._id,
+      //   id: partialSaleAlert.id,
+      //   symbol: partialSaleAlert.symbol,
+      //   entryPrice: partialSaleAlert.entryPrice
+      // });
 
       let finalImageUrl: string | undefined = sellEmailImageUrl;
       
@@ -2188,9 +2188,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setUploadingSellImage(true);
         try {
           finalImageUrl = await uploadImageToCloudinary(sellEmailImageFile);
-          console.log('✅ Imagen de venta subida exitosamente:', finalImageUrl);
+          // console.log('✅ Imagen de venta subida exitosamente:', finalImageUrl);
         } catch (uploadError) {
-          console.error('❌ Error subiendo imagen de venta:', uploadError);
+          // console.error('❌ Error subiendo imagen de venta:', uploadError);
           alert('❌ Error al subir la imagen. Se procederá sin imagen.');
           finalImageUrl = undefined;
         } finally {
@@ -2210,7 +2210,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         emailImageUrl: finalImageUrl || undefined
       };
 
-      console.log('📤 Enviando datos al API:', requestData);
+      // console.log('📤 Enviando datos al API:', requestData);
 
       const response = await fetch('/api/admin/partial-sale', {
         method: 'POST',
@@ -2223,7 +2223,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Venta con rango ejecutada exitosamente:', result);
+        // console.log('✅ Venta con rango ejecutada exitosamente:', result);
         
         // Mostrar mensaje de confirmación
         alert(`✅ Venta de ${sellPercentage}% en rango $${priceMin}-$${priceMax} ejecutada exitosamente!\n\n` +
@@ -2256,11 +2256,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         setSellEmailImageFile(null);
         setSellEmailImagePreview('');
       } else {
-        console.error('❌ Error en venta con rango:', result);
+        // console.error('❌ Error en venta con rango:', result);
         alert(`❌ Error: ${result.error || 'Error desconocido'}`);
       }
     } catch (error) {
-      console.error('❌ Error al ejecutar venta con rango:', error);
+      // console.error('❌ Error al ejecutar venta con rango:', error);
       alert('❌ Error al ejecutar venta. Verifica la consola para más detalles.');
     } finally {
       setPartialSaleLoading(false);
@@ -2314,21 +2314,21 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         return;
       }
 
-      console.log('🔄 Guardando cambios de alerta:', {
-        alertId: alertId,
-        changes: editAlert
-      });
+      // console.log('🔄 Guardando cambios de alerta:', {
+      //   alertId: alertId,
+      //   changes: editAlert
+      // });
 
       // ✅ NUEVO: Preparar datos de liquidez y venta rápida
       const liquidityAmount = editAlert.liquidityPercentage > 0 ? (liquidityTotal * editAlert.liquidityPercentage / 100) : 0;
       
-      console.log('🔍 [DEBUG] Datos de edición con liquidez:', {
-        alertId: alertId,
-        liquidityPercentage: editAlert.liquidityPercentage,
-        liquidityAmount,
-        quickSellPercentage: editAlert.quickSellPercentage,
-        liquidityTotal
-      });
+      // console.log('🔍 [DEBUG] Datos de edición con liquidez:', {
+      //   alertId: alertId,
+      //   liquidityPercentage: editAlert.liquidityPercentage,
+      //   liquidityAmount,
+      //   quickSellPercentage: editAlert.quickSellPercentage,
+      //   liquidityTotal
+      // });
 
       const response = await fetch('/api/alerts/edit', {
         method: 'PUT',
@@ -2356,7 +2356,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        console.log('✅ Alerta editada exitosamente:', result.alert);
+        // console.log('✅ Alerta editada exitosamente:', result.alert);
 
         // ✅ CORREGIDO: Recargar AMBAS listas para evitar duplicados
         // Si cambió el estado de availableForPurchase, la alerta debe moverse entre secciones
@@ -2371,7 +2371,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
         alert('✅ ¡Alerta editada exitosamente!');
       } else {
-        console.error('❌ Error del servidor:', result);
+        // console.error('❌ Error del servidor:', result);
 
         let errorMessage = 'No se pudo editar la alerta';
 
@@ -2394,7 +2394,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         alert(errorMessage);
       }
     } catch (error) {
-      console.error('❌ Error al editar alerta:', error);
+      // console.error('❌ Error al editar alerta:', error);
 
       if (error instanceof TypeError && error.message.includes('fetch')) {
         alert('❌ Error de conexión. Verifica tu internet e intenta nuevamente.');
@@ -2425,7 +2425,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const mockData = generatePortfolioData(days);
       setPortfolioData(mockData);
     } catch (error) {
-      console.error('Error al cargar datos del portafolio:', error);
+      // console.error('Error al cargar datos del portafolio:', error);
     } finally {
       setPortfolioLoading(false);
     }
@@ -2458,13 +2458,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   // Funciones de renderizado
   // ✅ MEJORADO: Función auxiliar para crear datos del gráfico de torta con logging
   const createPieChartData = (alerts: any[]) => {
-    console.log('📊 [PIE CHART] Creando datos del gráfico de torta...', {
-      alertsCount: alerts.length,
-      liquidityMapKeys: Object.keys(liquidityMap || {}).length,
-      liquidityMapByAlertIdKeys: Object.keys(liquidityMapByAlertId || {}).length,
-      liquidityTotal: liquidityTotal,
-      liquiditySummary: liquiditySummary
-    });
+    // console.log('📊 [PIE CHART] Creando datos del gráfico de torta...', {
+    //   alertsCount: alerts.length,
+    //   liquidityMapKeys: Object.keys(liquidityMap || {}).length,
+    //   liquidityMapByAlertIdKeys: Object.keys(liquidityMapByAlertId || {}).length,
+    //   liquidityTotal: liquidityTotal,
+    //   liquiditySummary: liquiditySummary
+    // });
 
     // Paleta de colores dinámicos para cada alerta
     const colorPalette = [
@@ -2502,15 +2502,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       }
       
       if (isActive && hasLiquidity) {
-        console.log(`✅ [PIE CHART] Alerta confirmada con liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica}) - $${liquidity.allocatedAmount}`);
+        // console.log(`✅ [PIE CHART] Alerta confirmada con liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica}) - $${liquidity.allocatedAmount}`);
       } else if (isActive && !hasLiquidity) {
-        console.log(`⚠️ [PIE CHART] Alerta confirmada SIN liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica})`);
+        // console.log(`⚠️ [PIE CHART] Alerta confirmada SIN liquidez: ${alert.symbol} (alertId: ${alertId}, histórica: ${esHistorica})`);
       }
       
       return isActive && hasLiquidity;
     });
 
-    console.log('📊 [PIE CHART] Alertas confirmadas con liquidez:', activeAlertsWithLiquidity.length);
+    // console.log('📊 [PIE CHART] Alertas confirmadas con liquidez:', activeAlertsWithLiquidity.length);
 
     // Preparar datos para el gráfico de torta 3D - Solo alertas confirmadas con liquidez
     const chartData = activeAlertsWithLiquidity.map((alert, index) => {
@@ -2636,14 +2636,14 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     }
 
     // ✅ NUEVO: Logging final de los segmentos creados
-    console.log('📊 [PIE CHART] Segmentos finales creados:', {
-      totalSegments: chartSegments.length,
-      segments: chartSegments.map(s => ({
-        symbol: s.symbol,
-        size: s.size,
-        allocatedAmount: s.allocatedAmount
-      }))
-    });
+    // console.log('📊 [PIE CHART] Segmentos finales creados:', {
+    //   totalSegments: chartSegments.length,
+    //   segments: chartSegments.map(s => ({
+    //     symbol: s.symbol,
+    //     size: s.size,
+    //     allocatedAmount: s.allocatedAmount
+    //   }))
+    // });
 
     // Si no hay distribuciones ni totalLiquidity, no hay segmentos
     return chartSegments;
@@ -3751,12 +3751,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           localStorage.setItem('trader-call-chat-messages', JSON.stringify(updatedMessages));
           localStorage.setItem('trader-call-chat-timestamp', Date.now().toString());
         } else {
-          alert('Error al eliminar mensaje');
-        }
-      } catch (error) {
-        console.error('Error eliminando mensaje:', error);
         alert('Error al eliminar mensaje');
       }
+    } catch (error) {
+      // console.error('Error eliminando mensaje:', error);
+      alert('Error al eliminar mensaje');
+    }
     };
 
     // Control preciso del scroll para evitar movimientos innecesarios
@@ -3820,7 +3820,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           setMessages(messages);
         }
       } catch (error) {
-        console.error('Error cargando mensajes:', error);
+        // console.error('Error cargando mensajes:', error);
         // En caso de error, intentar usar cache aunque sea viejo
         const cachedMessages = localStorage.getItem('trader-call-chat-messages');
         if (cachedMessages) {
@@ -3871,7 +3871,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             alert('Error al enviar mensaje');
           }
         } catch (error) {
-          console.error('Error enviando mensaje:', error);
+          // console.error('Error enviando mensaje:', error);
           alert('Error al enviar mensaje');
         }
       }
@@ -5831,12 +5831,12 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
   // Cargar datos iniciales cuando se edita
   React.useEffect(() => {
     if (isEdit && initialData) {
-      console.log('📝 Cargando datos para edición:', {
-        title: initialData.title,
-        contentLength: initialData.content?.length || 0,
-        contentPreview: initialData.content?.substring(0, 100) || 'sin contenido',
-        hasContent: !!initialData.content
-      });
+      // console.log('📝 Cargando datos para edición:', {
+      //   title: initialData.title,
+      //   contentLength: initialData.content?.length || 0,
+      //   contentPreview: initialData.content?.substring(0, 100) || 'sin contenido',
+      //   hasContent: !!initialData.content
+      // });
       
       // Resetear el formulario primero
       setFormData({
@@ -5851,18 +5851,18 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
       
       // Convertir HTML a texto plano
       const originalContent = initialData.content || '';
-      console.log('🔍 Contenido original (primeros 200 caracteres):', originalContent.substring(0, 200));
+      // console.log('🔍 Contenido original (primeros 200 caracteres):', originalContent.substring(0, 200));
       
       const plainTextContent = htmlToText(originalContent);
       
-      console.log('🔄 Conversión HTML a texto:', {
-        originalLength: originalContent.length,
-        convertedLength: plainTextContent.length,
-        originalPreview: originalContent.substring(0, 200),
-        convertedPreview: plainTextContent.substring(0, 200),
-        hasTags: /<[^>]+>/.test(originalContent),
-        hasTagsAfter: /<[^>]+>/.test(plainTextContent)
-      });
+      // console.log('🔄 Conversión HTML a texto:', {
+      //   originalLength: originalContent.length,
+      //   convertedLength: plainTextContent.length,
+      //   originalPreview: originalContent.substring(0, 200),
+      //   convertedPreview: plainTextContent.substring(0, 200),
+      //   hasTags: /<[^>]+>/.test(originalContent),
+      //   hasTagsAfter: /<[^>]+>/.test(plainTextContent)
+      // });
       
       // Actualizar el formulario con los datos convertidos
       setFormData({
@@ -5918,12 +5918,12 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
 
   // Debug: monitorear cambios en formData
   React.useEffect(() => {
-    console.log('📊 [FORM] Estado actual del formulario:', {
-      title: formData.title,
-      type: formData.type,
-      category: formData.category,
-      hasContent: !!formData.content
-    });
+    // console.log('📊 [FORM] Estado actual del formulario:', {
+    //   title: formData.title,
+    //   type: formData.type,
+    //   category: formData.category,
+    //   hasContent: !!formData.content
+    // });
   }, [formData]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -5947,19 +5947,19 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
     };
 
     // Debug: mostrar qué datos se están enviando
-    console.log('🔍 [FORM] Datos a enviar:', {
-      title: submitData.title,
-      type: submitData.type,
-      category: submitData.category,
-      content: submitData.content?.substring(0, 100) + '...',
-      hasImages: submitData.images?.length || 0
-    });
+    // console.log('🔍 [FORM] Datos a enviar:', {
+    //   title: submitData.title,
+    //   type: submitData.type,
+    //   category: submitData.category,
+    //   content: submitData.content?.substring(0, 100) + '...',
+    //   hasImages: submitData.images?.length || 0
+    // });
     
     onSubmit(submitData);
   };
 
   const handleInputChange = (field: string, value: string) => {
-    console.log(`🔄 [FORM] Cambiando campo '${field}' de '${formData[field as keyof typeof formData]}' a '${value}'`);
+    // console.log(`🔄 [FORM] Cambiando campo '${field}' de '${formData[field as keyof typeof formData]}' a '${value}'`);
     
     setFormData(prev => ({
       ...prev,
@@ -5972,12 +5972,12 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
 
   const handleImageUploaded = (image: CloudinaryImage) => {
     setImages(prev => [...prev, image]);
-    console.log('✅ Imagen adicional agregada:', image.public_id);
+    // console.log('✅ Imagen adicional agregada:', image.public_id);
   };
 
   const handleUploadComplete = () => {
     setUploadingImages(false);
-    console.log('✅ Todas las imágenes subidas');
+    // console.log('✅ Todas las imágenes subidas');
   };
 
 
@@ -6043,7 +6043,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                 type="text"
                 value={formData.type}
                 onChange={(e) => {
-                  console.log('🎯 [INPUT] Cambio detectado en tipo:', e.target.value);
+                  // console.log('🎯 [INPUT] Cambio detectado en tipo:', e.target.value);
                   handleInputChange('type', e.target.value);
                 }}
                 placeholder="Ej: Texto, Video, Mixto, Análisis, Reporte..."
@@ -6111,7 +6111,7 @@ const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = f
                 onUploadStart={() => setUploadingImages(true)}
                 onUploadComplete={handleUploadComplete}
                 onError={(error) => {
-                  console.error('Error subiendo imagen adicional:', error);
+                  // console.error('Error subiendo imagen adicional:', error);
                   alert('Error subiendo imagen: ' + error);
                   setUploadingImages(false);
                 }}
@@ -6385,24 +6385,24 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         // NO verificar por rol general para evitar acceso cruzado entre servicios
         isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
         
-        console.log('🔍 Verificación de suscripción TraderCall:', {
-          email: user.email,
-          role: user.role,
-          suscripcionActiva: !!suscripcionActiva,
-          subscriptionActiva: !!subscriptionActiva,
-          activeSubscription: !!activeSubscription,
-          activeSubscriptionDetails: activeSubscription ? {
-            service: activeSubscription.service,
-            isActive: activeSubscription.isActive,
-            expiryDate: activeSubscription.expiryDate,
-            expired: new Date(activeSubscription.expiryDate) <= new Date()
-          } : null,
-          isSubscribed
-        });
+        // console.log('🔍 Verificación de suscripción TraderCall:', {
+        //   email: user.email,
+        //   role: user.role,
+        //   suscripcionActiva: !!suscripcionActiva,
+        //   subscriptionActiva: !!subscriptionActiva,
+        //   activeSubscription: !!activeSubscription,
+        //   activeSubscriptionDetails: activeSubscription ? {
+        //     service: activeSubscription.service,
+        //     isActive: activeSubscription.isActive,
+        //     expiryDate: activeSubscription.expiryDate,
+        //     expired: new Date(activeSubscription.expiryDate) <= new Date()
+        //   } : null,
+        //   isSubscribed
+        // });
       }
     }
   } catch (error) {
-    console.error('Error verificando suscripción:', error);
+    // console.error('Error verificando suscripción:', error);
     // En caso de error, mostramos vista no suscrita por defecto
     isSubscribed = false;
   }
@@ -6432,7 +6432,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       ) || [];
     }
   } catch (error) {
-    console.error('Error obteniendo configuración del sitio:', error);
+    // console.error('Error obteniendo configuración del sitio:', error);
   }
 
   // Si no hay datos en la configuración, usar datos de ejemplo

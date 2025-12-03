@@ -38,19 +38,19 @@ export default function PaymentPendingPage({
 
   useEffect(() => {
     // Log para debugging
-    console.log('Payment pending data:', {
-      collectionId,
-      collectionStatus,
-      paymentId,
-      status,
-      externalReference,
-      paymentType,
-      merchantOrderId,
-      preferenceId,
-      siteId,
-      processingMode,
-      merchantAccountId
-    });
+    // console.log('Payment pending data:', {
+    //   collectionId,
+    //   collectionStatus,
+    //   paymentId,
+    //   status,
+    //   externalReference,
+    //   paymentType,
+    //   merchantOrderId,
+    //   preferenceId,
+    //   siteId,
+    //   processingMode,
+    //   merchantAccountId
+    // });
   }, []);
 
   const handleRefresh = async () => {

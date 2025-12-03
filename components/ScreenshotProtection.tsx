@@ -20,7 +20,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
 
   // Detectar intentos de screenshot usando múltiples métodos
   const detectScreenshotAttempt = (reason: string = 'unknown') => {
-    console.log('🛡️ Screenshot protection activated:', reason);
+    // console.log('🛡️ Screenshot protection activated:', reason);
     setIsProtected(true);
     
     // Limpiar timeout anterior si existe
@@ -31,7 +31,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
     // Mostrar protección por 3 segundos
     protectionTimeoutRef.current = setTimeout(() => {
       setIsProtected(false);
-      console.log('🛡️ Screenshot protection deactivated');
+      // console.log('🛡️ Screenshot protection deactivated');
     }, 3000);
   };
 
@@ -39,7 +39,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
 
     // Método 1: Detectar teclas de screenshot
     const handleKeyDown = (event: KeyboardEvent) => {
-      console.log('🔍 Key pressed:', event.key, 'Code:', event.code, 'Alt:', event.altKey, 'Ctrl:', event.ctrlKey, 'KeyCode:', event.keyCode, 'Which:', event.which);
+      // console.log('🔍 Key pressed:', event.key, 'Code:', event.code, 'Alt:', event.altKey, 'Ctrl:', event.ctrlKey, 'KeyCode:', event.keyCode, 'Which:', event.which);
       
       // Detectar tecla ImpPnt / PrintScreen (tecla principal) - MÚLTIPLES VARIACIONES
       if (
@@ -58,7 +58,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
         event.key === 'PrtScn' ||
         event.key === 'PrtScrn'
       ) {
-        console.log('🎯 PrintScreen detected!');
+        // console.log('🎯 PrintScreen detected!');
         detectScreenshotAttempt('printscreen_key');
         return;
       }
@@ -72,7 +72,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
         event.key === 'F13' ||
         event.keyCode === 44
       )) {
-        console.log('🎯 Alt + PrintScreen detected!');
+        // console.log('🎯 Alt + PrintScreen detected!');
         detectScreenshotAttempt('alt_printscreen');
         return;
       }
@@ -82,7 +82,7 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
         (event.ctrlKey || event.metaKey) && 
         (event.key === 'PrintScreen' || event.key === 'F12' || event.key === 'F13')
       ) {
-        console.log('🎯 Modifier + PrintScreen detected!');
+        // console.log('🎯 Modifier + PrintScreen detected!');
         detectScreenshotAttempt('modifier_screenshot');
       }
     };
@@ -132,21 +132,21 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
     // Método adicional: Detectar cualquier tecla que pueda ser PrintScreen
     const handleAnyKey = (event: KeyboardEvent) => {
       // Log detallado para debugging
-      console.log('🔍 ANY KEY:', {
-        key: event.key,
-        code: event.code,
-        keyCode: event.keyCode,
-        which: event.which,
-        type: event.type,
-        altKey: event.altKey,
-        ctrlKey: event.ctrlKey,
-        shiftKey: event.shiftKey,
-        metaKey: event.metaKey
-      });
+      // console.log('🔍 ANY KEY:', {
+      //   key: event.key,
+      //   code: event.code,
+      //   keyCode: event.keyCode,
+      //   which: event.which,
+      //   type: event.type,
+      //   altKey: event.altKey,
+      //   ctrlKey: event.ctrlKey,
+      //   shiftKey: event.shiftKey,
+      //   metaKey: event.metaKey
+      // });
       
       // Detectar por código de tecla (más confiable)
       if (event.keyCode === 44 || event.which === 44) {
-        console.log('🎯 PrintScreen detected by keyCode!');
+        // console.log('🎯 PrintScreen detected by keyCode!');
         detectScreenshotAttempt('printscreen_keycode');
         return;
       }

@@ -19,9 +19,9 @@ const DebugSession: React.FC = () => {
   const router = useRouter();
 
   const refreshSession = async () => {
-    console.log('🔄 Actualizando sesión...');
+    // console.log('🔄 Actualizando sesión...');
     await update();
-    console.log('✅ Sesión actualizada');
+    // console.log('✅ Sesión actualizada');
   };
 
   const getStatusColor = (status: string) => {

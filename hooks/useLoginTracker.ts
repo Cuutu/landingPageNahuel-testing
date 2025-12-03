@@ -15,7 +15,7 @@ export function useLoginTracker() {
 
   const updateLastLogin = async () => {
     try {
-      console.log('🕐 Actualizando último login...');
+      // console.log('🕐 Actualizando último login...');
       
       const response = await fetch('/api/profile/update-login', {
         method: 'POST',
@@ -26,7 +26,7 @@ export function useLoginTracker() {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Último login actualizado:', data.lastLogin);
+        // console.log('✅ Último login actualizado:', data.lastLogin);
         
         // Guardar timestamp de la última actualización
         localStorage.setItem(STORAGE_KEY, Date.now().toString());

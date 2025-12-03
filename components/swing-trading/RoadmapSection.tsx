@@ -34,7 +34,7 @@ const RoadmapSection: React.FC<RoadmapSectionProps> = ({
   onRetry
 }) => {
   const handleModuleClick = (moduleId: number) => {
-    console.log(`Accediendo al módulo ${moduleId}`);
+    // console.log(`Accediendo al módulo ${moduleId}`);
     // Aquí se implementaría la navegación al módulo específico
   };
 

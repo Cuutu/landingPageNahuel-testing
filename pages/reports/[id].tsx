@@ -112,15 +112,15 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
   // Debug: Log de imágenes del reporte
   useEffect(() => {
-    console.log('🖼️ Report images:', report.images);
+    // console.log('🖼️ Report images:', report.images);
     if (report.images && report.images.length > 0) {
       report.images.forEach((img, idx) => {
-        console.log(`Image ${idx}:`, {
-          thumbnailUrl: img.thumbnailUrl,
-          secure_url: img.secure_url,
-          url: img.url,
-          public_id: img.public_id
-        });
+        // console.log(`Image ${idx}:`, {
+        //   thumbnailUrl: img.thumbnailUrl,
+        //   secure_url: img.secure_url,
+        //   url: img.url,
+        //   public_id: img.public_id
+        // });
       });
     }
   }, [report.images]);
@@ -134,12 +134,12 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
     // Convertir el contenido HTML a texto plano para edición
     const plainTextContent = htmlToText(report.content || '');
     
-    console.log('🔄 Abriendo modal de edición:', {
-      title: report.title,
-      contentLength: report.content?.length || 0,
-      plainTextLength: plainTextContent.length,
-      contentPreview: plainTextContent.substring(0, 100)
-    });
+    // console.log('🔄 Abriendo modal de edición:', {
+    //   title: report.title,
+    //   contentLength: report.content?.length || 0,
+    //   plainTextLength: plainTextContent.length,
+    //   contentPreview: plainTextContent.substring(0, 100)
+    // });
     
     setEditFormData({
       title: report.title,
@@ -181,12 +181,12 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
       // Convertir el contenido de texto plano a HTML antes de enviar
       const htmlContent = textToHtml(editFormData.content);
       
-      console.log('📤 Enviando actualización:', {
-        title: editFormData.title,
-        plainTextLength: editFormData.content.length,
-        htmlContentLength: htmlContent.length,
-        htmlPreview: htmlContent.substring(0, 100)
-      });
+      // console.log('📤 Enviando actualización:', {
+      //   title: editFormData.title,
+      //   plainTextLength: editFormData.content.length,
+      //   htmlContentLength: htmlContent.length,
+      //   htmlPreview: htmlContent.substring(0, 100)
+      // });
       
       // Actualizar el campo 'order' de cada imagen basándose en su posición actual
       const imagesWithOrder = editImages.map((img, index) => ({
@@ -241,7 +241,7 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
   const handleImageUploaded = (image: CloudinaryImage) => {
     setEditImages(prev => [...prev, image]);
     setUploadingImages(false);
-    console.log('✅ Imagen adicional agregada:', image.public_id);
+    // console.log('✅ Imagen adicional agregada:', image.public_id);
   };
   
   // Funciones para reordenar imágenes
@@ -1211,7 +1211,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         require('@/models/User');
       }
     } catch (modelError) {
-      console.log('⚠️ [REPORT] Modelo User ya registrado o error menor:', modelError);
+      // console.log('⚠️ [REPORT] Modelo User ya registrado o error menor:', modelError);
     }
 
     let reportDoc;
@@ -1263,7 +1263,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           quality: 'auto'
         });
       } catch (error) {
-        console.log('Error procesando imagen de portada:', error);
+        // console.log('Error procesando imagen de portada:', error);
       }
     }
 
@@ -1300,12 +1300,12 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
 
     // DEBUG: Verificar qué valores están llegando
-    console.log('🔍 [DEBUG] Valores de readTime:', {
-      original: reportDoc.readTime,
-      processed: processedReport.readTime,
-      contentLength: reportDoc.content?.length,
-      calculated: Math.ceil((reportDoc.content?.length || 0) / 1000)
-    });
+    // console.log('🔍 [DEBUG] Valores de readTime:', {
+    //   original: reportDoc.readTime,
+    //   processed: processedReport.readTime,
+    //   contentLength: reportDoc.content?.length,
+    //   calculated: Math.ceil((reportDoc.content?.length || 0) / 1000)
+    // });
 
     return {
       props: {

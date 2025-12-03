@@ -739,7 +739,7 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
         toast.success(`Migración completada: ${data.data.migrados} lecciones migradas`);
         
         // Mostrar detalles de la migración
-        console.log('📋 Detalles de migración:', data.data.detalles);
+        // console.log('📋 Detalles de migración:', data.data.detalles);
         
         // Recargar lecciones
         await cargarLecciones();
@@ -1412,8 +1412,8 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
                                     <h5>📤 Subir Nuevo PDF</h5>
                                     <PDFUploaderDB
                                       onPDFUploaded={(pdfData) => handleDatabasePDFUploaded(item.id, pdfData)}
-                                      onUploadStart={() => console.log('Subiendo PDF a base de datos...')}
-                                      onUploadProgress={(progress) => console.log(`Progreso: ${progress}%`)}
+                                      onUploadStart={() => {/* console.log('Subiendo PDF a base de datos...') */}}
+                                      onUploadProgress={(progress) => {/* console.log(`Progreso: ${progress}%`) */}}
                                       onError={handleUploadError}
                                       buttonText="Subir PDF a Base de Datos"
                                     />
@@ -1456,8 +1456,8 @@ const AdminLecciones: React.FC<AdminLeccionesProps> = ({ session }) => {
                                 <div className={styles.uploadSection}>
                                   <ImageUploader
                                     onImageUploaded={(imageData) => handleImageUploaded(item.id, imageData)}
-                                    onUploadStart={() => console.log('Subiendo imagen...')}
-                                    onUploadProgress={(progress) => console.log(`Progreso: ${progress}%`)}
+                                    onUploadStart={() => {/* console.log('Subiendo imagen...') */}}
+                                    onUploadProgress={(progress) => {/* console.log(`Progreso: ${progress}%`) */}}
                                     onError={handleUploadError}
                                     maxFiles={1}
                                     multiple={false}

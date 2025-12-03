@@ -94,11 +94,11 @@ export default function ImageUploader({
 
     try {
       for (const file of files) {
-        console.log('📤 Subiendo imagen:', file.name);
+        // console.log('📤 Subiendo imagen:', file.name);
         
         const uploadedImage = await uploadToCloudinary(file);
         
-        console.log('✅ Imagen subida exitosamente:', uploadedImage.public_id);
+        // console.log('✅ Imagen subida exitosamente:', uploadedImage.public_id);
         
         onImageUploaded(uploadedImage);
       }

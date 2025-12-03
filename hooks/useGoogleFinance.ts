@@ -56,7 +56,7 @@ export const useGoogleFinance = (): UseGoogleFinanceReturn => {
 
       if (response.ok && data.success) {
         setPrice(data.price);
-        console.log(`✅ Precio obtenido para ${symbol}: $${data.price}`);
+        // console.log(`✅ Precio obtenido para ${symbol}: $${data.price}`);
       } else {
         setError(data.error || `No se pudo obtener precio para ${symbol}`);
         console.error(`❌ Error obteniendo precio para ${symbol}:`, data.error);
@@ -101,7 +101,7 @@ export const useGoogleFinance = (): UseGoogleFinanceReturn => {
 
       if (response.ok && data.success) {
         setPrices(data.prices);
-        console.log(`✅ Precios obtenidos: ${data.prices.length}/${symbols.length}`);
+        // console.log(`✅ Precios obtenidos: ${data.prices.length}/${symbols.length}`);
         
         if (data.errors && data.errors.length > 0) {
           console.warn(`⚠️ Algunos precios fallaron:`, data.errors);

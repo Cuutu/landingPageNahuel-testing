@@ -222,11 +222,11 @@ export default function AdminSubscriptionsPage() {
     
     // Evitar múltiples clicks simultáneos
     if (sendingReminder && sendingReminder.email === userEmail && sendingReminder.service === service) {
-      console.log('⚠️ Ya se está enviando un recordatorio para este usuario');
+      // console.log('⚠️ Ya se está enviando un recordatorio para este usuario');
       return;
     }
 
-    console.log('📧 Iniciando envío de recordatorio:', { userEmail, service });
+    // console.log('📧 Iniciando envío de recordatorio:', { userEmail, service });
     setSendingReminder({ email: userEmail, service });
 
     try {
@@ -236,13 +236,13 @@ export default function AdminSubscriptionsPage() {
         body: JSON.stringify({ userEmail, service })
       });
       
-      console.log('📧 Respuesta del servidor:', response.status);
+      // console.log('📧 Respuesta del servidor:', response.status);
       const data = await response.json();
-      console.log('📧 Datos de respuesta:', data);
+      // console.log('📧 Datos de respuesta:', data);
       
       if (response.ok && data.success) {
         toast.success(data.message || 'Email de recordatorio enviado exitosamente');
-        console.log('✅ Recordatorio enviado exitosamente');
+        // console.log('✅ Recordatorio enviado exitosamente');
       } else {
         const errorMessage = data.error || 'Error enviando email de recordatorio';
         toast.error(errorMessage);
@@ -930,16 +930,16 @@ export default function AdminSubscriptionsPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [SUBSCRIPTIONS] Iniciando verificación de acceso...');
+  // console.log('🔍 [SUBSCRIPTIONS] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [SUBSCRIPTIONS] Resultado de verificación:', verification);
+    // console.log('🔍 [SUBSCRIPTIONS] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [SUBSCRIPTIONS] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [SUBSCRIPTIONS] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -948,7 +948,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [SUBSCRIPTIONS] Acceso de admin confirmado para:', verification.session?.user?.email || verification.user?.email);
+    // console.log('✅ [SUBSCRIPTIONS] Acceso de admin confirmado para:', verification.session?.user?.email || verification.user?.email);
     
     return {
       props: {

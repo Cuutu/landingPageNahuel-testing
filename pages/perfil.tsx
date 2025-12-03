@@ -44,7 +44,7 @@ const NotificationsSection = () => {
             headers: { 'Content-Type': 'application/json' },
           });
         } catch (autoGenError) {
-          console.log('Auto-generación de notificaciones no disponible:', autoGenError);
+          // console.log('Auto-generación de notificaciones no disponible:', autoGenError);
         }
         
         // Luego obtener las notificaciones

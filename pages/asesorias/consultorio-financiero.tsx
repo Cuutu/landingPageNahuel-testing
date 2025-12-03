@@ -158,13 +158,13 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       0
     );
     
-    console.log('📅 Creando evento para calendario:', {
-      originalDate: advisoryDate.date,
-      utcDate: utcDate.toISOString(),
-      localDate: localDate.toISOString(),
-      title: advisoryDate.title,
-      time: advisoryDate.time
-    });
+    // console.log('📅 Creando evento para calendario:', {
+    //   originalDate: advisoryDate.date,
+    //   utcDate: utcDate.toISOString(),
+    //   localDate: localDate.toISOString(),
+    //   title: advisoryDate.title,
+    //   time: advisoryDate.time
+    // });
     
     return {
       date: localDate,
@@ -179,8 +179,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     ? new Date(Math.min(...calendarEvents.map(event => event.date.getTime())))
     : new Date();
   
-  console.log('🎯 Fecha más temprana con turnos:', earliestDate);
-  console.log('📅 Fecha actual del calendario:', new Date());
+  // console.log('🎯 Fecha más temprana con turnos:', earliestDate);
+  // console.log('📅 Fecha actual del calendario:', new Date());
 
   // Función para manejar la selección de fecha en el calendario
   const handleCalendarDateSelect = (date: Date, events: any[]) => {
@@ -202,7 +202,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       // Solo verificar si hay slots seleccionados o si es probable que cambien
       const shouldRefresh = selectedDate && selectedTime;
       if (shouldRefresh && !loading && !loadingTurnos) {
-        console.log('🔄 Verificación automática de disponibilidad (5min)...');
+        // console.log('🔄 Verificación automática de disponibilidad (5min)...');
         loadAdvisoryDates(); // Recargar fechas de asesoría
       }
     }, 300000); // **CAMBIO: 5 minutos en lugar de 30 segundos**
@@ -222,7 +222,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
           return day === selectedDate && a.time === selectedTime;
         });
         if (advisorySelected && advisorySelected.isBooked) {
-          console.log('⚠️ La fecha seleccionada ya no está disponible');
+          // console.log('⚠️ La fecha seleccionada ya no está disponible');
           setSelectedDate('');
           setSelectedTime('');
         }
@@ -243,7 +243,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
   const loadProximosTurnos = async (forceRefresh = false) => {
     try {
       setLoadingTurnos(true);
-      console.log('🚀 Cargando turnos desde AvailableSlot...');
+      // console.log('🚀 Cargando turnos desde AvailableSlot...');
       
       // Usar la nueva API que lee directamente desde AvailableSlot
       const params = new URLSearchParams({
@@ -264,7 +264,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       if (response.ok) {
         const turnos = data.turnos || [];
         
-        console.log(`✅ ${turnos.length} días con turnos disponibles cargados en ${data.responseTime || 'N/A'} (source: ${data.source || 'unknown'})`);
+        // console.log(`✅ ${turnos.length} días con turnos disponibles cargados en ${data.responseTime || 'N/A'} (source: ${data.source || 'unknown'})`);
         
         setProximosTurnos(turnos);
         
@@ -286,7 +286,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
   const loadAdvisoryDates = async () => {
     try {
       setLoadingTurnos(true);
-      console.log('📅 Cargando fechas específicas de asesoría...');
+      // console.log('📅 Cargando fechas específicas de asesoría...');
       
       const response = await fetch('/api/advisory-dates/ConsultorioFinanciero?available=true&futureOnly=true');
       const data = await response.json();
@@ -317,18 +317,18 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
           date: new Date(date.date).toISOString()
         }));
         
-        console.log('✅ Fechas de asesoría cargadas:', dates.length);
-        console.log('📅 Detalles de fechas:', dates.map((d: AdvisoryDate) => ({
-          id: d._id,
-          date: d.date,
-          title: d.title,
-          time: d.time,
-          isBooked: d.isBooked,
-          hasTempReservation: !!d.tempReservationExpiresAt
-        })));
+        // console.log('✅ Fechas de asesoría cargadas:', dates.length);
+        // console.log('📅 Detalles de fechas:', dates.map((d: AdvisoryDate) => ({
+        //   id: d._id,
+        //   date: d.date,
+        //   title: d.title,
+        //   time: d.time,
+        //   isBooked: d.isBooked,
+        //   hasTempReservation: !!d.tempReservationExpiresAt
+        // })));
         setAdvisoryDates(dates);
       } else {
-        console.log('📭 No hay fechas específicas configuradas');
+        // console.log('📭 No hay fechas específicas configuradas');
         setAdvisoryDates([]);
       }
       
@@ -342,13 +342,13 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
 
   // Función para formatear fechas correctamente (evitar problemas de zona horaria)
   const formatDateForDisplay = (dateString: string) => {
-    console.log('🔍 formatDateForDisplay - entrada:', dateString);
+    // console.log('🔍 formatDateForDisplay - entrada:', dateString);
     
     // Si la fecha viene en formato DD/MM/YYYY, convertirla correctamente
     if (dateString.includes('/')) {
       const [day, month, year] = dateString.split('/');
       const date = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
-      console.log('🔍 formatDateForDisplay - fecha UTC creada:', date.toISOString());
+      // console.log('🔍 formatDateForDisplay - fecha UTC creada:', date.toISOString());
       
       const formatted = date.toLocaleDateString('es-ES', {
         weekday: 'long',
@@ -357,7 +357,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
         day: 'numeric'
       });
       
-      console.log('🔍 formatDateForDisplay - fecha formateada:', formatted);
+      // console.log('🔍 formatDateForDisplay - fecha formateada:', formatted);
       return formatted;
     }
     
@@ -400,7 +400,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
     setIsCheckingAvailability(true);
     
     try {
-      console.log(`🔍 Verificando disponibilidad: ${fecha} ${horario}`);
+      // console.log(`🔍 Verificando disponibilidad: ${fecha} ${horario}`);
       
       const response = await fetch('/api/turnos/check-availability', {
         method: 'POST',
@@ -417,20 +417,20 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       });
 
       if (!response.ok) {
-        console.error(`❌ Error en verificación: ${response.status}`);
+        // console.error(`❌ Error en verificación: ${response.status}`);
         return false; // Si hay error, asumir que NO está disponible
       }
 
       const data = await response.json();
       
-      console.log(`📊 Respuesta de verificación:`, data);
+      // console.log(`📊 Respuesta de verificación:`, data);
       
       setAvailabilityStatus(prev => ({
         ...prev,
         [key]: data.available
       }));
 
-      console.log(`🔍 Verificación en tiempo real: ${fecha} ${horario} - ${data.available ? '✅ Disponible' : '❌ NO DISPONIBLE'}`);
+      // console.log(`🔍 Verificación en tiempo real: ${fecha} ${horario} - ${data.available ? '✅ Disponible' : '❌ NO DISPONIBLE'}`);
       
       return data.available;
     } catch (error) {
@@ -494,9 +494,9 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       0
     ));
 
-    console.log(`🎯 Fecha y hora final para reserva: ${utcDate.toISOString()}`);
-    console.log(`📍 Hora local esperada: ${advisorySelected.time}`);
-    console.log(`📍 Hora UTC enviada: ${utcDate.getUTCHours()}:${String(utcDate.getUTCMinutes()).padStart(2, '0')}`);
+    // console.log(`🎯 Fecha y hora final para reserva: ${utcDate.toISOString()}`);
+    // console.log(`📍 Hora local esperada: ${advisorySelected.time}`);
+    // console.log(`📍 Hora UTC enviada: ${utcDate.getUTCHours()}:${String(utcDate.getUTCMinutes()).padStart(2, '0')}`);
 
     // Precio dinámico para Consultorio Financiero
     const bookingPrice = pricing?.asesorias?.consultorioFinanciero?.price || 50000;
@@ -504,7 +504,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
 
     // Crear checkout de MercadoPago PRIMERO (sin crear reserva)
     try {
-      console.log('💳 Creando checkout de MercadoPago...');
+      // console.log('💳 Creando checkout de MercadoPago...');
       
       const response = await fetch('/api/payments/mercadopago/create-booking-checkout', {
         method: 'POST',
@@ -533,7 +533,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       const data = await response.json();
 
       if (data.success && data.checkoutUrl) {
-        console.log('✅ Checkout de MercadoPago creado, redirigiendo al pago');
+        // console.log('✅ Checkout de MercadoPago creado, redirigiendo al pago');
 
         // Limpiar selección inmediatamente (la reserva real se hace en el webhook al aprobar pago)
         setSelectedDate('');
@@ -554,14 +554,14 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
       
       // Si es un error de conflicto (409), recargar turnos para mostrar disponibilidad actualizada
       if (error.message?.includes('Horario no disponible') || error.message?.includes('409')) {
-        console.log('🔄 Recargando turnos debido a conflicto...');
+        // console.log('🔄 Recargando turnos debido a conflicto...');
         
         // Recargar turnos inmediatamente con forzado de recarga
         await loadProximosTurnos(true);
         
         // El mensaje de error ya se mostró en el hook useBookings
         // Ahora el sistema mostrará automáticamente el mensaje rojo porque el turno ya no estará disponible
-        console.log('⚠️ Turno ya no disponible, la UI se actualizará automáticamente');
+        // console.log('⚠️ Turno ya no disponible, la UI se actualizará automáticamente');
       }
     }
   };
@@ -1153,7 +1153,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       faqs = faqsData.faqs || [];
     }
 
-    console.log(`✅ Cargados ${testimonios.length} testimonios y ${faqs.length} FAQs para consultorio`);
+    // console.log(`✅ Cargados ${testimonios.length} testimonios y ${faqs.length} FAQs para consultorio`);
 
     return {
       props: {

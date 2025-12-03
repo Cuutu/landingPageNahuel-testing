@@ -61,11 +61,11 @@ const AdminAsesoriasHorariosPage = () => {
 
   // Logs para debug
   useEffect(() => {
-    console.log('🔄 Estado actualizado:');
-    console.log('📅 startDate:', startDate);
-    console.log('📅 endDate:', endDate);
-    console.log('⏰ timeSlots:', timeSlots);
-    console.log('🚫 isCreating:', isCreating);
+    // console.log('🔄 Estado actualizado:');
+    // console.log('📅 startDate:', startDate);
+    // console.log('📅 endDate:', endDate);
+    // console.log('⏰ timeSlots:', timeSlots);
+    // console.log('🚫 isCreating:', isCreating);
   }, [startDate, endDate, timeSlots, isCreating]);
 
   useEffect(() => {
@@ -74,45 +74,45 @@ const AdminAsesoriasHorariosPage = () => {
 
   const loadSchedules = async () => {
     try {
-      console.log('🔄 [LOAD] Iniciando carga de horarios...');
+      // console.log('🔄 [LOAD] Iniciando carga de horarios...');
       setLoading(true);
       
       const response = await fetch('/api/asesorias/schedule');
-      console.log('📡 [LOAD] Respuesta recibida:', response.status, response.statusText);
+      // console.log('📡 [LOAD] Respuesta recibida:', response.status, response.statusText);
       
       const data = await response.json();
-      console.log('📋 [LOAD] Datos recibidos:', data);
+      // console.log('📋 [LOAD] Datos recibidos:', data);
       
       if (response.ok) {
         const schedulesList = data.schedules || [];
-        console.log('✅ [LOAD] Horarios cargados exitosamente:', schedulesList.length, 'horarios');
+        // console.log('✅ [LOAD] Horarios cargados exitosamente:', schedulesList.length, 'horarios');
         setSchedules(schedulesList);
       } else {
-        console.error('❌ [LOAD] Error en respuesta:', data);
+        // console.error('❌ [LOAD] Error en respuesta:', data);
         toast.error('Error al cargar horarios de asesorías');
       }
     } catch (error) {
-      console.error('💥 [LOAD] Error de red:', error);
+      // console.error('💥 [LOAD] Error de red:', error);
       toast.error('Error de conexión al cargar horarios');
     } finally {
       setLoading(false);
-      console.log('🔄 [LOAD] Carga completada');
+      // console.log('🔄 [LOAD] Carga completada');
     }
   };
 
   const handleCreateSchedules = async () => {
-    console.log('🔥 Botón clickeado - handleCreateSchedules');
-    console.log('📅 startDate:', startDate);
-    console.log('📅 endDate:', endDate);
-    console.log('⏰ timeSlots:', timeSlots);
+    // console.log('🔥 Botón clickeado - handleCreateSchedules');
+    // console.log('📅 startDate:', startDate);
+    // console.log('📅 endDate:', endDate);
+    // console.log('⏰ timeSlots:', timeSlots);
     
     if (!startDate || !endDate || timeSlots.length === 0) {
-      console.log('❌ Validación fallida');
+      // console.log('❌ Validación fallida');
       toast.error('Por favor selecciona un rango de fechas y al menos un horario');
       return;
     }
 
-    console.log('✅ Validación pasada, comenzando creación...');
+    // console.log('✅ Validación pasada, comenzando creación...');
     setIsCreating(true);
     let createdCount = 0;
     let errorCount = 0;
@@ -123,39 +123,39 @@ const AdminAsesoriasHorariosPage = () => {
       const currentDate = new Date(startDate);
       const lastDate = new Date(endDate);
 
-      console.log('📅 Generando fechas entre:', currentDate.toISOString(), 'y', lastDate.toISOString());
+      // console.log('📅 Generando fechas entre:', currentDate.toISOString(), 'y', lastDate.toISOString());
 
       while (currentDate <= lastDate) {
         // Incluir días de domingo a sábado (0-6) - todos los días de la semana
         const dayOfWeek = currentDate.getDay();
-        console.log(`📅 Procesando fecha: ${currentDate.toISOString().split('T')[0]}, día de la semana: ${dayOfWeek}`);
+        // console.log(`📅 Procesando fecha: ${currentDate.toISOString().split('T')[0]}, día de la semana: ${dayOfWeek}`);
         
         // Incluir todos los días (0=domingo, 1=lunes, ..., 6=sábado)
         dates.push(new Date(currentDate));
-        console.log(`✅ Fecha agregada: ${currentDate.toISOString().split('T')[0]} (día ${dayOfWeek})`);
+        // console.log(`✅ Fecha agregada: ${currentDate.toISOString().split('T')[0]} (día ${dayOfWeek})`);
         
         currentDate.setDate(currentDate.getDate() + 1);
       }
 
-      console.log('📅 Fechas laborables generadas:', dates.length, 'fechas');
-      console.log('📅 Fechas:', dates.map(d => d.toISOString().split('T')[0]));
+      // console.log('📅 Fechas laborables generadas:', dates.length, 'fechas');
+      // console.log('📅 Fechas:', dates.map(d => d.toISOString().split('T')[0]));
 
       if (dates.length === 0) {
-        console.log('❌ No hay fechas laborables en el rango seleccionado');
+        // console.log('❌ No hay fechas laborables en el rango seleccionado');
         toast.error('No hay fechas laborables en el rango seleccionado');
         setIsCreating(false);
         return;
       }
 
       // Crear horarios para cada fecha y cada slot de tiempo
-      console.log('🚀 Comenzando creación de horarios...');
+      // console.log('🚀 Comenzando creación de horarios...');
       for (let i = 0; i < dates.length; i++) {
         const date = dates[i];
-        console.log(`📅 Procesando fecha ${i + 1}/${dates.length}: ${date.toISOString().split('T')[0]}`);
+        // console.log(`📅 Procesando fecha ${i + 1}/${dates.length}: ${date.toISOString().split('T')[0]}`);
         
         for (let j = 0; j < timeSlots.length; j++) {
           const timeSlot = timeSlots[j];
-          console.log(`⏰ Procesando horario ${j + 1}/${timeSlots.length}: ${timeSlot.time}`);
+          // console.log(`⏰ Procesando horario ${j + 1}/${timeSlots.length}: ${timeSlot.time}`);
           
           try {
             const scheduleData = {
@@ -166,9 +166,9 @@ const AdminAsesoriasHorariosPage = () => {
               isBooked: false
             };
 
-            console.log('📝 Intentando crear horario:', scheduleData);
-            console.log('📅 Fecha original del calendario:', date.toLocaleDateString('es-ES'));
-            console.log('📅 Fecha enviada a la API:', scheduleData.date);
+            // console.log('📝 Intentando crear horario:', scheduleData);
+            // console.log('📅 Fecha original del calendario:', date.toLocaleDateString('es-ES'));
+            // console.log('📅 Fecha enviada a la API:', scheduleData.date);
 
             const response = await fetch('/api/asesorias/schedule', {
               method: 'POST',
@@ -178,18 +178,18 @@ const AdminAsesoriasHorariosPage = () => {
               body: JSON.stringify(scheduleData),
             });
 
-            console.log('📡 Respuesta de la API:', response.status, response.statusText);
+            // console.log('📡 Respuesta de la API:', response.status, response.statusText);
 
             if (response.ok) {
               const responseData = await response.json();
-              console.log('✅ Horario creado exitosamente:', responseData);
+              // console.log('✅ Horario creado exitosamente:', responseData);
               createdCount++;
             } else {
               const data = await response.json();
-              console.log('❌ Error en la respuesta:', data);
+              // console.log('❌ Error en la respuesta:', data);
               if (response.status === 409) {
                 // Horario ya existe, no es un error
-                console.log(`ℹ️ Horario ya existe para ${date.toDateString()} a las ${timeSlot.time}`);
+                // console.log(`ℹ️ Horario ya existe para ${date.toDateString()} a las ${timeSlot.time}`);
               } else {
                 errorCount++;
                 console.error('❌ Error al crear horario:', data.error);
@@ -202,7 +202,7 @@ const AdminAsesoriasHorariosPage = () => {
         }
       }
 
-      console.log('📊 Resumen final - Creados:', createdCount, 'Errores:', errorCount);
+      // console.log('📊 Resumen final - Creados:', createdCount, 'Errores:', errorCount);
 
       if (createdCount > 0) {
         toast.success(`Se crearon ${createdCount} horarios exitosamente`);
@@ -226,7 +226,7 @@ const AdminAsesoriasHorariosPage = () => {
   };
 
   const handleDelete = async (id: string) => {
-    console.log('🗑️ [DELETE] Iniciando eliminación de horario:', id);
+    // console.log('🗑️ [DELETE] Iniciando eliminación de horario:', id);
     
     // En lugar de usar confirm(), abrir modal personalizado
     setScheduleToDelete(id);
@@ -237,25 +237,25 @@ const AdminAsesoriasHorariosPage = () => {
   const confirmDelete = async () => {
     if (!scheduleToDelete) return;
     
-    console.log('✅ [DELETE] Usuario confirmó la eliminación de:', scheduleToDelete);
+    // console.log('✅ [DELETE] Usuario confirmó la eliminación de:', scheduleToDelete);
 
     try {
-      console.log('📡 [DELETE] Enviando request DELETE a:', `/api/asesorias/schedule/${scheduleToDelete}`);
+      // console.log('📡 [DELETE] Enviando request DELETE a:', `/api/asesorias/schedule/${scheduleToDelete}`);
       
       const response = await fetch(`/api/asesorias/schedule/${scheduleToDelete}`, {
         method: 'DELETE',
       });
 
-      console.log('📡 [DELETE] Respuesta recibida:', response.status, response.statusText);
+      // console.log('📡 [DELETE] Respuesta recibida:', response.status, response.statusText);
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log('✅ [DELETE] Horario eliminado exitosamente:', responseData);
+        // console.log('✅ [DELETE] Horario eliminado exitosamente:', responseData);
         toast.success('Horario eliminado exitosamente');
         
-        console.log('🔄 [DELETE] Recargando lista de horarios...');
+        // console.log('🔄 [DELETE] Recargando lista de horarios...');
         await loadSchedules();
-        console.log('✅ [DELETE] Lista de horarios recargada');
+        // console.log('✅ [DELETE] Lista de horarios recargada');
       } else {
         const errorData = await response.json();
         console.error('❌ [DELETE] Error en respuesta:', errorData);
@@ -273,7 +273,7 @@ const AdminAsesoriasHorariosPage = () => {
 
   // Función para cancelar la eliminación
   const cancelDelete = () => {
-    console.log('❌ [DELETE] Usuario canceló la eliminación');
+    // console.log('❌ [DELETE] Usuario canceló la eliminación');
     setShowDeleteModal(false);
     setScheduleToDelete(null);
   };
@@ -287,7 +287,7 @@ const AdminAsesoriasHorariosPage = () => {
   const confirmSync = async () => {
     try {
       setIsSyncing(true);
-      console.log('🔄 Iniciando sincronización...');
+      // console.log('🔄 Iniciando sincronización...');
 
       const response = await fetch('/api/admin/sync-advisory-schedules', {
         method: 'POST',
@@ -299,7 +299,7 @@ const AdminAsesoriasHorariosPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('✅ Sincronización exitosa:', data);
+        // console.log('✅ Sincronización exitosa:', data);
         toast.success(`Sincronización completada: ${data.stats.created} creados, ${data.stats.updated} actualizados`);
       } else {
         console.error('❌ Error en sincronización:', data);
@@ -317,7 +317,7 @@ const AdminAsesoriasHorariosPage = () => {
 
   // Función para cancelar la sincronización
   const cancelSync = () => {
-    console.log('❌ [SYNC] Usuario canceló la sincronización');
+    // console.log('❌ [SYNC] Usuario canceló la sincronización');
     setShowSyncModal(false);
   };
 
@@ -330,7 +330,7 @@ const AdminAsesoriasHorariosPage = () => {
   const confirmFixIndexes = async () => {
     try {
       setIsFixingIndexes(true);
-      console.log('🔧 Iniciando limpieza de índices...');
+      // console.log('🔧 Iniciando limpieza de índices...');
 
       const response = await fetch('/api/admin/fix-advisory-indexes', {
         method: 'POST',
@@ -342,7 +342,7 @@ const AdminAsesoriasHorariosPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        console.log('✅ Limpieza de índices exitosa:', data);
+        // console.log('✅ Limpieza de índices exitosa:', data);
         toast.success(`Índices limpiados: ${data.details.droppedIndexes.length} eliminados, ${data.details.createdIndexes.length} creados`);
       } else {
         console.error('❌ Error en limpieza de índices:', data);
@@ -360,7 +360,7 @@ const AdminAsesoriasHorariosPage = () => {
 
   // Función para cancelar la limpieza de índices
   const cancelFixIndexes = () => {
-    console.log('❌ [FIX INDEXES] Usuario canceló la limpieza de índices');
+    // console.log('❌ [FIX INDEXES] Usuario canceló la limpieza de índices');
     setShowFixIndexesModal(false);
   };
 
@@ -373,15 +373,15 @@ const AdminAsesoriasHorariosPage = () => {
 
   const formatDate = (dateString: string) => {
     // CORREGIDO: Usar la fecha local directamente sin conversión UTC
-    console.log('🔍 formatDate - dateString recibido:', dateString);
+    // console.log('🔍 formatDate - dateString recibido:', dateString);
     
     // Parsear la fecha directamente
     const date = new Date(dateString);
     
-    console.log('🔍 formatDate - fecha parseada:', date);
-    console.log('🔍 formatDate - getDate():', date.getDate());
-    console.log('🔍 formatDate - getDay():', date.getDay());
-    console.log('🔍 formatDate - fecha local:', date.toLocaleDateString('es-ES'));
+    // console.log('🔍 formatDate - fecha parseada:', date);
+    // console.log('🔍 formatDate - getDate():', date.getDate());
+    // console.log('🔍 formatDate - getDay():', date.getDay());
+    // console.log('🔍 formatDate - fecha local:', date.toLocaleDateString('es-ES'));
     
     // Usar la fecha local directamente para evitar problemas de zona horaria
     return date.toLocaleDateString('es-ES', {
@@ -450,7 +450,7 @@ const AdminAsesoriasHorariosPage = () => {
               </button>
               <button
                 onClick={() => {
-                  console.log('🔥 Abriendo formulario');
+                  // console.log('🔥 Abriendo formulario');
                   setShowForm(true);
                 }}
                 className={styles.createButton}
@@ -534,12 +534,12 @@ const AdminAsesoriasHorariosPage = () => {
                   </button>
                   <button
                     onClick={() => {
-                      console.log('🔥 Botón clickeado directamente');
-                      console.log('📅 startDate:', startDate);
-                      console.log('📅 endDate:', endDate);
-                      console.log('⏰ timeSlots:', timeSlots);
-                      console.log('🚫 isCreating:', isCreating);
-                      console.log('🔒 Botón deshabilitado:', !startDate || !endDate || timeSlots.length === 0 || isCreating);
+                      // console.log('🔥 Botón clickeado directamente');
+                      // console.log('📅 startDate:', startDate);
+                      // console.log('📅 endDate:', endDate);
+                      // console.log('⏰ timeSlots:', timeSlots);
+                      // console.log('🚫 isCreating:', isCreating);
+                      // console.log('🔒 Botón deshabilitado:', !startDate || !endDate || timeSlots.length === 0 || isCreating);
                       handleCreateSchedules();
                     }}
                     disabled={!startDate || !endDate || timeSlots.length === 0 || isCreating}
@@ -622,7 +622,7 @@ const AdminAsesoriasHorariosPage = () => {
                     <div className={styles.scheduleActions}>
                       <button
                         onClick={() => {
-                          console.log('🗑️ Botón eliminar clickeado para:', schedule._id);
+                          // console.log('🗑️ Botón eliminar clickeado para:', schedule._id);
                           handleDelete(schedule._id);
                         }}
                         className={styles.deleteButton}

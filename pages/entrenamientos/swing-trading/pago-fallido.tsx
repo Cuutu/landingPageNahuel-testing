@@ -38,19 +38,19 @@ export default function PaymentFailurePage({
 
   useEffect(() => {
     // Log para debugging
-    console.log('Payment failure data:', {
-      collectionId,
-      collectionStatus,
-      paymentId,
-      status,
-      externalReference,
-      paymentType,
-      merchantOrderId,
-      preferenceId,
-      siteId,
-      processingMode,
-      merchantAccountId
-    });
+    // console.log('Payment failure data:', {
+    //   collectionId,
+    //   collectionStatus,
+    //   paymentId,
+    //   status,
+    //   externalReference,
+    //   paymentType,
+    //   merchantOrderId,
+    //   preferenceId,
+    //   siteId,
+    //   processingMode,
+    //   merchantAccountId
+    // });
   }, []);
 
   const handleRetryPayment = async () => {
@@ -59,7 +59,7 @@ export default function PaymentFailurePage({
       // Redirigir de vuelta a la página de Zero 2 Trader
       router.push('/entrenamientos/swing-trading');
     } catch (error) {
-      console.error('Error al reintentar pago:', error);
+      // console.error('Error al reintentar pago:', error);
     } finally {
       setIsRetrying(false);
     }

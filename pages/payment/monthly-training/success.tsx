@@ -38,23 +38,23 @@ export default function MonthlyTrainingPaymentSuccess() {
 
   const loadTrainingInfo = async () => {
     try {
-      console.log('🔄 Cargando información del entrenamiento:', { training_id, session: !!session });
+      // console.log('🔄 Cargando información del entrenamiento:', { training_id, session: !!session });
       
       const response = await fetch(`/api/monthly-trainings?id=${training_id}`);
       const data = await response.json();
       
-      console.log('📊 Respuesta del API:', { success: data.success, dataLength: data.data?.length });
+      // console.log('📊 Respuesta del API:', { success: data.success, dataLength: data.data?.length });
       
       if (data.success && data.data.length > 0) {
         setTraining(data.data[0]);
-        console.log('✅ Entrenamiento cargado:', data.data[0].title);
+        // console.log('✅ Entrenamiento cargado:', data.data[0].title);
         
         // Sumar usuario al entrenamiento solo si no se ha agregado antes
         if (!userAdded && session?.user?.email) {
-          console.log('🚀 Iniciando proceso de agregar usuario al entrenamiento...');
+          // console.log('🚀 Iniciando proceso de agregar usuario al entrenamiento...');
           await addUserToTraining();
         } else {
-          console.log('⚠️ No se agregará usuario:', { userAdded, hasSession: !!session?.user?.email });
+          // console.log('⚠️ No se agregará usuario:', { userAdded, hasSession: !!session?.user?.email });
         }
       } else {
         console.error('❌ Error en respuesta del API:', data);
@@ -70,11 +70,11 @@ export default function MonthlyTrainingPaymentSuccess() {
 
   const addUserToTraining = async () => {
     try {
-      console.log('🔔 Verificando pago y agregando usuario al entrenamiento:', {
-        trainingId: training_id,
-        paymentId: payment_id,
-        userEmail: session?.user?.email
-      });
+      // console.log('🔔 Verificando pago y agregando usuario al entrenamiento:', {
+      //   trainingId: training_id,
+      //   paymentId: payment_id,
+      //   userEmail: session?.user?.email
+      // });
 
       const response = await fetch('/api/monthly-trainings/verify-payment', {
         method: 'POST',
@@ -88,11 +88,11 @@ export default function MonthlyTrainingPaymentSuccess() {
       const data = await response.json();
       
       if (data.success) {
-        console.log('✅ Usuario agregado exitosamente al entrenamiento:', {
-          paymentRange: data.data?.training?.paymentRange,
-          currentStudents: data.data?.training?.currentStudents,
-          maxStudents: data.data?.training?.maxStudents
-        });
+        // console.log('✅ Usuario agregado exitosamente al entrenamiento:', {
+        //   paymentRange: data.data?.training?.paymentRange,
+        //   currentStudents: data.data?.training?.currentStudents,
+        //   maxStudents: data.data?.training?.maxStudents
+        // });
         setUserAdded(true);
       } else {
         console.error('❌ Error agregando usuario:', data.error);

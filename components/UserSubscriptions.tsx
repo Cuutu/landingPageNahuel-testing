@@ -100,7 +100,7 @@ export default function UserSubscriptions() {
 
   const handleRenewSubscription = async (service: string) => {
     try {
-      console.log('🔄 Iniciando renovación para:', service);
+      // console.log('🔄 Iniciando renovación para:', service);
       
       // Llamar al endpoint de renovación para crear el checkout
       const response = await fetch('/api/payments/mercadopago/create-renewal-checkout', {
@@ -118,7 +118,7 @@ export default function UserSubscriptions() {
       const data = await response.json();
 
       if (data.success && data.checkoutUrl) {
-        console.log('✅ Redirigiendo al checkout de MercadoPago');
+        // console.log('✅ Redirigiendo al checkout de MercadoPago');
         // Redirigir al checkout de MercadoPago
         window.location.href = data.checkoutUrl;
       } else {

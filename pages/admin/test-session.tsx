@@ -82,22 +82,22 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   let serverError = null;
 
   try {
-    console.log('🔍 Test Session - Iniciando verificación...');
+    // console.log('🔍 Test Session - Iniciando verificación...');
     
     // Obtener sesión del servidor
     serverSession = await getServerSession(context.req, context.res, authOptions);
-    console.log('📋 Test Session - Sesión servidor:', !!serverSession);
+    // console.log('📋 Test Session - Sesión servidor:', !!serverSession);
 
     if (serverSession?.user?.email) {
-      console.log('📧 Test Session - Email:', serverSession.user.email);
+      // console.log('📧 Test Session - Email:', serverSession.user.email);
       
       // Conectar a base de datos
       await connectDB();
       
       // Buscar usuario
       serverUser = await User.findOne({ email: serverSession.user.email }).lean() as any;
-      console.log('👤 Test Session - Usuario encontrado:', !!serverUser);
-      console.log('🔧 Test Session - Rol usuario:', serverUser?.role);
+      // console.log('👤 Test Session - Usuario encontrado:', !!serverUser);
+      // console.log('🔧 Test Session - Rol usuario:', serverUser?.role);
       
       // Convertir _id a string para evitar problemas de serialización
       if (serverUser) {

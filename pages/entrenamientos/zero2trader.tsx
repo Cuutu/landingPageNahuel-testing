@@ -648,7 +648,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   // Función para cargar fechas de entrenamiento (simplificada)
   const loadTrainingDates = async () => {
     try {
-      console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
+      // console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
       
       const response = await fetch('/api/training-dates/SwingTrading');
       const data = await response.json();
@@ -659,7 +659,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           date: new Date(date.date)
         }));
         
-        console.log('✅ Fechas cargadas:', dates.length);
+        // console.log('✅ Fechas cargadas:', dates.length);
         
         setTrainingDates(dates);
         const nextDate = findNextTrainingDate(dates);
@@ -685,7 +685,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
           }
         }
       } else {
-        console.log('📭 No hay fechas específicas configuradas');
+        // console.log('📭 No hay fechas específicas configuradas');
         setTrainingDates([]);
         setNextTrainingDate(null);
         
@@ -878,7 +878,7 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   };
 
   const handleModuleClick = (moduleId: number) => {
-    console.log(`Accediendo al módulo ${moduleId}`);
+    // console.log(`Accediendo al módulo ${moduleId}`);
     // Aquí se implementaría la navegación al módulo específico
   };
 

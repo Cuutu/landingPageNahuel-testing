@@ -62,7 +62,7 @@ export default function EntrenamientosFechasPage() {
   const fetchTrainingDates = async () => {
     try {
       setLoading(true);
-      console.log('📅 Cargando fechas de entrenamientos...');
+      // console.log('📅 Cargando fechas de entrenamientos...');
       
       // Cargar fechas para ambos tipos de entrenamiento
       const [swingResponse, dowResponse] = await Promise.all([
@@ -89,7 +89,7 @@ export default function EntrenamientosFechasPage() {
       // Ordenar por fecha
       allDates.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       setTrainingDates(allDates);
-      console.log('✅ Fechas cargadas:', allDates.length);
+      // console.log('✅ Fechas cargadas:', allDates.length);
       
     } catch (error) {
       console.error('💥 Error:', error);
@@ -112,7 +112,7 @@ export default function EntrenamientosFechasPage() {
     }
 
     try {
-      console.log('📝 Guardando fecha de entrenamiento...');
+      // console.log('📝 Guardando fecha de entrenamiento...');
       
       const url = editingDate 
         ? `/api/training-dates/${formData.trainingType}`
@@ -153,7 +153,7 @@ export default function EntrenamientosFechasPage() {
     }
 
     try {
-      console.log('🗑️ Eliminando fecha:', dateId);
+      // console.log('🗑️ Eliminando fecha:', dateId);
       
       const response = await fetch(`/api/training-dates/${trainingType}`, {
         method: 'DELETE',

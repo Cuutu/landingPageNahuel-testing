@@ -221,11 +221,11 @@ const YouTubeAutoCarousel: React.FC = () => {
  * Página principal del sitio web de Nahuel Lozano
  */
 export default function Home({ session: serverSession, siteConfig, entrenamientos, courseCards, initialPricing, isAdmin }: HomeProps) {
-  console.log('🏠 Renderizando página principal');
-  console.log('🔧 siteConfig:', siteConfig);
-  console.log('🎯 servicios visible:', siteConfig?.servicios?.visible);
-  console.log('📚 cursos visible:', siteConfig?.cursos?.visible);
-  console.log('🎓 entrenamientos:', entrenamientos);
+  // console.log('🏠 Renderizando página principal');
+  // console.log('🔧 siteConfig:', siteConfig);
+  // console.log('🎯 servicios visible:', siteConfig?.servicios?.visible);
+  // console.log('📚 cursos visible:', siteConfig?.cursos?.visible);
+  // console.log('🎓 entrenamientos:', entrenamientos);
   
   const router = useRouter();
   const { data: session } = useSession(); // Hook del cliente para detectar cambios en tiempo real
@@ -243,19 +243,19 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
 
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
-    console.log('🔍 Debug handleStartNowClick:', {
-      session: !!session,
-      sessionUser: session?.user?.email,
-      sessionStatus: session ? 'authenticated' : 'not authenticated'
-    });
+    // console.log('🔍 Debug handleStartNowClick:', {
+    //   session: !!session,
+    //   sessionUser: session?.user?.email,
+    //   sessionStatus: session ? 'authenticated' : 'not authenticated'
+    // });
     
     if (session) {
       // Si el usuario está autenticado, redirigir a /alertas
-      console.log('✅ Usuario autenticado, redirigiendo a /alertas');
+      // console.log('✅ Usuario autenticado, redirigiendo a /alertas');
       router.push('/alertas');
     } else {
       // Si no está autenticado, iniciar sesión con Google
-      console.log('❌ Usuario no autenticado, iniciando sesión');
+      // console.log('❌ Usuario no autenticado, iniciando sesión');
       signIn('google');
     }
   };
@@ -330,7 +330,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
         toast.error(data.error || 'Error al procesar el pago');
       }
     } catch (error) {
-      console.error('Error:', error);
+      // console.error('Error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast.error(`Error al procesar el pago: ${errorMessage}`);
     } finally {
@@ -1411,17 +1411,17 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔄 Ejecutando getServerSideProps en página principal');
+  // console.log('🔄 Ejecutando getServerSideProps en página principal');
   
   try {
     // Verificar si el usuario es administrador (solo para la flag, no para restringir acceso)
     const adminVerification = await verifyAdminAccess(context);
     const isAdmin = adminVerification.isAdmin || false;
     
-    console.log('👤 Usuario es admin:', isAdmin);
+    // console.log('👤 Usuario es admin:', isAdmin);
     
     const session = await getSession(context);
-    console.log('✅ Sesión obtenida:', session ? 'Usuario autenticado' : 'Usuario no autenticado');
+    // console.log('✅ Sesión obtenida:', session ? 'Usuario autenticado' : 'Usuario no autenticado');
     
     // Configuración por defecto - siempre funcional
     const defaultSiteConfig = {
@@ -1569,7 +1569,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           initialPricing = pricingData?.data || null;
         }
       } catch (apiError) {
-        console.log('⚠️ Error al obtener datos de APIs, usando valores por defecto:', apiError);
+        // console.log('⚠️ Error al obtener datos de APIs, usando valores por defecto:', apiError);
       }
     }
 
@@ -1584,7 +1584,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       },
     };
   } catch (error) {
-    console.error('❌ Error in getServerSideProps:', error);
+    // console.error('❌ Error in getServerSideProps:', error);
     // En caso de error, devolver valores por defecto funcionales
     return {
       props: {

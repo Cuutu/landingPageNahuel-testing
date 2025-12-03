@@ -36,7 +36,7 @@ const ClassCalendar: React.FC<ClassCalendarProps> = ({
       
       if (earliestEvent.date) {
         const earliestDate = new Date(earliestEvent.date);
-        console.log('🎯 Posicionando calendario en fecha más temprana:', earliestDate);
+        // console.log('🎯 Posicionando calendario en fecha más temprana:', earliestDate);
         setCurrentDate(earliestDate);
       }
     }

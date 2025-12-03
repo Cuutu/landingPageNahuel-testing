@@ -75,14 +75,14 @@ const AdminEnviarLinksPage = ({ user }: AdminEnviarLinksProps) => {
   const loadUpcomingSessions = async () => {
     try {
       setLoading(true);
-      console.log('📅 Cargando sesiones próximas...');
+      // console.log('📅 Cargando sesiones próximas...');
       
       const response = await fetch('/api/admin/upcoming-sessions');
       
       if (response.ok) {
         const data = await response.json();
         setSessions(data.sessions || []);
-        console.log(`✅ Cargadas ${data.sessions?.length || 0} sesiones próximas`);
+        // console.log(`✅ Cargadas ${data.sessions?.length || 0} sesiones próximas`);
       } else {
         console.error('❌ Error al cargar sesiones:', response.status);
         toast.error('Error al cargar sesiones próximas');
@@ -485,13 +485,13 @@ const AdminEnviarLinksPage = ({ user }: AdminEnviarLinksProps) => {
 };
 
 export const getServerSideProps: GetServerSideProps = async (context: GetServerSidePropsContext) => {
-  console.log('🔍 [ENVIAR-LINKS] Verificando acceso de admin...');
+  // console.log('🔍 [ENVIAR-LINKS] Verificando acceso de admin...');
   
   try {
     const verification = await verifyAdminAccess(context);
     
     if (!verification.isAdmin) {
-      console.log('❌ [ENVIAR-LINKS] Acceso denegado');
+      // console.log('❌ [ENVIAR-LINKS] Acceso denegado');
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -500,7 +500,7 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
       };
     }
 
-    console.log('✅ [ENVIAR-LINKS] Acceso confirmado');
+    // console.log('✅ [ENVIAR-LINKS] Acceso confirmado');
     
     return {
       props: {

@@ -48,7 +48,7 @@ export const useCopyToClipboard = () => {
       });
 
       // Log para debugging
-      console.log(`✅ Copiado al portapapeles: ${itemName} - ${text}`);
+      // console.log(`✅ Copiado al portapapeles: ${itemName} - ${text}`);
 
     } catch (error) {
       console.error('Error al copiar:', error);

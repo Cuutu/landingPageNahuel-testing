@@ -45,7 +45,7 @@ const VideoPlayerMux: React.FC<VideoPlayerMuxProps> = ({
         // Importar el elemento personalizado de MUX
         await import('@mux/mux-player');
         
-        console.log('✅ Player MUX cargado para playback ID:', playbackId);
+        // console.log('✅ Player MUX cargado para playback ID:', playbackId);
       } catch (error) {
         const errorMessage = 'Error cargando el player de MUX';
         console.error('❌ Error cargando MUX player:', error);
@@ -88,7 +88,7 @@ const VideoPlayerMux: React.FC<VideoPlayerMuxProps> = ({
           onError?.('Error reproduciendo el video');
         }}
         onLoadedMetadata={() => {
-          console.log('✅ Video MUX cargado correctamente');
+          // console.log('✅ Video MUX cargado correctamente');
         }}
       />
 

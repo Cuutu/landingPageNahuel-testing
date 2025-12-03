@@ -64,7 +64,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   // Marcar notificación como leída
   const markAsRead = async (notificationId: string) => {
     try {
-      console.log('🔔 Marcando notificación como leída:', notificationId);
+      // console.log('🔔 Marcando notificación como leída:', notificationId);
       setMarkingAsRead(notificationId);
       
       const response = await fetch('/api/notifications/get', {
@@ -75,11 +75,11 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
         body: JSON.stringify({ notificationId }),
       });
 
-      console.log('🔔 Respuesta del servidor:', response.status, response.statusText);
+      // console.log('🔔 Respuesta del servidor:', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('🔔 Resultado exitoso:', result);
+        // console.log('🔔 Resultado exitoso:', result);
         
         // Actualizar estado local
         setNotifications(prev => 
@@ -111,7 +111,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   // Marcar todas como leídas
   const markAllAsRead = async () => {
     try {
-      console.log('🔔 Marcando todas las notificaciones como leídas');
+      // console.log('🔔 Marcando todas las notificaciones como leídas');
       setMarkingAllAsRead(true);
       
       const response = await fetch('/api/notifications/get', {
@@ -122,11 +122,11 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
         body: JSON.stringify({ markAllAsRead: true }),
       });
 
-      console.log('🔔 Respuesta del servidor (markAllAsRead):', response.status, response.statusText);
+      // console.log('🔔 Respuesta del servidor (markAllAsRead):', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('🔔 Resultado exitoso (markAllAsRead):', result);
+        // console.log('🔔 Resultado exitoso (markAllAsRead):', result);
         
         // Actualizar todas las notificaciones como leídas
         setNotifications(prev => 
@@ -152,7 +152,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   // Eliminar todas las notificaciones leídas
   const deleteAllReadNotifications = async () => {
     try {
-      console.log('🗑️ Eliminando todas las notificaciones leídas...');
+      // console.log('🗑️ Eliminando todas las notificaciones leídas...');
       setDeletingRead(true);
       
       const response = await fetch('/api/notifications/delete-read', {
@@ -162,17 +162,17 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
         },
       });
 
-      console.log('🗑️ Respuesta del servidor:', response.status, response.statusText);
+      // console.log('🗑️ Respuesta del servidor:', response.status, response.statusText);
 
       if (response.ok) {
         const result = await response.json();
-        console.log('🗑️ Resultado exitoso:', result);
+        // console.log('🗑️ Resultado exitoso:', result);
         
         // Recargar notificaciones para reflejar los cambios
         await fetchNotifications();
         
         // Opcional: mostrar mensaje de éxito
-        console.log(`✅ ${result.deletedCount} notificaciones leídas eliminadas`);
+        // console.log(`✅ ${result.deletedCount} notificaciones leídas eliminadas`);
       } else {
         const errorData = await response.json();
         console.error('🗑️ Error del servidor:', errorData);

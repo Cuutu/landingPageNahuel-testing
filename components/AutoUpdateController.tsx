@@ -38,7 +38,7 @@ const AutoUpdateController: React.FC<AutoUpdateControllerProps> = ({
     isUpdating: isPriceUpdating
   } = useAutoPriceUpdate(
     onPriceUpdate || (async () => {
-      console.log('🔄 Función de actualización de precios no configurada');
+      // console.log('🔄 Función de actualización de precios no configurada');
     }),
     10 // 10 minutos
   );
@@ -55,7 +55,7 @@ const AutoUpdateController: React.FC<AutoUpdateControllerProps> = ({
     error: marketCloseError
   } = useMarketClose(
     onMarketClose || (async () => {
-      console.log('🔔 Función de cierre de mercado no configurada');
+      // console.log('🔔 Función de cierre de mercado no configurada');
     }),
     5 // 5 minutos
   );

@@ -29,20 +29,20 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
       if (status === 'loading') return;
 
       if (status === 'unauthenticated') {
-        console.log('❌ [ADMIN GUARD] No hay sesión - redirigiendo a login');
+        // console.log('❌ [ADMIN GUARD] No hay sesión - redirigiendo a login');
         router.push('/api/auth/signin');
         return;
       }
 
       if (session?.user?.email) {
-        console.log('🔍 [ADMIN GUARD] Verificando rol para:', session.user.email);
-        console.log('🔧 [ADMIN GUARD] Rol en sesión:', session.user.role);
+        // console.log('🔍 [ADMIN GUARD] Verificando rol para:', session.user.email);
+        // console.log('🔧 [ADMIN GUARD] Rol en sesión:', session.user.role);
 
         if (session.user.role === 'admin') {
-          console.log('✅ [ADMIN GUARD] Acceso de admin confirmado');
+          // console.log('✅ [ADMIN GUARD] Acceso de admin confirmado');
           setIsAuthorized(true);
         } else {
-          console.log('❌ [ADMIN GUARD] Usuario no es admin - redirigiendo a home');
+          // console.log('❌ [ADMIN GUARD] Usuario no es admin - redirigiendo a home');
           router.push('/');
           return;
         }

@@ -88,7 +88,7 @@ const AsesoriasTestPage = () => {
         setAvailableTimes([]);
       }
     } catch (error) {
-      console.error('Error al cargar horarios:', error);
+      // console.error('Error al cargar horarios:', error);
       toast.error('Error al cargar horarios disponibles');
       setAvailableTimes([]);
     } finally {

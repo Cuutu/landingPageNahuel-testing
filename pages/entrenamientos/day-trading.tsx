@@ -343,7 +343,7 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
   // Función para cargar fechas de entrenamiento (simplificada)
   const loadTrainingDates = async () => {
     try {
-      console.log('📅 Cargando fechas específicas de Day Trading...');
+      // console.log('📅 Cargando fechas específicas de Day Trading...');
       
       const response = await fetch('/api/training-dates/DayTrading');
       const data = await response.json();
@@ -354,7 +354,7 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
           date: new Date(date.date)
         }));
         
-        console.log('✅ Fechas cargadas:', dates.length);
+        // console.log('✅ Fechas cargadas:', dates.length);
         
         setTrainingDatesState(dates);
         const nextDate = findNextTrainingDate(dates);
@@ -372,7 +372,7 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
           setStartDateText('Próximamente - Fechas por confirmar');
         }
       } else {
-        console.log('📭 No hay fechas específicas configuradas');
+        // console.log('📭 No hay fechas específicas configuradas');
         setTrainingDatesState([]);
         setNextTrainingDate(null);
         setStartDateText('Próximamente - Fechas por confirmar');
@@ -491,7 +491,7 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
   };
 
   const handleModuleClick = (moduleId: number) => {
-    console.log(`Accediendo al módulo ${moduleId}`);
+    // console.log(`Accediendo al módulo ${moduleId}`);
     // Aquí se implementaría la navegación al módulo específico
   };
 
@@ -505,7 +505,7 @@ const DayTradingPage: React.FC<DayTradingPageProps> = ({
     
     if (time && title) {
       // Aquí se implementaría la lógica para agregar nueva fecha
-      console.log('Agregando nueva fecha:', { selectedDate, time, title });
+      // console.log('Agregando nueva fecha:', { selectedDate, time, title });
     }
   };
 

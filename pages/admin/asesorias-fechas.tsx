@@ -64,7 +64,7 @@ export default function AsesoriasFechasPage() {
   const fetchAdvisoryDates = async () => {
     try {
       setLoading(true);
-      console.log('📅 Cargando fechas de asesorías...');
+      // console.log('📅 Cargando fechas de asesorías...');
       
       const response = await fetch('/api/advisory-dates/ConsultorioFinanciero');
       
@@ -76,7 +76,7 @@ export default function AsesoriasFechasPage() {
             new Date(a.date).getTime() - new Date(b.date).getTime()
           );
           setAdvisoryDates(sortedDates);
-          console.log('✅ Fechas cargadas:', sortedDates.length);
+          // console.log('✅ Fechas cargadas:', sortedDates.length);
         } else {
           setAdvisoryDates([]);
         }
@@ -108,7 +108,7 @@ export default function AsesoriasFechasPage() {
     }
 
     try {
-      console.log('📝 Guardando fecha de asesoría...');
+      // console.log('📝 Guardando fecha de asesoría...');
       
       const url = `/api/advisory-dates/${formData.advisoryType}`;
       const method = editingDate ? 'PUT' : 'POST';
@@ -146,7 +146,7 @@ export default function AsesoriasFechasPage() {
     }
 
     try {
-      console.log('🗑️ Eliminando fecha:', dateId);
+      // console.log('🗑️ Eliminando fecha:', dateId);
       
       const response = await fetch(`/api/advisory-dates/${advisoryType}`, {
         method: 'DELETE',
@@ -202,7 +202,7 @@ export default function AsesoriasFechasPage() {
 
   const handleCleanExpiredReservations = async () => {
     try {
-      console.log('🧹 Limpiando reservas temporales expiradas...');
+      // console.log('🧹 Limpiando reservas temporales expiradas...');
       
       const response = await fetch('/api/admin/clean-expired-reservations', {
         method: 'POST',

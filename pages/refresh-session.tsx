@@ -7,13 +7,13 @@ export default function RefreshSessionPage() {
 
   const handleForceUpdate = async () => {
     setUpdating(true);
-    console.log('🔄 Forzando actualización de sesión...');
+    // console.log('🔄 Forzando actualización de sesión...');
     
     try {
       await update(); // Esto fuerza a NextAuth a ejecutar los callbacks
-      console.log('✅ Sesión actualizada');
+      // console.log('✅ Sesión actualizada');
     } catch (error) {
-      console.error('❌ Error al actualizar sesión:', error);
+      // console.error('❌ Error al actualizar sesión:', error);
     } finally {
       setUpdating(false);
     }
@@ -21,7 +21,7 @@ export default function RefreshSessionPage() {
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 [LOGOUT] Iniciando cierre de sesión...');
+      // console.log('🚪 [LOGOUT] Iniciando cierre de sesión...');
       await signOut({ 
         callbackUrl: '/',
         redirect: true 

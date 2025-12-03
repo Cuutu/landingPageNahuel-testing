@@ -40,12 +40,12 @@ const LimpiarReservasPage = () => {
 
       if (response.ok) {
         setBookings(data.bookings || []);
-        console.log('📊 Resumen de reservas:', {
-          total: data.total,
-          consultorioFinanciero: data.consultorioFinanciero,
-          active: data.active,
-          ghostBookings: data.ghostBookings
-        });
+        // console.log('📊 Resumen de reservas:', {
+        //   total: data.total,
+        //   consultorioFinanciero: data.consultorioFinanciero,
+        //   active: data.active,
+        //   ghostBookings: data.ghostBookings
+        // });
       } else {
         toast.error('Error al cargar reservas: ' + data.error);
       }

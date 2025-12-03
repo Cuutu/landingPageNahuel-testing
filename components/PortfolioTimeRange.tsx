@@ -122,10 +122,10 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       });
       
       if (response.ok) {
-        console.log('✅ Preferencia de portfolio guardada en backend');
+        // console.log('✅ Preferencia de portfolio guardada en backend');
       }
     } catch (error) {
-      console.warn('No se pudo guardar preferencia en backend:', error);
+      // console.warn('No se pudo guardar preferencia en backend:', error);
       // Continuar con localStorage como fallback
     }
   };
@@ -237,7 +237,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     // ✅ CORREGIDO: Si no hay alertas, el rendimiento relativo debe ser -100%
     // Sin operaciones, se considera pérdida total comparado con el mercado
     if (totalAlerts === 0) {
-      console.log('📊 [PortfolioTimeRange] No hay alertas, estableciendo rendimiento relativo en -100%');
+      // console.log('📊 [PortfolioTimeRange] No hay alertas, estableciendo rendimiento relativo en -100%');
       return {
         totalProfit: 0,
         totalAlerts: 0,
@@ -255,19 +255,19 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     if (serviceReturnFromAPI !== null && serviceReturnFromAPI !== undefined) {
       // Usar el rendimiento del API de returns (mismo que usa SP500Comparison)
       portfolioReturn = serviceReturnFromAPI;
-      console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde /api/portfolio/returns:', portfolioReturn);
+      // console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde /api/portfolio/returns:', portfolioReturn);
     } else {
       // Fallback: calcular desde los datos de evolución
       const portfolioDataForCalc = data.length > 0 ? data : [];
       const firstValue = portfolioDataForCalc[0]?.value || 10000;
       const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
       portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
-      console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución:', {
-        portfolioReturn,
-        firstValue,
-        lastValue,
-        dataLength: data.length
-      });
+      // console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución:', {
+      //   portfolioReturn,
+      //   firstValue,
+      //   lastValue,
+      //   dataLength: data.length
+      // });
     }
     
     const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500 para el período seleccionado
@@ -277,14 +277,14 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     // Esto muestra cuántos puntos porcentuales más (o menos) rindió el portfolio vs el S&P 500
     const relativePerformanceVsSP500 = portfolioReturn - sp500Return;
     
-    console.log('📊 [PortfolioTimeRange] Calculando rendimiento relativo vs S&P 500:', {
-      portfolioReturn,
-      sp500Return,
-      relativePerformance: relativePerformanceVsSP500,
-      serviceReturnFromAPI,
-      usingAPIData: serviceReturnFromAPI !== null,
-      totalAlerts
-    });
+    // console.log('📊 [PortfolioTimeRange] Calculando rendimiento relativo vs S&P 500:', {
+    //   portfolioReturn,
+    //   sp500Return,
+    //   relativePerformance: relativePerformanceVsSP500,
+    //   serviceReturnFromAPI,
+    //   usingAPIData: serviceReturnFromAPI !== null,
+    //   totalAlerts
+    // });
     
     return {
       totalProfit: baseStats.totalProfit || 0,
@@ -306,14 +306,14 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       const change = (baseValue * percentage) / 100;
       const currentValue = baseValue + change;
       
-      console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde API:', {
-        serviceReturn,
-        baseValue,
-        change,
-        percentage,
-        currentValue,
-        selectedRange
-      });
+      // console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde API:', {
+      //   serviceReturn,
+      //   baseValue,
+      //   change,
+      //   percentage,
+      //   currentValue,
+      //   selectedRange
+      // });
       
       return { change, percentage, currentValue };
     }
@@ -327,14 +327,14 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
     const change = lastValue - firstValue;
     const percentage = firstValue ? (change / firstValue) * 100 : 0;
     
-    console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución (fallback):', {
-      firstValue,
-      lastValue,
-      change,
-      percentage,
-      dataLength: portfolioData.length,
-      selectedRange
-    });
+    // console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución (fallback):', {
+    //   firstValue,
+    //   lastValue,
+    //   change,
+    //   percentage,
+    //   dataLength: portfolioData.length,
+    //   selectedRange
+    // });
     
     return { change, percentage, currentValue: lastValue };
   };

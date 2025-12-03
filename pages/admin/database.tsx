@@ -388,16 +388,16 @@ export default function AdminDatabasePage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [DATABASE] Iniciando verificación de acceso...');
+  // console.log('🔍 [DATABASE] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [DATABASE] Resultado de verificación:', verification);
+    // console.log('🔍 [DATABASE] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [DATABASE] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [DATABASE] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -406,7 +406,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [DATABASE] Acceso de admin confirmado para:', verification.user?.email);
+    // console.log('✅ [DATABASE] Acceso de admin confirmado para:', verification.user?.email);
     
     return {
       props: {

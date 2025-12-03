@@ -330,14 +330,14 @@ const LeccionesViewer: React.FC<LeccionesViewerProps> = ({
                 title={content.title}
                 style={{ width: '100%', height: '600px', border: 'none', borderRadius: '0.5rem' }}
                 onLoad={() => {
-                  console.log(`✅ PDF cargado exitosamente desde ${pdfInfo.type}:`, pdfFileName);
+                  // console.log(`✅ PDF cargado exitosamente desde ${pdfInfo.type}:`, pdfFileName);
                 }}
                 onError={(e) => {
-                  console.warn(`❌ Error cargando PDF desde ${pdfInfo.type}, intentando fallback`);
+                  // console.warn(`❌ Error cargando PDF desde ${pdfInfo.type}, intentando fallback`);
                   // En caso de error, cambiar src al URL directo (solo para Cloudinary)
                   const iframe = e.target as HTMLIFrameElement;
                   if (directViewUrl && iframe.src !== directViewUrl) {
-                    console.log('🔄 Cambiando a URL directa');
+                    // console.log('🔄 Cambiando a URL directa');
                     iframe.src = directViewUrl;
                   }
                 }}

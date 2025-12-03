@@ -83,11 +83,11 @@ export default function PDFUploader({
     onUploadStart?.();
 
     try {
-      console.log('📤 Subiendo PDF:', file.name);
+      // console.log('📤 Subiendo PDF:', file.name);
       
       const uploadedPDF = await uploadToCloudinary(file);
       
-      console.log('✅ PDF subido exitosamente:', uploadedPDF.public_id);
+      // console.log('✅ PDF subido exitosamente:', uploadedPDF.public_id);
       
       onPDFUploaded(uploadedPDF);
     } catch (error) {

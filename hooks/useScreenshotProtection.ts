@@ -27,9 +27,9 @@ export const useScreenshotProtection = () => {
     }));
 
     // Log para debugging (solo en desarrollo)
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🛡️ Screenshot protection activated: ${reason}`);
-    }
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log(`🛡️ Screenshot protection activated: ${reason}`);
+    // }
 
     // Auto-desactivar después de 3 segundos
     setTimeout(() => {

@@ -83,11 +83,11 @@ export default function PDFUploaderDB({
     onUploadStart?.();
 
     try {
-      console.log('📤 Subiendo PDF a base de datos:', file.name);
+      // console.log('📤 Subiendo PDF a base de datos:', file.name);
       
       const uploadedPDF = await uploadToDatabase(file);
       
-      console.log('✅ PDF subido exitosamente a base de datos:', uploadedPDF.pdfId);
+      // console.log('✅ PDF subido exitosamente a base de datos:', uploadedPDF.pdfId);
       
       onPDFUploaded(uploadedPDF);
     } catch (error) {

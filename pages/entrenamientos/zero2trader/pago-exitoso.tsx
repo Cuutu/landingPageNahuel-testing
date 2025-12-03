@@ -41,19 +41,19 @@ export default function PaymentSuccessPage({
 
   useEffect(() => {
     // Log para debugging
-    console.log('Payment success data:', {
-      collectionId,
-      collectionStatus,
-      paymentId,
-      status,
-      externalReference,
-      paymentType,
-      merchantOrderId,
-      preferenceId,
-      siteId,
-      processingMode,
-      merchantAccountId
-    });
+    // console.log('Payment success data:', {
+    //   collectionId,
+    //   collectionStatus,
+    //   paymentId,
+    //   status,
+    //   externalReference,
+    //   paymentType,
+    //   merchantOrderId,
+    //   preferenceId,
+    //   siteId,
+    //   processingMode,
+    //   merchantAccountId
+    // });
 
     // ✅ VERIFICAR PAGO REAL con MercadoPago
     if (externalReference) {
@@ -65,7 +65,7 @@ export default function PaymentSuccessPage({
 
   const verifyPaymentWithMercadoPago = async (reference: string) => {
     try {
-      console.log('🔍 Verificando pago de entrenamiento mensual con MercadoPago...');
+      // console.log('🔍 Verificando pago de entrenamiento mensual con MercadoPago...');
       
       const response = await fetch('/api/payments/process-monthly-training-payment', {
         method: 'POST',
@@ -76,7 +76,7 @@ export default function PaymentSuccessPage({
       const data = await response.json();
       
       if (response.ok && data.success) {
-        console.log('✅ Pago de entrenamiento mensual verificado:', data);
+        // console.log('✅ Pago de entrenamiento mensual verificado:', data);
         setPaymentVerified(true);
         setPaymentDetails(data);
       } else {

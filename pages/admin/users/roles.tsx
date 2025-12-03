@@ -419,16 +419,16 @@ export default function AdminRolesPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [ROLES] Iniciando verificación de acceso...');
+  // console.log('🔍 [ROLES] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [ROLES] Resultado de verificación:', verification);
+    // console.log('🔍 [ROLES] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [ROLES] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [ROLES] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -437,7 +437,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [ROLES] Acceso de admin confirmado para:', verification.user?.email);
+    // console.log('✅ [ROLES] Acceso de admin confirmado para:', verification.user?.email);
     
     return {
       props: {

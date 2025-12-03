@@ -67,12 +67,12 @@ export default function EntrenamientosSolicitudesPage() {
   const fetchTrainings = async () => {
     try {
       setLoading(true);
-      console.log('📊 Cargando entrenamientos y solicitudes...');
+      // console.log('📊 Cargando entrenamientos y solicitudes...');
       
       const response = await fetch('/api/admin/entrenamientos/solicitudes');
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Datos cargados:', data);
+        // console.log('✅ Datos cargados:', data);
         setTrainings(data.trainings || []);
       } else {
         console.error('❌ Error al cargar entrenamientos:', response.status);
@@ -108,7 +108,7 @@ export default function EntrenamientosSolicitudesPage() {
       });
 
       if (response.ok) {
-        console.log('✅ Estado actualizado');
+        // console.log('✅ Estado actualizado');
         fetchTrainings(); // Recargar datos
       } else {
         console.error('❌ Error al actualizar estado');
@@ -450,13 +450,13 @@ export default function EntrenamientosSolicitudesPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [ENTRENAMIENTOS-SOLICITUDES] Verificando acceso de admin...');
+  // console.log('🔍 [ENTRENAMIENTOS-SOLICITUDES] Verificando acceso de admin...');
   
   try {
     const verification = await verifyAdminAccess(context);
     
     if (!verification.isAdmin) {
-      console.log('❌ [ENTRENAMIENTOS-SOLICITUDES] Acceso denegado');
+      // console.log('❌ [ENTRENAMIENTOS-SOLICITUDES] Acceso denegado');
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -465,7 +465,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [ENTRENAMIENTOS-SOLICITUDES] Acceso confirmado');
+    // console.log('✅ [ENTRENAMIENTOS-SOLICITUDES] Acceso confirmado');
     
     return {
       props: {

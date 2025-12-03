@@ -42,7 +42,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 
   const fetchSP500Data = async (selectedPeriod: string) => {
     try {
-      console.log(`📊 [SP500] Obteniendo datos para período: ${selectedPeriod}`);
+      // console.log(`📊 [SP500] Obteniendo datos para período: ${selectedPeriod}`);
       const response = await fetch(`/api/market-data/spy500-performance?period=${selectedPeriod}`);
       
       if (!response.ok) {
@@ -51,23 +51,23 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       }
       
       const data = await response.json();
-      console.log(`✅ [SP500] Datos recibidos:`, {
-        periodChangePercent: data.periodChangePercent,
-        changePercent: data.changePercent,
-        currentPrice: data.currentPrice,
-        dataProvider: data.dataProvider
-      });
+      // console.log(`✅ [SP500] Datos recibidos:`, {
+      //   periodChangePercent: data.periodChangePercent,
+      //   changePercent: data.changePercent,
+      //   currentPrice: data.currentPrice,
+      //   dataProvider: data.dataProvider
+      // });
       
       // Verificar que los datos tienen al menos un campo de porcentaje
       if (data.periodChangePercent === undefined && data.changePercent === undefined) {
-        console.warn('⚠️ [SP500] Datos recibidos sin porcentaje de cambio');
+        // console.warn('⚠️ [SP500] Datos recibidos sin porcentaje de cambio');
       }
       
       setSp500Data(data);
       setError(null);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
-      console.error('❌ [SP500] Error fetching SP500 data:', err);
+      // console.error('❌ [SP500] Error fetching SP500 data:', err);
       setError(errorMessage);
       // No establecer sp500Data a null, mantener el último valor si existe
     }
@@ -88,7 +88,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
 
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
-      console.log(`📊 [SP500] Calculando rendimiento para serviceType: ${serviceType}, período: ${selectedPeriod}`);
+      // console.log(`📊 [SP500] Calculando rendimiento para serviceType: ${serviceType}, período: ${selectedPeriod}`);
       // ✅ NUEVO: Usar el nuevo endpoint de rendimientos basado en valorTotalCartera y valorActualCartera
       const response = await fetch(`/api/portfolio/returns?pool=${serviceType}`);
 
@@ -116,7 +116,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       };
 
       const days = periodToDays(selectedPeriod);
-      console.log(`📊 [SP500] Obteniendo portfolio-evolution para tipo: ${serviceType}, días: ${days}`);
+      // console.log(`📊 [SP500] Obteniendo portfolio-evolution para tipo: ${serviceType}, días: ${days}`);
       const portfolioResponse = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
       
       let activeAlerts = 0;
@@ -140,13 +140,13 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
             const change = lastValue - firstValue;
             portfolioReturn = firstValue ? (change / firstValue) * 100 : 0;
             
-            console.log(`📊 [SP500] Calculado portfolioReturn desde evolución (igual que PortfolioTimeRange):`, {
-              firstValue,
-              lastValue,
-              change,
-              portfolioReturn,
-              dataLength: portfolioData.data.length
-            });
+            // console.log(`📊 [SP500] Calculado portfolioReturn desde evolución (igual que PortfolioTimeRange):`, {
+            //   firstValue,
+            //   lastValue,
+            //   change,
+            //   portfolioReturn,
+            //   dataLength: portfolioData.data.length
+            // });
           } else {
             // Si no hay datos de evolución, usar 0
             portfolioReturn = 0;
@@ -167,24 +167,24 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       // Si tenemos el cálculo desde portfolioData, usarlo (es la misma fuente que PortfolioTimeRange)
       if (portfolioReturn !== null && portfolioReturn !== undefined) {
         totalReturnPercent = portfolioReturn;
-        console.log(`📊 [SP500] Usando cálculo desde portfolio-evolution: ${totalReturnPercent}% (igual que Evolución del Portafolio Real)`);
+        // console.log(`📊 [SP500] Usando cálculo desde portfolio-evolution: ${totalReturnPercent}% (igual que Evolución del Portafolio Real)`);
       } else if (rawReturnValue !== null && rawReturnValue !== undefined) {
         // Fallback: usar /api/portfolio/returns solo si no hay datos de portfolioData
         totalReturnPercent = rawReturnValue;
-        console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns (fallback): ${totalReturnPercent}%`);
+        // console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns (fallback): ${totalReturnPercent}%`);
       } else {
         totalReturnPercent = 0;
-        console.warn(`⚠️ [SP500] No hay datos disponibles para período ${selectedPeriod}`);
+        // console.warn(`⚠️ [SP500] No hay datos disponibles para período ${selectedPeriod}`);
       }
       
-      console.log(`📊 [SP500] Rendimiento final del servicio para período ${selectedPeriod}:`, {
-        selectedPeriod,
-        returnsKey,
-        rawReturnValue,
-        portfolioReturn,
-        finalValue: totalReturnPercent,
-        source: rawReturnValue !== null && rawReturnValue !== undefined ? 'portfolio/returns' : 'portfolio-evolution (igual que Evolución del Portafolio Real)'
-      });
+      // console.log(`📊 [SP500] Rendimiento final del servicio para período ${selectedPeriod}:`, {
+      //   selectedPeriod,
+      //   returnsKey,
+      //   rawReturnValue,
+      //   portfolioReturn,
+      //   finalValue: totalReturnPercent,
+      //   source: rawReturnValue !== null && rawReturnValue !== undefined ? 'portfolio/returns' : 'portfolio-evolution (igual que Evolución del Portafolio Real)'
+      // });
 
       const serviceData: ServicePerformanceData = {
         totalReturnPercent: typeof totalReturnPercent === 'number' ? parseFloat(totalReturnPercent.toFixed(2)) : 0,
@@ -200,17 +200,17 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         period: selectedPeriod
       };
       
-      console.log(`✅ [SP500] ServiceData creado:`, {
-        totalReturnPercent: serviceData.totalReturnPercent,
-        period: serviceData.period,
-        serviceType
-      });
+      // console.log(`✅ [SP500] ServiceData creado:`, {
+      //   totalReturnPercent: serviceData.totalReturnPercent,
+      //   period: serviceData.period,
+      //   serviceType
+      // });
 
       setServiceData(serviceData);
       setError(null);
 
     } catch (err) {
-      console.error('Error calculating service performance:', err);
+      // console.error('Error calculating service performance:', err);
       setError(err instanceof Error ? err.message : 'Error al calcular rendimiento del servicio');
 
       // Fallback a datos simulados si hay error
@@ -232,7 +232,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   };
 
   const refreshData = async (selectedPeriod: string) => {
-    console.log(`🔄 [SP500] refreshData iniciado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
+    // console.log(`🔄 [SP500] refreshData iniciado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
     setLoading(true);
     setError(null);
     
@@ -241,9 +241,9 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         fetchSP500Data(selectedPeriod),
         calculateServicePerformance(selectedPeriod)
       ]);
-      console.log(`✅ [SP500] refreshData completado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
+      // console.log(`✅ [SP500] refreshData completado para período: ${selectedPeriod}, serviceType: ${serviceType}`);
     } catch (err) {
-      console.error('❌ [SP500] Error en refreshData:', err);
+      // console.error('❌ [SP500] Error en refreshData:', err);
       setError(err instanceof Error ? err.message : 'Error al actualizar datos');
     } finally {
       setLoading(false);
@@ -251,7 +251,7 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   };
 
   useEffect(() => {
-    console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}, serviceType: ${serviceType}`);
+    // console.log(`🔄 [SP500] useEffect: Cambio de período a ${period}, serviceType: ${serviceType}`);
     // ✅ CORREGIDO: Limpiar datos anteriores cuando cambia el período para forzar recarga
     setServiceData(null);
     setSp500Data(null);
@@ -277,16 +277,16 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
         // Esto muestra cuántos puntos porcentuales más (o menos) rindió el servicio vs el S&P 500
         relativePerformanceVsSP500 = serviceReturn - sp500Return;
       } else {
-        console.log(`📊 [SP500] No hay alertas (${totalAlerts}), estableciendo rendimiento relativo en -100%`);
+        // console.log(`📊 [SP500] No hay alertas (${totalAlerts}), estableciendo rendimiento relativo en -100%`);
       }
       
-      console.log(`📊 [SP500] Calculando rendimiento relativo vs S&P 500:`, {
-        serviceReturn,
-        sp500Return,
-        relativePerformance: relativePerformanceVsSP500,
-        period: serviceData.period,
-        totalAlerts
-      });
+      // console.log(`📊 [SP500] Calculando rendimiento relativo vs S&P 500:`, {
+      //   serviceReturn,
+      //   sp500Return,
+      //   relativePerformance: relativePerformanceVsSP500,
+      //   period: serviceData.period,
+      //   totalAlerts
+      // });
       
       setServiceData(prev => prev ? {
         ...prev,

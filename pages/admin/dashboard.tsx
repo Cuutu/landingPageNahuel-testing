@@ -301,7 +301,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const fetchDashboardStats = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📊 Dashboard - Cargando estadísticas...');
+      // console.log('📊 Dashboard - Cargando estadísticas...');
       
       // Usar AbortController para cancelar requests si el componente se desmonta
       const controller = new AbortController();
@@ -319,7 +319,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Dashboard - Estadísticas cargadas:', data);
+        // console.log('✅ Dashboard - Estadísticas cargadas:', data);
         setStats(data);
       } else {
         console.error('❌ Dashboard - Error al cargar estadísticas:', response.status);
@@ -694,7 +694,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const fixLoginDates = useCallback(async () => {
     try {
       setFixingLogins(true);
-      console.log('🔧 Iniciando corrección de fechas de login...');
+      // console.log('🔧 Iniciando corrección de fechas de login...');
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos para esta operación
@@ -711,7 +711,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Corrección completada:', data);
+        // console.log('✅ Corrección completada:', data);
         
         if (data.updated > 0) {
           alert(`✅ Se actualizaron ${data.updated} usuarios con fechas de último login`);
@@ -738,7 +738,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const cleanInvalidTrainings = useCallback(async () => {
     try {
       setCleaningTrainings(true);
-      console.log('🔧 Iniciando limpieza de entrenamientos inválidos...');
+      // console.log('🔧 Iniciando limpieza de entrenamientos inválidos...');
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos para esta operación
@@ -755,7 +755,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Limpieza completada:', data);
+        // console.log('✅ Limpieza completada:', data);
         
         if (data.details && data.details.length > 0) {
           const totalRemoved = data.details.reduce((sum: number, item: any) => sum + item.removedCount, 0);
@@ -782,7 +782,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
   const handleCloseMarket = useCallback(async () => {
     try {
       setClosingMarket(true);
-      console.log('🔄 Iniciando cierre de mercado...');
+      // console.log('🔄 Iniciando cierre de mercado...');
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 segundos para esta operación
@@ -799,7 +799,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Cierre de mercado completado:', data);
+        // console.log('✅ Cierre de mercado completado:', data);
         alert(`✅ Cierre de mercado completado!\n\n📊 Alertas procesadas: ${data.processedAlerts}\n📧 Emails enviados: ${data.emailsSent}`);
       } else {
         const errorData = await response.json();
@@ -2184,16 +2184,16 @@ function PaymentsList() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [DASHBOARD] Iniciando verificación de acceso...');
+  // console.log('🔍 [DASHBOARD] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [DASHBOARD] Resultado de verificación:', verification);
+    // console.log('🔍 [DASHBOARD] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [DASHBOARD] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [DASHBOARD] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -2202,7 +2202,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [DASHBOARD] Acceso de admin confirmado para:', verification.session?.user?.email);
+    // console.log('✅ [DASHBOARD] Acceso de admin confirmado para:', verification.session?.user?.email);
     
     return {
       props: {

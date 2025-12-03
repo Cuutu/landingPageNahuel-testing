@@ -47,7 +47,7 @@ export const useAutoPriceUpdate = (
       setIsUpdating(true);
       setError(null);
       
-      console.log(`🔄 Actualizando precios automáticamente... (intento ${retryCountRef.current + 1})`);
+      // console.log(`🔄 Actualizando precios automáticamente... (intento ${retryCountRef.current + 1})`);
       
       await updateFunction();
       
@@ -58,7 +58,7 @@ export const useAutoPriceUpdate = (
       // ✅ OPTIMIZADO: Resetear contador de reintentos en éxito
       retryCountRef.current = 0;
       
-      console.log(`✅ Precios actualizados exitosamente a las ${now.toLocaleTimeString()}`);
+      // console.log(`✅ Precios actualizados exitosamente a las ${now.toLocaleTimeString()}`);
       
       // ✅ OPTIMIZADO: Batch localStorage operations
       const nextUpdateTime = new Date(now.getTime() + intervalMinutes * 60 * 1000);
@@ -81,7 +81,7 @@ export const useAutoPriceUpdate = (
       if (retryCountRef.current < maxRetries) {
         const retryDelay = Math.min(2 ** retryCountRef.current * 60 * 1000, 10 * 60 * 1000); // Max 10 minutos
         
-        console.log(`🔄 Reintentando en ${retryDelay / 1000 / 60} minutos...`);
+        // console.log(`🔄 Reintentando en ${retryDelay / 1000 / 60} minutos...`);
         
         if (updateTimeoutRef.current) {
           clearTimeout(updateTimeoutRef.current);
@@ -107,7 +107,7 @@ export const useAutoPriceUpdate = (
   const startAutoUpdate = useCallback(() => {
     if (isActiveRef.current) return;
 
-    console.log(`🚀 Iniciando actualización automática de precios cada ${intervalMinutes} minutos`);
+    // console.log(`🚀 Iniciando actualización automática de precios cada ${intervalMinutes} minutos`);
     
     isActiveRef.current = true;
     setIsActive(true);
@@ -147,7 +147,7 @@ export const useAutoPriceUpdate = (
           const shouldUpdate = timeSinceLastUpdate >= intervalMinutes * 60 * 1000;
           
           if (shouldUpdate && !isUpdating) {
-            console.log('⏰ Página visible, actualizando precios...');
+            // console.log('⏰ Página visible, actualizando precios...');
             updatePrices();
           }
         }
@@ -166,7 +166,7 @@ export const useAutoPriceUpdate = (
    * ✅ OPTIMIZADO: Detener actualización automática con cleanup completo
    */
   const stopAutoUpdate = useCallback(() => {
-    console.log('⏹️ Deteniendo actualización automática de precios');
+    // console.log('⏹️ Deteniendo actualización automática de precios');
     
     isActiveRef.current = false;
     setIsActive(false);
@@ -203,11 +203,11 @@ export const useAutoPriceUpdate = (
    */
   const forceUpdate = useCallback(() => {
     if (isUpdating) {
-      console.log('⏳ Actualización en progreso, esperando...');
+      // console.log('⏳ Actualización en progreso, esperando...');
       return;
     }
     
-    console.log('🔨 Forzando actualización manual de precios');
+    // console.log('🔨 Forzando actualización manual de precios');
     updatePrices();
   }, [updatePrices, isUpdating]);
 
@@ -223,7 +223,7 @@ export const useAutoPriceUpdate = (
     if (wasActive && savedInterval) {
       const interval = parseInt(savedInterval);
       if (interval === intervalMinutes) {
-        console.log('🔄 Restaurando actualización automática desde localStorage');
+        // console.log('🔄 Restaurando actualización automática desde localStorage');
         
         if (lastUpdateStr) {
           setLastUpdate(new Date(lastUpdateStr));

@@ -76,7 +76,7 @@ export const useMarketClose = (
     if (!isActiveRef.current) return;
 
     try {
-      console.log(`🕐 Verificando estado del mercado...`);
+      // console.log(`🕐 Verificando estado del mercado...`);
       setError(null);
       
       const isOpen = checkMarketStatus();
@@ -93,7 +93,7 @@ export const useMarketClose = (
         const minutesUntilClose = marketCloseTime - currentTime;
         
         if (minutesUntilClose <= 5 && minutesUntilClose > 0) {
-          console.log(`🔔 Mercado cerrará en ${minutesUntilClose} minutos, ejecutando función de cierre...`);
+          // console.log(`🔔 Mercado cerrará en ${minutesUntilClose} minutos, ejecutando función de cierre...`);
           await closeFunction();
         }
       }
@@ -102,7 +102,7 @@ export const useMarketClose = (
       setLastCloseCheck(now);
       setNextCloseCheck(new Date(now.getTime() + checkIntervalMinutes * 60 * 1000));
       
-      console.log(`✅ Estado del mercado verificado a las ${now.toLocaleTimeString()}`);
+      // console.log(`✅ Estado del mercado verificado a las ${now.toLocaleTimeString()}`);
       
       // ✅ NUEVO: Guardar en localStorage
       localStorage.setItem('lastMarketCloseCheck', now.toISOString());
@@ -128,7 +128,7 @@ export const useMarketClose = (
   const startMarketMonitoring = useCallback(() => {
     if (isActiveRef.current) return;
 
-    console.log(`🚀 Iniciando monitoreo de mercado cada ${checkIntervalMinutes} minutos`);
+    // console.log(`🚀 Iniciando monitoreo de mercado cada ${checkIntervalMinutes} minutos`);
     
     isActiveRef.current = true;
     
@@ -148,7 +148,7 @@ export const useMarketClose = (
     // ✅ NUEVO: Configurar listener para cuando la página vuelve a ser visible
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isActiveRef.current) {
-        console.log('📱 Página visible, verificando estado del mercado...');
+            // console.log('📱 Página visible, verificando estado del mercado...');
         checkMarketStatus();
         
         const lastCheckStr = localStorage.getItem('lastMarketCloseCheck');
@@ -158,7 +158,7 @@ export const useMarketClose = (
           const shouldCheck = timeSinceLastCheck >= checkIntervalMinutes * 60 * 1000;
           
           if (shouldCheck) {
-            console.log('⏰ Ha pasado mucho tiempo, verificando mercado...');
+            // console.log('⏰ Ha pasado mucho tiempo, verificando mercado...');
             checkMarketClose();
           }
         }
@@ -177,7 +177,7 @@ export const useMarketClose = (
    * ✅ NUEVO: Detener monitoreo de mercado
    */
   const stopMarketMonitoring = useCallback(() => {
-    console.log('⏹️ Deteniendo monitoreo de mercado');
+    // console.log('⏹️ Deteniendo monitoreo de mercado');
     
     isActiveRef.current = false;
     
@@ -199,7 +199,7 @@ export const useMarketClose = (
    * ✅ NUEVO: Forzar verificación manual
    */
   const forceCloseCheck = useCallback(() => {
-    console.log('🔨 Forzando verificación manual de cierre de mercado');
+    // console.log('🔨 Forzando verificación manual de cierre de mercado');
     checkMarketClose();
   }, [checkMarketClose]);
 
@@ -215,7 +215,7 @@ export const useMarketClose = (
     if (wasActive && savedInterval) {
       const interval = parseInt(savedInterval);
       if (interval === checkIntervalMinutes) {
-        console.log('🔄 Restaurando monitoreo de mercado desde localStorage');
+        // console.log('🔄 Restaurando monitoreo de mercado desde localStorage');
         
         if (lastCheckStr) {
           setLastCloseCheck(new Date(lastCheckStr));

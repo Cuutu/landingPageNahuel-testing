@@ -73,7 +73,7 @@ export default function AdminBulkEmailPage() {
   const handleImageUploaded = (image: CloudinaryImage) => {
     setEmailImages(prev => [...prev, image]);
     setUploadingImages(false);
-    console.log('✅ Imagen agregada al email:', image.public_id);
+    // console.log('✅ Imagen agregada al email:', image.public_id);
   };
 
   const handleImageUploadStart = () => {
@@ -1098,16 +1098,16 @@ export default function AdminBulkEmailPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [BULK EMAIL] Iniciando verificación de acceso...');
+  // console.log('🔍 [BULK EMAIL] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [BULK EMAIL] Resultado de verificación:', verification);
+    // console.log('🔍 [BULK EMAIL] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [BULK EMAIL] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [BULK EMAIL] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -1116,7 +1116,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [BULK EMAIL] Acceso de admin confirmado para:', verification.user?.email);
+    // console.log('✅ [BULK EMAIL] Acceso de admin confirmado para:', verification.user?.email);
     
     return {
       props: {

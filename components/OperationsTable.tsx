@@ -158,7 +158,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     if (!editingOperation) return;
 
     try {
-      console.log('📝 Guardando operación con estado:', editFormData.status);
+      // console.log('📝 Guardando operación con estado:', editFormData.status);
       
       const updateData: any = {
         ticker: editFormData.ticker,
@@ -170,12 +170,12 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         status: editFormData.status
       };
 
-      console.log('📤 Datos a enviar:', updateData);
+      // console.log('📤 Datos a enviar:', updateData);
 
       // ✅ Actualizar la operación (incluye el estado)
       const result = await updateOperation(editingOperation._id, updateData);
       
-      console.log('📥 Resultado:', result);
+      // console.log('📥 Resultado:', result);
       
       alert('✅ Operación actualizada exitosamente');
       setShowEditModal(false);

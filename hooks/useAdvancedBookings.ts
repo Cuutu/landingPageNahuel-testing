@@ -56,7 +56,7 @@ const useAdvancedBookings = (): UseAdvancedBookingsReturn => {
       setError(null);
       setSuccess(null);
 
-      console.log('🚀 Iniciando proceso de reserva avanzada:', data);
+      // console.log('🚀 Iniciando proceso de reserva avanzada:', data);
 
       // Validar datos de entrada
       if (!data.startDate || !data.serviceType || !data.duration) {
@@ -74,7 +74,7 @@ const useAdvancedBookings = (): UseAdvancedBookingsReturn => {
         source: 'advanced_booking_hook'
       };
 
-      console.log('📤 Enviando datos al servidor:', bookingPayload);
+      // console.log('📤 Enviando datos al servidor:', bookingPayload);
 
       // Llamada a la API con timeout optimizado para confirmación rápida
       const controller = new AbortController();
@@ -99,7 +99,7 @@ const useAdvancedBookings = (): UseAdvancedBookingsReturn => {
 
       const result: BookingResponse = await response.json();
 
-      console.log('✅ Reserva creada exitosamente:', result);
+      // console.log('✅ Reserva creada exitosamente:', result);
 
       // Mostrar mensaje de éxito personalizado
       let successMessage = '¡Reserva confirmada exitosamente!';

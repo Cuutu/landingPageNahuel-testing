@@ -65,11 +65,11 @@ export default function AdminNotificationsPage({ user }: AdminNotificationsProps
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      console.log('📊 Notificaciones - Cargando...');
+      // console.log('📊 Notificaciones - Cargando...');
       const response = await fetch('/api/admin/notifications');
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Notificaciones - Cargadas:', data.notifications?.length);
+        // console.log('✅ Notificaciones - Cargadas:', data.notifications?.length);
         setNotifications(data.notifications || []);
       } else {
         console.error('❌ Notificaciones - Error al cargar:', response.status);
@@ -447,16 +447,16 @@ export default function AdminNotificationsPage({ user }: AdminNotificationsProps
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [NOTIFICATIONS] Iniciando verificación de acceso...');
+  // console.log('🔍 [NOTIFICATIONS] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [NOTIFICATIONS] Resultado de verificación:', verification);
+    // console.log('🔍 [NOTIFICATIONS] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [NOTIFICATIONS] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [NOTIFICATIONS] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -465,7 +465,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [NOTIFICATIONS] Acceso de admin confirmado para:', verification.session?.user?.email);
+    // console.log('✅ [NOTIFICATIONS] Acceso de admin confirmado para:', verification.session?.user?.email);
     
     return {
       props: {

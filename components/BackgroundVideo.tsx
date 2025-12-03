@@ -42,7 +42,7 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
-          console.log('Autoplay prevented:', error);
+          // console.log('Autoplay prevented:', error);
           setIsPlaying(false);
         });
       }

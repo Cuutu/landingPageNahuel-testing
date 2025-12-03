@@ -212,16 +212,16 @@ export default function AdminBillingExportPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [BILLING EXPORT] Iniciando verificación de acceso...');
+  // console.log('🔍 [BILLING EXPORT] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [BILLING EXPORT] Resultado de verificación:', verification);
+    // console.log('🔍 [BILLING EXPORT] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [BILLING EXPORT] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [BILLING EXPORT] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -230,7 +230,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [BILLING EXPORT] Acceso de admin confirmado para:', verification.user?.email);
+    // console.log('✅ [BILLING EXPORT] Acceso de admin confirmado para:', verification.user?.email);
     
     return {
       props: {

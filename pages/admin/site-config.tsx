@@ -72,7 +72,7 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
         ...config
       };
 
-      console.log('Enviando configuración:', JSON.stringify(configToSend, null, 2));
+      // console.log('Enviando configuración:', JSON.stringify(configToSend, null, 2));
 
       // Guardar configuración del sitio
       const siteConfigResponse = await fetch('/api/site-config', {
@@ -175,7 +175,7 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
     setIsLoading(true);
     
     try {
-      console.log('🔄 Calculando métricas automáticas...');
+      // console.log('🔄 Calculando métricas automáticas...');
       
       const response = await fetch('/api/admin/calculate-metrics', {
         method: 'POST',
@@ -197,7 +197,7 @@ export default function AdminSiteConfig({ session, initialConfig }: AdminSiteCon
     }));
         
         toast.success('Métricas actualizadas con datos reales de la base de datos');
-        console.log('📊 Resumen de métricas:', data.summary);
+        // console.log('📊 Resumen de métricas:', data.summary);
       } else {
         toast.error(data.error || 'Error al calcular métricas automáticas');
       }

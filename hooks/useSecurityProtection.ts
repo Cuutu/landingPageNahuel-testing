@@ -18,7 +18,7 @@ export const useSecurityProtection = () => {
     
     // Si es página administrativa, no aplicar protecciones
     if (isAdminPage) {
-      console.log('🔓 Página administrativa detectada - Protecciones de seguridad desactivadas');
+      // console.log('🔓 Página administrativa detectada - Protecciones de seguridad desactivadas');
       return;
     }
 

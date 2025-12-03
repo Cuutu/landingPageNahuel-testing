@@ -38,19 +38,19 @@ export default function PaymentFailurePage({
 
   useEffect(() => {
     // Log para debugging
-    console.log('Payment failure data:', {
-      collectionId,
-      collectionStatus,
-      paymentId,
-      status,
-      externalReference,
-      paymentType,
-      merchantOrderId,
-      preferenceId,
-      siteId,
-      processingMode,
-      merchantAccountId
-    });
+    // console.log('Payment failure data:', {
+    //   collectionId,
+    //   collectionStatus,
+    //   paymentId,
+    //   status,
+    //   externalReference,
+    //   paymentType,
+    //   merchantOrderId,
+    //   preferenceId,
+    //   siteId,
+    //   processingMode,
+    //   merchantAccountId
+    // });
   }, []);
 
   const handleRetryPayment = async () => {

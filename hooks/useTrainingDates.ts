@@ -112,7 +112,7 @@ export const useTrainingDates = (session: Session | null, trainingType: string) 
   // Función para cargar fechas de entrenamiento
   const loadTrainingDates = async () => {
     try {
-      console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
+      // console.log('📅 Cargando fechas específicas de Zero 2 Trader...');
       
       const response = await fetch('/api/training-dates/SwingTrading');
       const data = await response.json();
@@ -123,7 +123,7 @@ export const useTrainingDates = (session: Session | null, trainingType: string) 
           date: new Date(date.date)
         }));
         
-        console.log('✅ Fechas cargadas:', dates.length);
+        // console.log('✅ Fechas cargadas:', dates.length);
         
         setTrainingDates(dates);
         const nextDate = findNextTrainingDate(dates);
@@ -141,7 +141,7 @@ export const useTrainingDates = (session: Session | null, trainingType: string) 
           setStartDateText('Próximamente - Fechas por confirmar');
         }
       } else {
-        console.log('📭 No hay fechas específicas configuradas');
+        // console.log('📭 No hay fechas específicas configuradas');
         setTrainingDates([]);
         setNextTrainingDate(null);
         setStartDateText('Próximamente - Fechas por confirmar');

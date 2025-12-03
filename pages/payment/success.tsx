@@ -74,7 +74,7 @@ export default function PaymentSuccess() {
       setError(null);
       
       // ✅ PASO 1: Verificar con MercadoPago ANTES de mostrar "PAGO EXITOSO"
-      console.log('🔍 Verificando pago real con MercadoPago...');
+      // console.log('🔍 Verificando pago real con MercadoPago...');
       
       const response = await fetch('/api/payments/process-immediate', {
         method: 'POST',
@@ -86,7 +86,7 @@ export default function PaymentSuccess() {
       
       if (response.ok && data.success) {
         // ✅ SOLO mostrar "PAGO EXITOSO" si MercadoPago confirma que es real
-        console.log('✅ Pago verificado con MercadoPago - Asignando rango al usuario');
+        // console.log('✅ Pago verificado con MercadoPago - Asignando rango al usuario');
         
         setPaymentDetails({
           success: true,
@@ -104,7 +104,7 @@ export default function PaymentSuccess() {
         setProcessingComplete(true);
         
         // ✅ El rango ya fue asignado en process-immediate
-        console.log('✅ Usuario ya tiene acceso al servicio');
+        // console.log('✅ Usuario ya tiene acceso al servicio');
         
       } else {
         // ❌ NO mostrar "PAGO EXITOSO" si no está verificado

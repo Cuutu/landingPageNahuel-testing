@@ -167,12 +167,12 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}>
                   {(() => {
                     const percentValue = sp500Data.periodChangePercent ?? sp500Data.changePercent ?? 0;
-                    console.log('📊 [SP500Comparison] Mostrando porcentaje:', {
-                      periodChangePercent: sp500Data.periodChangePercent,
-                      changePercent: sp500Data.changePercent,
-                      finalValue: percentValue,
-                      dataProvider: sp500Data.dataProvider
-                    });
+                    // console.log('📊 [SP500Comparison] Mostrando porcentaje:', {
+                    //   periodChangePercent: sp500Data.periodChangePercent,
+                    //   changePercent: sp500Data.changePercent,
+                    //   finalValue: percentValue,
+                    //   dataProvider: sp500Data.dataProvider
+                    // });
                     return (
                       <>
                         {getPerformanceIcon(percentValue)}
@@ -234,15 +234,15 @@ const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', servi
                       // Verificar si el período del serviceData coincide con el seleccionado
                       const isPeriodMatching = serviceData.period === selectedPeriod;
                       
-                      console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
-                        serviceType,
-                        totalReturnPercent: serviceData.totalReturnPercent,
-                        serviceDataPeriod: serviceData.period,
-                        selectedPeriod,
-                        isPeriodMatching,
-                        finalValue: percentValue,
-                        isNumber: typeof serviceData.totalReturnPercent === 'number'
-                      });
+                      // console.log('📊 [SP500Comparison] Mostrando rendimiento del servicio:', {
+                      //   serviceType,
+                      //   totalReturnPercent: serviceData.totalReturnPercent,
+                      //   serviceDataPeriod: serviceData.period,
+                      //   selectedPeriod,
+                      //   isPeriodMatching,
+                      //   finalValue: percentValue,
+                      //   isNumber: typeof serviceData.totalReturnPercent === 'number'
+                      // });
                       
                       // Si el período no coincide, mostrar loading mientras se actualiza
                       if (!isPeriodMatching && loading) {

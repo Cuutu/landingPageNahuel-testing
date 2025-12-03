@@ -1068,16 +1068,16 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [USERS] Iniciando verificación de acceso...');
+  // console.log('🔍 [USERS] Iniciando verificación de acceso...');
   
   try {
     // Usar la función de verificación que ya sabemos que funciona
     const verification = await verifyAdminAccess(context);
     
-    console.log('🔍 [USERS] Resultado de verificación:', verification);
+    // console.log('🔍 [USERS] Resultado de verificación:', verification);
     
     if (!verification.isAdmin) {
-      console.log('❌ [USERS] Acceso denegado - redirigiendo a:', verification.redirectTo);
+      // console.log('❌ [USERS] Acceso denegado - redirigiendo a:', verification.redirectTo);
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -1086,7 +1086,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [USERS] Acceso de admin confirmado para:', verification.session?.user?.email || verification.user?.email);
+    // console.log('✅ [USERS] Acceso de admin confirmado para:', verification.session?.user?.email || verification.user?.email);
     
     return {
       props: {

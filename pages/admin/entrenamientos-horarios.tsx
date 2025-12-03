@@ -73,13 +73,13 @@ export default function EntrenamientosHorariosPage() {
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      console.log('📅 Cargando horarios de entrenamientos...');
+      // console.log('📅 Cargando horarios de entrenamientos...');
       
       const response = await fetch('/api/entrenamientos/schedule');
       if (response.ok) {
         const data = await response.json();
         setSchedules(data.schedules || []);
-        console.log('✅ Horarios cargados:', data.schedules?.length || 0);
+        // console.log('✅ Horarios cargados:', data.schedules?.length || 0);
       } else {
         console.error('❌ Error al cargar horarios:', response.status);
         toast.error('Error al cargar horarios');
@@ -466,13 +466,13 @@ export default function EntrenamientosHorariosPage() {
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  console.log('🔍 [ENTRENAMIENTOS-HORARIOS] Verificando acceso de admin...');
+  // console.log('🔍 [ENTRENAMIENTOS-HORARIOS] Verificando acceso de admin...');
   
   try {
     const verification = await verifyAdminAccess(context);
     
     if (!verification.isAdmin) {
-      console.log('❌ [ENTRENAMIENTOS-HORARIOS] Acceso denegado');
+      // console.log('❌ [ENTRENAMIENTOS-HORARIOS] Acceso denegado');
       return {
         redirect: {
           destination: verification.redirectTo || '/',
@@ -481,7 +481,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    console.log('✅ [ENTRENAMIENTOS-HORARIOS] Acceso confirmado');
+    // console.log('✅ [ENTRENAMIENTOS-HORARIOS] Acceso confirmado');
     
     return {
       props: {

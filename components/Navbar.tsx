@@ -162,13 +162,13 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 [LOGOUT] Iniciando cierre de sesión...');
+      // console.log('🚪 [LOGOUT] Iniciando cierre de sesión...');
       await signOut({ 
         callbackUrl: '/',
         redirect: true 
       });
     } catch (error) {
-      console.error('❌ [LOGOUT] Error durante el logout:', error);
+      // console.error('❌ [LOGOUT] Error durante el logout:', error);
       // Fallback: redirección manual si falla signOut
       window.location.href = '/';
     }
@@ -179,11 +179,11 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
   
   // Debug: verificar rol del usuario
   if (sessionUser) {
-    console.log('🔍 Navbar - Usuario logueado:', { 
-      email: sessionUser.email, 
-      role: sessionUser.role,
-      name: sessionUser.name 
-    });
+    // console.log('🔍 Navbar - Usuario logueado:', { 
+    //   email: sessionUser.email, 
+    //   role: sessionUser.role,
+    //   name: sessionUser.name 
+    // });
   }
 
   return (

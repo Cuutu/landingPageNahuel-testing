@@ -253,7 +253,7 @@ export function useRealTimeMetrics(options: UseRealTimeMetricsOptions = {}) {
       const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001');
       
       ws.onopen = () => {
-        console.log('WebSocket conectado');
+        // console.log('WebSocket conectado');
         setIsConnected(true);
       };
 
@@ -294,7 +294,7 @@ export function useRealTimeMetrics(options: UseRealTimeMetricsOptions = {}) {
       };
 
       ws.onclose = () => {
-        console.log('WebSocket desconectado');
+        // console.log('WebSocket desconectado');
         setIsConnected(false);
       };
 
