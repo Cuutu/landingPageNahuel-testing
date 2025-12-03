@@ -110,7 +110,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           }
         }
       ]
-    }, 'email name suscripciones subscriptions activeSubscriptions').lean();
+    }, 'email name role suscripciones subscriptions activeSubscriptions').lean();
     
     // ✅ NUEVO: Filtrar manualmente para asegurar que las fechas sean válidas
     // ✅ INCLUYE tanto suscripciones de pago como trials
@@ -484,7 +484,7 @@ export async function createReportNotification(report: any): Promise<void> {
           }
         }
       ]
-    }, 'email name suscripciones subscriptions activeSubscriptions').lean();
+    }, 'email name role suscripciones subscriptions activeSubscriptions').lean();
     
     // ✅ NUEVO: Filtrar manualmente para asegurar que las fechas sean válidas
     // ✅ INCLUYE tanto suscripciones de pago como trials

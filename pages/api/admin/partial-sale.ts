@@ -260,11 +260,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ✅ NUEVO: Calcular newAllocatedAmount antes del if/else para que esté disponible en ambos casos
     const newAllocatedAmount = sharesRemaining * entryPrice;
     
-    // ✅ NUEVO: Si hay rango de venta, NO ejecutar la venta inmediatamente
-    // Solo programarla para ejecutarse cuando el precio llegue al rango
+    // ✅ NUEVO: Si hay rango de venta Y NO es venta completa, programar
+    // Si es venta del 100%, ejecutar inmediatamente
     const hasSellRange = notificationPriceRange && notificationPriceRange.min && notificationPriceRange.max;
     
-    if (hasSellRange && notificationPriceRange) {
+    // ✅ CORREGIDO: Si es venta completa (100%), SIEMPRE ejecutar inmediatamente
+    // Solo programar ventas parciales (<100%) con rango
+    const shouldScheduleSale = hasSellRange && !isCompleteSale && percentage < 100;
+    
+    if (shouldScheduleSale && notificationPriceRange) {
       // ✅ NO descontar participación todavía - se descontará cuando se ejecute la venta
       // ✅ PROGRAMAR VENTA: Guardar el rango de venta y los datos de la venta programada
       alert.sellRangeMin = notificationPriceRange.min;
@@ -336,8 +340,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
     } else {
-      // ✅ SIN RANGO: Ejecutar la venta inmediatamente (comportamiento anterior)
-      console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
+      // ✅ EJECUTAR VENTA INMEDIATAMENTE:
+      // - Ventas sin rango de precios
+      // - Ventas completas (100%) aunque tengan rango
+      const reason = isCompleteSale ? 'venta completa 100%' : 'sin rango de precios';
+      console.log(`💰 Ejecutando venta INMEDIATA (${reason})`);
       
       // ✅ NUEVO: Actualizar el porcentaje de participación correctamente (solo para venta inmediata)
       if (isCompleteSale) {

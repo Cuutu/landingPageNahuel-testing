@@ -165,69 +165,64 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           const sellRangeMin = alert.sellRangeMin;
           const sellRangeMax = alert.sellRangeMax;
           
-          // Verificar si el precio está dentro del rango de venta
-          if (closePrice >= sellRangeMin && closePrice <= sellRangeMax) {
-            console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango de venta $${sellRangeMin}-$${sellRangeMax}`);
+          // ✅ CORREGIDO: SIEMPRE ejecutar ventas programadas cuando corre el CRON
+          // Ya no verificamos si el precio está en el rango - se ejecuta con el precio de cierre
+          console.log(`🔄 ${alert.symbol}: Procesando venta programada - Rango original: $${sellRangeMin}-$${sellRangeMax}, Precio cierre: $${closePrice}`);
+          
+          // Buscar venta programada pendiente
+          const liquidityData = alert.liquidityData || {};
+          const partialSales = liquidityData.partialSales || [];
+          
+          console.log(`🔍 ${alert.symbol}: Buscando ventas programadas en partialSales (total: ${partialSales.length})`);
+          if (partialSales.length > 0) {
+            console.log(`🔍 ${alert.symbol}: partialSales:`, partialSales.map((s: any) => ({
+              percentage: s.percentage,
+              executed: s.executed,
+              priceRange: s.priceRange
+            })));
+          }
+          
+          // Buscar cualquier venta pendiente (no ejecutada)
+          const pendingSale = partialSales.find((sale: any) => !sale.executed);
+          
+          if (pendingSale) {
+            console.log(`✅ ${alert.symbol}: Ejecutando venta programada: ${pendingSale.percentage}% al precio de cierre $${closePrice}`);
             
-            // Buscar venta programada pendiente
-            const liquidityData = alert.liquidityData || {};
-            const partialSales = liquidityData.partialSales || [];
+            // Ejecutar la venta programada con el precio de cierre
+            const saleResult = await executeScheduledSale(alert, pendingSale, closePrice, adminUser);
             
-            console.log(`🔍 ${alert.symbol}: Buscando ventas programadas en partialSales (total: ${partialSales.length})`);
-            if (partialSales.length > 0) {
-              console.log(`🔍 ${alert.symbol}: partialSales:`, partialSales.map((s: any) => ({
-                percentage: s.percentage,
-                executed: s.executed,
-                priceRange: s.priceRange
-              })));
-            }
-            
-            // Buscar cualquier venta pendiente (no ejecutada)
-            const pendingSale = partialSales.find((sale: any) => !sale.executed);
-            
-            if (pendingSale) {
-              console.log(`✅ ${alert.symbol}: Encontrada venta programada: ${pendingSale.percentage}%`);
-              
-              // Ejecutar la venta programada (ya guarda participationPercentage internamente)
-              const saleResult = await executeScheduledSale(alert, pendingSale, closePrice, adminUser);
-              
-              if (saleResult.shouldClose) {
-                updateFields.status = 'CLOSED';
-                updateFields.exitPrice = closePrice;
-                updateFields.exitDate = new Date();
-                updateFields.exitReason = 'AUTOMATIC';
-                updateFields.participationPercentage = 0;
-                updateFields.profit = saleResult.profitPercentage;
-              } else {
-                // ✅ IMPORTANTE: No sobrescribir participationPercentage aquí porque ya se guardó en executeScheduledSale
-                // Solo actualizar si es diferente para evitar conflictos
-                if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
-                  updateFields.participationPercentage = saleResult.newParticipationPercentage;
-                }
-              }
-              
-              updateFields.sellPrice = closePrice;
-              unsetFields.sellRangeMin = 1;
-              unsetFields.sellRangeMax = 1;
-              
-              // Enviar notificación de VENTA
-              await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
-              
+            if (saleResult.shouldClose) {
+              updateFields.status = 'CLOSED';
+              updateFields.exitPrice = closePrice;
+              updateFields.exitDate = new Date();
+              updateFields.exitReason = 'AUTOMATIC';
+              updateFields.participationPercentage = 0;
+              updateFields.profit = saleResult.profitPercentage;
+              console.log(`🔒 ${alert.symbol}: Posición CERRADA - Profit: ${saleResult.profitPercentage.toFixed(2)}%`);
             } else {
-              // ✅ CORREGIDO: Si NO hay venta programada, solo convertir el rango a precio fijo
-              // NO cerrar la alerta automáticamente - mantener la posición
-              console.log(`⚠️ ${alert.symbol}: No hay venta programada pendiente - Solo convirtiendo rango a precio fijo`);
-              
-              updateFields.sellPrice = closePrice;
-              unsetFields.sellRangeMin = 1;
-              unsetFields.sellRangeMax = 1;
-              
-              // Enviar notificación de conversión (no de cierre)
-              await sendConversionNotification(alert, closePrice, oldSellRange);
+              if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
+                updateFields.participationPercentage = saleResult.newParticipationPercentage;
+              }
+              console.log(`📊 ${alert.symbol}: Venta parcial ejecutada - Participación restante: ${saleResult.newParticipationPercentage}%`);
             }
+            
+            updateFields.sellPrice = closePrice;
+            unsetFields.sellRangeMin = 1;
+            unsetFields.sellRangeMax = 1;
+            
+            // Enviar notificación de VENTA
+            await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
+            
           } else {
-            // El precio NO está en el rango de venta - mantener la venta programada
-            console.log(`⏳ ${alert.symbol}: Precio $${closePrice} está FUERA del rango de venta $${sellRangeMin}-$${sellRangeMax} - Manteniendo venta programada`);
+            // Si NO hay venta programada, solo limpiar los rangos
+            console.log(`⚠️ ${alert.symbol}: No hay venta programada pendiente - Limpiando rangos`);
+            
+            updateFields.sellPrice = closePrice;
+            unsetFields.sellRangeMin = 1;
+            unsetFields.sellRangeMax = 1;
+            
+            // Enviar notificación de conversión
+            await sendConversionNotification(alert, closePrice, oldSellRange);
           }
         }
 
@@ -253,14 +248,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           console.log(`✅ CRON: ${alert.symbol}: Rango de entrada ${oldEntryRange} convertido a precio fijo $${closePrice}`);
         }
         
-        if (hasSellRange && closePrice >= alert.sellRangeMin && closePrice <= alert.sellRangeMax) {
+        if (hasSellRange) {
           conversionDetails.push({
             symbol: alert.symbol,
             type: 'sell',
             oldRange: oldSellRange,
             newPrice: closePrice
           });
-          console.log(`✅ CRON: ${alert.symbol}: Rango de venta ${oldSellRange} procesado a precio $${closePrice}`);
+          console.log(`✅ CRON: ${alert.symbol}: Venta ejecutada - Rango ${oldSellRange} → Precio cierre $${closePrice}`);
         }
 
       } catch (alertError) {
