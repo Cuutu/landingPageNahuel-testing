@@ -10,6 +10,7 @@ import User from '@/models/User';
 import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
 import { createAlertNotification } from '@/lib/notificationUtils';
+import { validateOriginMiddleware } from '@/lib/securityValidation';
 
 // ✅ NUEVO: Interface para ventas parciales históricas
 interface VentaParcialRequest {
@@ -77,6 +78,9 @@ export default async function handler(
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
+
+  // 🔒 SEGURIDAD: Validar origen de la request
+  if (!validateOriginMiddleware(req, res)) return;
 
   try {
     // Verificar autenticación

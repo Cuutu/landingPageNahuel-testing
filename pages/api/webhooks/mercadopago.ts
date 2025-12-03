@@ -45,9 +45,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { topic, type, data, id, resource } = (req.body || {}) as any;
     const topicValue: string = (topic as string) || (type as string) || 'payment';
 
+    // 🔒 SEGURIDAD: Log reducido - no exponer datos sensibles del body
     console.log('🔔 Webhook recibido:', {
       topic: topicValue,
-      raw: req.body,
+      hasData: !!data,
+      hasId: !!id,
       timestamp: new Date().toISOString()
     });
 

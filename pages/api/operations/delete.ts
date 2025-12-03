@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/googleAuth';
 import dbConnect from '@/lib/mongodb';
 import Operation from '@/models/Operation';
+import User from '@/models/User';
+import { validateOriginMiddleware } from '@/lib/securityValidation';
 
 /**
  * @route DELETE /api/operations/delete
@@ -17,6 +19,9 @@ export default async function handler(
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
+  // 🔒 SEGURIDAD: Validar origen de la request
+  if (!validateOriginMiddleware(req, res)) return;
+
   try {
     // ✅ Verificar autenticación
     const session = await getServerSession(req, res, authOptions);
@@ -25,6 +30,18 @@ export default async function handler(
     }
 
     await dbConnect();
+
+    // 🔒 SEGURIDAD: Solo administradores pueden eliminar operaciones
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    
+    if (user.role !== 'admin') {
+      return res.status(403).json({ 
+        error: "Permisos insuficientes. Solo los administradores pueden eliminar operaciones." 
+      });
+    }
 
     const { operationId } = req.body;
 

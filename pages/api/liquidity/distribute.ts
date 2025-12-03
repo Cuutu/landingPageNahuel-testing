@@ -5,6 +5,7 @@ import dbConnect from "@/lib/mongodb";
 import Liquidity from "@/models/Liquidity";
 import Alert from "@/models/Alert";
 import User from "@/models/User";
+import { validateOriginMiddleware } from "@/lib/securityValidation";
 
 interface DistributeLiquidityRequest {
   alertId: string;
@@ -28,6 +29,9 @@ export default async function handler(
   if (req.method !== "POST") {
     return res.status(405).json({ success: false, error: "Método no permitido" });
   }
+
+  // 🔒 SEGURIDAD: Validar origen de la request
+  if (!validateOriginMiddleware(req, res)) return;
 
   try {
     const session = await getServerSession(req, res, authOptions);

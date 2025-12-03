@@ -5,6 +5,7 @@ import dbConnect from "@/lib/mongodb";
 import Operation from "@/models/Operation";
 import User from "@/models/User";
 import Alert from "@/models/Alert";
+import { validateOriginMiddleware } from "@/lib/securityValidation";
 
 interface CreateOperationRequest {
   alertId?: string; // ✅ NUEVO: Opcional para operaciones manuales
@@ -42,6 +43,9 @@ export default async function handler(
     return res.status(405).json({ success: false, error: "Método no permitido" });
   }
 
+  // 🔒 SEGURIDAD: Validar origen de la request
+  if (!validateOriginMiddleware(req, res)) return;
+
   try {
     const session = await getServerSession(req, res, authOptions);
     if (!session?.user?.email) {
@@ -53,6 +57,14 @@ export default async function handler(
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
       return res.status(404).json({ success: false, error: "Usuario no encontrado" });
+    }
+
+    // 🔒 SEGURIDAD: Solo administradores pueden crear operaciones
+    if (user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        error: "Permisos insuficientes. Solo los administradores pueden crear operaciones." 
+      });
     }
 
     const {

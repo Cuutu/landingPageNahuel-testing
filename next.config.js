@@ -56,6 +56,11 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin', // Control de referrer
           },
+          // 🔒 HSTS - Forzar HTTPS
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=31536000; includeSubDomains; preload'
+          },
           // 🛡️ Content Security Policy - Protección contra XSS
           {
             key: 'Content-Security-Policy',
