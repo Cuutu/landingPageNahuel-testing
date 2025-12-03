@@ -56,6 +56,40 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin', // Control de referrer
           },
+          // 🛡️ Content Security Policy - Protección contra XSS
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://www.youtube.com https://www.gstatic.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: https: blob:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://*.googleapis.com https://*.google.com https://api.mercadopago.com https://*.mux.com https://*.cloudinary.com wss://*.mux.com",
+              "frame-src 'self' https://www.youtube.com https://www.google.com https://*.mercadopago.com",
+              "media-src 'self' https://*.mux.com blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+              "upgrade-insecure-requests"
+            ].join('; ')
+          },
+          // 🛡️ Permissions Policy - Control de features del navegador
+          {
+            key: 'Permissions-Policy',
+            value: [
+              'camera=()',
+              'microphone=()',
+              'geolocation=()',
+              'interest-cohort=()',
+              'payment=(self)',
+              'usb=()',
+              'magnetometer=()',
+              'gyroscope=()',
+              'accelerometer=()'
+            ].join(', ')
+          },
         ],
       },
     ];
