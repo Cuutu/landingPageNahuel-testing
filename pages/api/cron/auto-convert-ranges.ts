@@ -130,7 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               { _id: alert._id },
               { 
                 $set: { 
-                  status: 'DESCARTADA',
+                  status: 'DESCARTADA', 
                   descartadaAt: new Date(),
                   descartadaMotivo: `Precio $${closePrice} fuera del rango de entrada ${oldEntryRange}`,
                   descartadaPrecio: closePrice
