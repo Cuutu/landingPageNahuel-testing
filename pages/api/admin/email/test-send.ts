@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import { sendEmail, verifyEmailConfiguration } from '@/lib/emailService';
 import { sendAdvisoryConfirmationEmail, sendAdminNotificationEmail } from '@/lib/emailNotifications';
+import { verifyAdminAPI } from '@/lib/adminAuth';
 
 /**
  * API para enviar email de prueba (solo admin)
@@ -13,9 +14,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Verificar que el usuario sea admin
-  const session = await getServerSession(req, res, authOptions);
-  if (!session || !session.user?.email?.includes('admin')) {
-    return res.status(401).json({ error: 'No autorizado' });
+  const adminCheck = await verifyAdminAPI(req, res);
+  if (!adminCheck.isAdmin) {
+    return res.status(401).json({ error: adminCheck.error || 'No autorizado. Se requieren permisos de administrador.' });
   }
 
   try {
