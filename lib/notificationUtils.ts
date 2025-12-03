@@ -8,8 +8,11 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
 
 /**
  * Crea notificación automática cuando se crea una alerta
+ * @param alert - La alerta para la cual crear la notificación
+ * @param overrides - Opciones para sobreescribir valores por defecto
+ * @param overrides.skipDuplicateCheck - Si es true, omite la verificación de duplicados (útil para notificaciones de conversión de rango)
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; skipDuplicateCheck?: boolean }): Promise<void> {
   try {
     await dbConnect();
     
@@ -327,15 +330,20 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     });
 
     // ✅ CORREGIDO: Verificar si ya existe una notificación para esta alerta para evitar duplicados
-    const existingNotification = await Notification.findOne({
-      relatedAlertId: alert._id.toString(),
-      targetUsers: notification.targetUsers,
-      isActive: true
-    });
+    // ✅ NUEVO: Si skipDuplicateCheck es true, omitir esta verificación (útil para conversiones de rango)
+    if (!overrides?.skipDuplicateCheck) {
+      const existingNotification = await Notification.findOne({
+        relatedAlertId: alert._id.toString(),
+        targetUsers: notification.targetUsers,
+        isActive: true
+      });
 
-    if (existingNotification) {
-      console.log(`⚠️ [ALERT NOTIFICATION] Ya existe una notificación para esta alerta (${alert._id}), no se creará duplicado`);
-      return;
+      if (existingNotification) {
+        console.log(`⚠️ [ALERT NOTIFICATION] Ya existe una notificación para esta alerta (${alert._id}), no se creará duplicado`);
+        return;
+      }
+    } else {
+      console.log(`🔄 [ALERT NOTIFICATION] skipDuplicateCheck=true - Omitiendo verificación de duplicados para alerta ${alert._id}`);
     }
 
     // Crear UNA notificación global que se muestre a todos los usuarios del grupo
@@ -1271,10 +1279,11 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; skipDuplicateCheck?: boolean }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
+  // ✅ NUEVO: Soporta skipDuplicateCheck para notificaciones de venta automática
   await createAlertNotification(alert, {
     message: options.message,
     imageUrl: options.imageUrl,
@@ -1283,6 +1292,7 @@ export async function notifyAlertSubscribers(
     title: options.title,
     priceRange: options.priceRange,
     liquidityPercentage: options.liquidityPercentage,
-    soldPercentage: options.soldPercentage
+    soldPercentage: options.soldPercentage,
+    skipDuplicateCheck: options.skipDuplicateCheck || true // ✅ Por defecto true para ventas
   });
 } 
