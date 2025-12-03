@@ -248,14 +248,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sharesRemaining = shares - sharesToSell;
     }
     
-    const liquidityReleased = sharesToSell * sellPrice;
-    const realizedProfit = sharesToSell * profitPerShare;
+    // ✅ CORREGIDO: Calcular liquidez liberada basándose en la liquidez ASIGNADA, no en el valor de mercado
+    // Esto representa cuánto de la liquidez original se está devolviendo al pool
+    const liquidityReleased = allocatedAmount * (sharesToSell / shares);
+    
+    // El valor de mercado es lo que valen las acciones vendidas al precio de venta
+    const marketValue = sharesToSell * sellPrice;
+    
+    // La ganancia realizada es la diferencia entre el valor de mercado y la liquidez liberada
+    const realizedProfit = marketValue - liquidityReleased;
     
     console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);
     console.log(`📊 Acciones totales: ${shares.toFixed(4)}`);
     console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}%)`);
     console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)} (${100-percentage}%)`);
-    console.log(`💵 Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
+    console.log(`💵 Liquidez asignada liberada: $${liquidityReleased.toFixed(2)}`);
+    console.log(`💰 Valor de mercado: $${marketValue.toFixed(2)}`);
+    console.log(`📈 Ganancia realizada: $${realizedProfit.toFixed(2)}`);
     
     // ✅ NUEVO: Calcular newAllocatedAmount antes del if/else para que esté disponible en ambos casos
     const newAllocatedAmount = sharesRemaining * entryPrice;

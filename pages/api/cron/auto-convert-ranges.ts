@@ -488,8 +488,8 @@ async function executeScheduledSale(
             await liquidity.save();
             console.log(`✅ ${alert.symbol}: Liquidez actualizada - +$${returnedCash.toFixed(2)} liberados`);
             
-            // Registrar operación
-            await registerSaleOperation(alert, sharesToSell, closePrice, pool, adminUser, percentage, isCompleteSale);
+            // Registrar operación con la liquidez REAL liberada
+            await registerSaleOperation(alert, sharesToSell, closePrice, pool, adminUser, percentage, isCompleteSale, returnedCash);
           }
         }
       } catch (liquidityError) {
@@ -521,7 +521,8 @@ async function registerSaleOperation(
   pool: string,
   adminUser: any,
   percentage: number,
-  isCompleteSale: boolean
+  isCompleteSale: boolean,
+  liquidityReleased?: number // ✅ NUEVO: Liquidez real liberada del sistema
 ) {
       try {
         const OperationModule = await import('@/models/Operation');
@@ -531,8 +532,10 @@ async function registerSaleOperation(
           .sort({ date: -1 })
           .select('balance');
         const currentBalance = currentBalanceDoc?.balance || 0;
-    const liquidityReleased = sharesToSell * closePrice;
-    const newBalance = currentBalance + liquidityReleased;
+    
+    // ✅ CORREGIDO: Usar liquidez real si está disponible, sino calcular valor de mercado
+    const actualLiquidityReleased = liquidityReleased ?? (sharesToSell * closePrice);
+    const newBalance = currentBalance + actualLiquidityReleased;
         
         const buyOperation = await Operation.findOne({ 
           alertId: alert._id, 
@@ -541,14 +544,16 @@ async function registerSaleOperation(
         }).sort({ date: -1 });
         
     const entryPrice = alert.entryPrice || closePrice;
-    const realizedProfit = (closePrice - entryPrice) * sharesToSell;
+    const marketValue = sharesToSell * closePrice;
+    // ✅ CORREGIDO: Ganancia = valor de mercado - liquidez asignada original
+    const realizedProfit = marketValue - actualLiquidityReleased;
         
         const operation = new Operation({
           ticker: alert.symbol.toUpperCase(),
           operationType: 'VENTA',
       quantity: -sharesToSell,
           price: closePrice,
-      amount: liquidityReleased,
+      amount: actualLiquidityReleased,
           date: new Date(),
           balance: newBalance,
           alertId: alert._id,
