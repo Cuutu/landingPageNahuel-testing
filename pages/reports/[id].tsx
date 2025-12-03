@@ -1309,7 +1309,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
     return {
       props: {
-        report: processedReport,
+        report: processedReport, 
         currentUser: session.user,
         userRole: userRole,
       },
