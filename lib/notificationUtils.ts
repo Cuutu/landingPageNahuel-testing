@@ -66,9 +66,11 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
 
     // Buscar usuarios con suscripciones activas al servicio específico para validar
     // ✅ IMPORTANTE: Buscar en TODOS los sistemas de suscripciones
+    // ✅ INCLUYE: Suscripciones de pago (full) Y pruebas de 30 días (trial)
     const now = new Date();
     
     // ✅ MEJORADO: Consulta más explícita para activeSubscriptions
+    // ✅ INCLUYE TANTO 'full' COMO 'trial' (no filtra por subscriptionType)
     const subscribedUsers = await User.find({
       $or: [
         {
@@ -94,12 +96,13 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         },
         {
           // ✅ NUEVO: Buscar en activeSubscriptions (sistema MercadoPago/Admin)
-          // Usar una consulta más explícita para asegurar que funcione
+          // ✅ INCLUYE tanto suscripciones 'full' como 'trial' de 30 días
           'activeSubscriptions': {
             $elemMatch: {
               service: alert.tipo,
               isActive: true,
               expiryDate: { $gte: now }
+              // ✅ NO filtramos por subscriptionType para incluir 'full' y 'trial'
             }
           }
         }
@@ -107,6 +110,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     }, 'email name suscripciones subscriptions activeSubscriptions').lean();
     
     // ✅ NUEVO: Filtrar manualmente para asegurar que las fechas sean válidas
+    // ✅ INCLUYE tanto suscripciones de pago como trials
     // (por si acaso hay algún problema con la consulta de MongoDB)
     const validSubscribedUsers = subscribedUsers.filter(user => {
       // Verificar suscripciones legacy
@@ -124,22 +128,35 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       );
       
       // Verificar activeSubscriptions (el más importante)
+      // ✅ INCLUYE tanto 'full' como 'trial' - no filtramos por subscriptionType
       const hasActiveSub = user.activeSubscriptions?.some((sub: any) => 
         sub.service === alert.tipo && 
         sub.isActive === true && 
         new Date(sub.expiryDate) >= now
+        // ✅ NO verificamos subscriptionType - incluye 'full' y 'trial'
       );
       
       return hasLegacySub || hasIntermediateSub || hasActiveSub;
     });
 
     console.log('👥 [ALERT NOTIFICATION] Usuarios encontrados por query:', subscribedUsers.length);
-    console.log('👥 [ALERT NOTIFICATION] Usuarios válidos después de filtrado:', validSubscribedUsers.length);
+    console.log('👥 [ALERT NOTIFICATION] Usuarios válidos después de filtrado (incluye trials):', validSubscribedUsers.length);
     console.log('🔍 [ALERT NOTIFICATION] Tipo de alerta buscado:', alert.tipo);
     console.log('🔍 [ALERT NOTIFICATION] Fecha actual para comparación:', new Date().toISOString());
     
     // Usar validSubscribedUsers en lugar de subscribedUsers
     const finalSubscribedUsers = validSubscribedUsers;
+    
+    // ✅ NUEVO: Log para verificar que se incluyen trials
+    const trialUsers = finalSubscribedUsers.filter(user => {
+      return user.activeSubscriptions?.some((sub: any) => 
+        sub.service === alert.tipo && 
+        sub.subscriptionType === 'trial' &&
+        sub.isActive === true && 
+        new Date(sub.expiryDate) >= now
+      );
+    });
+    console.log('🎁 [ALERT NOTIFICATION] Usuarios con trial incluidos:', trialUsers.length);
     
     if (finalSubscribedUsers.length === 0) {
       console.log('⚠️ [ALERT NOTIFICATION] No hay usuarios suscritos al servicio:', alert.tipo);
@@ -305,6 +322,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       title: notification.title,
       targetUsers: notification.targetUsers,
       subscribedUsers: finalSubscribedUsers.length,
+      trialUsers: trialUsers.length,
       hasImage: !!notification.metadata?.imageUrl
     });
 
@@ -313,7 +331,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     await notificationDoc.save();
 
     console.log(`✅ [ALERT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
-    console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo}`);
+    console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo} (incluye ${trialUsers.length} con trial)`);
 
     // Enviar emails a usuarios suscritos
     let emailsSent = 0;
@@ -333,7 +351,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       }
     }
 
-    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${finalSubscribedUsers.length}`);
+    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${finalSubscribedUsers.length} (incluye usuarios con trial)`);
     
     if (emailErrors.length > 0) {
       console.error('❌ [ALERT NOTIFICATION] Errores de email:', emailErrors.slice(0, 3));
@@ -374,6 +392,9 @@ export async function createReportNotification(report: any): Promise<void> {
     console.log('📰 [REPORT NOTIFICATION] Grupo de usuarios objetivo:', targetUsers, 'para servicio:', serviceType);
 
     // Buscar usuarios con suscripciones activas al servicio específico para validar
+    // ✅ IMPORTANTE: Buscar en TODOS los sistemas de suscripciones
+    // ✅ INCLUYE: Suscripciones de pago (full) Y pruebas de 30 días (trial)
+    const now = new Date();
     const subscribedUsers = await User.find({
       $or: [
         {
@@ -381,7 +402,7 @@ export async function createReportNotification(report: any): Promise<void> {
             $elemMatch: {
               servicio: serviceType,
               activa: true,
-              fechaVencimiento: { $gte: new Date() }
+              fechaVencimiento: { $gte: now }
             }
           }
         },
@@ -391,21 +412,77 @@ export async function createReportNotification(report: any): Promise<void> {
               tipo: serviceType,
               activa: true,
               $or: [
-                { fechaFin: { $gte: new Date() } },
+                { fechaFin: { $gte: now } },
                 { fechaFin: { $exists: false } }
               ]
             }
           }
+        },
+        {
+          // ✅ NUEVO: Buscar en activeSubscriptions (sistema MercadoPago/Admin)
+          // ✅ INCLUYE tanto suscripciones 'full' como 'trial' de 30 días
+          'activeSubscriptions': {
+            $elemMatch: {
+              service: serviceType,
+              isActive: true,
+              expiryDate: { $gte: now }
+              // ✅ NO filtramos por subscriptionType para incluir 'full' y 'trial'
+            }
+          }
         }
       ]
-    }, 'email name');
-
-    console.log('👥 [REPORT NOTIFICATION] Usuarios suscritos al servicio encontrados:', subscribedUsers.length);
+    }, 'email name suscripciones subscriptions activeSubscriptions').lean();
     
-    if (subscribedUsers.length === 0) {
+    // ✅ NUEVO: Filtrar manualmente para asegurar que las fechas sean válidas
+    // ✅ INCLUYE tanto suscripciones de pago como trials
+    const validSubscribedUsers = subscribedUsers.filter(user => {
+      // Verificar suscripciones legacy
+      const hasLegacySub = user.suscripciones?.some((sub: any) => 
+        sub.servicio === serviceType && 
+        sub.activa === true && 
+        new Date(sub.fechaVencimiento) >= now
+      );
+      
+      // Verificar subscriptions intermedio
+      const hasIntermediateSub = user.subscriptions?.some((sub: any) => 
+        sub.tipo === serviceType && 
+        sub.activa === true && 
+        (!sub.fechaFin || new Date(sub.fechaFin) >= now)
+      );
+      
+      // Verificar activeSubscriptions (el más importante)
+      // ✅ INCLUYE tanto 'full' como 'trial' - no filtramos por subscriptionType
+      const hasActiveSub = user.activeSubscriptions?.some((sub: any) => 
+        sub.service === serviceType && 
+        sub.isActive === true && 
+        new Date(sub.expiryDate) >= now
+        // ✅ NO verificamos subscriptionType - incluye 'full' y 'trial'
+      );
+      
+      return hasLegacySub || hasIntermediateSub || hasActiveSub;
+    });
+
+    console.log('👥 [REPORT NOTIFICATION] Usuarios encontrados por query:', subscribedUsers.length);
+    console.log('👥 [REPORT NOTIFICATION] Usuarios válidos después de filtrado (incluye trials):', validSubscribedUsers.length);
+    
+    // Usar validSubscribedUsers en lugar de subscribedUsers
+    const finalSubscribedUsers = validSubscribedUsers;
+    
+    if (finalSubscribedUsers.length === 0) {
       console.log('⚠️ [REPORT NOTIFICATION] No hay usuarios suscritos al servicio:', serviceType);
       return;
     }
+    
+    // ✅ NUEVO: Log para verificar que se incluyen trials
+    const trialUsers = finalSubscribedUsers.filter(user => {
+      return user.activeSubscriptions?.some((sub: any) => 
+        sub.service === serviceType && 
+        sub.subscriptionType === 'trial' &&
+        sub.isActive === true && 
+        new Date(sub.expiryDate) >= now
+      );
+    });
+    console.log('🎁 [REPORT NOTIFICATION] Usuarios con trial incluidos:', trialUsers.length);
 
     // Crear notificación para informe
     const notification = {
@@ -433,7 +510,8 @@ export async function createReportNotification(report: any): Promise<void> {
     console.log('📧 [REPORT NOTIFICATION] Creando notificación global:', {
       title: notification.title,
       targetUsers: notification.targetUsers,
-      subscribedUsers: subscribedUsers.length
+      subscribedUsers: finalSubscribedUsers.length,
+      trialUsers: trialUsers.length
     });
 
     // Crear UNA notificación global que se muestre a todos los usuarios del grupo
@@ -441,13 +519,13 @@ export async function createReportNotification(report: any): Promise<void> {
     await notificationDoc.save();
 
     console.log(`✅ [REPORT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
-    console.log(`📊 [REPORT NOTIFICATION] Se mostrará a ${subscribedUsers.length} usuarios suscritos al servicio ${serviceType}`);
+    console.log(`📊 [REPORT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${serviceType} (incluye ${trialUsers.length} con trial)`);
 
-    // Enviar emails a usuarios suscritos
+    // Enviar emails a usuarios suscritos (incluye trials)
     let emailsSent = 0;
     const emailErrors: string[] = [];
 
-    for (const user of subscribedUsers) {
+    for (const user of finalSubscribedUsers) {
       try {
         const emailSuccess = await sendEmailNotification(user, notificationDoc);
         if (emailSuccess) {
@@ -461,7 +539,7 @@ export async function createReportNotification(report: any): Promise<void> {
       }
     }
 
-    console.log(`📧 [REPORT NOTIFICATION] Emails enviados: ${emailsSent}/${subscribedUsers.length}`);
+    console.log(`📧 [REPORT NOTIFICATION] Emails enviados: ${emailsSent}/${finalSubscribedUsers.length} (incluye usuarios con trial)`);
     
     if (emailErrors.length > 0) {
       console.error('❌ [REPORT NOTIFICATION] Errores de email:', emailErrors.slice(0, 3));
