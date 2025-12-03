@@ -8,6 +8,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
+import PortfolioSnapshot from '@/models/PortfolioSnapshot';
+import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
 
 interface SP500DataPoint {
   date: string;
@@ -107,49 +109,16 @@ export default async function handler(
       alertQuery.tipo = tipo;
     }
 
-    // ✅ NUEVO: Obtener liquidez inicial y total del sistema
-    // ✅ CORREGIDO: Buscar usuario admin por rol, no por email
-    const adminUser = await User.findOne({ role: 'admin' });
-    
-    let initialLiquidity = 10000; // Valor por defecto
-    let totalLiquidity = 10000; // Valor por defecto
-    
-    if (adminUser) {
-      const liquidityDocs = await Liquidity.find({ 
-        createdBy: adminUser._id, 
-        pool: poolType 
-      }).lean();
-      
-      if (liquidityDocs.length > 0) {
-        // Obtener liquidez inicial global (del documento más reciente)
-        const docsWithInitialLiquidity = liquidityDocs.filter((doc: any) => 
-          doc.initialLiquidity !== undefined && doc.initialLiquidity !== null && doc.initialLiquidity > 0
-        );
-        
-        if (docsWithInitialLiquidity.length > 0) {
-          const sortedByUpdate = [...docsWithInitialLiquidity].sort((a: any, b: any) => 
-            new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
-          );
-          initialLiquidity = sortedByUpdate[0].initialLiquidity;
-        } else {
-          // Fallback: calcular desde el primer documento
-          const firstDoc = liquidityDocs[0];
-          initialLiquidity = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
-        }
-        
-        // Calcular liquidez total actual (suma de todos los documentos)
-        let totalProfitLoss = 0;
-        liquidityDocs.forEach((doc: any) => {
-          const unrealized = (doc.distributions || []).reduce((sum: number, dist: any) => sum + (dist.profitLoss || 0), 0);
-          const realized = (doc.distributions || []).reduce((sum: number, dist: any) => sum + (dist.realizedProfitLoss || 0), 0);
-          totalProfitLoss += (unrealized + realized);
-        });
-        
-        totalLiquidity = initialLiquidity + totalProfitLoss;
-      }
-    }
+    // ✅ CORREGIDO: Usar calculateCurrentPortfolioValue para obtener valorTotalCartera actual
+    // Esto mantiene consistencia con /api/portfolio/returns y otros endpoints
+    const currentPortfolioValue = await calculateCurrentPortfolioValue(poolType);
+    const valorTotalCarteraActual = currentPortfolioValue.valorTotalCartera;
+    const initialLiquidity = currentPortfolioValue.liquidezInicial;
+    const totalProfitLoss = currentPortfolioValue.totalProfitLoss;
 
-    console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity}, Liquidez Total: $${totalLiquidity}`);
+    console.log(`📊 [PORTFOLIO] Usando valorTotalCartera: $${valorTotalCarteraActual.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Total Profit/Loss: $${totalProfitLoss.toFixed(2)}`);
 
     // ✅ NUEVO: Obtener TODAS las alertas del tipo (no solo las del rango de fechas)
     // Necesitamos todas para calcular el portfolio completo en tiempo real
@@ -164,8 +133,11 @@ export default async function handler(
     // el currentPrice que ya está en la base de datos (actualizado por /api/cron/update-stock-prices)
     console.log(`📊 [PORTFOLIO] Usando precios actuales de la base de datos para ${allAlerts.filter((a: any) => a.status === 'ACTIVE').length} alertas activas`);
     
-    // ✅ NUEVO: Obtener distribuciones de liquidez para calcular P&L real
+    // ✅ CORREGIDO: Obtener distribuciones de liquidez para calcular P&L por alerta (solo para estadísticas)
+    // Pero el valor total de la cartera viene de calculateCurrentPortfolioValue
     let liquidityDistributions: any[] = [];
+    const adminUser = await User.findOne({ role: 'admin' });
+    
     if (adminUser) {
       const liquidityDocs = await Liquidity.find({ 
         createdBy: adminUser._id, 
@@ -180,7 +152,7 @@ export default async function handler(
       });
     }
     
-    // ✅ NUEVO: Crear mapa de liquidez por alertId para acceso rápido
+    // ✅ Crear mapa de liquidez por alertId para acceso rápido
     const liquidityByAlertId = new Map<string, any>();
     liquidityDistributions.forEach((dist: any) => {
       if (dist.alertId) {
@@ -188,7 +160,7 @@ export default async function handler(
       }
     });
 
-    // ✅ NUEVO: Calcular P&L real en tiempo real para cada alerta
+    // ✅ Calcular P&L por alerta para estadísticas y evolución día a día
     // Para alertas ACTIVAS: usar currentPrice actual
     // Para alertas CERRADAS: usar profit guardado
     let totalRealizedPL = 0; // P&L realizado de alertas cerradas
@@ -287,8 +259,9 @@ export default async function handler(
       };
     });
 
-    // ✅ NUEVO: Calcular liquidez total actual en tiempo real
-    const currentTotalLiquidity = initialLiquidity + totalRealizedPL + totalUnrealizedPL;
+    // ✅ CORREGIDO: Usar valorTotalCartera del portfolio calculator en lugar de calcular manualmente
+    // Esto asegura consistencia con otros endpoints que usan el mismo método
+    const currentTotalLiquidity = valorTotalCarteraActual;
     
     // ✅ NUEVO: Calcular porcentaje promedio ponderado del portfolio
     // Esto es más preciso que simplemente sumar porcentajes
@@ -304,19 +277,20 @@ export default async function handler(
       weightedAveragePercentage = weightedSum / totalAllocatedAmount;
     }
     
-    // ✅ NUEVO: Calcular porcentaje basado en liquidez total (método alternativo)
+    // ✅ CORREGIDO: Calcular porcentaje basado en valorTotalCartera (método oficial)
     const portfolioReturnFromPL = initialLiquidity > 0 
-      ? ((totalRealizedPL + totalUnrealizedPL) / initialLiquidity) * 100 
+      ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
       : 0;
     
     console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Liquidez Asignada Total: $${totalAllocatedAmount.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] P&L Realizado: $${totalRealizedPL.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] P&L No Realizado: $${totalUnrealizedPL.toFixed(2)}`);
-    console.log(`📊 [PORTFOLIO] P&L Total: $${(totalRealizedPL + totalUnrealizedPL).toFixed(2)}`);
-    console.log(`📊 [PORTFOLIO] Liquidez Total Actual: $${currentTotalLiquidity.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] P&L Total Calculado: $${(totalRealizedPL + totalUnrealizedPL).toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] valorTotalCartera (oficial): $${valorTotalCarteraActual.toFixed(2)}`);
+    console.log(`📊 [PORTFOLIO] Diferencia: $${Math.abs(valorTotalCarteraActual - (initialLiquidity + totalRealizedPL + totalUnrealizedPL)).toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Rendimiento (Promedio Ponderado): ${weightedAveragePercentage.toFixed(2)}%`);
-    console.log(`📊 [PORTFOLIO] Rendimiento (Basado en Liquidez Inicial): ${portfolioReturnFromPL.toFixed(2)}%`);
+    console.log(`📊 [PORTFOLIO] Rendimiento (Basado en valorTotalCartera): ${portfolioReturnFromPL.toFixed(2)}%`);
     
     // ✅ DEBUG: Mostrar P&L de cada alerta
     alertsWithPL.forEach((alert: any) => {
@@ -358,52 +332,91 @@ export default async function handler(
       });
     }
 
-    // ✅ NUEVO: Calcular evolución día a día basada en P&L real de alertas
+    // ✅ CORREGIDO: Calcular evolución día a día usando snapshots históricos cuando estén disponibles
+    // Para días pasados: usar snapshots guardados (más preciso)
+    // Para el día actual: usar valorTotalCartera calculado en tiempo real
     const sortedDates = Array.from(dailyData.keys()).sort();
     
     for (const dateKey of sortedDates) {
       const dayData = dailyData.get(dateKey)!;
       const currentDate = new Date(dateKey);
+      const isToday = dateKey === endDate.toISOString().split('T')[0];
       
-      // Calcular P&L acumulado hasta este día
-      let dayRealizedPL = 0;
-      let dayUnrealizedPL = 0;
-      let dayAlertsCount = 0;
-      
-      alertsWithPL.forEach((alert: any) => {
-        const alertCreatedAt = new Date(alert.createdAt);
-        const alertExitDate = alert.exitDate ? new Date(alert.exitDate) : null;
+      // ✅ CORREGIDO: Para el día actual, usar valorTotalCartera directamente
+      if (isToday) {
+        dayData.value = valorTotalCarteraActual;
+        dayData.profit = valorTotalCarteraActual - initialLiquidity;
+        // Contar alertas activas y cerradas
+        dayData.alertsCount = allAlerts.filter((alert: any) => {
+          const alertCreatedAt = new Date(alert.createdAt);
+          return alertCreatedAt <= currentDate;
+        }).length;
+      } else {
+        // ✅ CORREGIDO: Para días pasados, intentar usar snapshot guardado
+        const snapshotDate = new Date(dateKey);
+        snapshotDate.setHours(16, 30, 0, 0); // Normalizar a las 16:30
         
-        // Si la alerta fue creada antes o en este día
-        if (alertCreatedAt <= currentDate) {
-          dayAlertsCount++;
-          
-          if (alert.status === 'ACTIVE') {
-            // Si está activa y fue creada antes o en este día, incluir su P&L no realizado
-            dayUnrealizedPL += alert.calculatedPL || 0;
-          } else if (alert.status === 'CLOSED' && alertExitDate) {
-            // Si está cerrada y fue cerrada antes o en este día, incluir su P&L realizado
-            if (alertExitDate <= currentDate) {
-              dayRealizedPL += alert.calculatedPL || 0;
-            } else {
-              // Si aún no se cerró en este día, incluir como no realizado
-              dayUnrealizedPL += alert.calculatedPL || 0;
-            }
+        // Buscar snapshot en un rango de ±1 día
+        const startDate = new Date(snapshotDate);
+        startDate.setDate(startDate.getDate() - 1);
+        const endSnapshotDate = new Date(snapshotDate);
+        endSnapshotDate.setDate(endSnapshotDate.getDate() + 1);
+        
+        const snapshot = await PortfolioSnapshot.findOne({
+          pool: poolType,
+          snapshotDate: {
+            $gte: startDate,
+            $lte: endSnapshotDate
           }
+        }).sort({ snapshotDate: -1 }); // Obtener el más cercano
+        
+        if (snapshot) {
+          // ✅ Usar valorTotalCartera del snapshot (método oficial)
+          dayData.value = snapshot.valorTotalCartera;
+          dayData.profit = snapshot.valorTotalCartera - snapshot.liquidezInicial;
+          
+          // Contar alertas que existían en ese día
+          dayData.alertsCount = allAlerts.filter((alert: any) => {
+            const alertCreatedAt = new Date(alert.createdAt);
+            return alertCreatedAt <= currentDate;
+          }).length;
+        } else {
+          // Fallback: calcular P&L acumulado hasta este día (método anterior)
+          let dayRealizedPL = 0;
+          let dayUnrealizedPL = 0;
+          let dayAlertsCount = 0;
+          
+          alertsWithPL.forEach((alert: any) => {
+            const alertCreatedAt = new Date(alert.createdAt);
+            const alertExitDate = alert.exitDate ? new Date(alert.exitDate) : null;
+            
+            if (alertCreatedAt <= currentDate) {
+              dayAlertsCount++;
+              
+              if (alert.status === 'ACTIVE') {
+                dayUnrealizedPL += alert.calculatedPL || 0;
+              } else if (alert.status === 'CLOSED' && alertExitDate) {
+                if (alertExitDate <= currentDate) {
+                  dayRealizedPL += alert.calculatedPL || 0;
+                } else {
+                  dayUnrealizedPL += alert.calculatedPL || 0;
+                }
+              }
+            }
+          });
+          
+          dayData.value = initialLiquidity + dayRealizedPL + dayUnrealizedPL;
+          dayData.profit = dayRealizedPL + dayUnrealizedPL;
+          dayData.alertsCount = dayAlertsCount;
         }
-      });
-      
-      // Calcular valor del portfolio para este día
-      dayData.value = initialLiquidity + dayRealizedPL + dayUnrealizedPL;
-      dayData.profit = dayRealizedPL + dayUnrealizedPL;
-      dayData.alertsCount = dayAlertsCount;
+      }
     }
     
-    // ✅ NUEVO: Para el último día, usar el valor exacto calculado
+    // ✅ CORREGIDO: Para el último día, asegurar que use valorTotalCarteraActual
     const lastDateKey = sortedDates[sortedDates.length - 1];
     const lastDayData = dailyData.get(lastDateKey)!;
-    lastDayData.value = currentTotalLiquidity;
-    lastDayData.profit = totalRealizedPL + totalUnrealizedPL;
+    lastDayData.value = valorTotalCarteraActual;
+    lastDayData.profit = valorTotalCarteraActual - initialLiquidity;
 
     // Convertir a array y ordenar
     const evolutionData = Array.from(dailyData.values()).sort((a, b) => 
@@ -423,16 +436,16 @@ export default async function handler(
     const winRate = closedAlerts.length > 0 ? 
       Math.min((winningAlerts.length / closedAlerts.length) * 100, 100) : 0;
     
-    // ✅ NUEVO: Calcular profit total usando P&L real
-    const totalProfit = totalRealizedPL + totalUnrealizedPL;
+    // ✅ CORREGIDO: Calcular profit total usando valorTotalCartera (método oficial)
+    const totalProfit = valorTotalCarteraActual - initialLiquidity;
     
     // Calcular rendimientos relativos al S&P 500
     const sp500Return = sp500Data.length > 0 && sp500Data[0].value > 0 ? 
       ((sp500Data[sp500Data.length - 1].value - sp500Data[0].value) / sp500Data[0].value) * 100 : 0;
     
-    // ✅ NUEVO: Calcular rendimiento porcentual del portfolio
+    // ✅ CORREGIDO: Calcular rendimiento porcentual usando valorTotalCartera (método oficial)
     const portfolioReturn = initialLiquidity > 0 
-      ? ((currentTotalLiquidity - initialLiquidity) / initialLiquidity) * 100 
+      ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
       : 0;
     
     console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);

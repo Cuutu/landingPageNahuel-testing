@@ -5,15 +5,9 @@ import { SessionProvider } from 'next-auth/react';
 import ToasterProvider from '@/components/ToasterProvider';
 import LoginTracker from '@/components/LoginTracker';
 import SecurityWarning from '@/components/SecurityWarning';
+import GlobalSecurityProtection from '@/components/GlobalSecurityProtection';
 import { ContactProvider } from '@/contexts/ContactContext';
-// import { useSecurityProtection } from '@/hooks/useSecurityProtection'; // DESHABILITADO
 import '@/styles/globals.css';
-
-// Componente para proteger contra click derecho y otras acciones no deseadas
-// const SecurityProtection: React.FC = () => {
-//   useSecurityProtection();
-//   return null;
-// }; // DESHABILITADO
 
 export default function App({
   Component,
@@ -38,7 +32,7 @@ export default function App({
       </Head>
       <ToasterProvider>
         <ContactProvider>
-          {/* <SecurityProtection /> - DESHABILITADO */}
+          <GlobalSecurityProtection />
           <SecurityWarning />
           <LoginTracker />
           <Component {...pageProps} />

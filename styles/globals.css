@@ -18,6 +18,17 @@ body {
   color: #FFFFFF;
   background: #000000;
   line-height: 1.6;
+  /* Prevenir selección de texto globalmente (se permite en formularios) */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* Prevenir arrastrar elementos */
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
 }
 
 a {

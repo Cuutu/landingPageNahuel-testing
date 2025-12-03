@@ -333,21 +333,42 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log(`✅ [ALERT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
     console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo} (incluye ${trialUsers.length} con trial)`);
 
-    // Enviar emails a usuarios suscritos
+    // Enviar emails a usuarios suscritos con rate limiting
     let emailsSent = 0;
     const emailErrors: string[] = [];
 
-    for (const user of finalSubscribedUsers) {
-      try {
-        const emailSuccess = await sendEmailNotification(user, notificationDoc);
-        if (emailSuccess) {
-          emailsSent++;
-        } else {
-          emailErrors.push(`Error enviando email a ${user.email}`);
+    // Procesar en lotes pequeños para evitar rate limiting de Gmail
+    const batchSize = 5;
+    for (let i = 0; i < finalSubscribedUsers.length; i += batchSize) {
+      const batch = finalSubscribedUsers.slice(i, i + batchSize);
+      console.log(`📧 [ALERT NOTIFICATION] Procesando lote de emails ${Math.floor(i / batchSize) + 1}/${Math.ceil(finalSubscribedUsers.length / batchSize)}`);
+      
+      for (const user of batch) {
+        try {
+          const emailSuccess = await sendEmailNotification(user, notificationDoc);
+          if (emailSuccess) {
+            emailsSent++;
+          } else {
+            emailErrors.push(`Error enviando email a ${user.email}`);
+          }
+          // Pequeña pausa entre emails (500ms) para evitar rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`❌ Error enviando email a ${user.email}:`, error);
+          emailErrors.push(`Error para ${user.email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+          
+          // Si es error de rate limiting, esperar más tiempo
+          if (error instanceof Error && error.message.includes('Too many login attempts')) {
+            console.warn('⚠️ [ALERT NOTIFICATION] Rate limiting detectado, esperando 10 segundos...');
+            await new Promise(resolve => setTimeout(resolve, 10000));
+          }
         }
-      } catch (error) {
-        console.error(`❌ Error enviando email a ${user.email}:`, error);
-        emailErrors.push(`Error para ${user.email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+      
+      // Pausa entre lotes (2 segundos)
+      if (i + batchSize < finalSubscribedUsers.length) {
+        console.log('⏰ [ALERT NOTIFICATION] Pausa de 2 segundos entre lotes...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
@@ -521,21 +542,42 @@ export async function createReportNotification(report: any): Promise<void> {
     console.log(`✅ [REPORT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
     console.log(`📊 [REPORT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${serviceType} (incluye ${trialUsers.length} con trial)`);
 
-    // Enviar emails a usuarios suscritos (incluye trials)
+    // Enviar emails a usuarios suscritos (incluye trials) con rate limiting
     let emailsSent = 0;
     const emailErrors: string[] = [];
 
-    for (const user of finalSubscribedUsers) {
-      try {
-        const emailSuccess = await sendEmailNotification(user, notificationDoc);
-        if (emailSuccess) {
-          emailsSent++;
-        } else {
-          emailErrors.push(`Error enviando email a ${user.email}`);
+    // Procesar en lotes pequeños para evitar rate limiting de Gmail
+    const batchSize = 5;
+    for (let i = 0; i < finalSubscribedUsers.length; i += batchSize) {
+      const batch = finalSubscribedUsers.slice(i, i + batchSize);
+      console.log(`📧 [REPORT NOTIFICATION] Procesando lote de emails ${Math.floor(i / batchSize) + 1}/${Math.ceil(finalSubscribedUsers.length / batchSize)}`);
+      
+      for (const user of batch) {
+        try {
+          const emailSuccess = await sendEmailNotification(user, notificationDoc);
+          if (emailSuccess) {
+            emailsSent++;
+          } else {
+            emailErrors.push(`Error enviando email a ${user.email}`);
+          }
+          // Pequeña pausa entre emails (500ms) para evitar rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error(`❌ Error enviando email a ${user.email}:`, error);
+          emailErrors.push(`Error para ${user.email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+          
+          // Si es error de rate limiting, esperar más tiempo
+          if (error instanceof Error && error.message.includes('Too many login attempts')) {
+            console.warn('⚠️ [REPORT NOTIFICATION] Rate limiting detectado, esperando 10 segundos...');
+            await new Promise(resolve => setTimeout(resolve, 10000));
+          }
         }
-      } catch (error) {
-        console.error(`❌ Error enviando email a ${user.email}:`, error);
-        emailErrors.push(`Error para ${user.email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+      
+      // Pausa entre lotes (2 segundos)
+      if (i + batchSize < finalSubscribedUsers.length) {
+        console.log('⏰ [REPORT NOTIFICATION] Pausa de 2 segundos entre lotes...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
@@ -647,24 +689,45 @@ export async function sendNotificationToSubscribers(
     let emailsSent = 0;
     const errors: string[] = [];
 
-    for (const email of userEmails) {
-      try {
-        const user = await User.findOne({ email });
-        if (!user) continue;
+    // Procesar en lotes pequeños para evitar rate limiting de Gmail
+    const batchSize = 5;
+    for (let i = 0; i < userEmails.length; i += batchSize) {
+      const batch = userEmails.slice(i, i + batchSize);
+      console.log(`📧 [NOTIFICATION] Procesando lote de emails ${Math.floor(i / batchSize) + 1}/${Math.ceil(userEmails.length / batchSize)}`);
+      
+      for (const email of batch) {
+        try {
+          const user = await User.findOne({ email });
+          if (!user) continue;
 
-        // Enviar email si está habilitado
-        if (shouldSendEmail) {
-          const emailSuccess = await sendEmailNotification(user, notificationDoc);
-          if (emailSuccess) {
-            emailsSent++;
-          } else {
-            errors.push(`Error enviando email a ${email}`);
+          // Enviar email si está habilitado
+          if (shouldSendEmail) {
+            const emailSuccess = await sendEmailNotification(user, notificationDoc);
+            if (emailSuccess) {
+              emailsSent++;
+            } else {
+              errors.push(`Error enviando email a ${email}`);
+            }
+            // Pequeña pausa entre emails (500ms) para evitar rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+
+        } catch (error) {
+          console.error(`❌ Error enviando email a ${email}:`, error);
+          errors.push(`Error para ${email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+          
+          // Si es error de rate limiting, esperar más tiempo
+          if (error instanceof Error && error.message.includes('Too many login attempts')) {
+            console.warn('⚠️ [NOTIFICATION] Rate limiting detectado, esperando 10 segundos...');
+            await new Promise(resolve => setTimeout(resolve, 10000));
           }
         }
-
-      } catch (error) {
-        console.error(`❌ Error enviando email a ${email}:`, error);
-        errors.push(`Error para ${email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+      }
+      
+      // Pausa entre lotes (2 segundos)
+      if (i + batchSize < userEmails.length) {
+        console.log('⏰ [NOTIFICATION] Pausa de 2 segundos entre lotes...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 

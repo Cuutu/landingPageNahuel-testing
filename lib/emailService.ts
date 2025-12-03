@@ -48,12 +48,19 @@ const createEmailTransporter = () => {
 // Instancia global del transportador
 let emailTransporter: any = null;
 
-// Inicializar transportador
-const initializeEmailService = () => {
+/**
+ * Obtiene o crea el transporter reutilizable
+ */
+const getTransporter = () => {
   if (!emailTransporter) {
     emailTransporter = createEmailTransporter();
   }
   return emailTransporter;
+};
+
+// Inicializar transportador (mantener para compatibilidad, pero usar getTransporter)
+const initializeEmailService = () => {
+  return getTransporter();
 };
 
 interface EmailOptions {
@@ -66,6 +73,7 @@ interface EmailOptions {
 
 /**
  * Envía un email individual con mejor manejo de errores
+ * Reutiliza el transporter global para evitar múltiples autenticaciones
  */
 export async function sendEmail(options: {
   to: string;
@@ -78,10 +86,10 @@ export async function sendEmail(options: {
   console.log(`📧 [EMAIL SERVICE] Enviando email a: ${to}`);
   console.log(`📧 [EMAIL SERVICE] Asunto: ${subject}`);
   
-  // Verificar configuración
-  const isConfigured = await verifyEmailConfiguration();
+  // Verificar configuración una sola vez (sin crear nuevo transporter)
+  const transporter = getTransporter();
   
-  if (!isConfigured) {
+  if (!transporter) {
     console.log('⚠️ [EMAIL SERVICE] Modo simulación - email no se enviará realmente');
     console.log('📧 [EMAIL SERVICE] SIMULACIÓN - Email que se enviaría:');
     console.log('📧 [EMAIL SERVICE] Para:', to);
@@ -94,19 +102,6 @@ export async function sendEmail(options: {
   
   try {
     console.log('✅ [EMAIL SERVICE] Configuración SMTP válida, enviando email real...');
-    
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
     
     const mailOptions = {
       from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}>`,
@@ -129,9 +124,38 @@ export async function sendEmail(options: {
       to: to
     });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [EMAIL SERVICE] Error enviando email:', error);
     console.error('❌ [EMAIL SERVICE] Stack trace:', error instanceof Error ? error.stack : 'No stack available');
+    
+    // Si es error de "too many login attempts", resetear el transporter y esperar
+    if (error.code === 'EAUTH' && error.responseCode === 454) {
+      console.warn('⚠️ [EMAIL SERVICE] Error de rate limiting detectado, reseteando transporter...');
+      emailTransporter = null; // Resetear para forzar nueva conexión
+      
+      // Esperar antes de reintentar (exponencial backoff)
+      const waitTime = 5000; // 5 segundos
+      console.log(`⏰ [EMAIL SERVICE] Esperando ${waitTime}ms antes de continuar...`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+      
+      // Reintentar una vez
+      try {
+        const newTransporter = getTransporter();
+        if (newTransporter) {
+          const mailOptions = {
+            from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}>`,
+            to,
+            subject,
+            html
+          };
+          await newTransporter.sendMail(mailOptions);
+          console.log('✅ [EMAIL SERVICE] Email enviado exitosamente después de reintento');
+          return;
+        }
+      } catch (retryError) {
+        console.error('❌ [EMAIL SERVICE] Error en reintento:', retryError);
+      }
+    }
     
     // Arrojar el error para que se maneje en sendBulkEmails
     throw error;
@@ -178,8 +202,9 @@ export async function sendBulkEmails(options: {
   
   console.log('✅ [EMAIL SERVICE] Configuración SMTP válida, enviando emails reales...');
   
-  // Procesar en lotes para evitar sobrecargar el servidor
-  const batchSize = 10;
+  // Procesar en lotes más pequeños para evitar rate limiting de Gmail
+  // Gmail tiene límites estrictos: ~100 emails/día para cuentas normales
+  const batchSize = 5; // Reducido de 10 a 5 para ser más conservador
   const batches = [];
   
   for (let i = 0; i < recipients.length; i += batchSize) {
@@ -188,13 +213,25 @@ export async function sendBulkEmails(options: {
   
   console.log('📦 [EMAIL SERVICE] Procesando', batches.length, 'lotes de', batchSize, 'emails cada uno');
   
+  // Obtener transporter una sola vez al inicio
+  const transporter = getTransporter();
+  if (!transporter) {
+    console.log('⚠️ [EMAIL SERVICE] No se pudo obtener transporter, usando modo simulación');
+    return {
+      sent: 0,
+      failed: recipients.length,
+      errors: ['No se pudo inicializar el transporter de email']
+    };
+  }
+  
   for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
     const batch = batches[batchIndex];
     console.log(`📦 [EMAIL SERVICE] Procesando lote ${batchIndex + 1}/${batches.length} (${batch.length} emails)`);
     
-    const batchPromises = batch.map(async (email) => {
+    // Procesar emails secuencialmente dentro del lote para evitar rate limiting
+    for (const email of batch) {
       try {
-        console.log(` [EMAIL SERVICE] Enviando a: ${email}`);
+        console.log(`📧 [EMAIL SERVICE] Enviando a: ${email}`);
         await sendEmail({
           to: email,
           subject,
@@ -202,19 +239,27 @@ export async function sendBulkEmails(options: {
         });
         console.log(`✅ [EMAIL SERVICE] Enviado exitosamente a: ${email}`);
         sent++;
-      } catch (error) {
+        
+        // Pequeña pausa entre emails individuales (500ms) para evitar rate limiting
+        await new Promise(resolve => setTimeout(resolve, 500));
+      } catch (error: any) {
         console.error(`❌ [EMAIL SERVICE] Error enviando a ${email}:`, error);
         failed++;
         errors.push(`${email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+        
+        // Si es error de rate limiting, esperar más tiempo antes de continuar
+        if (error.code === 'EAUTH' && error.responseCode === 454) {
+          const waitTime = 10000; // 10 segundos
+          console.log(`⏰ [EMAIL SERVICE] Rate limiting detectado, esperando ${waitTime}ms antes de continuar...`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+        }
       }
-    });
+    }
     
-    await Promise.all(batchPromises);
-    
-    // Pequeña pausa entre lotes
+    // Pausa más larga entre lotes (2 segundos) para evitar sobrecargar Gmail
     if (batchIndex < batches.length - 1) {
-      console.log('⏰ [EMAIL SERVICE] Pausa de 1 segundo entre lotes...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('⏰ [EMAIL SERVICE] Pausa de 2 segundos entre lotes...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
     }
   }
   
@@ -226,10 +271,11 @@ export async function sendBulkEmails(options: {
 
 /**
  * Verifica la configuración del servicio de email
+ * Reutiliza el transporter global para evitar múltiples autenticaciones
  */
 export async function verifyEmailConfiguration(): Promise<boolean> {
   try {
-    const transporter = initializeEmailService();
+    const transporter = getTransporter();
     
     if (!transporter) {
       console.log('📧 Configuración de email no disponible - usando modo simulación');
@@ -242,8 +288,15 @@ export async function verifyEmailConfiguration(): Promise<boolean> {
     console.log('✅ Configuración de email verificada correctamente');
     return true;
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Error verificando configuración de email:', error);
+    
+    // Si es error de rate limiting, resetear el transporter
+    if (error.code === 'EAUTH' && error.responseCode === 454) {
+      console.warn('⚠️ [EMAIL SERVICE] Rate limiting detectado en verificación, reseteando transporter...');
+      emailTransporter = null;
+    }
+    
     return false;
   }
 }
