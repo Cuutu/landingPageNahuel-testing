@@ -173,13 +173,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             const liquidityData = alert.liquidityData || {};
             const partialSales = liquidityData.partialSales || [];
             
+            console.log(`🔍 ${alert.symbol}: Buscando ventas programadas en partialSales (total: ${partialSales.length})`);
+            if (partialSales.length > 0) {
+              console.log(`🔍 ${alert.symbol}: partialSales:`, partialSales.map((s: any) => ({
+                percentage: s.percentage,
+                executed: s.executed,
+                priceRange: s.priceRange
+              })));
+            }
+            
             // Buscar cualquier venta pendiente (no ejecutada)
             const pendingSale = partialSales.find((sale: any) => !sale.executed);
             
             if (pendingSale) {
               console.log(`✅ ${alert.symbol}: Encontrada venta programada: ${pendingSale.percentage}%`);
               
-              // Ejecutar la venta programada
+              // Ejecutar la venta programada (ya guarda participationPercentage internamente)
               const saleResult = await executeScheduledSale(alert, pendingSale, closePrice, adminUser);
               
               if (saleResult.shouldClose) {
@@ -190,7 +199,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 updateFields.participationPercentage = 0;
                 updateFields.profit = saleResult.profitPercentage;
               } else {
-                updateFields.participationPercentage = saleResult.newParticipationPercentage;
+                // ✅ IMPORTANTE: No sobrescribir participationPercentage aquí porque ya se guardó en executeScheduledSale
+                // Solo actualizar si es diferente para evitar conflictos
+                if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
+                  updateFields.participationPercentage = saleResult.newParticipationPercentage;
+                }
               }
               
               updateFields.sellPrice = closePrice;
@@ -300,9 +313,15 @@ async function executeScheduledSale(
       ? ((closePrice - entryPrice) / entryPrice) * 100 
       : 0;
     
-    // Actualizar participación
-    const currentParticipation = alert.participationPercentage ?? 100;
+    // ✅ CORREGIDO: Usar originalParticipationPercentage si existe, sino participationPercentage actual
+    // Si no hay ninguno, asumir 100%
+    const baseParticipation = alert.originalParticipationPercentage ?? alert.participationPercentage ?? 100;
+    const currentParticipation = alert.participationPercentage ?? baseParticipation;
+    
+    // Calcular nueva participación: restar el porcentaje vendido
     const newParticipationPercentage = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
+    
+    console.log(`📊 ${alert.symbol}: Cálculo de participación - Base: ${baseParticipation}%, Actual: ${currentParticipation}%, Vendido: ${percentage}%, Nueva: ${newParticipationPercentage}%`);
     
     // Marcar la venta como ejecutada
     sale.executed = true;

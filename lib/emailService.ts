@@ -1,20 +1,76 @@
+// ✅ BREVO API - Servicio de email profesional
+// Documentación: https://developers.brevo.com/reference/sendtransacemail
+
+/**
+ * Verifica si Brevo está configurado
+ */
+const isBrevoConfigured = (): boolean => {
+  return !!process.env.BREVO_API_KEY;
+};
+
+/**
+ * Envía email usando la API de Brevo (más confiable que SMTP)
+ */
+async function sendEmailWithBrevo(options: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+  fromName?: string;
+}): Promise<boolean> {
+  const apiKey = process.env.BREVO_API_KEY;
+  
+  if (!apiKey) {
+    console.warn('⚠️ [BREVO] API Key no configurada');
+    return false;
+  }
+  
+  const senderEmail = options.from || process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'soporte@lozanonahuel.com';
+  const senderName = options.fromName || process.env.BREVO_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'Nahuel Lozano';
+  
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        sender: {
+          name: senderName,
+          email: senderEmail
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ [BREVO] Error en respuesta:', response.status, errorData);
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log(`✅ [BREVO] Email enviado exitosamente a ${options.to} - MessageId: ${result.messageId}`);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ [BREVO] Error enviando email:', error);
+    return false;
+  }
+}
+
+// ========== FALLBACK NODEMAILER (si Brevo no está configurado) ==========
 import nodemailer from 'nodemailer';
 
-// Configuración del transportador de email
 const createEmailTransporter = () => {
-  // Verificar que las variables de entorno estén configuradas
-  const requiredEnvVars = [
-    'SMTP_HOST',
-    'SMTP_PORT', 
-    'SMTP_USER',
-    'SMTP_PASS'
-  ];
-
+  const requiredEnvVars = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_USER', 'SMTP_PASS'];
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
   
   if (missingVars.length > 0) {
-    console.warn(`⚠️ Variables de entorno faltantes para email: ${missingVars.join(', ')}`);
-    console.warn('📧 Modo simulación activado - emails no se enviarán realmente');
     return null;
   }
 
@@ -22,45 +78,27 @@ const createEmailTransporter = () => {
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_PORT === '465', // true para 465, false para otros puertos
+      secure: process.env.SMTP_PORT === '465',
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      // Configuraciones adicionales para diferentes proveedores
-      ...(process.env.SMTP_HOST?.includes('gmail') && {
-        service: 'gmail',
-      }),
-      // Configuración de seguridad mejorada
-      tls: {
-        rejectUnauthorized: false
-      }
+      ...(process.env.SMTP_HOST?.includes('gmail') && { service: 'gmail' }),
+      tls: { rejectUnauthorized: false }
     });
-
-    console.log('📧 Transportador de email configurado correctamente');
     return transporter;
   } catch (error) {
-    console.error('❌ Error configurando transportador de email:', error);
+    console.error('❌ Error configurando nodemailer:', error);
     return null;
   }
 };
 
-// Instancia global del transportador
 let emailTransporter: any = null;
-
-/**
- * Obtiene o crea el transporter reutilizable
- */
 const getTransporter = () => {
   if (!emailTransporter) {
     emailTransporter = createEmailTransporter();
   }
   return emailTransporter;
-};
-
-// Inicializar transportador (mantener para compatibilidad, pero usar getTransporter)
-const initializeEmailService = () => {
-  return getTransporter();
 };
 
 interface EmailOptions {
@@ -72,8 +110,8 @@ interface EmailOptions {
 }
 
 /**
- * Envía un email individual con mejor manejo de errores
- * Reutiliza el transporter global para evitar múltiples autenticaciones
+ * Envía un email individual
+ * Usa Brevo API como primera opción (más confiable), nodemailer como fallback
  */
 export async function sendEmail(options: {
   to: string;
@@ -83,26 +121,30 @@ export async function sendEmail(options: {
 }): Promise<void> {
   const { to, subject, html, from } = options;
   
-  console.log(`📧 [EMAIL SERVICE] Enviando email a: ${to}`);
-  console.log(`📧 [EMAIL SERVICE] Asunto: ${subject}`);
+  console.log(`📧 [EMAIL] Enviando a: ${to} | Asunto: ${subject.substring(0, 50)}...`);
   
-  // Verificar configuración una sola vez (sin crear nuevo transporter)
+  // ✅ PRIORIDAD 1: Usar Brevo API (más confiable, sin rate limiting)
+  if (isBrevoConfigured()) {
+    console.log('📧 [EMAIL] Usando Brevo API...');
+    const success = await sendEmailWithBrevo({ to, subject, html, from });
+    
+    if (success) {
+      return; // Email enviado exitosamente con Brevo
+    }
+    
+    console.warn('⚠️ [EMAIL] Brevo falló, intentando fallback con nodemailer...');
+  }
+  
+  // ✅ PRIORIDAD 2: Fallback a nodemailer/SMTP
   const transporter = getTransporter();
   
   if (!transporter) {
-    console.log('⚠️ [EMAIL SERVICE] Modo simulación - email no se enviará realmente');
-    console.log('📧 [EMAIL SERVICE] SIMULACIÓN - Email que se enviaría:');
-    console.log('📧 [EMAIL SERVICE] Para:', to);
-    console.log('📧 [EMAIL SERVICE] Asunto:', subject);
-    console.log('📧 [EMAIL SERVICE] HTML preview:', html.substring(0, 200) + '...');
-    
-    // En modo simulación, simular éxito
+    console.log('⚠️ [EMAIL] No hay servicio de email configurado - modo simulación');
+    console.log('📧 [EMAIL] SIMULACIÓN - Para:', to, '| Asunto:', subject);
     return;
   }
   
   try {
-    console.log('✅ [EMAIL SERVICE] Configuración SMTP válida, enviando email real...');
-    
     const mailOptions = {
       from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}>`,
       to,
@@ -110,60 +152,25 @@ export async function sendEmail(options: {
       html
     };
     
-    console.log('📧 [EMAIL SERVICE] Enviando con opciones:', {
-      from: mailOptions.from,
-      to: mailOptions.to,
-      subject: mailOptions.subject,
-      htmlLength: mailOptions.html.length
-    });
-    
     const result = await transporter.sendMail(mailOptions);
-    
-    console.log('✅ [EMAIL SERVICE] Email enviado exitosamente:', {
-      messageId: result.messageId,
-      to: to
-    });
+    console.log(`✅ [EMAIL] Enviado via SMTP - MessageId: ${result.messageId}`);
     
   } catch (error: any) {
-    console.error('❌ [EMAIL SERVICE] Error enviando email:', error);
-    console.error('❌ [EMAIL SERVICE] Stack trace:', error instanceof Error ? error.stack : 'No stack available');
+    console.error('❌ [EMAIL] Error:', error.message);
     
-    // Si es error de "too many login attempts", resetear el transporter y esperar
+    // Rate limiting - resetear transporter
     if (error.code === 'EAUTH' && error.responseCode === 454) {
-      console.warn('⚠️ [EMAIL SERVICE] Error de rate limiting detectado, reseteando transporter...');
-      emailTransporter = null; // Resetear para forzar nueva conexión
-      
-      // Esperar antes de reintentar (exponencial backoff)
-      const waitTime = 5000; // 5 segundos
-      console.log(`⏰ [EMAIL SERVICE] Esperando ${waitTime}ms antes de continuar...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      
-      // Reintentar una vez
-      try {
-        const newTransporter = getTransporter();
-        if (newTransporter) {
-          const mailOptions = {
-            from: from || `${process.env.EMAIL_FROM_NAME || 'Nahuel Lozano'} <${process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'}>`,
-            to,
-            subject,
-            html
-          };
-          await newTransporter.sendMail(mailOptions);
-          console.log('✅ [EMAIL SERVICE] Email enviado exitosamente después de reintento');
-          return;
-        }
-      } catch (retryError) {
-        console.error('❌ [EMAIL SERVICE] Error en reintento:', retryError);
-      }
+      console.warn('⚠️ [EMAIL] Rate limiting detectado, reseteando...');
+      emailTransporter = null;
     }
     
-    // Arrojar el error para que se maneje en sendBulkEmails
     throw error;
   }
 }
 
 /**
- * Envía emails masivos con mejor manejo de errores
+ * Envía emails masivos
+ * Con Brevo no hay tantos problemas de rate limiting
  */
 export async function sendBulkEmails(options: {
   recipients: string[];
@@ -172,131 +179,84 @@ export async function sendBulkEmails(options: {
 }): Promise<{ sent: number; failed: number; errors: string[] }> {
   const { recipients, subject, html } = options;
   
-  console.log('📧 [EMAIL SERVICE] Iniciando envío masivo...');
-  console.log('📧 [EMAIL SERVICE] Destinatarios:', recipients.length);
-  console.log('📧 [EMAIL SERVICE] Asunto:', subject);
-  console.log('📧 [EMAIL SERVICE] HTML generado:', html.length, 'caracteres');
+  console.log(`📧 [BULK EMAIL] Iniciando envío a ${recipients.length} destinatarios`);
   
   let sent = 0;
   let failed = 0;
   const errors: string[] = [];
   
-  console.log('🔍 [EMAIL SERVICE] Verificando configuración SMTP...');
-  const isConfigured = await verifyEmailConfiguration();
-  console.log('🔍 [EMAIL SERVICE] Configuración SMTP válida:', isConfigured);
+  // Verificar configuración
+  const hasBrevo = isBrevoConfigured();
+  const hasSmtp = !!getTransporter();
   
-  if (!isConfigured) {
-    console.log('⚠️ [EMAIL SERVICE] Modo simulación activado - emails no se enviarán realmente');
-    console.log('📧 [EMAIL SERVICE] SIMULACIÓN - Email que se enviaría:');
-    console.log('📧 [EMAIL SERVICE] Para:', recipients.slice(0, 3).join(', '), recipients.length > 3 ? '...' : '');
-    console.log('📧 [EMAIL SERVICE] Asunto:', subject);
-    console.log('📧 [EMAIL SERVICE] HTML preview:', html.substring(0, 200) + '...');
-    
-    // En modo simulación, simular éxito
+  if (!hasBrevo && !hasSmtp) {
+    console.log('⚠️ [BULK EMAIL] Modo simulación - no hay servicio configurado');
     return {
       sent: recipients.length,
       failed: 0,
-      errors: [`Modo simulación: ${recipients.length} emails simulados exitosamente`]
+      errors: [`Simulación: ${recipients.length} emails`]
     };
   }
   
-  console.log('✅ [EMAIL SERVICE] Configuración SMTP válida, enviando emails reales...');
+  console.log(`📧 [BULK EMAIL] Usando: ${hasBrevo ? 'Brevo API' : 'SMTP'}`);
   
-  // Procesar en lotes más pequeños para evitar rate limiting de Gmail
-  // Gmail tiene límites estrictos: ~100 emails/día para cuentas normales
-  const batchSize = 5; // Reducido de 10 a 5 para ser más conservador
-  const batches = [];
+  // Brevo permite más velocidad, SMTP necesita más pausa
+  const batchSize = hasBrevo ? 10 : 5;
+  const pauseBetweenEmails = hasBrevo ? 100 : 500; // ms
+  const pauseBetweenBatches = hasBrevo ? 500 : 2000; // ms
   
   for (let i = 0; i < recipients.length; i += batchSize) {
-    batches.push(recipients.slice(i, i + batchSize));
-  }
-  
-  console.log('📦 [EMAIL SERVICE] Procesando', batches.length, 'lotes de', batchSize, 'emails cada uno');
-  
-  // Obtener transporter una sola vez al inicio
-  const transporter = getTransporter();
-  if (!transporter) {
-    console.log('⚠️ [EMAIL SERVICE] No se pudo obtener transporter, usando modo simulación');
-    return {
-      sent: 0,
-      failed: recipients.length,
-      errors: ['No se pudo inicializar el transporter de email']
-    };
-  }
-  
-  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-    const batch = batches[batchIndex];
-    console.log(`📦 [EMAIL SERVICE] Procesando lote ${batchIndex + 1}/${batches.length} (${batch.length} emails)`);
+    const batch = recipients.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(recipients.length / batchSize);
     
-    // Procesar emails secuencialmente dentro del lote para evitar rate limiting
+    console.log(`📦 [BULK EMAIL] Lote ${batchNum}/${totalBatches}`);
+    
     for (const email of batch) {
       try {
-        console.log(`📧 [EMAIL SERVICE] Enviando a: ${email}`);
-        await sendEmail({
-          to: email,
-          subject,
-          html
-        });
-        console.log(`✅ [EMAIL SERVICE] Enviado exitosamente a: ${email}`);
+        await sendEmail({ to: email, subject, html });
         sent++;
-        
-        // Pequeña pausa entre emails individuales (500ms) para evitar rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, pauseBetweenEmails));
       } catch (error: any) {
-        console.error(`❌ [EMAIL SERVICE] Error enviando a ${email}:`, error);
         failed++;
-        errors.push(`${email}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
-        
-        // Si es error de rate limiting, esperar más tiempo antes de continuar
-        if (error.code === 'EAUTH' && error.responseCode === 454) {
-          const waitTime = 10000; // 10 segundos
-          console.log(`⏰ [EMAIL SERVICE] Rate limiting detectado, esperando ${waitTime}ms antes de continuar...`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-        }
+        errors.push(`${email}: ${error.message}`);
       }
     }
     
-    // Pausa más larga entre lotes (2 segundos) para evitar sobrecargar Gmail
-    if (batchIndex < batches.length - 1) {
-      console.log('⏰ [EMAIL SERVICE] Pausa de 2 segundos entre lotes...');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+    if (i + batchSize < recipients.length) {
+      await new Promise(resolve => setTimeout(resolve, pauseBetweenBatches));
     }
   }
   
-  console.log('✅ [EMAIL SERVICE] Envío masivo completado');
-  console.log('📊 [EMAIL SERVICE] Resultados finales:', { sent, failed, errorsCount: errors.length });
-  
+  console.log(`✅ [BULK EMAIL] Completado: ${sent} enviados, ${failed} fallidos`);
   return { sent, failed, errors };
 }
 
 /**
  * Verifica la configuración del servicio de email
- * Reutiliza el transporter global para evitar múltiples autenticaciones
  */
 export async function verifyEmailConfiguration(): Promise<boolean> {
+  // Brevo configurado = OK
+  if (isBrevoConfigured()) {
+    console.log('✅ [EMAIL] Brevo API configurada');
+    return true;
+  }
+  
+  // Fallback: verificar SMTP
   try {
     const transporter = getTransporter();
-    
     if (!transporter) {
-      console.log('📧 Configuración de email no disponible - usando modo simulación');
+      console.log('⚠️ [EMAIL] No hay servicio configurado');
       return false;
     }
-
-    console.log('🔍 Verificando configuración de email...');
     await transporter.verify();
-    
-    console.log('✅ Configuración de email verificada correctamente');
+    console.log('✅ [EMAIL] SMTP configurado');
     return true;
-
   } catch (error: any) {
-    console.error('❌ Error verificando configuración de email:', error);
-    
-    // Si es error de rate limiting, resetear el transporter
+    console.error('❌ [EMAIL] Error verificando:', error.message);
     if (error.code === 'EAUTH' && error.responseCode === 454) {
-      console.warn('⚠️ [EMAIL SERVICE] Rate limiting detectado en verificación, reseteando transporter...');
       emailTransporter = null;
     }
-    
     return false;
   }
 }
@@ -309,17 +269,13 @@ export function getEmailServiceStatus(): {
   provider: string | null;
   fromAddress: string | null;
 } {
-  const configured = !!(
-    process.env.SMTP_HOST && 
-    process.env.SMTP_PORT && 
-    process.env.SMTP_USER && 
-    process.env.SMTP_PASS
-  );
-
+  const hasBrevo = isBrevoConfigured();
+  const hasSmtp = !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
+  
   return {
-    configured,
-    provider: process.env.SMTP_HOST || null,
-    fromAddress: process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'
+    configured: hasBrevo || hasSmtp,
+    provider: hasBrevo ? 'Brevo API' : (hasSmtp ? (process.env.SMTP_HOST || null) : null),
+    fromAddress: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'
   };
 }
 

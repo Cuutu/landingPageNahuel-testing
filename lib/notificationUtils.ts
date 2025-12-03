@@ -353,15 +353,27 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log(`✅ [ALERT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
     console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo} (incluye ${trialUsers.length} con trial)`);
 
+    // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
+    const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
+    
+    // Filtrar usuarios: si está en modo testing, solo admins
+    const usersToEmail = TESTING_MODE 
+      ? finalSubscribedUsers.filter((user: any) => user.role === 'admin')
+      : finalSubscribedUsers;
+    
+    if (TESTING_MODE) {
+      console.log(`🧪 [ALERT NOTIFICATION] MODO TESTING ACTIVADO - Solo enviando emails a ${usersToEmail.length} administradores`);
+    }
+    
     // Enviar emails a usuarios suscritos con rate limiting
     let emailsSent = 0;
     const emailErrors: string[] = [];
 
     // Procesar en lotes pequeños para evitar rate limiting de Gmail
     const batchSize = 5;
-    for (let i = 0; i < finalSubscribedUsers.length; i += batchSize) {
-      const batch = finalSubscribedUsers.slice(i, i + batchSize);
-      console.log(`📧 [ALERT NOTIFICATION] Procesando lote de emails ${Math.floor(i / batchSize) + 1}/${Math.ceil(finalSubscribedUsers.length / batchSize)}`);
+    for (let i = 0; i < usersToEmail.length; i += batchSize) {
+      const batch = usersToEmail.slice(i, i + batchSize);
+      console.log(`📧 [ALERT NOTIFICATION] Procesando lote de emails ${Math.floor(i / batchSize) + 1}/${Math.ceil(usersToEmail.length / batchSize)}`);
       
       for (const user of batch) {
         try {
@@ -386,13 +398,13 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       }
       
       // Pausa entre lotes (2 segundos)
-      if (i + batchSize < finalSubscribedUsers.length) {
+      if (i + batchSize < usersToEmail.length) {
         console.log('⏰ [ALERT NOTIFICATION] Pausa de 2 segundos entre lotes...');
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
-    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${finalSubscribedUsers.length} (incluye usuarios con trial)`);
+    console.log(`📧 [ALERT NOTIFICATION] Emails enviados: ${emailsSent}/${usersToEmail.length}${TESTING_MODE ? ' (solo admins - modo testing)' : ''}`);
     
     if (emailErrors.length > 0) {
       console.error('❌ [ALERT NOTIFICATION] Errores de email:', emailErrors.slice(0, 3));
