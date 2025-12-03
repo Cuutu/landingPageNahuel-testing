@@ -124,7 +124,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           
           // Verificar si el precio está dentro del rango de entrada
           if (closePrice < entryRangeMin || closePrice > entryRangeMax) {
-            console.log(`❌ ${alert.symbol}: Precio $${closePrice} está FUERA del rango ${oldEntryRange} - DESCARTANDO`);
+            const motivo = closePrice < entryRangeMin 
+              ? `Precio $${closePrice} < mínimo $${entryRangeMin}`
+              : `Precio $${closePrice} > máximo $${entryRangeMax}`;
+            
+            console.log(`❌ ${alert.symbol}: ${motivo} - DESCARTANDO COMPRA`);
+            
+            // ✅ DEVOLVER LIQUIDEZ si fue asignada
+            if (adminUser) {
+              try {
+                const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+                const LiquidityModule = await import('@/models/Liquidity');
+                const Liquidity = LiquidityModule.default;
+                
+                const liquidity = await Liquidity.findOne({ 
+                  createdBy: adminUser._id, 
+                  pool: pool 
+                });
+                
+                if (liquidity) {
+                  const distribution = liquidity.distributions.find((d: any) => 
+                    d.alertId && d.alertId.toString() === alert._id.toString()
+                  );
+                  
+                  if (distribution && distribution.allocatedAmount > 0) {
+                    console.log(`💰 ${alert.symbol}: Devolviendo liquidez asignada: $${distribution.allocatedAmount.toFixed(2)}`);
+                    liquidity.removeDistribution(alert._id.toString());
+                    await liquidity.save();
+                    console.log(`✅ ${alert.symbol}: Liquidez devuelta al pool`);
+                  }
+                }
+              } catch (liquidityError) {
+                console.error(`⚠️ Error devolviendo liquidez para ${alert.symbol}:`, liquidityError);
+              }
+            }
             
             await Alert.updateOne(
               { _id: alert._id },
@@ -132,7 +165,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 $set: { 
                   status: 'DESCARTADA', 
                   descartadaAt: new Date(),
-                  descartadaMotivo: `Precio $${closePrice} fuera del rango de entrada ${oldEntryRange}`,
+                  descartadaMotivo: motivo,
                   descartadaPrecio: closePrice
                 }
               }
@@ -143,8 +176,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               type: 'discarded',
               oldRange: oldEntryRange,
               newPrice: closePrice,
-              reason: 'Precio fuera de rango'
+              reason: motivo
             });
+            
+            // Enviar notificación de compra descartada
+            await sendDiscardedBuyNotification(alert, closePrice, entryRangeMin, entryRangeMax, motivo);
             
             continue;
           }
@@ -165,64 +201,111 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           const sellRangeMin = alert.sellRangeMin;
           const sellRangeMax = alert.sellRangeMax;
           
-          // ✅ CORREGIDO: SIEMPRE ejecutar ventas programadas cuando corre el CRON
-          // Ya no verificamos si el precio está en el rango - se ejecuta con el precio de cierre
-          console.log(`🔄 ${alert.symbol}: Procesando venta programada - Rango original: $${sellRangeMin}-$${sellRangeMax}, Precio cierre: $${closePrice}`);
+          // ✅ Verificar si el precio está DENTRO del rango de venta
+          const precioEnRango = closePrice >= sellRangeMin && closePrice <= sellRangeMax;
           
-          // Buscar venta programada pendiente
-          const liquidityData = alert.liquidityData || {};
-          const partialSales = liquidityData.partialSales || [];
-          
-          console.log(`🔍 ${alert.symbol}: Buscando ventas programadas en partialSales (total: ${partialSales.length})`);
-          if (partialSales.length > 0) {
-            console.log(`🔍 ${alert.symbol}: partialSales:`, partialSales.map((s: any) => ({
-              percentage: s.percentage,
-              executed: s.executed,
-              priceRange: s.priceRange
-            })));
-          }
-          
-          // Buscar cualquier venta pendiente (no ejecutada)
-          const pendingSale = partialSales.find((sale: any) => !sale.executed);
-          
-          if (pendingSale) {
-            console.log(`✅ ${alert.symbol}: Ejecutando venta programada: ${pendingSale.percentage}% al precio de cierre $${closePrice}`);
+          if (precioEnRango) {
+            console.log(`✅ ${alert.symbol}: Precio $${closePrice} está DENTRO del rango $${sellRangeMin}-$${sellRangeMax} → EJECUTANDO VENTA`);
             
-            // Ejecutar la venta programada con el precio de cierre
-            const saleResult = await executeScheduledSale(alert, pendingSale, closePrice, adminUser);
+            // Buscar venta programada pendiente
+            const liquidityData = alert.liquidityData || {};
+            const partialSales = liquidityData.partialSales || [];
             
-            if (saleResult.shouldClose) {
-              updateFields.status = 'CLOSED';
-              updateFields.exitPrice = closePrice;
-              updateFields.exitDate = new Date();
-              updateFields.exitReason = 'AUTOMATIC';
-              updateFields.participationPercentage = 0;
-              updateFields.profit = saleResult.profitPercentage;
-              console.log(`🔒 ${alert.symbol}: Posición CERRADA - Profit: ${saleResult.profitPercentage.toFixed(2)}%`);
-            } else {
-              if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
-                updateFields.participationPercentage = saleResult.newParticipationPercentage;
+            console.log(`🔍 ${alert.symbol}: Buscando ventas programadas (total: ${partialSales.length})`);
+            
+            // Buscar cualquier venta pendiente (no ejecutada)
+            const pendingSale = partialSales.find((sale: any) => !sale.executed);
+            
+            if (pendingSale) {
+              console.log(`✅ ${alert.symbol}: Ejecutando venta programada: ${pendingSale.percentage}%`);
+              
+              // Ejecutar la venta programada
+              const saleResult = await executeScheduledSale(alert, pendingSale, closePrice, adminUser);
+              
+              if (saleResult.shouldClose) {
+                updateFields.status = 'CLOSED';
+                updateFields.exitPrice = closePrice;
+                updateFields.exitDate = new Date();
+                updateFields.exitReason = 'AUTOMATIC';
+                updateFields.participationPercentage = 0;
+                updateFields.profit = saleResult.profitPercentage;
+                console.log(`🔒 ${alert.symbol}: Posición CERRADA - Profit: ${saleResult.profitPercentage.toFixed(2)}%`);
+              } else {
+                if (alert.participationPercentage !== saleResult.newParticipationPercentage) {
+                  updateFields.participationPercentage = saleResult.newParticipationPercentage;
+                }
+                console.log(`📊 ${alert.symbol}: Venta parcial - Participación restante: ${saleResult.newParticipationPercentage}%`);
               }
-              console.log(`📊 ${alert.symbol}: Venta parcial ejecutada - Participación restante: ${saleResult.newParticipationPercentage}%`);
+              
+              updateFields.sellPrice = closePrice;
+              unsetFields.sellRangeMin = 1;
+              unsetFields.sellRangeMax = 1;
+              
+              // Enviar notificación de VENTA
+              await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
+              
+            } else {
+              // Si NO hay venta programada pero el precio está en rango, limpiar rangos
+              console.log(`⚠️ ${alert.symbol}: Precio en rango pero no hay venta programada - Limpiando rangos`);
+              
+              updateFields.sellPrice = closePrice;
+              unsetFields.sellRangeMin = 1;
+              unsetFields.sellRangeMax = 1;
+              
+              await sendConversionNotification(alert, closePrice, oldSellRange);
             }
-            
-            updateFields.sellPrice = closePrice;
-            unsetFields.sellRangeMin = 1;
-            unsetFields.sellRangeMax = 1;
-            
-            // Enviar notificación de VENTA
-            await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
-            
           } else {
-            // Si NO hay venta programada, solo limpiar los rangos
-            console.log(`⚠️ ${alert.symbol}: No hay venta programada pendiente - Limpiando rangos`);
+            // ❌ Precio FUERA del rango → DESCARTAR la venta programada (no ejecutar)
+            const motivo = closePrice < sellRangeMin 
+              ? `Precio $${closePrice} < mínimo $${sellRangeMin}`
+              : `Precio $${closePrice} > máximo $${sellRangeMax}`;
             
-            updateFields.sellPrice = closePrice;
-            unsetFields.sellRangeMin = 1;
-            unsetFields.sellRangeMax = 1;
+            console.log(`❌ ${alert.symbol}: ${motivo} → DESCARTANDO venta programada`);
             
-            // Enviar notificación de conversión
-            await sendConversionNotification(alert, closePrice, oldSellRange);
+            // Limpiar la venta programada (marcar como descartada)
+            const liquidityData = alert.liquidityData || {};
+            const partialSales = liquidityData.partialSales || [];
+            
+            // Marcar todas las ventas pendientes como descartadas
+            const updatedPartialSales = partialSales.map((sale: any) => {
+              if (!sale.executed) {
+                return {
+                  ...sale,
+                  executed: false,
+                  discarded: true,
+                  discardedAt: new Date(),
+                  discardReason: motivo
+                };
+              }
+              return sale;
+            });
+            
+            // Actualizar la alerta: limpiar rangos pero mantener la posición activa
+            await Alert.updateOne(
+              { _id: alert._id },
+              { 
+                $set: { 
+                  'liquidityData.partialSales': updatedPartialSales 
+                },
+                $unset: { 
+                  sellRangeMin: 1, 
+                  sellRangeMax: 1 
+                }
+              }
+            );
+            
+            console.log(`🗑️ ${alert.symbol}: Venta descartada - Posición sigue ACTIVA sin venta programada`);
+            
+            // Enviar notificación de venta descartada
+            await sendDiscardedSaleNotification(alert, closePrice, sellRangeMin, sellRangeMax, motivo);
+            
+            conversionDetails.push({
+              symbol: alert.symbol,
+              type: 'discarded_sale',
+              oldRange: oldSellRange,
+              newPrice: closePrice,
+              reason: motivo
+            });
           }
         }
 
@@ -248,14 +331,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           console.log(`✅ CRON: ${alert.symbol}: Rango de entrada ${oldEntryRange} convertido a precio fijo $${closePrice}`);
         }
         
-        if (hasSellRange) {
+        if (hasSellRange && closePrice >= alert.sellRangeMin && closePrice <= alert.sellRangeMax) {
           conversionDetails.push({
             symbol: alert.symbol,
             type: 'sell',
             oldRange: oldSellRange,
             newPrice: closePrice
           });
-          console.log(`✅ CRON: ${alert.symbol}: Venta ejecutada - Rango ${oldSellRange} → Precio cierre $${closePrice}`);
+          console.log(`✅ CRON: ${alert.symbol}: Venta ejecutada a $${closePrice}`);
         }
 
       } catch (alertError) {
@@ -515,7 +598,7 @@ async function sendConversionNotification(
     await createAlertNotification(alert, {
       message: message,
       price: closePrice,
-      action: 'SELL', // ✅ SELL porque es relacionado a venta
+      action: 'SELL',
       skipDuplicateCheck: true,
       title: `🎯 Rango Convertido: ${alert.symbol}`
     });
@@ -523,5 +606,63 @@ async function sendConversionNotification(
     console.log(`✅ ${alert.symbol}: Notificación de conversión enviada`);
   } catch (error) {
     console.error(`⚠️ Error enviando notificación de conversión para ${alert.symbol}:`, error);
+  }
+}
+
+/**
+ * Envía notificación de venta DESCARTADA (precio fuera del rango)
+ */
+async function sendDiscardedSaleNotification(
+  alert: any, 
+  closePrice: number, 
+  rangeMin: number,
+  rangeMax: number,
+  motivo: string
+) {
+  try {
+    const { createAlertNotification } = await import('@/lib/notificationUtils');
+    
+    const message = `❌ Venta descartada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está fuera del rango programado ($${rangeMin}-$${rangeMax}). La posición sigue ACTIVA sin venta programada.`;
+    
+    await createAlertNotification(alert, {
+      message: message,
+      price: closePrice,
+      action: 'SELL',
+      skipDuplicateCheck: true,
+      title: `❌ Venta Descartada: ${alert.symbol}`
+    });
+    
+    console.log(`✅ ${alert.symbol}: Notificación de venta descartada enviada`);
+  } catch (error) {
+    console.error(`⚠️ Error enviando notificación de venta descartada para ${alert.symbol}:`, error);
+  }
+}
+
+/**
+ * Envía notificación de compra DESCARTADA (precio fuera del rango de entrada)
+ */
+async function sendDiscardedBuyNotification(
+  alert: any, 
+  closePrice: number, 
+  rangeMin: number,
+  rangeMax: number,
+  motivo: string
+) {
+  try {
+    const { createAlertNotification } = await import('@/lib/notificationUtils');
+    
+    const message = `❌ Compra descartada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está fuera del rango de entrada ($${rangeMin}-$${rangeMax}). La alerta ha sido cancelada.`;
+    
+    await createAlertNotification(alert, {
+      message: message,
+      price: closePrice,
+      action: 'BUY',
+      skipDuplicateCheck: true,
+      title: `❌ Compra Descartada: ${alert.symbol}`
+    });
+    
+    console.log(`✅ ${alert.symbol}: Notificación de compra descartada enviada`);
+  } catch (error) {
+    console.error(`⚠️ Error enviando notificación de compra descartada para ${alert.symbol}:`, error);
   }
 }
