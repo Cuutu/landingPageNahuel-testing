@@ -63,7 +63,15 @@ export default async function handler(
       
       for (const dist of liquidity.distributions) {
         // Buscar la alerta correspondiente
-        const alert = await Alert.findById(dist.alertId);
+        // ✅ CORREGIDO: Manejar alertId como string u ObjectId
+        const alertIdStr = dist.alertId?.toString() || dist.alertId;
+        let alert = null;
+        try {
+          alert = await Alert.findById(alertIdStr);
+        } catch (e) {
+          // Si falla, intentar buscar como string
+          alert = await Alert.findOne({ _id: alertIdStr });
+        }
         
         // Si la alerta no existe o está cerrada, marcar para limpiar
         if (!alert || alert.status === 'CLOSED') {
@@ -92,7 +100,8 @@ export default async function handler(
             if (dist.shares > 0) {
               try {
                 // Obtener precio actual de la alerta si existe
-                const alert = await Alert.findById(alertId);
+                const alertIdStr = alertId?.toString() || alertId;
+                const alert = await Alert.findById(alertIdStr).catch(() => null);
                 const sellPrice = alert?.currentPrice || alert?.exitPrice || dist.currentPrice || dist.entryPrice;
                 
                 liquidity.sellShares(alertId, dist.shares, sellPrice);
