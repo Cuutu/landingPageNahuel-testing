@@ -116,21 +116,14 @@ export default async function handler(
       } else {
         // Actualizar TODOS los documentos del pool
         const updatePromises = liquidityDocs.map(async (liquidityDoc) => {
-          // ✅ NUEVO: Cuando se actualiza el total desde admin, se PISA la liquidez inicial
-          // El valor ingresado es la nueva liquidez inicial
+          // ✅ CORREGIDO: Solo actualizamos initialLiquidity
+          // recalculateDistributions() (llamado en pre-save) calculará todo correctamente:
+          // - totalLiquidity = inicial + ventasParciales
+          // - availableLiquidity = inicial - compras + ventasParciales
+          // - distributedLiquidity = montos de compras activas
           liquidityDoc.initialLiquidity = totalLiquidity;
           
-          // ✅ NUEVO: Recalcular totalLiquidity como inicial + ganancias/pérdidas actuales
-          // Primero recalculamos las ganancias/pérdidas para tener el valor actualizado
-          liquidityDoc.recalculateDistributions();
-          const currentProfitLoss = liquidityDoc.totalProfitLoss || 0;
-          
-          // El total es la inicial más las ganancias/pérdidas
-          liquidityDoc.totalLiquidity = liquidityDoc.initialLiquidity + currentProfitLoss;
-          
-          // Recalcular disponibilidad
-          liquidityDoc.availableLiquidity = liquidityDoc.totalLiquidity - liquidityDoc.distributedLiquidity;
-          
+          // El save() llama a recalculateDistributions() automáticamente (pre-save hook)
           return liquidityDoc.save();
         });
         

@@ -107,12 +107,29 @@ export default async function handler(
     let gananciaTotalSum = 0;
 
     if (mainDoc) {
-      // ✅ CORREGIDO: Usar valores del documento PRINCIPAL
+      // ✅ CORREGIDO: Usar fórmula correcta de liquidez
+      // disponible = saldoInicial - montosCompras + ventasParciales
       liquidezInicialGlobal = mainDoc.initialLiquidity || 0;
-      liquidezDistribuidaSum = mainDoc.distributedLiquidity || 0;
       
-      // Calcular ganancias desde las distribuciones del documento principal
       const allDocDistributions = mainDoc.distributions || [];
+      
+      // 1. Calcular montos de compras (allocatedAmount de distribuciones activas con shares > 0)
+      let montosCompras = 0;
+      allDocDistributions.forEach((d: any) => {
+        if (d.isActive && d.shares > 0) {
+          montosCompras += d.allocatedAmount || 0;
+        }
+      });
+      
+      // 2. Calcular ventas parciales (soldShares * entryPrice + realizedProfitLoss)
+      let ventasParciales = 0;
+      allDocDistributions.forEach((d: any) => {
+        const soldSharesValue = (d.soldShares || 0) * (d.entryPrice || 0);
+        const realizedProfit = d.realizedProfitLoss || 0;
+        ventasParciales += soldSharesValue + realizedProfit;
+      });
+      
+      // 3. Calcular ganancias totales (no realizadas + realizadas)
       allDocDistributions.forEach((d: any) => {
         if (d.isActive) {
           gananciaTotalSum += d.profitLoss || 0;
@@ -120,15 +137,17 @@ export default async function handler(
         gananciaTotalSum += d.realizedProfitLoss || 0;
       });
 
-      // ✅ CORREGIDO: Calcular liquidez total y disponible incluyendo ganancias
-      // Liquidez Total = Inicial + Ganancias (para poder usar las ganancias en nuevas alertas)
-      liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
+      // ✅ CORREGIDO: Usar fórmula correcta
+      // Liquidez distribuida = montos de compras activas
+      liquidezDistribuidaSum = montosCompras;
       
-      // ✅ CORREGIDO: Liquidez Disponible = Total - Distribuida
-      // Esto permite que las ganancias estén disponibles para crear nuevas alertas
-      liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
+      // Liquidez total = inicial + ventas parciales
+      liquidezTotalSum = liquidezInicialGlobal + ventasParciales;
+      
+      // Liquidez disponible = inicial - compras + ventas
+      liquidezDisponibleSum = liquidezInicialGlobal - montosCompras + ventasParciales;
 
-      const activeDistributions = (mainDoc.distributions || []) 
+      const activeDistributions = allDocDistributions
         .filter((d: any) => d.isActive)
         .map((d: any) => ({
           alertId: d.alertId ? d.alertId.toString() : d.alertId, 
@@ -145,6 +164,7 @@ export default async function handler(
       allDistributions.push(...activeDistributions);
       
       console.log(`📊 [LIQUIDITY SUMMARY] Usando documento principal:`, mainDoc._id);
+      console.log(`📊 [LIQUIDITY SUMMARY] Fórmula: $${liquidezInicialGlobal} - $${montosCompras} + $${ventasParciales} = $${liquidezDisponibleSum}`);
     }
 
     // Consolidar distribuciones por símbolo (sumar si hay duplicados)

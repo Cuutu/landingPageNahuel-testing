@@ -161,20 +161,15 @@ LiquiditySchema.methods.sellShares = function(this: any, alertId: string, shares
   distribution.isActive = distribution.shares > 0;
   distribution.updatedAt = new Date();
 
-  // ✅ CORREGIDO: Aumentar liquidez total con el efectivo total recibido (proceeds)
-  // Cuando se asigna liquidez, el dinero se mueve de availableLiquidity a distributedLiquidity
-  // pero totalLiquidity no cambia (sigue siendo initialLiquidity + totalProfitLoss)
-  // Cuando vendemos, recibimos proceeds en efectivo que debe agregarse a totalLiquidity
-  // El costBasis que estaba en distributedLiquidity se libera automáticamente porque
-  // allocatedAmount se reduce, lo que reduce distributedLiquidity en recalculateDistributions()
-  // La ganancia (realized) es dinero nuevo que también debe estar en totalLiquidity
-  // Por lo tanto, sumamos proceeds completo (costBasis + realized) a totalLiquidity
-  this.totalLiquidity += proceeds;
-  
-  // ✅ CORREGIDO: distributedLiquidity se reduce automáticamente en recalculateDistributions()
-  // porque allocatedAmount se redujo en costBasis (shares restantes * entryPrice)
-  // availableLiquidity se recalcula como totalLiquidity - distributedLiquidity
-  // Esto devuelve correctamente el costBasis + realized a la liquidez disponible
+  // ✅ CORREGIDO: No modificar totalLiquidity manualmente aquí
+  // recalculateDistributions() ahora calcula todo correctamente usando la fórmula:
+  // disponible = inicial - montosCompras + ventasParciales
+  // totalLiquidity = inicial + ventasParciales
+  // 
+  // Las ventas ya están registradas en:
+  // - distribution.soldShares (cantidad vendida)
+  // - distribution.realizedProfitLoss (ganancia/pérdida de la venta)
+  // - distribution.allocatedAmount reducido (shares restantes * entryPrice)
   
   this.recalculateDistributions();
 
@@ -206,8 +201,35 @@ LiquiditySchema.methods.calculateTotalProfitLoss = function(): void {
 };
 
 LiquiditySchema.methods.recalculateDistributions = function(): void {
-  this.distributedLiquidity = (this.distributions as ILiquidityDistribution[]).reduce((sum: number, dist: ILiquidityDistribution) => sum + dist.allocatedAmount, 0);
-  this.availableLiquidity = this.totalLiquidity - this.distributedLiquidity;
+  // ✅ CORREGIDO: Nueva fórmula de liquidez
+  // disponible = saldoInicial - montosCompras + ventasParciales
+  
+  // 1. Calcular montos de compras (allocatedAmount de distribuciones activas con shares > 0)
+  const montosCompras = (this.distributions as ILiquidityDistribution[])
+    .filter((dist: ILiquidityDistribution) => dist.isActive && dist.shares > 0)
+    .reduce((sum: number, dist: ILiquidityDistribution) => sum + dist.allocatedAmount, 0);
+  
+  // 2. Calcular ventas parciales (soldShares * entryPrice + realizedProfitLoss)
+  // Esto representa el efectivo liberado de las ventas
+  const ventasParciales = (this.distributions as ILiquidityDistribution[])
+    .reduce((sum: number, dist: ILiquidityDistribution) => {
+      const soldSharesValue = (dist.soldShares || 0) * dist.entryPrice;
+      const realizedProfit = dist.realizedProfitLoss || 0;
+      return sum + soldSharesValue + realizedProfit;
+    }, 0);
+  
+  // 3. Calcular liquidez distribuida (solo montos activos)
+  this.distributedLiquidity = montosCompras;
+  
+  // 4. Calcular liquidez total (inicial + ventas parciales, sin ganancias no realizadas)
+  // El total incluye el inicial más todo el efectivo que ha entrado de ventas
+  this.totalLiquidity = (this.initialLiquidity || 0) + ventasParciales;
+  
+  // 5. Calcular liquidez disponible con la fórmula correcta:
+  // disponible = inicial - compras + ventas
+  this.availableLiquidity = (this.initialLiquidity || 0) - montosCompras + ventasParciales;
+  
+  // 6. Recalcular ganancias/pérdidas totales
   this.calculateTotalProfitLoss();
 };
 
