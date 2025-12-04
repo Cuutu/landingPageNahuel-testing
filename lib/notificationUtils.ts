@@ -12,7 +12,7 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
  * @param overrides - Opciones para sobreescribir valores por defecto
  * @param overrides.skipDuplicateCheck - Si es true, omite la verificación de duplicados (útil para notificaciones de conversión de rango)
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; skipDuplicateCheck?: boolean }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean }): Promise<void> {
   try {
     await dbConnect();
     
@@ -273,7 +273,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
           participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
           liquidityPercentage: overrides?.liquidityPercentage != null ? overrides.liquidityPercentage : (liquidityPercentage || null),
-          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null
+          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null,
+          profitPercentage: overrides?.profitPercentage != null ? overrides.profitPercentage : null,
+          profitLoss: overrides?.profitLoss != null ? overrides.profitLoss : null
         }
       };
     } else {
@@ -316,7 +318,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
           priceRange: overrides?.priceRange || (alert.entryPriceRange?.min && alert.entryPriceRange?.max ? { min: alert.entryPriceRange.min, max: alert.entryPriceRange.max } : null),
           participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
           liquidityPercentage: overrides?.liquidityPercentage != null ? overrides.liquidityPercentage : (liquidityPercentage || null),
-          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null
+          soldPercentage: overrides?.soldPercentage != null ? overrides.soldPercentage : null,
+          profitPercentage: overrides?.profitPercentage != null ? overrides.profitPercentage : null,
+          profitLoss: overrides?.profitLoss != null ? overrides.profitLoss : null
         }
       };
     }
@@ -1291,7 +1295,7 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; skipDuplicateCheck?: boolean }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
@@ -1305,6 +1309,8 @@ export async function notifyAlertSubscribers(
     priceRange: options.priceRange,
     liquidityPercentage: options.liquidityPercentage,
     soldPercentage: options.soldPercentage,
+    profitPercentage: options.profitPercentage,
+    profitLoss: options.profitLoss,
     skipDuplicateCheck: options.skipDuplicateCheck || true // ✅ Por defecto true para ventas
   });
 } 

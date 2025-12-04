@@ -688,7 +688,8 @@ async function sendSaleNotification(
       action: 'SELL', // ✅ Siempre SELL para ventas
       skipDuplicateCheck: true,
       title: `✅ Venta Ejecutada: ${alert.symbol}`,
-      soldPercentage: displayPercentage
+      soldPercentage: displayPercentage,
+      profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual
         });
         
     console.log(`✅ ${alert.symbol}: Notificación de venta enviada (${positionClosed ? 'cierre completo' : 'venta parcial'} - ${displayPercentage}%)`);

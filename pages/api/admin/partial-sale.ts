@@ -168,8 +168,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Obtener información de liquidez actual
     const liquidityData = alert.liquidityData || {};
-    let allocatedAmount = liquidityData.allocatedAmount || 0;
-    let shares = liquidityData.shares || 0;
+    // ✅ CORREGIDO: Asegurar que los valores no sean negativos
+    let allocatedAmount = Math.max(0, liquidityData.allocatedAmount || 0);
+    let shares = Math.max(0, liquidityData.shares || 0);
     
     // Si no hay liquidez asignada, buscar directamente en la base de datos
     if (allocatedAmount === 0 && shares === 0) {
@@ -240,11 +241,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 .select('balance');
               const poolBalance = lastOperation?.balance || 1000;
               
-              allocatedAmount = poolBalance * (buyOperation.portfolioPercentage / 100);
+              // ✅ CORREGIDO: Validar que el balance no sea negativo
+              const validPoolBalance = poolBalance > 0 ? poolBalance : 1000;
+              
+              allocatedAmount = validPoolBalance * (buyOperation.portfolioPercentage / 100);
               shares = allocatedAmount / entryPrice;
               
+              // ✅ CORREGIDO: Asegurar que los valores no sean negativos
+              if (allocatedAmount < 0) {
+                allocatedAmount = 100; // Valor mínimo por defecto
+                shares = allocatedAmount / entryPrice;
+                console.log(`⚠️ Balance negativo detectado, usando valor mínimo por defecto`);
+              }
+              
               console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
-              console.log(`📊 Balance del pool (última op): $${poolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+              console.log(`📊 Balance del pool (última op): $${poolBalance}, Balance válido: $${validPoolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
             }
           } catch (opError) {
             console.log('⚠️ Error buscando operación de compra:', opError);
@@ -265,9 +276,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     console.log(`📊 Liquidez para cálculo: $${allocatedAmount}, ${shares} acciones, precio entrada: $${entryPrice}`);
     
-    // Validar que tenemos datos suficientes para el cálculo
-    if (shares === 0) {
-      return res.status(400).json({ error: 'No hay acciones suficientes para realizar venta parcial' });
+    // ✅ CORREGIDO: Validar que tenemos datos suficientes y que no sean negativos
+    if (shares <= 0 || allocatedAmount <= 0) {
+      console.log(`⚠️ Valores inválidos detectados: shares=${shares}, allocatedAmount=${allocatedAmount}`);
+      // Si los valores son negativos o cero, usar valores por defecto mínimos
+      if (allocatedAmount <= 0) {
+        allocatedAmount = 100; // $100 por defecto
+        shares = allocatedAmount / entryPrice;
+        console.log(`💡 Usando valores por defecto: $${allocatedAmount}, ${shares.toFixed(4)} acciones`);
+      } else {
+        return res.status(400).json({ error: 'No hay acciones suficientes para realizar venta parcial' });
+      }
     }
     
     // ✅ NUEVO: Lógica de venta mejorada - vender posiciones completas
@@ -321,7 +340,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`📈 Ganancia realizada: $${realizedProfit.toFixed(2)}`);
     
     // ✅ NUEVO: Calcular newAllocatedAmount antes del if/else para que esté disponible en ambos casos
-    const newAllocatedAmount = sharesRemaining * entryPrice;
+    // ✅ CORREGIDO: Asegurar que no sea negativo
+    const newAllocatedAmount = Math.max(0, sharesRemaining * entryPrice);
+    const validSharesRemaining = Math.max(0, sharesRemaining);
     
     // ✅ CORREGIDO: Si hay rango de venta, SIEMPRE programar (incluyendo 100%)
     // La venta se ejecutará cuando el CRON detecte que el precio está en el rango
@@ -351,11 +372,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       alert.liquidityData = {
         ...liquidityData,
-        allocatedAmount: allocatedAmount, // Mantener la liquidez asignada
-        shares: shares, // Mantener todas las acciones
+        allocatedAmount: Math.max(0, allocatedAmount), // ✅ CORREGIDO: Asegurar que no sea negativo
+        shares: Math.max(0, shares), // ✅ CORREGIDO: Asegurar que no sea negativo
         // ✅ CORREGIDO: Usar valores válidos, no valores incorrectos viejos
-        originalAllocatedAmount: validOriginalAllocated,
-        originalShares: validOriginalShares,
+        originalAllocatedAmount: Math.max(0, validOriginalAllocated),
+        originalShares: Math.max(0, validOriginalShares),
         // Guardar el porcentaje de participación original
         originalParticipationPercentage: alert.originalParticipationPercentage || 100,
         partialSales: [
@@ -451,11 +472,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // ✅ NUEVO: Guardar información de liquidez mejorada
       alert.liquidityData = {
         ...liquidityData,
-        allocatedAmount: newAllocatedAmount,
-        shares: sharesRemaining,
+        allocatedAmount: Math.max(0, newAllocatedAmount), // ✅ CORREGIDO: Asegurar que no sea negativo
+        shares: Math.max(0, validSharesRemaining), // ✅ CORREGIDO: Asegurar que no sea negativo
         // Guardar el monto original para referencia (importante para ventas futuras)
-        originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
-        originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
+        originalAllocatedAmount: Math.max(0, liquidityData.originalAllocatedAmount || allocatedAmount),
+        originalShares: Math.max(0, liquidityData.originalShares || (liquidityData.shares || shares)),
         // Guardar el porcentaje de participación original
         originalParticipationPercentage: alert.originalParticipationPercentage || 100,
         partialSales: [
@@ -608,6 +629,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Importar y usar la función de notificaciones
         const { notifyAlertSubscribers } = await import('../../../lib/notificationUtils');
         
+        // ✅ NUEVO: Calcular profitPercentage si es venta ejecutada (no programada)
+        let profitPercentage: number | undefined = undefined;
+        if (!hasSellRange && entryPrice > 0) {
+          profitPercentage = ((sellPrice - entryPrice) / entryPrice) * 100;
+        }
+        
         // Enviar notificación usando el sistema existente
         await notifyAlertSubscribers(alert, {
           message: notificationMessage,
@@ -615,7 +642,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           title: `Venta Parcial - ${alert.symbol}`,
           action: 'SELL',
           priceRange: notificationPriceRange || undefined,
-          soldPercentage: percentage // ✅ NUEVO: Pasar el porcentaje vendido
+          soldPercentage: percentage, // ✅ NUEVO: Pasar el porcentaje vendido
+          profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual si está disponible
         });
         
         console.log(`✅ Notificación de venta parcial enviada exitosamente para ${alert.symbol}`);

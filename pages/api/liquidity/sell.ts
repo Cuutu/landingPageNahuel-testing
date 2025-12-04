@@ -121,12 +121,20 @@ export default async function handler(
         ? `Cierre total en ${alert.symbol}: vendido 100% a $${price}.`
         : `Venta parcial en ${alert.symbol}: vendidos ${shares} shares a $${price}.`);
       const imageUrl = emailImageUrl || undefined;
+      
+      // ✅ NUEVO: Calcular profitPercentage basado en entryPrice y precio de venta
+      let profitPercentage: number | undefined = undefined;
+      if (distribution.entryPrice > 0) {
+        profitPercentage = ((price - distribution.entryPrice) / distribution.entryPrice) * 100;
+      }
+      
       await notifyAlertSubscribers(alert as any, {
         message,
         imageUrl,
         price,
         action: 'SELL',
-        soldPercentage: soldPercentage // ✅ NUEVO: Pasar el porcentaje vendido
+        soldPercentage: soldPercentage, // ✅ NUEVO: Pasar el porcentaje vendido
+        profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual
       });
       console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl, soldPercentage: soldPercentage.toFixed(2) });
     } catch (notifyErr) {

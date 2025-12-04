@@ -740,16 +740,22 @@ export function generateAlertEmailTemplate(
             <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${typeof notification.metadata.liquidityPercentage === 'number' ? notification.metadata.liquidityPercentage.toFixed(2) : notification.metadata.liquidityPercentage}%</div>
           </div>
         ` : ''}
-        ${notification.metadata.alertAction === 'SELL' && notification.metadata.participationPercentage != null ? `
-          <div style="text-align: center; min-width: 120px;">
-            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">% Cartera</div>
-            <div style="font-size: 16px; color: #22c55e; font-weight: 700;">${notification.metadata.participationPercentage}%</div>
-          </div>
-        ` : ''}
         ${notification.metadata.alertAction === 'SELL' && notification.metadata.soldPercentage != null ? `
           <div style="text-align: center; min-width: 120px;">
             <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">% Vendido</div>
             <div style="font-size: 16px; color: #ef4444; font-weight: 700;">${typeof notification.metadata.soldPercentage === 'number' ? notification.metadata.soldPercentage.toFixed(2) : notification.metadata.soldPercentage}%</div>
+          </div>
+        ` : ''}
+        ${notification.metadata.alertAction === 'SELL' && (notification.metadata.profitPercentage != null || notification.metadata.profitLoss != null) ? `
+          <div style="text-align: center; min-width: 120px;">
+            <div style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">P&L</div>
+            <div style="font-size: 16px; color: ${(notification.metadata.profitPercentage != null && notification.metadata.profitPercentage >= 0) || (notification.metadata.profitLoss != null && notification.metadata.profitLoss >= 0) ? '#22c55e' : '#ef4444'}; font-weight: 700;">
+              ${notification.metadata.profitPercentage != null 
+                ? `${notification.metadata.profitPercentage >= 0 ? '+' : ''}${typeof notification.metadata.profitPercentage === 'number' ? notification.metadata.profitPercentage.toFixed(2) : notification.metadata.profitPercentage}%`
+                : notification.metadata.profitLoss != null
+                ? `$${notification.metadata.profitLoss >= 0 ? '+' : ''}${typeof notification.metadata.profitLoss === 'number' ? Math.abs(notification.metadata.profitLoss).toFixed(2) : notification.metadata.profitLoss}`
+                : 'N/A'}
+            </div>
           </div>
         ` : ''}
       </div>
