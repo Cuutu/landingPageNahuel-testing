@@ -180,14 +180,3 @@
 .screenshotProtection.protected .protectionOverlay {
   pointer-events: auto;
 }
-
-/* ✅ CORREGIDO: Asegurar que el navbar y sus enlaces siempre sean clickeables */
-/* El navbar está fuera de ScreenshotProtection, pero por si acaso lo protegemos */
-nav,
-nav *,
-[class*="navbar"],
-[class*="navbar"] *,
-[class*="Navbar"],
-[class*="Navbar"] * {
-  pointer-events: auto !important;
-}

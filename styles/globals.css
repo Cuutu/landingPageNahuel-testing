@@ -245,7 +245,7 @@ nav,
   -moz-user-select: auto;
   -ms-user-select: auto;
   user-select: auto;
-  pointer-events: auto;
+  pointer-events: auto !important; /* ✅ CORREGIDO: !important para asegurar que funcione incluso con ScreenshotProtection */
 }
 
 /* ✅ NUEVO: Permitir interacción en elementos de tabla */
