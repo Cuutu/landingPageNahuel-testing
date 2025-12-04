@@ -105,6 +105,34 @@ export interface IAlert extends Document {
   gananciaRealizada: number; // Ganancia total realizada de ventas parciales
   gananciaNoRealizada: number; // Ganancia no realizada (posición actual)
   
+  // ✅ NUEVO: Campo para sistema de liquidez y ventas programadas
+  liquidityData?: {
+    allocatedAmount?: number; // Monto asignado actual
+    shares?: number; // Acciones actuales
+    originalAllocatedAmount?: number; // Monto original asignado
+    originalShares?: number; // Acciones originales
+    originalParticipationPercentage?: number; // Porcentaje original
+    partialSales?: Array<{
+      date: Date;
+      percentage: number;
+      sharesToSell: number;
+      sellPrice: number;
+      liquidityReleased: number;
+      realizedProfit: number;
+      executedBy: string;
+      priceRange?: { min: number; max: number } | null;
+      emailMessage?: string | null;
+      emailImageUrl?: string | null;
+      isCompleteSale: boolean;
+      executed: boolean;
+      scheduledAt?: Date;
+      executedAt?: Date;
+      discarded?: boolean;
+      discardedAt?: Date;
+      discardReason?: string;
+    }>;
+  };
+  
   // ✅ NUEVO: Métodos del esquema
   calculateProfit(): number;
   setFinalPrice(price: number, isFromLastAvailable?: boolean): number;
@@ -392,6 +420,101 @@ const AlertSchema: Schema = new Schema({
   gananciaNoRealizada: {
     type: Number,
     default: 0
+  },
+  // ✅ NUEVO: Campo para sistema de liquidez y ventas programadas
+  liquidityData: {
+    allocatedAmount: {
+      type: Number,
+      min: 0
+    },
+    shares: {
+      type: Number,
+      min: 0
+    },
+    originalAllocatedAmount: {
+      type: Number,
+      min: 0
+    },
+    originalShares: {
+      type: Number,
+      min: 0
+    },
+    originalParticipationPercentage: {
+      type: Number,
+      min: 0,
+      max: 100
+    },
+    partialSales: [{
+      date: {
+        type: Date,
+        default: Date.now
+      },
+      percentage: {
+        type: Number,
+        required: true,
+        min: 0,
+        max: 100
+      },
+      sharesToSell: {
+        type: Number,
+        default: 0
+      },
+      sellPrice: {
+        type: Number,
+        min: 0
+      },
+      liquidityReleased: {
+        type: Number,
+        default: 0
+      },
+      realizedProfit: {
+        type: Number,
+        default: 0
+      },
+      executedBy: {
+        type: String
+      },
+      priceRange: {
+        min: {
+          type: Number,
+          min: 0
+        },
+        max: {
+          type: Number,
+          min: 0
+        }
+      },
+      emailMessage: {
+        type: String
+      },
+      emailImageUrl: {
+        type: String
+      },
+      isCompleteSale: {
+        type: Boolean,
+        default: false
+      },
+      executed: {
+        type: Boolean,
+        default: false
+      },
+      scheduledAt: {
+        type: Date
+      },
+      executedAt: {
+        type: Date
+      },
+      discarded: {
+        type: Boolean,
+        default: false
+      },
+      discardedAt: {
+        type: Date
+      },
+      discardReason: {
+        type: String
+      }
+    }]
   }
 }, {
   timestamps: true
