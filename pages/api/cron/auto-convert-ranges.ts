@@ -583,18 +583,27 @@ async function registerSaleOperation(
  * Envía notificación de VENTA ejecutada
  */
 async function sendSaleNotification(
-  alert: any, 
-  closePrice: number, 
-  percentage: number, 
-  profitPercentage: number
+  alert: any,
+  closePrice: number,
+  percentage: number,
+  profitPercentage: number,
+  isPositionClosed?: boolean // ✅ NUEVO: Indica si la posición se cerró completamente
 ) {
   try {
     const { createAlertNotification } = await import('@/lib/notificationUtils');
-    
+
     const profitSign = profitPercentage >= 0 ? '+' : '';
-    const message = percentage >= 100
+    
+    // ✅ CORREGIDO: Si la posición se cerró completamente (participación = 0%), 
+    // mostrar mensaje de cierre completo, aunque el % vendido no sea 100%
+    const positionClosed = isPositionClosed || percentage >= 100;
+    
+    const message = positionClosed
       ? `✅ VENTA EJECUTADA: Se cerró completamente la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`
       : `✅ VENTA PARCIAL EJECUTADA: Se vendió el ${percentage}% de la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`;
+    
+    // ✅ CORREGIDO: El % vendido en el email debe reflejar que se cerró todo si es cierre completo
+    const displayPercentage = positionClosed ? 100 : percentage;
         
     await createAlertNotification(alert, {
       message: message,
@@ -602,10 +611,10 @@ async function sendSaleNotification(
       action: 'SELL', // ✅ Siempre SELL para ventas
       skipDuplicateCheck: true,
       title: `✅ Venta Ejecutada: ${alert.symbol}`,
-      soldPercentage: percentage
+      soldPercentage: displayPercentage
         });
         
-    console.log(`✅ ${alert.symbol}: Notificación de venta enviada`);
+    console.log(`✅ ${alert.symbol}: Notificación de venta enviada (${positionClosed ? 'cierre completo' : 'venta parcial'} - ${displayPercentage}%)`);
   } catch (error) {
     console.error(`⚠️ Error enviando notificación de venta para ${alert.symbol}:`, error);
   }

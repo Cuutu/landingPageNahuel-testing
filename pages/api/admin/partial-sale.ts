@@ -248,9 +248,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sharesRemaining = shares - sharesToSell;
     }
     
-    // ✅ CORREGIDO: Calcular liquidez liberada basándose en la liquidez ASIGNADA, no en el valor de mercado
-    // Esto representa cuánto de la liquidez original se está devolviendo al pool
-    const liquidityReleased = allocatedAmount * (sharesToSell / shares);
+    // ✅ CORREGIDO: Calcular liquidez liberada basándose en la liquidez ORIGINAL, no la actual
+    // Usar el monto original si existe, sino el actual
+    const originalAllocatedAmount = alert.liquidityData?.originalAllocatedAmount || allocatedAmount;
+    const originalShares = alert.liquidityData?.originalShares || shares;
+    
+    // La liquidez liberada es el porcentaje vendido del ORIGINAL
+    const liquidityReleased = originalAllocatedAmount * (percentage / 100);
     
     // El valor de mercado es lo que valen las acciones vendidas al precio de venta
     const marketValue = sharesToSell * sellPrice;
@@ -258,11 +262,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // La ganancia realizada es la diferencia entre el valor de mercado y la liquidez liberada
     const realizedProfit = marketValue - liquidityReleased;
     
+    // ✅ NUEVO: Calcular el porcentaje que QUEDARÁ después de la venta
+    const currentParticipation = alert.participationPercentage ?? 100;
+    const newParticipation = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
+    
     console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);
-    console.log(`📊 Acciones totales: ${shares.toFixed(4)}`);
-    console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}%)`);
-    console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)} (${100-percentage}%)`);
-    console.log(`💵 Liquidez asignada liberada: $${liquidityReleased.toFixed(2)}`);
+    console.log(`📊 Participación actual: ${currentParticipation}%`);
+    console.log(`📊 Participación después de venta: ${newParticipation}%`);
+    console.log(`📊 Acciones totales actuales: ${shares.toFixed(4)}`);
+    console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}% del original)`);
+    console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)}`);
+    console.log(`💵 Liquidez original: $${originalAllocatedAmount.toFixed(2)}`);
+    console.log(`💵 Liquidez liberada: $${liquidityReleased.toFixed(2)} (${percentage}% del original)`);
     console.log(`💰 Valor de mercado: $${marketValue.toFixed(2)}`);
     console.log(`📈 Ganancia realizada: $${realizedProfit.toFixed(2)}`);
     
@@ -344,17 +355,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // No fallar la operación por un error de email
       }
       
+      // ✅ CRÍTICO: Guardar la alerta con los datos de la venta programada
+      await alert.save();
+      console.log(`💾 Venta programada guardada en base de datos para ${alert.symbol}`);
+      
     } else {
       // ✅ EJECUTAR VENTA INMEDIATAMENTE: Solo cuando NO hay rango de precios
       console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
       
-      // ✅ NUEVO: Actualizar el porcentaje de participación correctamente (solo para venta inmediata)
+      // ✅ CORREGIDO: Actualizar el porcentaje de participación basándose en el ACTUAL, no el original
       if (isCompleteSale) {
         alert.participationPercentage = 0;
       } else {
-        // Para ventas parciales, reducir el porcentaje basándose en la posición original
-        const originalPercentage = alert.originalParticipationPercentage || 100;
-        const newParticipationPercentage = Math.max(0, originalPercentage - percentage);
+        // Para ventas parciales, reducir el porcentaje basándose en la posición ACTUAL
+        const currentPercentage = alert.participationPercentage ?? 100;
+        const newParticipationPercentage = Math.max(0, currentPercentage - percentage);
         alert.participationPercentage = newParticipationPercentage;
       }
       console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
@@ -572,8 +587,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       alertStatus: alert.status,
       priceRange: notificationPriceRange,
       sellPrice: sellPrice,
-      participationPercentage: alert.participationPercentage,
-      originalParticipationPercentage: alert.originalParticipationPercentage
+      // ✅ CORREGIDO: Devolver el porcentaje que QUEDARÁ después de la venta
+      participationPercentage: newParticipation,
+      originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+      previousParticipation: currentParticipation
     });
 
   } catch (error) {
