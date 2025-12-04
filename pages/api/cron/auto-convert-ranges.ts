@@ -535,9 +535,12 @@ async function executeScheduledSale(
               const costBasis = sharesToSellFinal * (alert.entryPrice || closePrice);
               const realizedProfit = proceeds - costBasis;
               
-              // ✅ CORREGIDO: Actualizar totalLiquidity con la ganancia realizada
-              // La liquidez liberada ya está en el pool, pero la ganancia aumenta el total
-              liquidity.totalLiquidity = (liquidity.totalLiquidity || baseLiquidity) + realizedProfit;
+              // ✅ CORREGIDO: Actualizar totalLiquidity con el efectivo total recibido (proceeds)
+              // Cuando vendemos, recibimos proceeds en efectivo que debe agregarse a totalLiquidity
+              // El costBasis que estaba en distributedLiquidity se libera reduciendo distributedLiquidity
+              // La ganancia (realizedProfit) es dinero nuevo que también debe estar en totalLiquidity
+              // Por lo tanto, sumamos proceeds completo (costBasis + realizedProfit) a totalLiquidity
+              liquidity.totalLiquidity = (liquidity.totalLiquidity || baseLiquidity) + proceeds;
               
               // ✅ CORREGIDO: Reducir distributedLiquidity en el monto liberado
               // Esto aumenta availableLiquidity automáticamente

@@ -160,11 +160,20 @@ LiquiditySchema.methods.sellShares = function(this: any, alertId: string, shares
   distribution.isActive = distribution.shares > 0;
   distribution.updatedAt = new Date();
 
-  // ✅ NUEVO: Aumentar liquidez total con las ganancias realizadas
-  this.totalLiquidity += realized;
+  // ✅ CORREGIDO: Aumentar liquidez total con el efectivo total recibido (proceeds)
+  // Cuando se asigna liquidez, el dinero se mueve de availableLiquidity a distributedLiquidity
+  // pero totalLiquidity no cambia (sigue siendo initialLiquidity + totalProfitLoss)
+  // Cuando vendemos, recibimos proceeds en efectivo que debe agregarse a totalLiquidity
+  // El costBasis que estaba en distributedLiquidity se libera automáticamente porque
+  // allocatedAmount se reduce, lo que reduce distributedLiquidity en recalculateDistributions()
+  // La ganancia (realized) es dinero nuevo que también debe estar en totalLiquidity
+  // Por lo tanto, sumamos proceeds completo (costBasis + realized) a totalLiquidity
+  this.totalLiquidity += proceeds;
   
-  // ✅ CORREGIDO: No aumentar availableLiquidity aquí porque recalculateDistributions() lo recalcula
-  // En su lugar, recalculateDistributions() calculará correctamente basándose en totalLiquidity y distributedLiquidity
+  // ✅ CORREGIDO: distributedLiquidity se reduce automáticamente en recalculateDistributions()
+  // porque allocatedAmount se redujo en costBasis (shares restantes * entryPrice)
+  // availableLiquidity se recalcula como totalLiquidity - distributedLiquidity
+  // Esto devuelve correctamente el costBasis + realized a la liquidez disponible
   
   this.recalculateDistributions();
 
