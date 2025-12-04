@@ -136,7 +136,7 @@ export default async function handler(
         .filter((d: any) => d.isActive)
         .map((d: any) => ({
           // ✅ CORREGIDO: Convertir alertId a string para asegurar consistencia con el frontend
-          alertId: d.alertId ? d.alertId.toString() : d.alertId,
+          alertId: d.alertId ? d.alertId.toString() : d.alertId, 
           symbol: d.symbol,
           allocatedAmount: d.allocatedAmount,
           shares: d.shares,
