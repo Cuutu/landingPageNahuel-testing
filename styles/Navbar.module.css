@@ -463,6 +463,8 @@
   padding: 8px;
   border-radius: 6px;
   transition: all 0.2s ease;
+  z-index: 1002; /* ✅ CORREGIDO: Mayor que el menú móvil para que siempre sea clickeable */
+  position: relative; /* ✅ NUEVO: Necesario para que z-index funcione */
 }
 
 .mobileMenuButton:hover {
@@ -480,6 +482,26 @@
   }
 }
 
+.mobileMenuOverlay {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001; /* Debajo del menú pero por encima del contenido */
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .mobileMenu {
   position: fixed;
   top: 70px;
@@ -490,9 +512,10 @@
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  z-index: 1000;
+  z-index: 1002; /* ✅ CORREGIDO: Mayor que el overlay para que aparezca por encima */
   overflow-y: auto;
   animation: slideInFromTop 0.3s ease-out;
+  -webkit-overflow-scrolling: touch; /* ✅ NUEVO: Mejorar scroll en iOS */
 }
 
 @keyframes slideInFromTop {

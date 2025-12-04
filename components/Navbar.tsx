@@ -413,7 +413,13 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
           {/* Mobile Menu Button */}
           <button
             className={styles.mobileMenuButton}
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsMenuOpen(!isMenuOpen);
+            }}
+            aria-label="Toggle menu"
+            type="button"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -421,7 +427,13 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className={styles.mobileMenu}>
+          <>
+            {/* Overlay para cerrar el menú al hacer click fuera */}
+            <div 
+              className={styles.mobileMenuOverlay}
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <div className={styles.mobileMenu}>
             <div className={styles.mobileMenuContent}>
               {/* Mobile Mentoring Logo - Condicional */}
               {isFeatureEnabled('mentoring') && (
@@ -552,6 +564,7 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
               </div>
             </div>
           </div>
+          </>
         )}
       </nav>
 

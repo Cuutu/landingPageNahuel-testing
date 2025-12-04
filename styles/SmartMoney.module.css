@@ -502,9 +502,10 @@
   border-right: 1px solid #333;
   padding: 1rem 0;
   position: sticky;
-  top: 0;
-  height: calc(100vh - 200px);
+  top: 70px; /* ✅ CORREGIDO: Tener en cuenta la altura del navbar sticky */
+  height: calc(100vh - 70px); /* ✅ CORREGIDO: Ajustar altura considerando solo el navbar */
   overflow-y: auto;
+  align-self: start; /* ✅ NUEVO: Asegurar que el sticky funcione correctamente */
 }
 
 .sidebarNav {
@@ -949,12 +950,13 @@
   }
   
   .sidebar {
-  position: fixed;
+    position: fixed;
     left: -280px;
-  top: 0;
-  z-index: 1000;
+    top: 70px; /* ✅ CORREGIDO: Tener en cuenta la altura del navbar */
+    z-index: 999; /* ✅ CORREGIDO: Menor que el navbar (1000) para que no quede por encima */
     transition: left 0.3s ease;
     width: 280px;
+    height: calc(100vh - 70px); /* ✅ CORREGIDO: Ajustar altura considerando el navbar */
   }
   
   .sidebar.open {
