@@ -1,16 +1,82 @@
-// ✅ BREVO API - Servicio de email profesional
-// Documentación: https://developers.brevo.com/reference/sendtransacemail
+// ✅ MAILGUN API - Servicio de email profesional
+// Documentación: https://documentation.mailgun.com/en/latest/api-sending-messages.html
 
 /**
- * Verifica si Brevo está configurado
+ * Verifica si Mailgun está configurado
  */
-const isBrevoConfigured = (): boolean => {
-  return !!process.env.BREVO_API_KEY;
+const isMailgunConfigured = (): boolean => {
+  return !!(process.env.MAILGUN_API_KEY && process.env.MAILGUN_DOMAIN);
 };
 
 /**
- * Envía email usando la API de Brevo (más confiable que SMTP)
+ * Envía email usando la API de Mailgun
  */
+async function sendEmailWithMailgun(options: {
+  to: string;
+  subject: string;
+  html: string;
+  from?: string;
+  fromName?: string;
+}): Promise<boolean> {
+  const apiKey = process.env.MAILGUN_API_KEY;
+  const domain = process.env.MAILGUN_DOMAIN;
+  
+  if (!apiKey || !domain) {
+    console.warn('⚠️ [MAILGUN] API Key o Domain no configurados');
+    return false;
+  }
+  
+  const senderEmail = options.from || process.env.MAILGUN_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || `noreply@${domain}`;
+  const senderName = options.fromName || process.env.MAILGUN_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'Nahuel Lozano';
+  
+  try {
+    // Mailgun usa form-data, no JSON
+    const formData = new URLSearchParams();
+    formData.append('from', `${senderName} <${senderEmail}>`);
+    formData.append('to', options.to);
+    formData.append('subject', options.subject);
+    formData.append('html', options.html);
+    
+    // Mailgun usa Basic Auth con api:API_KEY
+    const authHeader = Buffer.from(`api:${apiKey}`).toString('base64');
+    
+    // Determinar la región (EU o US)
+    const baseUrl = process.env.MAILGUN_REGION === 'EU' 
+      ? 'https://api.eu.mailgun.net' 
+      : 'https://api.mailgun.net';
+    
+    const response = await fetch(`${baseUrl}/v3/${domain}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authHeader}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: formData.toString()
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ [MAILGUN] Error en respuesta:', response.status, errorText);
+      return false;
+    }
+    
+    const result = await response.json();
+    console.log(`✅ [MAILGUN] Email enviado exitosamente a ${options.to} - MessageId: ${result.id}`);
+    return true;
+    
+  } catch (error) {
+    console.error('❌ [MAILGUN] Error enviando email:', error);
+    return false;
+  }
+}
+
+// ========== COMPATIBILIDAD CON VARIABLES BREVO (si aún las usan) ==========
+const isBrevoConfigured = (): boolean => {
+  // Verificar primero Mailgun, luego fallback a Brevo (por compatibilidad)
+  if (isMailgunConfigured()) return false; // Preferir Mailgun
+  return !!process.env.BREVO_API_KEY;
+};
+
 async function sendEmailWithBrevo(options: {
   to: string;
   subject: string;
@@ -111,7 +177,7 @@ interface EmailOptions {
 
 /**
  * Envía un email individual
- * Usa Brevo API como primera opción (más confiable), nodemailer como fallback
+ * Prioridad: 1) Mailgun, 2) Brevo, 3) Nodemailer/SMTP
  */
 export async function sendEmail(options: {
   to: string;
@@ -123,7 +189,19 @@ export async function sendEmail(options: {
   
   console.log(`📧 [EMAIL] Enviando a: ${to} | Asunto: ${subject.substring(0, 50)}...`);
   
-  // ✅ PRIORIDAD 1: Usar Brevo API (más confiable, sin rate limiting)
+  // ✅ PRIORIDAD 1: Usar Mailgun API (recomendado)
+  if (isMailgunConfigured()) {
+    console.log('📧 [EMAIL] Usando Mailgun API...');
+    const success = await sendEmailWithMailgun({ to, subject, html, from });
+    
+    if (success) {
+      return; // Email enviado exitosamente con Mailgun
+    }
+    
+    console.warn('⚠️ [EMAIL] Mailgun falló, intentando fallback...');
+  }
+  
+  // ✅ PRIORIDAD 2: Usar Brevo API (fallback)
   if (isBrevoConfigured()) {
     console.log('📧 [EMAIL] Usando Brevo API...');
     const success = await sendEmailWithBrevo({ to, subject, html, from });
@@ -186,10 +264,11 @@ export async function sendBulkEmails(options: {
   const errors: string[] = [];
   
   // Verificar configuración
+  const hasMailgun = isMailgunConfigured();
   const hasBrevo = isBrevoConfigured();
   const hasSmtp = !!getTransporter();
   
-  if (!hasBrevo && !hasSmtp) {
+  if (!hasMailgun && !hasBrevo && !hasSmtp) {
     console.log('⚠️ [BULK EMAIL] Modo simulación - no hay servicio configurado');
     return {
       sent: recipients.length,
@@ -198,12 +277,14 @@ export async function sendBulkEmails(options: {
     };
   }
   
-  console.log(`📧 [BULK EMAIL] Usando: ${hasBrevo ? 'Brevo API' : 'SMTP'}`);
+  const provider = hasMailgun ? 'Mailgun API' : (hasBrevo ? 'Brevo API' : 'SMTP');
+  console.log(`📧 [BULK EMAIL] Usando: ${provider}`);
   
-  // Brevo permite más velocidad, SMTP necesita más pausa
-  const batchSize = hasBrevo ? 10 : 5;
-  const pauseBetweenEmails = hasBrevo ? 100 : 500; // ms
-  const pauseBetweenBatches = hasBrevo ? 500 : 2000; // ms
+  // APIs permiten más velocidad, SMTP necesita más pausa
+  const useApi = hasMailgun || hasBrevo;
+  const batchSize = useApi ? 10 : 5;
+  const pauseBetweenEmails = useApi ? 100 : 500; // ms
+  const pauseBetweenBatches = useApi ? 500 : 2000; // ms
   
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
@@ -236,6 +317,12 @@ export async function sendBulkEmails(options: {
  * Verifica la configuración del servicio de email
  */
 export async function verifyEmailConfiguration(): Promise<boolean> {
+  // Mailgun configurado = OK
+  if (isMailgunConfigured()) {
+    console.log('✅ [EMAIL] Mailgun API configurada');
+    return true;
+  }
+  
   // Brevo configurado = OK
   if (isBrevoConfigured()) {
     console.log('✅ [EMAIL] Brevo API configurada');
@@ -269,13 +356,28 @@ export function getEmailServiceStatus(): {
   provider: string | null;
   fromAddress: string | null;
 } {
+  const hasMailgun = isMailgunConfigured();
   const hasBrevo = isBrevoConfigured();
   const hasSmtp = !!(process.env.SMTP_HOST && process.env.SMTP_PORT && process.env.SMTP_USER && process.env.SMTP_PASS);
   
+  let provider: string | null = null;
+  let fromAddress: string | null = null;
+  
+  if (hasMailgun) {
+    provider = 'Mailgun API';
+    fromAddress = process.env.MAILGUN_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || `noreply@${process.env.MAILGUN_DOMAIN}`;
+  } else if (hasBrevo) {
+    provider = 'Brevo API';
+    fromAddress = process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || 'soporte@lozanonahuel.com';
+  } else if (hasSmtp) {
+    provider = process.env.SMTP_HOST || 'SMTP';
+    fromAddress = process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com';
+  }
+  
   return {
-    configured: hasBrevo || hasSmtp,
-    provider: hasBrevo ? 'Brevo API' : (hasSmtp ? (process.env.SMTP_HOST || null) : null),
-    fromAddress: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_FROM_ADDRESS || process.env.SMTP_USER || 'soporte@lozanonahuel.com'
+    configured: hasMailgun || hasBrevo || hasSmtp,
+    provider,
+    fromAddress
   };
 }
 
