@@ -225,11 +225,12 @@ export default async function handler(
 
     // Integrar con Liquidez: vender acciones asignadas y devolver efectivo
     try {
-      // ✅ CORREGIDO: Buscar liquidez por pool específico
+      // ✅ CORREGIDO: Buscar liquidez por pool Y que contenga la distribución del alertId
+      // Esto permite que cualquier admin pueda cerrar alertas sin importar quién creó la distribución
       const pool = updatedAlert?.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
       const liquidity = await Liquidity.findOne({ 
-        createdBy: user._id, 
-        pool: pool 
+        pool: pool,
+        'distributions.alertId': alertId
       });
       
       if (liquidity) {

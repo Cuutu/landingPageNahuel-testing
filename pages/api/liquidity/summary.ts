@@ -107,10 +107,8 @@ export default async function handler(
     let gananciaTotalSum = 0;
 
     if (mainDoc) {
-      // ✅ CORREGIDO: Usar valores del documento PRINCIPAL directamente
+      // ✅ CORREGIDO: Usar valores del documento PRINCIPAL
       liquidezInicialGlobal = mainDoc.initialLiquidity || 0;
-      liquidezTotalSum = mainDoc.totalLiquidity || 0;
-      liquidezDisponibleSum = mainDoc.availableLiquidity || 0;
       liquidezDistribuidaSum = mainDoc.distributedLiquidity || 0;
       
       // Calcular ganancias desde las distribuciones del documento principal
@@ -121,6 +119,14 @@ export default async function handler(
         }
         gananciaTotalSum += d.realizedProfitLoss || 0;
       });
+
+      // ✅ CORREGIDO: Calcular liquidez total y disponible incluyendo ganancias
+      // Liquidez Total = Inicial + Ganancias (para poder usar las ganancias en nuevas alertas)
+      liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
+      
+      // ✅ CORREGIDO: Liquidez Disponible = Total - Distribuida
+      // Esto permite que las ganancias estén disponibles para crear nuevas alertas
+      liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
 
       const activeDistributions = (mainDoc.distributions || []) 
         .filter((d: any) => d.isActive)
@@ -163,11 +169,10 @@ export default async function handler(
 
     const consolidatedDistributions = Array.from(distributionMap.values());
 
-    // ✅ CORREGIDO: Fallback solo si no hay documento principal
-    // Si initialLiquidity es 0 pero hay totalLiquidity, calcular inicial desde total - ganancias
-    if (liquidezInicialGlobal === 0 && liquidezTotalSum > 0) {
-      liquidezInicialGlobal = liquidezTotalSum - gananciaTotalSum;
-    }
+    // ✅ INFO: Ahora los cálculos son:
+    // - liquidezTotal = initialLiquidity + ganancias
+    // - liquidezDisponible = liquidezTotal - liquidezDistribuida
+    // Esto permite que las ganancias estén disponibles para crear nuevas alertas
 
     // ✅ CORREGIDO: Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
     // El signo debe ser correcto: positivo para ganancias, negativo para pérdidas

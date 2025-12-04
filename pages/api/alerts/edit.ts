@@ -375,7 +375,8 @@ export default async function handler(
             liquidityAmount: liquidityAmount
           });
           
-          const shares = Math.floor(liquidityAmount / priceForShares);
+          // ✅ CORREGIDO: Permitir shares fraccionarias
+          const shares = liquidityAmount / priceForShares;
 
           const newDistribution = {
             alertId: alert._id,
@@ -414,14 +415,19 @@ export default async function handler(
       try {
         console.log(`⚡ Ejecutando venta rápida: ${quickSellPercentage}% para ${alert.symbol}`);
         
+        // ✅ CORREGIDO: Buscar liquidez que contenga la distribución del alertId
         const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
-        const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        const liquidity = await Liquidity.findOne({ 
+          pool,
+          'distributions.alertId': alertId
+        });
         
         if (liquidity) {
           const distribution = liquidity.distributions.find((d: any) => d.alertId.toString() === alertId.toString());
           
           if (distribution && distribution.shares > 0) {
-            const sharesToSell = Math.floor(distribution.shares * (quickSellPercentage / 100));
+            // ✅ CORREGIDO: Permitir venta de shares fraccionarias
+            const sharesToSell = distribution.shares * (quickSellPercentage / 100);
             // ✅ CORREGIDO: Usar precio actual para venta rápida (no precio de entrada)
             const currentPrice = alert.currentPrice || alert.entryPrice;
             

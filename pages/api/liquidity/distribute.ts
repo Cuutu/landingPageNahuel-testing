@@ -103,7 +103,8 @@ export default async function handler(
       }
       
       // ✅ NUEVO: Remover restricción de 100% total - permitir múltiples asignaciones
-      const additionalShares = Math.floor(requiredAmount / entryPrice);
+      // ✅ CORREGIDO: Permitir shares fraccionarias
+      const additionalShares = requiredAmount / entryPrice;
       const actualAllocatedAmount = additionalShares * entryPrice;
 
       existingDistribution.percentage += targetPercentage;

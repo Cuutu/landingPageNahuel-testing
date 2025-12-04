@@ -490,23 +490,12 @@ async function executeScheduledSale(
         const OperationModule = await import('@/models/Operation');
         const Operation = OperationModule.default;
         
-        // ✅ CORREGIDO: Buscar el documento principal del pool (no por usuario)
-        // Esto asegura que siempre usemos el mismo documento consolidado
-        let liquidity = await Liquidity.findOne({ pool })
-          .sort({ updatedAt: -1, createdAt: -1 }); // El más reciente
-        
-        // Si no existe, buscar el que tiene más distribuciones
-        if (!liquidity) {
-          const allLiquidityDocs = await Liquidity.find({ pool }).lean();
-          if (allLiquidityDocs.length > 0) {
-            const mainDoc = allLiquidityDocs.reduce((prev, curr) => {
-              const prevDist = (prev.distributions || []).length;
-              const currDist = (curr.distributions || []).length;
-              return currDist > prevDist ? curr : prev;
-            });
-            liquidity = await Liquidity.findById(mainDoc._id);
-          }
-        }
+        // ✅ CORREGIDO: Buscar liquidez que contenga la distribución del alertId
+        // Esto asegura que encontremos el documento correcto sin importar quién lo creó
+        let liquidity = await Liquidity.findOne({ 
+          pool,
+          'distributions.alertId': alert._id.toString()
+        });
         
         let liquidityReleased = 0;
         let sharesToSellFinal = 0;

@@ -78,7 +78,8 @@ LiquiditySchema.methods.addDistribution = function(this: any, alertId: string, s
   // ✅ NUEVO: Permitir múltiples asignaciones sin restricción de 100% total
   // El sistema ahora permite asignar más del 100% si hay liquidez suficiente
   
-  const shares = Math.floor(requiredAmount / entryPrice);
+  // ✅ CORREGIDO: Permitir shares fraccionarias (muchos brokers lo permiten)
+  const shares = requiredAmount / entryPrice;
   const actualAllocatedAmount = shares * entryPrice;
   
   const distribution = {

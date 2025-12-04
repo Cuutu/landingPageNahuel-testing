@@ -570,10 +570,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         console.log(`🔄 Actualizando sistema de liquidez para ${tipo}...`);
         
-        // Buscar directamente en la base de datos
+        // ✅ CORREGIDO: Buscar liquidez que contenga la distribución del alertId
+        // Esto permite que cualquier admin pueda vender sin importar quién creó la distribución
         const liquidity = await Liquidity.findOne({ 
-          createdBy: user._id, 
-          pool: tipo 
+          pool: tipo,
+          'distributions.alertId': alertId
         });
         
         if (liquidity && liquidity.distributions) {

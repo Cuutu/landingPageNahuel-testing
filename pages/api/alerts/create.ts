@@ -445,12 +445,12 @@ export default async function handler(
             esOperacionHistorica: esOperacionHistorica
           });
 
-          // Calcular shares totales originales
-          const sharesTotales = Math.floor(liquidityAmount / priceForShares);
+          // ✅ CORREGIDO: Permitir shares fraccionarias
+          const sharesTotales = liquidityAmount / priceForShares;
           
           // ✅ NUEVO: Para operaciones históricas con ventas, calcular shares restantes
           const sharesRestantes = esOperacionHistorica 
-            ? Math.floor(sharesTotales * (participacionRestante / 100))
+            ? sharesTotales * (participacionRestante / 100)
             : sharesTotales;
           
           // ✅ NUEVO: Calcular monto asignado actual (después de ventas)
@@ -463,7 +463,8 @@ export default async function handler(
           if (esOperacionHistorica && ventasParcialesProcesadas.length > 0) {
             // Calcular P&L realizado basado en las ventas
             for (const venta of ventasParcialesProcesadas) {
-              const sharesVendidos = Math.floor(sharesTotales * (venta.porcentajeVendido / 100));
+              // ✅ CORREGIDO: Permitir shares fraccionarias
+              const sharesVendidos = sharesTotales * (venta.porcentajeVendido / 100);
               const montoVendido = sharesVendidos * venta.precio;
               const montoOriginal = sharesVendidos * priceForShares;
               realizedProfitLossUSD += (montoVendido - montoOriginal);
