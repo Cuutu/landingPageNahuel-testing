@@ -91,12 +91,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           participationPercentage: alert.participationPercentage
         });
 
+        // ✅ CRÍTICO: Usar el precio de cierre de la alerta (precio del momento de ejecución del cronjob)
+        // Este precio se usará para registrar las operaciones de venta
         const closePrice = alert.currentPrice;
         
         if (!closePrice || closePrice <= 0) {
-          console.warn(`⚠️ ${alert.symbol}: Precio actual inválido (${closePrice}), saltando...`);
+          console.warn(`⚠️ ${alert.symbol}: Precio de cierre inválido (${closePrice}), saltando...`);
           continue;
         }
+        
+        console.log(`💰 ${alert.symbol}: Precio de cierre para operaciones: $${closePrice}`);
 
         // Determinar qué rangos convertir
         const hasEntryRange = alert.entryPriceRange?.min && alert.entryPriceRange?.max;
@@ -659,11 +663,13 @@ async function registerSaleOperation(
     // ✅ CORREGIDO: Ganancia = valor de mercado - liquidez asignada original
     const realizedProfit = marketValue - actualLiquidityReleased;
         
+        // ✅ CRÍTICO: Usar el precio de cierre del cronjob para registrar la operación
+        // Este precio es el precio del momento de cierre de la alerta cuando se ejecuta el cronjob
         const operation = new Operation({
           ticker: alert.symbol.toUpperCase(),
           operationType: 'VENTA',
       quantity: -sharesToSell,
-          price: closePrice,
+          price: closePrice, // ✅ Precio de cierre del cronjob (precio del momento de ejecución)
       amount: actualLiquidityReleased,
           date: new Date(),
           balance: newBalance,
@@ -680,7 +686,7 @@ async function registerSaleOperation(
           },
           executedBy: 'SYSTEM',
           executionMethod: 'AUTOMATIC',
-      notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente - ${alert.symbol}`
+      notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice} - ${alert.symbol}`
         });
         
         await operation.save();
