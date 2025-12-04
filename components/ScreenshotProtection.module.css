@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 999; /* ✅ CORREGIDO: Menor que el navbar (1000) para que no bloquee la navegación */
   backdrop-filter: blur(10px);
   animation: fadeIn 0.3s ease;
 }
@@ -163,20 +163,31 @@
   }
 }
 
-/* Prevenir selección de texto en modo protegido */
-.screenshotProtection.protected * {
+/* Prevenir selección de texto en modo protegido - SOLO dentro del contenedor */
+.screenshotProtection.protected > * {
   user-select: none !important;
   -webkit-user-select: none !important;
   -moz-user-select: none !important;
   -ms-user-select: none !important;
 }
 
-/* Prevenir drag and drop en modo protegido */
-.screenshotProtection.protected * {
+/* Prevenir drag and drop en modo protegido - SOLO dentro del contenedor protegido */
+.screenshotProtection.protected > * {
   pointer-events: none;
 }
 
 /* Restaurar pointer events para el overlay */
 .screenshotProtection.protected .protectionOverlay {
   pointer-events: auto;
+}
+
+/* ✅ CORREGIDO: Asegurar que el navbar y sus enlaces siempre sean clickeables */
+/* El navbar está fuera de ScreenshotProtection, pero por si acaso lo protegemos */
+nav,
+nav *,
+[class*="navbar"],
+[class*="navbar"] *,
+[class*="Navbar"],
+[class*="Navbar"] * {
+  pointer-events: auto !important;
 }
