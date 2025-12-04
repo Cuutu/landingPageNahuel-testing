@@ -85,59 +85,46 @@ export default async function handler(
 
     console.log(`📊 [LIQUIDITY SUMMARY] Documentos encontrados para ${pool}:`, liquidityDocs.length);
 
+    // ✅ CORREGIDO: Encontrar el documento PRINCIPAL (el que tiene distributions)
+    // Priorizar el documento que tiene distributions activas
+    const docsWithDistributions = liquidityDocs.filter(doc => 
+      doc.distributions && doc.distributions.length > 0
+    );
+    
+    // Usar el documento principal (con distributions) o el primero disponible
+    const mainDoc = docsWithDistributions.length > 0 
+      ? docsWithDistributions.sort((a, b) => 
+          new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+        )[0]
+      : liquidityDocs[0];
+
     // Combinar todas las distribuciones y calcular totales
     const allDistributions: any[] = [];
-    let liquidezInicialSum = 0;
+    let liquidezInicialGlobal = 0;
     let liquidezTotalSum = 0;
     let liquidezDisponibleSum = 0;
     let liquidezDistribuidaSum = 0;
     let gananciaTotalSum = 0;
 
-    // ✅ NUEVO: La liquidez inicial es UN SOLO valor global por pool, no se suma
-    // Usar el valor del documento más reciente que tenga initialLiquidity definido
-    let liquidezInicialGlobal = 0;
-    const docsWithInitialLiquidity = liquidityDocs.filter(doc => 
-      doc.initialLiquidity !== undefined && doc.initialLiquidity !== null && doc.initialLiquidity > 0
-    );
-    
-    if (docsWithInitialLiquidity.length > 0) {
-      // Usar el valor más reciente (por updatedAt) o el primer documento encontrado
-      const sortedByUpdate = [...docsWithInitialLiquidity].sort((a, b) => 
-        new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
-      );
-      liquidezInicialGlobal = sortedByUpdate[0].initialLiquidity;
-    } else {
-      // Fallback: calcular desde el primer documento si no hay initialLiquidity definido
-      if (liquidityDocs.length > 0) {
-        const firstDoc = liquidityDocs[0];
-        liquidezInicialGlobal = firstDoc.totalLiquidity - (firstDoc.totalProfitLoss || 0);
-      }
-    }
-    
-    // ✅ CORREGIDO: Usar valores directamente de la BD en lugar de recalcularlos
-    // Esto permite ajustes manuales desde MongoDB
-    liquidityDocs.forEach((doc) => {
-      // Usar valores guardados en la BD directamente
-      liquidezDistribuidaSum += doc.distributedLiquidity || 0;
-      liquidezDisponibleSum += doc.availableLiquidity || 0;
-      liquidezTotalSum += doc.totalLiquidity || 0;
+    if (mainDoc) {
+      // ✅ CORREGIDO: Usar valores del documento PRINCIPAL directamente
+      liquidezInicialGlobal = mainDoc.initialLiquidity || 0;
+      liquidezTotalSum = mainDoc.totalLiquidity || 0;
+      liquidezDisponibleSum = mainDoc.availableLiquidity || 0;
+      liquidezDistribuidaSum = mainDoc.distributedLiquidity || 0;
       
-      // ✅ CORREGIDO: Calcular ganancias directamente desde TODAS las distribuciones (activas e inactivas)
-      // Esto asegura que las ganancias realizadas de distribuciones vendidas completamente se incluyan
-      const allDocDistributions = doc.distributions || [];
+      // Calcular ganancias desde las distribuciones del documento principal
+      const allDocDistributions = mainDoc.distributions || [];
       allDocDistributions.forEach((d: any) => {
-        // Sumar ganancias no realizadas (solo de distribuciones activas)
         if (d.isActive) {
           gananciaTotalSum += d.profitLoss || 0;
         }
-        // Sumar ganancias realizadas (de todas las distribuciones, activas e inactivas)
         gananciaTotalSum += d.realizedProfitLoss || 0;
       });
 
-      const activeDistributions = (doc.distributions || []) 
+      const activeDistributions = (mainDoc.distributions || []) 
         .filter((d: any) => d.isActive)
         .map((d: any) => ({
-          // ✅ CORREGIDO: Convertir alertId a string para asegurar consistencia con el frontend
           alertId: d.alertId ? d.alertId.toString() : d.alertId, 
           symbol: d.symbol,
           allocatedAmount: d.allocatedAmount,
@@ -150,7 +137,9 @@ export default async function handler(
           isActive: d.isActive,
         }));
       allDistributions.push(...activeDistributions);
-    });
+      
+      console.log(`📊 [LIQUIDITY SUMMARY] Usando documento principal:`, mainDoc._id);
+    }
 
     // Consolidar distribuciones por símbolo (sumar si hay duplicados)
     const distributionMap = new Map<string, any>();
@@ -174,13 +163,10 @@ export default async function handler(
 
     const consolidatedDistributions = Array.from(distributionMap.values());
 
-    // ✅ CORREGIDO: Usar valores de la BD directamente (ya sumados arriba)
-    // Si no hay valores en la BD, calcular como fallback
-    if (liquidezTotalSum === 0 && liquidezInicialGlobal > 0) {
-      liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
-    }
-    if (liquidezDisponibleSum === 0 && liquidezTotalSum > 0) {
-      liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
+    // ✅ CORREGIDO: Fallback solo si no hay documento principal
+    // Si initialLiquidity es 0 pero hay totalLiquidity, calcular inicial desde total - ganancias
+    if (liquidezInicialGlobal === 0 && liquidezTotalSum > 0) {
+      liquidezInicialGlobal = liquidezTotalSum - gananciaTotalSum;
     }
 
     // ✅ CORREGIDO: Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
