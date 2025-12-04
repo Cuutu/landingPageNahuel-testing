@@ -210,13 +210,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               }).sort({ date: -1 });
               
               if (buyOperation && buyOperation.portfolioPercentage > 0) {
-                // Calcular allocatedAmount basándose en el porcentaje del pool
-                const poolBalance = liquidity.currentBalance || liquidity.totalBalance || 1000;
+                // ✅ CORREGIDO: Usar totalLiquidity del documento de Liquidity (fuente confiable)
+                // totalLiquidity = initialLiquidity + totalProfitLoss
+                const poolBalance = liquidity.totalLiquidity > 0 ? liquidity.totalLiquidity : (liquidity.initialLiquidity || 1000);
                 allocatedAmount = poolBalance * (buyOperation.portfolioPercentage / 100);
                 shares = allocatedAmount / entryPrice;
                 
+                // ✅ CORREGIDO: Asegurar que los valores no sean negativos
+                if (allocatedAmount < 0) {
+                  allocatedAmount = 100; // Valor mínimo por defecto
+                  shares = allocatedAmount / entryPrice;
+                  console.log(`⚠️ Valores negativos detectados, usando valor mínimo por defecto`);
+                }
+                
                 console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
-                console.log(`📊 Balance del pool: $${poolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+                console.log(`📊 Liquidez total del pool: $${poolBalance.toFixed(2)}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
               }
             } catch (opError) {
               console.log('⚠️ Error buscando operación de compra:', opError);
@@ -225,40 +233,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         } else {
           console.log(`⚠️ No se encontró documento de liquidez para usuario ${user._id} en pool ${tipo}`);
           
-          // ✅ NUEVO: Buscar en operaciones incluso si no hay documento de liquidez
+          // ✅ CORREGIDO: Buscar documento de Liquidity del pool completo (no solo del usuario)
+          // Esto es más confiable que usar el balance de Operation
           try {
-            const Operation = (await import('@/models/Operation')).default;
-            const buyOperation = await Operation.findOne({
-              alertId: alertId,
-              operationType: 'COMPRA',
-              system: tipo
-            }).sort({ date: -1 });
+            const poolLiquidity = await Liquidity.findOne({ pool: tipo })
+              .sort({ updatedAt: -1, createdAt: -1 }); // El más reciente
             
-            if (buyOperation && buyOperation.portfolioPercentage > 0) {
-              // Buscar el balance total del pool desde la última operación
-              const lastOperation = await Operation.findOne({ system: tipo })
-                .sort({ date: -1 })
-                .select('balance');
-              const poolBalance = lastOperation?.balance || 1000;
+            if (poolLiquidity && poolLiquidity.totalLiquidity > 0) {
+              console.log(`📊 Documento de liquidez del pool encontrado: totalLiquidity = $${poolLiquidity.totalLiquidity.toFixed(2)}`);
               
-              // ✅ CORREGIDO: Validar que el balance no sea negativo
-              const validPoolBalance = poolBalance > 0 ? poolBalance : 1000;
+              const Operation = (await import('@/models/Operation')).default;
+              const buyOperation = await Operation.findOne({
+                alertId: alertId,
+                operationType: 'COMPRA',
+                system: tipo
+              }).sort({ date: -1 });
               
-              allocatedAmount = validPoolBalance * (buyOperation.portfolioPercentage / 100);
-              shares = allocatedAmount / entryPrice;
-              
-              // ✅ CORREGIDO: Asegurar que los valores no sean negativos
-              if (allocatedAmount < 0) {
-                allocatedAmount = 100; // Valor mínimo por defecto
+              if (buyOperation && buyOperation.portfolioPercentage > 0) {
+                // ✅ CORREGIDO: Usar totalLiquidity del documento de Liquidity (fuente confiable)
+                const poolBalance = poolLiquidity.totalLiquidity;
+                
+                allocatedAmount = poolBalance * (buyOperation.portfolioPercentage / 100);
                 shares = allocatedAmount / entryPrice;
-                console.log(`⚠️ Balance negativo detectado, usando valor mínimo por defecto`);
+                
+                console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
+                console.log(`📊 Liquidez total del pool: $${poolBalance.toFixed(2)}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
               }
+            } else {
+              // ✅ ÚLTIMO RECURSO: Solo si no hay documento de Liquidity, usar balance de Operation
+              console.log(`⚠️ No se encontró documento de liquidez del pool, usando balance de operaciones como fallback`);
               
-              console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
-              console.log(`📊 Balance del pool (última op): $${poolBalance}, Balance válido: $${validPoolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+              const Operation = (await import('@/models/Operation')).default;
+              const buyOperation = await Operation.findOne({
+                alertId: alertId,
+                operationType: 'COMPRA',
+                system: tipo
+              }).sort({ date: -1 });
+              
+              if (buyOperation && buyOperation.portfolioPercentage > 0) {
+                // Buscar el balance total del pool desde la última operación
+                const lastOperation = await Operation.findOne({ system: tipo })
+                  .sort({ date: -1 })
+                  .select('balance');
+                const poolBalance = lastOperation?.balance || 1000;
+                
+                // ✅ CORREGIDO: Validar que el balance no sea negativo, usar liquidez inicial si está disponible
+                let validPoolBalance = poolBalance > 0 ? poolBalance : 1000;
+                
+                // Si el balance es negativo, intentar obtener la liquidez inicial del pool
+                if (poolBalance <= 0 && poolLiquidity) {
+                  validPoolBalance = poolLiquidity.initialLiquidity || 1000;
+                  console.log(`⚠️ Balance negativo detectado (${poolBalance}), usando liquidez inicial: $${validPoolBalance}`);
+                }
+                
+                allocatedAmount = validPoolBalance * (buyOperation.portfolioPercentage / 100);
+                shares = allocatedAmount / entryPrice;
+                
+                // ✅ CORREGIDO: Asegurar que los valores no sean negativos
+                if (allocatedAmount < 0) {
+                  allocatedAmount = 100; // Valor mínimo por defecto
+                  shares = allocatedAmount / entryPrice;
+                  console.log(`⚠️ Valores negativos detectados, usando valor mínimo por defecto`);
+                }
+                
+                console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
+                console.log(`📊 Balance del pool (última op): $${poolBalance}, Balance válido: $${validPoolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+              }
             }
           } catch (opError) {
-            console.log('⚠️ Error buscando operación de compra:', opError);
+            console.log('⚠️ Error buscando liquidez del pool o operación de compra:', opError);
           }
         }
       } catch (error) {
