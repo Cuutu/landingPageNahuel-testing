@@ -108,44 +108,48 @@ export default async function handler(
 
     if (mainDoc) {
       // ✅ CORREGIDO: Usar fórmula correcta de liquidez
-      // disponible = saldoInicial - montosCompras + ventasParciales
+      // Disponible = Inicial - Distribuida + Ganancias Realizadas
       liquidezInicialGlobal = mainDoc.initialLiquidity || 0;
       
       const allDocDistributions = mainDoc.distributions || [];
       
-      // 1. Calcular montos de compras (allocatedAmount de distribuciones activas con shares > 0)
-      let montosCompras = 0;
+      // 1. Calcular liquidez distribuida (allocatedAmount de distribuciones activas con shares > 0)
+      // Esto representa el dinero que actualmente está invertido en alertas activas
+      let montosDistribuidos = 0;
       allDocDistributions.forEach((d: any) => {
         if (d.isActive && d.shares > 0) {
-          montosCompras += d.allocatedAmount || 0;
+          montosDistribuidos += d.allocatedAmount || 0;
         }
       });
       
-      // 2. Calcular ventas parciales (soldShares * entryPrice + realizedProfitLoss)
-      let ventasParciales = 0;
+      // 2. Calcular ganancias REALIZADAS (solo de ventas completadas)
+      // Esto es el efectivo que volvió a la cuenta por ventas parciales o totales
+      let gananciasRealizadas = 0;
       allDocDistributions.forEach((d: any) => {
-        const soldSharesValue = (d.soldShares || 0) * (d.entryPrice || 0);
-        const realizedProfit = d.realizedProfitLoss || 0;
-        ventasParciales += soldSharesValue + realizedProfit;
+        gananciasRealizadas += d.realizedProfitLoss || 0;
       });
       
-      // 3. Calcular ganancias totales (no realizadas + realizadas)
+      // 3. Calcular ganancias NO realizadas (paper gains/losses de posiciones activas)
+      let gananciasNoRealizadas = 0;
       allDocDistributions.forEach((d: any) => {
-        if (d.isActive) {
-          gananciaTotalSum += d.profitLoss || 0;
+        if (d.isActive && d.shares > 0) {
+          gananciasNoRealizadas += d.profitLoss || 0;
         }
-        gananciaTotalSum += d.realizedProfitLoss || 0;
       });
+      
+      // 4. Ganancia total = realizadas + no realizadas
+      gananciaTotalSum = gananciasRealizadas + gananciasNoRealizadas;
 
-      // ✅ CORREGIDO: Usar fórmula correcta
-      // Liquidez distribuida = montos de compras activas
-      liquidezDistribuidaSum = montosCompras;
+      // ✅ CORREGIDO: Fórmulas correctas
+      // Liquidez distribuida = montos actualmente invertidos
+      liquidezDistribuidaSum = montosDistribuidos;
       
-      // Liquidez total = inicial + ventas parciales
-      liquidezTotalSum = liquidezInicialGlobal + ventasParciales;
+      // Liquidez total = inicial + ganancias totales (realizadas + no realizadas)
+      liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
       
-      // Liquidez disponible = inicial - compras + ventas
-      liquidezDisponibleSum = liquidezInicialGlobal - montosCompras + ventasParciales;
+      // ✅ FÓRMULA CORRECTA: Disponible = Inicial - Distribuida + Ganancias Realizadas
+      // Solo las ganancias REALIZADAS vuelven al disponible, no las ganancias en papel
+      liquidezDisponibleSum = liquidezInicialGlobal - montosDistribuidos + gananciasRealizadas;
 
       const activeDistributions = allDocDistributions
         .filter((d: any) => d.isActive)
@@ -164,7 +168,8 @@ export default async function handler(
       allDistributions.push(...activeDistributions);
       
       console.log(`📊 [LIQUIDITY SUMMARY] Usando documento principal:`, mainDoc._id);
-      console.log(`📊 [LIQUIDITY SUMMARY] Fórmula: $${liquidezInicialGlobal} - $${montosCompras} + $${ventasParciales} = $${liquidezDisponibleSum}`);
+      console.log(`📊 [LIQUIDITY SUMMARY] Fórmula Disponible: $${liquidezInicialGlobal} (inicial) - $${montosDistribuidos} (distribuida) + $${gananciasRealizadas} (realizadas) = $${liquidezDisponibleSum}`);
+      console.log(`📊 [LIQUIDITY SUMMARY] Ganancias: Realizadas=$${gananciasRealizadas}, NoRealizadas=$${gananciasNoRealizadas}, Total=$${gananciaTotalSum}`);
     }
 
     // Consolidar distribuciones por símbolo (sumar si hay duplicados)

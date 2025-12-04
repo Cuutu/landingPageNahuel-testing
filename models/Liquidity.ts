@@ -202,34 +202,36 @@ LiquiditySchema.methods.calculateTotalProfitLoss = function(): void {
 
 LiquiditySchema.methods.recalculateDistributions = function(): void {
   // ✅ CORREGIDO: Nueva fórmula de liquidez
-  // disponible = saldoInicial - montosCompras + ventasParciales
+  // Disponible = Inicial - Distribuida + Ganancias Realizadas
   
-  // 1. Calcular montos de compras (allocatedAmount de distribuciones activas con shares > 0)
-  const montosCompras = (this.distributions as ILiquidityDistribution[])
+  // 1. Calcular liquidez distribuida (allocatedAmount de distribuciones activas con shares > 0)
+  // Representa el dinero actualmente invertido en alertas activas
+  const montosDistribuidos = (this.distributions as ILiquidityDistribution[])
     .filter((dist: ILiquidityDistribution) => dist.isActive && dist.shares > 0)
     .reduce((sum: number, dist: ILiquidityDistribution) => sum + dist.allocatedAmount, 0);
   
-  // 2. Calcular ventas parciales (soldShares * entryPrice + realizedProfitLoss)
-  // Esto representa el efectivo liberado de las ventas
-  const ventasParciales = (this.distributions as ILiquidityDistribution[])
-    .reduce((sum: number, dist: ILiquidityDistribution) => {
-      const soldSharesValue = (dist.soldShares || 0) * dist.entryPrice;
-      const realizedProfit = dist.realizedProfitLoss || 0;
-      return sum + soldSharesValue + realizedProfit;
-    }, 0);
+  // 2. Calcular ganancias REALIZADAS (solo de ventas completadas)
+  // Esto es el efectivo que volvió a la cuenta por ventas parciales o totales
+  const gananciasRealizadas = (this.distributions as ILiquidityDistribution[])
+    .reduce((sum: number, dist: ILiquidityDistribution) => sum + (dist.realizedProfitLoss || 0), 0);
   
-  // 3. Calcular liquidez distribuida (solo montos activos)
-  this.distributedLiquidity = montosCompras;
+  // 3. Calcular ganancias NO realizadas (paper gains/losses de posiciones activas)
+  const gananciasNoRealizadas = (this.distributions as ILiquidityDistribution[])
+    .filter((dist: ILiquidityDistribution) => dist.isActive && dist.shares > 0)
+    .reduce((sum: number, dist: ILiquidityDistribution) => sum + (dist.profitLoss || 0), 0);
   
-  // 4. Calcular liquidez total (inicial + ventas parciales, sin ganancias no realizadas)
-  // El total incluye el inicial más todo el efectivo que ha entrado de ventas
-  this.totalLiquidity = (this.initialLiquidity || 0) + ventasParciales;
+  // 4. Calcular liquidez distribuida (solo montos activos)
+  this.distributedLiquidity = montosDistribuidos;
   
-  // 5. Calcular liquidez disponible con la fórmula correcta:
-  // disponible = inicial - compras + ventas
-  this.availableLiquidity = (this.initialLiquidity || 0) - montosCompras + ventasParciales;
+  // 5. Calcular liquidez total (inicial + ganancias totales)
+  // El total incluye las ganancias realizadas Y no realizadas para reflejar el valor actual
+  this.totalLiquidity = (this.initialLiquidity || 0) + gananciasRealizadas + gananciasNoRealizadas;
   
-  // 6. Recalcular ganancias/pérdidas totales
+  // 6. ✅ FÓRMULA CORRECTA: Disponible = Inicial - Distribuida + Ganancias Realizadas
+  // Solo las ganancias REALIZADAS vuelven al disponible (no las ganancias en papel)
+  this.availableLiquidity = (this.initialLiquidity || 0) - montosDistribuidos + gananciasRealizadas;
+  
+  // 7. Recalcular ganancias/pérdidas totales
   this.calculateTotalProfitLoss();
 };
 
