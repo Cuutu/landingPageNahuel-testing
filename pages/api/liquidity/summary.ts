@@ -114,11 +114,13 @@ export default async function handler(
       }
     }
     
-    // ✅ CORREGIDO: Sumar solo las distribuciones y ganancias de TODOS los documentos
-    // Todos los cálculos se basan en la liquidez inicial GLOBAL
+    // ✅ CORREGIDO: Usar valores directamente de la BD en lugar de recalcularlos
+    // Esto permite ajustes manuales desde MongoDB
     liquidityDocs.forEach((doc) => {
-      // Sumar solo la liquidez distribuida (de todas las distribuciones activas)
+      // Usar valores guardados en la BD directamente
       liquidezDistribuidaSum += doc.distributedLiquidity || 0;
+      liquidezDisponibleSum += doc.availableLiquidity || 0;
+      liquidezTotalSum += doc.totalLiquidity || 0;
       
       // ✅ CORREGIDO: Calcular ganancias directamente desde TODAS las distribuciones (activas e inactivas)
       // Esto asegura que las ganancias realizadas de distribuciones vendidas completamente se incluyan
@@ -172,12 +174,14 @@ export default async function handler(
 
     const consolidatedDistributions = Array.from(distributionMap.values());
 
-    // ✅ CORREGIDO: Calcular todo en base a la liquidez inicial GLOBAL
-    // Liquidez Total = Inicial + Ganancias/Pérdidas
-    liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
-    
-    // Liquidez Disponible = Total - Distribuida
-    liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
+    // ✅ CORREGIDO: Usar valores de la BD directamente (ya sumados arriba)
+    // Si no hay valores en la BD, calcular como fallback
+    if (liquidezTotalSum === 0 && liquidezInicialGlobal > 0) {
+      liquidezTotalSum = liquidezInicialGlobal + gananciaTotalSum;
+    }
+    if (liquidezDisponibleSum === 0 && liquidezTotalSum > 0) {
+      liquidezDisponibleSum = liquidezTotalSum - liquidezDistribuidaSum;
+    }
 
     // ✅ CORREGIDO: Calcular porcentaje de ganancia sobre la liquidez inicial GLOBAL
     // El signo debe ser correcto: positivo para ganancias, negativo para pérdidas
