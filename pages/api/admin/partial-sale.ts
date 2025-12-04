@@ -357,18 +357,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
     
-    // ✅ CORREGIDO: SIEMPRE usar el allocatedAmount que calculamos, NO los valores viejos de la alerta
-    // La liquidez liberada es proporcional a las acciones vendidas
-    const liquidityReleased = allocatedAmount * (sharesToSell / shares);
+    // ✅ CORREGIDO: Calcular liquidez liberada basándose en el % de participación actual y precio actual
+    // La liquidez liberada = (participationPercentage / 100) * currentPrice * sharesToSell
+    const currentParticipation = alert.participationPercentage ?? 100;
+    
+    // Calcular el valor actual de la posición basado en participationPercentage y precio actual
+    // Si participationPercentage es 50%, significa que tenemos el 50% de la posición original
+    // La liquidez liberada debe ser proporcional al valor actual de esa porción vendida
+    const liquidityReleased = (currentParticipation / 100) * sellPrice * sharesToSell;
     
     // El valor de mercado es lo que valen las acciones vendidas al precio de venta
     const marketValue = sharesToSell * sellPrice;
     
     // La ganancia realizada es la diferencia entre el valor de mercado y la liquidez liberada
+    // Nota: En este caso, como usamos el precio actual, la ganancia puede ser diferente
     const realizedProfit = marketValue - liquidityReleased;
     
     // ✅ NUEVO: Calcular el porcentaje que QUEDARÁ después de la venta
-    const currentParticipation = alert.participationPercentage ?? 100;
     const newParticipation = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
     
     console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);

@@ -543,16 +543,26 @@ async function executeScheduledSale(
             }).sort({ date: -1 });
             
             if (buyOperation && buyOperation.portfolioPercentage > 0) {
-              // ✅ CORREGIDO: Calcular liquidez asignada desde initialLiquidity o totalLiquidity
-              // Usar initialLiquidity como base (es el valor original del pool)
+              // ✅ CORREGIDO: Calcular liquidez liberada basándose en participationPercentage y precio actual
+              // Primero calcular acciones a vender basándose en la posición actual
+              const currentParticipation = alert.participationPercentage ?? 100;
+              
+              // Calcular el valor actual de la posición basado en participationPercentage
+              // Si participationPercentage es 50%, significa que tenemos el 50% de la posición original
               const baseLiquidity = liquidity.initialLiquidity || liquidity.totalLiquidity || 1000;
               const totalAllocated = baseLiquidity * (buyOperation.portfolioPercentage / 100);
-              liquidityReleased = isCompleteSale 
-                ? totalAllocated 
-                : totalAllocated * (percentage / 100);
+              
+              // Calcular acciones totales actuales basándose en participationPercentage y precio actual
+              const currentShares = (totalAllocated * (currentParticipation / 100)) / (alert.entryPrice || closePrice);
               
               // Calcular acciones a vender
-              sharesToSellFinal = liquidityReleased / (alert.entryPrice || closePrice);
+              sharesToSellFinal = isCompleteSale 
+                ? currentShares 
+                : currentShares * (percentage / 100);
+              
+              // ✅ CORREGIDO: Calcular liquidez liberada basándose en participationPercentage y precio actual
+              // La liquidez liberada = (participationPercentage / 100) * currentPrice * sharesToSell
+              liquidityReleased = (currentParticipation / 100) * closePrice * sharesToSellFinal;
               
               // ✅ CORREGIDO: Calcular ganancia realizada
               const proceeds = sharesToSellFinal * closePrice;
