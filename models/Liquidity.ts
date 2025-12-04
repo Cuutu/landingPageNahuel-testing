@@ -183,7 +183,7 @@ LiquiditySchema.methods.sellShares = function(this: any, alertId: string, shares
 LiquiditySchema.methods.removeDistribution = function(this: any, alertId: string): void {
   const distributionIndex = this.distributions.findIndex((dist: ILiquidityDistribution) => dist.alertId === alertId);
   if (distributionIndex === -1) {
-    throw new Error("Distribución no encontrada");
+    throw new Error("Distribución no encontrada.");
   }
   const distribution = this.distributions[distributionIndex] as ILiquidityDistribution;
   // ✅ CORREGIDO: No sumar allocatedAmount manualmente aquí porque:
