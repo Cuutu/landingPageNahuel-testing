@@ -134,7 +134,7 @@ export default async function handler(
         gananciaTotalSum += d.realizedProfitLoss || 0;
       });
 
-      const activeDistributions = (doc.distributions || [])
+      const activeDistributions = (doc.distributions || []) 
         .filter((d: any) => d.isActive)
         .map((d: any) => ({
           // ✅ CORREGIDO: Convertir alertId a string para asegurar consistencia con el frontend
