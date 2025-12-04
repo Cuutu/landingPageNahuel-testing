@@ -92,16 +92,30 @@ export default async function handler(
     const pageNum = parseInt(page as string);
     const skip = (pageNum - 1) * limitNum;
 
-    // Obtener alertas con paginación
+    // Obtener alertas con paginación (sin lean para poder usar métodos del modelo)
     const alerts = await Alert.find(filter)
       .sort({ createdAt: -1 }) // Más recientes primero
       .limit(limitNum)
-      .skip(skip)
-      .lean();
+      .skip(skip);
+    
+    // ✅ NUEVO: Calcular ganancia realizada acumulada para alertas con ventas parciales
+    for (const alert of alerts) {
+      if (alert.liquidityData?.partialSales && alert.liquidityData.partialSales.length > 0) {
+        // Calcular ganancia realizada acumulada
+        alert.calculateTotalProfit();
+        // Guardar si hubo cambios
+        if (alert.isModified()) {
+          await alert.save();
+        }
+      }
+    }
+    
+    // Convertir a objetos planos después de calcular
+    const alertsLean = alerts.map((alert: any) => alert.toObject());
 
-    // ✅ NUEVO: Actualizar precios en tiempo real para alertas activas
-    if (alerts.length > 0) {
-      console.log(`🔄 Actualizando precios para ${alerts.length} alertas antes de devolver datos...`);
+      // ✅ NUEVO: Actualizar precios en tiempo real para alertas activas
+    if (alertsLean.length > 0) {
+      console.log(`🔄 Actualizando precios para ${alertsLean.length} alertas antes de devolver datos...`);
       
       // ✅ VALIDACIÓN: Obtener hora actual para verificar si es después de las 17:30
       const now = new Date();
@@ -109,7 +123,7 @@ export default async function handler(
       const currentMinute = now.getMinutes();
       const isAfterMarketClose = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
       
-      for (const alert of alerts) {
+      for (const alert of alertsLean) {
         if (alert.status === 'ACTIVE' && alert.symbol) {
           try {
             // ✅ VALIDACIÓN: Para alertas de rango, solo actualizar después de las 17:30
@@ -162,7 +176,7 @@ export default async function handler(
     const total = await Alert.countDocuments(filter);
 
     // Formatear alertas para el frontend - con validación de números
-    const formattedAlerts = alerts.map((alert: any) => {
+    const formattedAlerts = alertsLean.map((alert: any) => {
       // ✅ CORREGIDO: Formatear precio de entrada - priorizar entryPrice sobre rango
       let entryPriceDisplay = '';
       

@@ -408,11 +408,11 @@ async function executeScheduledSale(
   try {
     const percentage = sale.percentage || 0;
     const isCompleteSale = sale.isCompleteSale || percentage >= 100;
-    const entryPrice = alert.entryPrice || closePrice;
+    const alertEntryPrice = alert.entryPrice || alert.entryPriceRange?.min || closePrice;
     
     // Calcular profit
-    const profitPercentage = entryPrice > 0 
-      ? ((closePrice - entryPrice) / entryPrice) * 100 
+    const profitPercentage = alertEntryPrice > 0 
+      ? ((closePrice - alertEntryPrice) / alertEntryPrice) * 100 
       : 0;
     
     // ✅ CORREGIDO: Usar originalParticipationPercentage si existe, sino participationPercentage actual
@@ -425,10 +425,19 @@ async function executeScheduledSale(
     
     console.log(`📊 ${alert.symbol}: Cálculo de participación - Base: ${baseParticipation}%, Actual: ${currentParticipation}%, Vendido: ${percentage}%, Nueva: ${newParticipationPercentage}%`);
     
+    // ✅ CORREGIDO: Calcular realizedProfit basado en el P&L real de la venta
+    // realizedProfit = (precioVenta - precioEntrada) * accionesVendidas
+    const saleEntryPrice = alert.entryPrice || alert.entryPriceRange?.min || closePrice;
+    const sharesToSell = sale.sharesToSell || 0;
+    const costBasis = sharesToSell * saleEntryPrice; // Costo original de las acciones vendidas
+    const proceeds = sharesToSell * closePrice; // Efectivo recibido
+    const realizedProfit = proceeds - costBasis; // P&L real en dólares
+    
     // Marcar la venta como ejecutada
     sale.executed = true;
     sale.executedAt = new Date();
     sale.sellPrice = closePrice;
+    sale.realizedProfit = realizedProfit; // ✅ CORREGIDO: Guardar el P&L real calculado
     
     // Actualizar liquidityData
     const liquidityData = alert.liquidityData || {};
@@ -440,16 +449,31 @@ async function executeScheduledSale(
       partialSales[saleIndex] = sale;
     }
     
-    // Guardar los cambios en liquidityData
-    await Alert.updateOne(
-      { _id: alert._id },
-      { 
-        $set: { 
-          'liquidityData.partialSales': partialSales,
-          participationPercentage: newParticipationPercentage
-        } 
-      }
-    );
+    // ✅ NUEVO: Recargar la alerta para poder llamar a calculateTotalProfit
+    const updatedAlert = await Alert.findById(alert._id);
+    if (updatedAlert) {
+      updatedAlert.liquidityData = {
+        ...liquidityData,
+        partialSales: partialSales
+      };
+      updatedAlert.participationPercentage = newParticipationPercentage;
+      
+      // ✅ NUEVO: Calcular ganancia realizada acumulada
+      updatedAlert.calculateTotalProfit();
+      
+      await updatedAlert.save();
+    } else {
+      // Fallback: usar updateOne si no se puede recargar
+      await Alert.updateOne(
+        { _id: alert._id },
+        { 
+          $set: { 
+            'liquidityData.partialSales': partialSales,
+            participationPercentage: newParticipationPercentage
+          } 
+        }
+      );
+    }
     
     console.log(`✅ ${alert.symbol}: Venta ejecutada - ${percentage}% vendido a $${closePrice} - Participación restante: ${newParticipationPercentage}%`);
     

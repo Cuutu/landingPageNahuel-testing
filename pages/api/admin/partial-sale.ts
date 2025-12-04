@@ -551,6 +551,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         alert.participationPercentage = 0; // Asegurar que esté en 0
         console.log(`🔒 Alerta cerrada completamente - participación: ${alert.participationPercentage}%`);
       }
+      
+      // ✅ NUEVO: Calcular ganancia realizada acumulada después de registrar la venta
+      alert.calculateTotalProfit();
+      console.log(`📊 Ganancia realizada acumulada actualizada: ${alert.gananciaRealizada.toFixed(2)}%`);
     }
 
     await alert.save();

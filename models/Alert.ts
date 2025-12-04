@@ -674,12 +674,27 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
   const entryPrice = this.entryPriceRange?.min || this.entryPrice || 0;
   const currentPrice = this.currentPrice || 0;
   
-  // ✅ CORREGIDO: Ganancia realizada = promedio de ganancias porcentuales de ventas parciales
-  // Cada venta parcial tiene su ganancia porcentual simple: (precioVenta - precioEntrada) / precioEntrada * 100
-  let gananciaRealizada = 0;
-  if (this.ventasParciales && this.ventasParciales.length > 0) {
-    const sumaGanancias = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
-    gananciaRealizada = sumaGanancias / this.ventasParciales.length; // Promedio
+  // ✅ CORREGIDO: Ganancia realizada = suma acumulada de realizedProfit de ventas parciales ejecutadas
+  // Usar liquidityData.partialSales que tiene el P&L real calculado en dólares para cada venta
+  let gananciaRealizadaUSD = 0; // Ganancia realizada en dólares
+  let gananciaRealizada = 0; // Ganancia realizada en porcentaje
+  
+  if (this.liquidityData?.partialSales && Array.isArray(this.liquidityData.partialSales)) {
+    // Sumar todas las ganancias realizadas de ventas ejecutadas
+    const executedSales = this.liquidityData.partialSales.filter((sale: any) => sale.executed === true && !sale.discarded);
+    gananciaRealizadaUSD = executedSales.reduce((sum: number, sale: any) => {
+      return sum + (sale.realizedProfit || 0);
+    }, 0);
+    
+    // Convertir a porcentaje basándose en el monto original asignado
+    const originalAllocatedAmount = this.liquidityData.originalAllocatedAmount || this.liquidityData.allocatedAmount || 0;
+    if (originalAllocatedAmount > 0) {
+      gananciaRealizada = (gananciaRealizadaUSD / originalAllocatedAmount) * 100;
+    }
+  } else if (this.ventasParciales && this.ventasParciales.length > 0) {
+    // Fallback: usar ventasParciales si no hay liquidityData.partialSales
+    // Sumar todas las ganancias porcentuales (no promedio)
+    gananciaRealizada = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
   }
   
   // Ganancia no realizada (posición actual)
