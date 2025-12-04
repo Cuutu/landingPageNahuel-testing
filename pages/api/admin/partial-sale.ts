@@ -282,28 +282,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       isCompleteSale = true;
       console.log(`💰 Venta COMPLETA (${percentage}%): Vendiendo todas las acciones`);
     } else {
-      // ✅ NUEVO: Para ventas parciales, calcular basándose en la posición original
-      // No en las acciones actuales (evita ventas compuestas)
-      const originalShares = alert.liquidityData?.originalShares || shares;
-      sharesToSell = originalShares * (percentage / 100);
-      
-      // Asegurar que no vendamos más de lo que tenemos
-      if (sharesToSell > shares) {
-        sharesToSell = shares;
-        isCompleteSale = true;
-        console.log(`💰 Ajustando a venta completa: solo tenemos ${shares.toFixed(4)} acciones`);
-      }
-      
+      // ✅ CORREGIDO: Calcular basándose en las acciones CALCULADAS, no en valores viejos
+      sharesToSell = shares * (percentage / 100);
       sharesRemaining = shares - sharesToSell;
+      
+      // Si vendemos todo lo que queda, es venta completa
+      if (sharesRemaining <= 0.0001) {
+        sharesToSell = shares;
+        sharesRemaining = 0;
+        isCompleteSale = true;
+        console.log(`💰 Ajustando a venta completa: vendiendo todas las acciones restantes`);
+      }
     }
     
-    // ✅ CORREGIDO: Calcular liquidez liberada basándose en la liquidez ORIGINAL, no la actual
-    // Usar el monto original si existe, sino el actual
-    const originalAllocatedAmount = alert.liquidityData?.originalAllocatedAmount || allocatedAmount;
-    const originalShares = alert.liquidityData?.originalShares || shares;
-    
-    // La liquidez liberada es el porcentaje vendido del ORIGINAL
-    const liquidityReleased = originalAllocatedAmount * (percentage / 100);
+    // ✅ CORREGIDO: SIEMPRE usar el allocatedAmount que calculamos, NO los valores viejos de la alerta
+    // La liquidez liberada es proporcional a las acciones vendidas
+    const liquidityReleased = allocatedAmount * (sharesToSell / shares);
     
     // El valor de mercado es lo que valen las acciones vendidas al precio de venta
     const marketValue = sharesToSell * sellPrice;
@@ -318,11 +312,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);
     console.log(`📊 Participación actual: ${currentParticipation}%`);
     console.log(`📊 Participación después de venta: ${newParticipation}%`);
-    console.log(`📊 Acciones totales actuales: ${shares.toFixed(4)}`);
-    console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)} (${percentage}% del original)`);
+    console.log(`📊 Acciones totales: ${shares.toFixed(4)}`);
+    console.log(`🔄 Acciones a vender: ${sharesToSell.toFixed(4)}`);
     console.log(`📈 Acciones restantes: ${sharesRemaining.toFixed(4)}`);
-    console.log(`💵 Liquidez original: $${originalAllocatedAmount.toFixed(2)}`);
-    console.log(`💵 Liquidez liberada: $${liquidityReleased.toFixed(2)} (${percentage}% del original)`);
+    console.log(`💵 Liquidez asignada: $${allocatedAmount.toFixed(2)}`);
+    console.log(`💵 Liquidez a liberar: $${liquidityReleased.toFixed(2)}`);
     console.log(`💰 Valor de mercado: $${marketValue.toFixed(2)}`);
     console.log(`📈 Ganancia realizada: $${realizedProfit.toFixed(2)}`);
     
