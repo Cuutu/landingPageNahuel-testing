@@ -244,7 +244,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               // Enviar notificación de VENTA
               await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
               
-            } else {
+          } else {
               // ✅ Si NO hay venta programada pero el precio está en rango, 
               // ejecutar venta del porcentaje restante (participationPercentage actual)
               const remainingPercentage = alert.participationPercentage || 100;
@@ -262,23 +262,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               const saleResult = await executeScheduledSale(alert, syntheticSale, closePrice, adminUser);
               
               if (saleResult.shouldClose) {
-                updateFields.status = 'CLOSED';
-                updateFields.exitPrice = closePrice;
-                updateFields.exitDate = new Date();
-                updateFields.exitReason = 'AUTOMATIC';
-                updateFields.participationPercentage = 0;
+                    updateFields.status = 'CLOSED';
+                    updateFields.exitPrice = closePrice;
+                    updateFields.exitDate = new Date();
+                    updateFields.exitReason = 'AUTOMATIC';
+                    updateFields.participationPercentage = 0;
                 updateFields.profit = saleResult.profitPercentage;
                 console.log(`🔒 ${alert.symbol}: Posición CERRADA - Profit: ${saleResult.profitPercentage.toFixed(2)}%`);
               }
               
-              updateFields.sellPrice = closePrice;
+                    updateFields.sellPrice = closePrice;
               unsetFields.sellRangeMin = 1;
               unsetFields.sellRangeMax = 1;
               
               // Enviar notificación de VENTA ejecutada (no solo conversión)
               await sendSaleNotification(alert, closePrice, remainingPercentage, saleResult.profitPercentage);
-            }
-          } else {
+                  }
+                } else {
             // ❌ Precio FUERA del rango → DESCARTAR la venta programada (no ejecutar)
             const motivo = closePrice < sellRangeMin 
               ? `Precio $${closePrice} < mínimo $${sellRangeMin}`
@@ -462,10 +462,23 @@ async function executeScheduledSale(
         const OperationModule = await import('@/models/Operation');
         const Operation = OperationModule.default;
         
-        const liquidity = await Liquidity.findOne({ 
-          createdBy: adminUser._id, 
-          pool: pool 
-        });
+        // ✅ CORREGIDO: Buscar el documento principal del pool (no por usuario)
+        // Esto asegura que siempre usemos el mismo documento consolidado
+        let liquidity = await Liquidity.findOne({ pool })
+          .sort({ updatedAt: -1, createdAt: -1 }); // El más reciente
+        
+        // Si no existe, buscar el que tiene más distribuciones
+        if (!liquidity) {
+          const allLiquidityDocs = await Liquidity.find({ pool }).lean();
+          if (allLiquidityDocs.length > 0) {
+            const mainDoc = allLiquidityDocs.reduce((prev, curr) => {
+              const prevDist = (prev.distributions || []).length;
+              const currDist = (curr.distributions || []).length;
+              return currDist > prevDist ? curr : prev;
+            });
+            liquidity = await Liquidity.findById(mainDoc._id);
+          }
+        }
         
         let liquidityReleased = 0;
         let sharesToSellFinal = 0;
@@ -506,20 +519,42 @@ async function executeScheduledSale(
             }).sort({ date: -1 });
             
             if (buyOperation && buyOperation.portfolioPercentage > 0) {
-              // Calcular liquidez basándose en el porcentaje del pool
-              const poolBalance = liquidity.currentBalance || liquidity.totalBalance || 1000;
-              const totalAllocated = poolBalance * (buyOperation.portfolioPercentage / 100);
+              // ✅ CORREGIDO: Calcular liquidez asignada desde initialLiquidity o totalLiquidity
+              // Usar initialLiquidity como base (es el valor original del pool)
+              const baseLiquidity = liquidity.initialLiquidity || liquidity.totalLiquidity || 1000;
+              const totalAllocated = baseLiquidity * (buyOperation.portfolioPercentage / 100);
               liquidityReleased = isCompleteSale 
                 ? totalAllocated 
                 : totalAllocated * (percentage / 100);
-              sharesToSellFinal = liquidityReleased / closePrice;
               
-              // Actualizar el balance del pool sumando la liquidez liberada
-              liquidity.currentBalance = (liquidity.currentBalance || 0) + liquidityReleased;
+              // Calcular acciones a vender
+              sharesToSellFinal = liquidityReleased / (alert.entryPrice || closePrice);
+              
+              // ✅ CORREGIDO: Calcular ganancia realizada
+              const proceeds = sharesToSellFinal * closePrice;
+              const costBasis = sharesToSellFinal * (alert.entryPrice || closePrice);
+              const realizedProfit = proceeds - costBasis;
+              
+              // ✅ CORREGIDO: Actualizar totalLiquidity con la ganancia realizada
+              // La liquidez liberada ya está en el pool, pero la ganancia aumenta el total
+              liquidity.totalLiquidity = (liquidity.totalLiquidity || baseLiquidity) + realizedProfit;
+              
+              // ✅ CORREGIDO: Reducir distributedLiquidity en el monto liberado
+              // Esto aumenta availableLiquidity automáticamente
+              liquidity.distributedLiquidity = Math.max(0, (liquidity.distributedLiquidity || 0) - liquidityReleased);
+              
+              // ✅ CORREGIDO: Recalcular availableLiquidity
+              liquidity.availableLiquidity = liquidity.totalLiquidity - liquidity.distributedLiquidity;
+              
               await liquidity.save();
               
-              console.log(`✅ ${alert.symbol}: Liquidez actualizada (desde operación) - +$${liquidityReleased.toFixed(2)} liberados`);
-              console.log(`📊 portfolioPercentage: ${buyOperation.portfolioPercentage}%, balance pool: $${poolBalance}`);
+              console.log(`✅ ${alert.symbol}: Liquidez actualizada (desde operación)`);
+              console.log(`   - Liquidez liberada: $${liquidityReleased.toFixed(2)}`);
+              console.log(`   - Ganancia realizada: $${realizedProfit.toFixed(2)}`);
+              console.log(`   - totalLiquidity: $${liquidity.totalLiquidity.toFixed(2)}`);
+              console.log(`   - distributedLiquidity: $${liquidity.distributedLiquidity.toFixed(2)}`);
+              console.log(`   - availableLiquidity: $${liquidity.availableLiquidity.toFixed(2)}`);
+              console.log(`📊 portfolioPercentage: ${buyOperation.portfolioPercentage}%, base: $${baseLiquidity}`);
             } else {
               console.log(`⚠️ ${alert.symbol}: No se encontró operación de compra con portfolioPercentage`);
             }
@@ -571,7 +606,7 @@ async function registerSaleOperation(
           .sort({ date: -1 })
           .select('balance');
         const currentBalance = currentBalanceDoc?.balance || 0;
-    
+        
     // ✅ CORREGIDO: Usar liquidez real si está disponible, sino calcular valor de mercado
     const actualLiquidityReleased = liquidityReleased ?? (sharesToSell * closePrice);
     const newBalance = currentBalance + actualLiquidityReleased;

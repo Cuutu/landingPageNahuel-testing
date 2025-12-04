@@ -384,21 +384,41 @@ export default async function handler(
           });
         }
         
-        // Buscar o crear el documento de liquidez
-        console.log(`🔍 [DEBUG] Buscando liquidez para usuario ${user._id} en pool ${pool}`);
-        let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        // ✅ CORREGIDO: Buscar el documento principal del pool (no por usuario)
+        // Esto asegura que siempre usemos el mismo documento consolidado
+        console.log(`🔍 [DEBUG] Buscando documento principal de liquidez para pool ${pool}`);
+        let liquidity = await Liquidity.findOne({ pool })
+          .sort({ updatedAt: -1, createdAt: -1 }); // El más reciente
+        
+        // Si no existe, buscar el que tiene más distribuciones
+        if (!liquidity) {
+          const allLiquidityDocs = await Liquidity.find({ pool }).lean();
+          if (allLiquidityDocs.length > 0) {
+            liquidity = allLiquidityDocs.reduce((prev, curr) => {
+              const prevDist = (prev.distributions || []).length;
+              const currDist = (curr.distributions || []).length;
+              return currDist > prevDist ? curr : prev;
+            });
+            // Convertir a documento de Mongoose
+            liquidity = await Liquidity.findById(liquidity._id);
+          }
+        }
+        
         console.log(`🔍 [DEBUG] Liquidez encontrada:`, liquidity ? 'SÍ' : 'NO');
         
         if (!liquidity) {
           // Si no existe, crear uno con liquidez por defecto
+          // ✅ NUEVO: Usar el primer admin como createdBy para consistencia
+          const adminUser = await User.findOne({ role: 'admin' });
           liquidity = await Liquidity.create({
-            totalLiquidity: liquidityAmount * (100 / liquidityPercentage), // Calcular total basado en el porcentaje
+            initialLiquidity: liquidityAmount * (100 / liquidityPercentage),
+            totalLiquidity: liquidityAmount * (100 / liquidityPercentage),
             availableLiquidity: 0, // Se calculará después
             distributedLiquidity: liquidityAmount,
             distributions: [],
             totalProfitLoss: 0,
             totalProfitLossPercentage: 0,
-            createdBy: user._id,
+            createdBy: adminUser?._id || user._id,
             pool
           });
           console.log(`📊 Documento de liquidez creado para pool ${pool}: $${liquidity.totalLiquidity}`);

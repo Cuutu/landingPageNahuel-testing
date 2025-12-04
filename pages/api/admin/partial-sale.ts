@@ -337,13 +337,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // ✅ NUEVO: Guardar información de venta programada (NO ejecutada)
       // NO modificar allocatedAmount ni shares todavía - se mantienen iguales
+      // ✅ CORREGIDO: Si calculamos la liquidez desde portfolioPercentage, ese ES el original
+      // No usar valores viejos incorrectos (como $1000 cuando debería ser $50)
+      const validOriginalAllocated = (liquidityData.originalAllocatedAmount && 
+        liquidityData.originalAllocatedAmount <= allocatedAmount * 1.1) // Permitir hasta 10% más (por rebalanceos)
+        ? liquidityData.originalAllocatedAmount 
+        : allocatedAmount; // Si no existe o es incorrecto, usar el calculado
+      
+      const validOriginalShares = (liquidityData.originalShares && 
+        liquidityData.originalShares <= shares * 1.1) // Permitir hasta 10% más
+        ? liquidityData.originalShares 
+        : shares; // Si no existe o es incorrecto, usar el calculado
+      
       alert.liquidityData = {
         ...liquidityData,
         allocatedAmount: allocatedAmount, // Mantener la liquidez asignada
         shares: shares, // Mantener todas las acciones
-        // Guardar el monto original para referencia (importante para ventas futuras)
-        originalAllocatedAmount: liquidityData.originalAllocatedAmount || allocatedAmount,
-        originalShares: liquidityData.originalShares || (liquidityData.shares || shares),
+        // ✅ CORREGIDO: Usar valores válidos, no valores incorrectos viejos
+        originalAllocatedAmount: validOriginalAllocated,
+        originalShares: validOriginalShares,
         // Guardar el porcentaje de participación original
         originalParticipationPercentage: alert.originalParticipationPercentage || 100,
         partialSales: [
