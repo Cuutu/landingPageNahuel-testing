@@ -579,8 +579,8 @@
   border-right: 1px solid #333;
   padding: 1rem 0;
   position: sticky;
-  top: 70px; /* ✅ CORREGIDO: Tener en cuenta la altura del navbar sticky */
-  height: calc(100vh - 70px); /* ✅ CORREGIDO: Ajustar altura considerando solo el navbar */
+  top: 0; /* ✅ CORREGIDO: En desktop, sticky desde el top (el navbar no es sticky cuando noSticky=true) */
+  height: 100vh; /* ✅ CORREGIDO: Altura completa en desktop */
   overflow-y: auto;
   align-self: start; /* ✅ NUEVO: Asegurar que el sticky funcione correctamente */
 }
@@ -1027,17 +1027,20 @@
   }
   
   .sidebar {
-    position: fixed;
-    left: -280px;
-    top: 70px; /* ✅ CORREGIDO: Tener en cuenta la altura del navbar */
+    position: fixed !important; /* ✅ FORZAR fixed en móviles */
+    left: -280px !important; /* ✅ OCULTO por defecto en móviles */
+    top: 0 !important; /* ✅ Desde el top en móviles */
     z-index: 999; /* ✅ CORREGIDO: Menor que el navbar (1000) para que no quede por encima */
     transition: left 0.3s ease;
     width: 280px;
-    height: calc(100vh - 70px); /* ✅ CORREGIDO: Ajustar altura considerando el navbar */
+    height: 100vh !important; /* ✅ Altura completa en móviles */
+    overflow-y: auto;
+    /* ✅ CORREGIDO: Desactivar sticky en móviles */
+    align-self: unset !important;
   }
   
   .sidebar.open {
-    left: 0;
+    left: 0 !important; /* ✅ Mostrar cuando está abierto */
   }
   
   .mainContent {

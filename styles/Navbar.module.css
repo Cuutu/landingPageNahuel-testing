@@ -483,14 +483,16 @@
 }
 
 .mobileMenuOverlay {
-  position: fixed;
-  top: 70px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 1001; /* Debajo del menú pero por encima del contenido */
+  position: fixed !important; /* ✅ FORZAR posición fixed */
+  top: 70px !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 1001 !important; /* Debajo del menú pero por encima del contenido */
   animation: fadeIn 0.2s ease-out;
+  display: block !important; /* ✅ FORZAR display block */
+  visibility: visible !important; /* ✅ FORZAR visibilidad */
 }
 
 @keyframes fadeIn {
@@ -503,19 +505,23 @@
 }
 
 .mobileMenu {
-  position: fixed;
-  top: 70px;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(15, 15, 15, 0.98);
+  position: fixed !important; /* ✅ FORZAR posición fixed */
+  top: 70px !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(15, 15, 15, 0.98) !important;
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  z-index: 1002; /* ✅ CORREGIDO: Mayor que el overlay para que aparezca por encima */
+  z-index: 1002 !important; /* ✅ CORREGIDO: Mayor que el overlay para que aparezca por encima */
   overflow-y: auto;
   animation: slideInFromTop 0.3s ease-out;
   -webkit-overflow-scrolling: touch; /* ✅ NUEVO: Mejorar scroll en iOS */
+  display: block !important; /* ✅ FORZAR display block */
+  visibility: visible !important; /* ✅ FORZAR visibilidad */
+  opacity: 1 !important; /* ✅ FORZAR opacidad */
 }
 
 @keyframes slideInFromTop {
@@ -531,7 +537,11 @@
 
 @media (min-width: 768px) {
   .mobileMenu {
-    display: none;
+    display: none !important;
+  }
+  
+  .mobileMenuOverlay {
+    display: none !important;
   }
 }
 
@@ -732,7 +742,7 @@
     left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    z-index: 10;
+    z-index: 1003; /* ✅ CORREGIDO: Mayor que el menú móvil (1002) para que siempre sea clickeable */
   }
   
   /* Centrar el logo principal */
