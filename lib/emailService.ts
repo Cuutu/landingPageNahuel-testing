@@ -953,7 +953,7 @@ export function createAdvisoryConfirmationTemplate(
       <div style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center;">
         <h3 style="color: white; margin: 0 0 15px 0; font-size: 18px;">📝 Formulario Pre-Asesoría</h3>
         <p style="color: white; margin: 0 0 15px 0; font-size: 14px;">Para optimizar tu sesión, completá este formulario con información sobre tu situación financiera actual:</p>
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSc_cddpfII-pibgEJsmcaWTrQchUgkKwLq0bQO1asATYQ6AeA/viewform?usp=preview" target="_blank" style="display: inline-block; background: white; color: #3b82f6; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
+        <a href="https://docs.google.com/forms/d/13mSorbjo32VCkDqgU09YPOa1UpzB7G3RPxTK3-DUa0M/viewform" target="_blank" style="display: inline-block; background: white; color: #3b82f6; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 16px;">
           📋 Completar Formulario
         </a>
         <p style="color: rgba(255,255,255,0.8); margin: 15px 0 0 0; font-size: 12px;">

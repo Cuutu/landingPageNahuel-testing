@@ -22,7 +22,7 @@ export default function IndicatorSuccessPage() {
     
     // Redirigir automáticamente al formulario de Google Forms
     setTimeout(() => {
-      window.location.href = 'https://docs.google.com/forms/d/e/1FAIpQLSc_cddpfII-pibgEJsmcaWTrQchUgkKwLq0bQO1asATYQ6AeA/viewform?usp=preview';
+      window.location.href = 'https://docs.google.com/forms/d/13mSorbjo32VCkDqgU09YPOa1UpzB7G3RPxTK3-DUa0M/viewform';
     }, 2000); // Redirigir después de 2 segundos
   }, [router.query.reference]);
 
@@ -66,7 +66,7 @@ export default function IndicatorSuccessPage() {
       
       // Redirigir al formulario de Google Forms después de 3 segundos
       setTimeout(() => {
-        window.location.href = 'https://docs.google.com/forms/d/e/1FAIpQLSc_cddpfII-pibgEJsmcaWTrQchUgkKwLq0bQO1asATYQ6AeA/viewform?usp=preview';
+        window.location.href = 'https://docs.google.com/forms/d/13mSorbjo32VCkDqgU09YPOa1UpzB7G3RPxTK3-DUa0M/viewform';
       }, 3000);
       
     } catch (error) {
