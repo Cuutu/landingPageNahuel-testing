@@ -459,11 +459,16 @@ async function executeScheduledSale(
         const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
         const LiquidityModule = await import('@/models/Liquidity');
         const Liquidity = LiquidityModule.default;
+        const OperationModule = await import('@/models/Operation');
+        const Operation = OperationModule.default;
         
         const liquidity = await Liquidity.findOne({ 
           createdBy: adminUser._id, 
           pool: pool 
         });
+        
+        let liquidityReleased = 0;
+        let sharesToSellFinal = 0;
         
         if (liquidity) {
           const distribution = liquidity.distributions.find((d: any) => 
@@ -471,27 +476,61 @@ async function executeScheduledSale(
           );
           
           if (distribution && distribution.shares > 0) {
-            const sharesToSell = isCompleteSale 
+            // ✅ Caso 1: Tiene distribución de liquidez
+            sharesToSellFinal = isCompleteSale 
               ? distribution.shares 
               : distribution.shares * (percentage / 100);
             
             const { returnedCash, remainingShares } = liquidity.sellShares(
               alert._id.toString(), 
-              sharesToSell, 
+              sharesToSellFinal, 
               closePrice
             );
+            
+            liquidityReleased = returnedCash;
             
             if (remainingShares <= 0) {
               liquidity.removeDistribution(alert._id.toString());
             }
             
             await liquidity.save();
-            console.log(`✅ ${alert.symbol}: Liquidez actualizada - +$${returnedCash.toFixed(2)} liberados`);
+            console.log(`✅ ${alert.symbol}: Liquidez actualizada (distribución) - +$${returnedCash.toFixed(2)} liberados`);
+          } else {
+            // ✅ Caso 2: No tiene distribución, buscar en operación de compra
+            console.log(`⚠️ ${alert.symbol}: No tiene distribución de liquidez, buscando operación de compra...`);
             
-            // Registrar operación con la liquidez REAL liberada
-            await registerSaleOperation(alert, sharesToSell, closePrice, pool, adminUser, percentage, isCompleteSale, returnedCash);
+            const buyOperation = await Operation.findOne({
+              alertId: alert._id,
+              operationType: 'COMPRA',
+              system: pool
+            }).sort({ date: -1 });
+            
+            if (buyOperation && buyOperation.portfolioPercentage > 0) {
+              // Calcular liquidez basándose en el porcentaje del pool
+              const poolBalance = liquidity.currentBalance || liquidity.totalBalance || 1000;
+              const totalAllocated = poolBalance * (buyOperation.portfolioPercentage / 100);
+              liquidityReleased = isCompleteSale 
+                ? totalAllocated 
+                : totalAllocated * (percentage / 100);
+              sharesToSellFinal = liquidityReleased / closePrice;
+              
+              // Actualizar el balance del pool sumando la liquidez liberada
+              liquidity.currentBalance = (liquidity.currentBalance || 0) + liquidityReleased;
+              await liquidity.save();
+              
+              console.log(`✅ ${alert.symbol}: Liquidez actualizada (desde operación) - +$${liquidityReleased.toFixed(2)} liberados`);
+              console.log(`📊 portfolioPercentage: ${buyOperation.portfolioPercentage}%, balance pool: $${poolBalance}`);
+            } else {
+              console.log(`⚠️ ${alert.symbol}: No se encontró operación de compra con portfolioPercentage`);
+            }
           }
         }
+        
+        // Registrar operación de venta si se liberó liquidez
+        if (liquidityReleased > 0) {
+          await registerSaleOperation(alert, sharesToSellFinal, closePrice, pool, adminUser, percentage, isCompleteSale, liquidityReleased);
+        }
+        
       } catch (liquidityError) {
         console.error(`⚠️ Error actualizando liquidez para ${alert.symbol}:`, liquidityError);
       }

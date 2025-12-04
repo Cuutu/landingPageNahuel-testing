@@ -198,9 +198,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           } else {
             console.log(`⚠️ No se encontró distribución de liquidez para alerta ${alertId} (${alert.symbol})`);
             console.log(`📋 Distribuciones disponibles:`, liquidity.distributions.map((d: any) => ({ alertId: d.alertId, symbol: d.symbol })));
+            
+            // ✅ NUEVO: Buscar el portfolioPercentage en la operación de COMPRA
+            try {
+              const Operation = (await import('@/models/Operation')).default;
+              const buyOperation = await Operation.findOne({
+                alertId: alertId,
+                operationType: 'COMPRA',
+                system: tipo
+              }).sort({ date: -1 });
+              
+              if (buyOperation && buyOperation.portfolioPercentage > 0) {
+                // Calcular allocatedAmount basándose en el porcentaje del pool
+                const poolBalance = liquidity.currentBalance || liquidity.totalBalance || 1000;
+                allocatedAmount = poolBalance * (buyOperation.portfolioPercentage / 100);
+                shares = allocatedAmount / entryPrice;
+                
+                console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
+                console.log(`📊 Balance del pool: $${poolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+              }
+            } catch (opError) {
+              console.log('⚠️ Error buscando operación de compra:', opError);
+            }
           }
         } else {
           console.log(`⚠️ No se encontró documento de liquidez para usuario ${user._id} en pool ${tipo}`);
+          
+          // ✅ NUEVO: Buscar en operaciones incluso si no hay documento de liquidez
+          try {
+            const Operation = (await import('@/models/Operation')).default;
+            const buyOperation = await Operation.findOne({
+              alertId: alertId,
+              operationType: 'COMPRA',
+              system: tipo
+            }).sort({ date: -1 });
+            
+            if (buyOperation && buyOperation.portfolioPercentage > 0) {
+              // Buscar el balance total del pool desde la última operación
+              const lastOperation = await Operation.findOne({ system: tipo })
+                .sort({ date: -1 })
+                .select('balance');
+              const poolBalance = lastOperation?.balance || 1000;
+              
+              allocatedAmount = poolBalance * (buyOperation.portfolioPercentage / 100);
+              shares = allocatedAmount / entryPrice;
+              
+              console.log(`📊 Usando portfolioPercentage de operación de COMPRA: ${buyOperation.portfolioPercentage}%`);
+              console.log(`📊 Balance del pool (última op): $${poolBalance}, Liquidez calculada: $${allocatedAmount.toFixed(2)}, ${shares.toFixed(4)} acciones`);
+            }
+          } catch (opError) {
+            console.log('⚠️ Error buscando operación de compra:', opError);
+          }
         }
       } catch (error) {
         console.log('⚠️ Error obteniendo liquidez de la base de datos:', error);
@@ -208,9 +256,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // Si aún no hay liquidez, usar un monto por defecto basado en el precio
       if (allocatedAmount === 0) {
-        allocatedAmount = 1000; // $1000 por defecto
-        shares = allocatedAmount / entryPrice; // Sin Math.floor()
-        console.log(`💡 Usando liquidez por defecto: $${allocatedAmount}, ${shares.toFixed(4)} acciones`);
+        console.log(`⚠️ No se pudo determinar liquidez para ${alert.symbol} - verificar operación de compra o distribución`);
+        allocatedAmount = 100; // $100 por defecto (valor bajo para evitar errores grandes)
+        shares = allocatedAmount / entryPrice;
+        console.log(`💡 Usando liquidez mínima por defecto: $${allocatedAmount}, ${shares.toFixed(4)} acciones`);
       }
     }
     
