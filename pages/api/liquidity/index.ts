@@ -43,7 +43,19 @@ export default async function handler(
         return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
       }
 
-      let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+      // ✅ CORREGIDO: Buscar el documento principal (el que tiene distribuciones)
+      // No buscar por createdBy para que cualquier admin pueda ver las distribuciones
+      const allLiquidityDocs = await Liquidity.find({ pool });
+      
+      // Priorizar el documento que tiene distribuciones
+      let liquidity = allLiquidityDocs.find(doc => doc.distributions && doc.distributions.length > 0);
+      
+      // Si no hay ninguno con distribuciones, usar el del admin actual o el primero
+      if (!liquidity) {
+        liquidity = allLiquidityDocs.find(doc => doc.createdBy.toString() === user._id.toString()) || allLiquidityDocs[0];
+      }
+      
+      // Si no existe ninguno, crear uno nuevo
       if (!liquidity) {
         liquidity = await Liquidity.create({
           totalLiquidity: 0,
