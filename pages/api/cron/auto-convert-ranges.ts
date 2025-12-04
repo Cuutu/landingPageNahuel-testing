@@ -198,6 +198,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           unsetFields.entryPriceRange = 1;
           unsetFields.precioMinimo = 1;
           unsetFields.precioMaximo = 1;
+          
+          // ✅ NUEVO: Enviar notificación de compra confirmada
+          await sendEntryConfirmedNotification(alert, closePrice, entryRangeMin, entryRangeMax);
         }
         
         // Procesar rango de venta si existe
@@ -809,5 +812,33 @@ async function sendDiscardedBuyNotification(
     console.log(`✅ ${alert.symbol}: Notificación de compra descartada enviada`);
   } catch (error) {
     console.error(`⚠️ Error enviando notificación de compra descartada para ${alert.symbol}:`, error);
+  }
+}
+
+/**
+ * Envía notificación de compra CONFIRMADA (precio dentro del rango de entrada)
+ */
+async function sendEntryConfirmedNotification(
+  alert: any, 
+  closePrice: number, 
+  rangeMin: number,
+  rangeMax: number
+) {
+  try {
+    const { createAlertNotification } = await import('@/lib/notificationUtils');
+    
+    const message = `✅ Compra confirmada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está dentro del rango de entrada ($${rangeMin}-$${rangeMax}). La posición está ahora activa con precio de entrada $${closePrice.toFixed(2)}.`;
+    
+    await createAlertNotification(alert, {
+      message: message,
+      price: closePrice,
+      action: 'BUY',
+      skipDuplicateCheck: true,
+      title: `✅ Compra Confirmada: ${alert.symbol}`
+    });
+    
+    console.log(`✅ ${alert.symbol}: Notificación de compra confirmada enviada`);
+  } catch (error) {
+    console.error(`⚠️ Error enviando notificación de compra confirmada para ${alert.symbol}:`, error);
   }
 }
