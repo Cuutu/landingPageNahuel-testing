@@ -102,7 +102,7 @@ const useDashboardSections = () => {
     {
       id: 'roadmaps',
       title: 'Gestión de Roadmaps',
-      description: 'Crea y gestiona los roadmaps de aprendizaje para Zero 2 Trader y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado.',
+      description: 'Crea y gestiona los roadmaps de aprendizaje para Zero 2 Trader y otros entrenamientos. Sistema dinámico que reemplaza el contenido hardcodeado',
       icon: <Map size={32} />,
       color: 'from-cyan-500 to-blue-500',
       links: [
