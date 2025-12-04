@@ -24,13 +24,6 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
   const { isFeatureEnabled } = useSiteConfig();
   const { isContactModalOpen, openContactModal, closeContactModal } = useContact();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
-  // ✅ DEBUG: Log cuando cambia el estado del menú
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log('🔍 [NAVBAR] isMenuOpen cambió a:', isMenuOpen);
-    }
-  }, [isMenuOpen]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
