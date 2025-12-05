@@ -155,6 +155,8 @@ export default async function handler(
         partialSalePercentage: op.partialSalePercentage,
         originalQuantity: op.originalQuantity,
         portfolioPercentage: op.portfolioPercentage, // ✅ Agregado: Porcentaje de la cartera
+        priceRange: op.priceRange, // ✅ NUEVO: Rango de precio original
+        isPriceConfirmed: op.isPriceConfirmed, // ✅ NUEVO: Si el precio ya fue confirmado
         liquidityData: op.liquidityData,
         executedBy: op.executedBy,
         executionMethod: op.executionMethod,

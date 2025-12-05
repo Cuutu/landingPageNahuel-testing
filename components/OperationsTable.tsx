@@ -122,6 +122,24 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     });
   };
 
+  // ✅ NUEVO: Formatear precio mostrando rango si no está confirmado
+  const formatPriceDisplay = (operation: any) => {
+    // Si tiene rango de precio y el precio NO está confirmado, mostrar el rango
+    if (operation.priceRange && !operation.isPriceConfirmed) {
+      return (
+        <span style={{ 
+          color: '#F59E0B', 
+          fontWeight: '500',
+          fontSize: '0.875rem'
+        }}>
+          {formatCurrency(operation.priceRange.min)} - {formatCurrency(operation.priceRange.max)}
+        </span>
+      );
+    }
+    // Si el precio está confirmado, mostrar el precio fijo
+    return formatCurrency(operation.price);
+  };
+
   const getOperationIcon = (type: 'COMPRA' | 'VENTA') => {
     return type === 'COMPRA' ? (
       <TrendingUp className="w-4 h-4 text-green-500" />
@@ -576,7 +594,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                       </div>
                     </td>
                     <td>
-                      {formatCurrency(operation.price)}
+                      {formatPriceDisplay(operation)}
                     </td>
                     <td>
                       {operation.operationType === 'COMPRA' && operation.portfolioPercentage != null ? (

@@ -872,6 +872,10 @@ async function updateOperationPriceOnConfirmation(alertId: any, finalPrice: numb
     operation.price = finalPrice;
     operation.amount = operation.quantity * finalPrice;
     
+    // ✅ NUEVO: Marcar el precio como confirmado y limpiar el rango
+    operation.isPriceConfirmed = true;
+    operation.priceRange = undefined;
+    
     // Actualizar también el precio de entrada en liquidityData si existe
     if (operation.liquidityData) {
       operation.liquidityData.entryPrice = finalPrice;
@@ -883,7 +887,7 @@ async function updateOperationPriceOnConfirmation(alertId: any, finalPrice: numb
     
     // Agregar nota de actualización
     const existingNotes = operation.notes || '';
-    operation.notes = `${existingNotes} | Precio actualizado de $${oldPrice.toFixed(2)} a $${finalPrice.toFixed(2)} al confirmar compra`;
+    operation.notes = `${existingNotes} | Precio confirmado: $${finalPrice.toFixed(2)} (anterior: $${oldPrice.toFixed(2)})`;
     
     await operation.save();
     

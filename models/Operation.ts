@@ -26,6 +26,11 @@ export interface IOperation extends Document {
   
   // Información adicional para compras
   portfolioPercentage?: number; // Porcentaje de la cartera usado para esta compra
+  priceRange?: { // Rango de precio original (para mostrar mientras está "A confirmar")
+    min: number;
+    max: number;
+  };
+  isPriceConfirmed?: boolean; // Indica si el precio ya fue confirmado por el CRON
   
   // Información de liquidez
   liquidityData?: {
@@ -130,6 +135,14 @@ const OperationSchema: Schema = new Schema({
     type: Number,
     min: 0,
     max: 100
+  },
+  priceRange: {
+    min: { type: Number, min: 0 },
+    max: { type: Number, min: 0 }
+  },
+  isPriceConfirmed: {
+    type: Boolean,
+    default: false
   },
   
   // Información de liquidez

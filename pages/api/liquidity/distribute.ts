@@ -132,6 +132,10 @@ export default async function handler(
         // Calcular el nuevo balance (restar el gasto de la compra adicional)
         const newBalance = currentBalance - actualAllocatedAmount;
         
+        // ✅ NUEVO: Determinar si hay rango de precio o precio fijo
+        const hasRange = alert.entryPriceRange?.min && alert.entryPriceRange?.max;
+        const isPriceConfirmed = !hasRange; // Si no hay rango, el precio ya está confirmado
+        
         const operation = new Operation({
           ticker: alert.symbol,
           operationType: 'COMPRA',
@@ -144,7 +148,13 @@ export default async function handler(
           alertSymbol: alert.symbol,
           system: pool,
           createdBy: user._id,
-          portfolioPercentage: targetPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
+          portfolioPercentage: targetPercentage,
+          // ✅ NUEVO: Guardar el rango de precio si existe
+          priceRange: hasRange ? {
+            min: alert.entryPriceRange.min,
+            max: alert.entryPriceRange.max
+          } : undefined,
+          isPriceConfirmed: isPriceConfirmed,
           liquidityData: {
             allocatedAmount: actualAllocatedAmount,
             shares: additionalShares,
@@ -213,6 +223,10 @@ export default async function handler(
       // Calcular el nuevo balance (restar el gasto de la compra)
       const newBalance = currentBalance - distribution.allocatedAmount;
       
+      // ✅ NUEVO: Determinar si hay rango de precio o precio fijo
+      const hasRange = alert.entryPriceRange?.min && alert.entryPriceRange?.max;
+      const isPriceConfirmed = !hasRange; // Si no hay rango, el precio ya está confirmado
+      
       const operation = new Operation({
         ticker: alert.symbol,
         operationType: 'COMPRA',
@@ -225,7 +239,13 @@ export default async function handler(
         alertSymbol: alert.symbol,
         system: pool,
         createdBy: user._id,
-        portfolioPercentage: targetPercentage, // ✅ NUEVO: Guardar el porcentaje de la cartera
+        portfolioPercentage: targetPercentage,
+        // ✅ NUEVO: Guardar el rango de precio si existe
+        priceRange: hasRange ? {
+          min: alert.entryPriceRange.min,
+          max: alert.entryPriceRange.max
+        } : undefined,
+        isPriceConfirmed: isPriceConfirmed,
         liquidityData: {
           allocatedAmount: distribution.allocatedAmount,
           shares: distribution.shares,

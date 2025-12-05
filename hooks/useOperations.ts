@@ -16,6 +16,11 @@ interface Operation {
   partialSalePercentage?: number;
   originalQuantity?: number;
   portfolioPercentage?: number; // ✅ NUEVO: Porcentaje de la cartera para compras
+  priceRange?: { // ✅ NUEVO: Rango de precio original
+    min: number;
+    max: number;
+  };
+  isPriceConfirmed?: boolean; // ✅ NUEVO: Si el precio ya fue confirmado
   liquidityData?: {
     allocatedAmount: number;
     shares: number;
