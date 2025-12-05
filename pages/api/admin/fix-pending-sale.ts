@@ -29,20 +29,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const { alertId } = req.body;
 
+  console.log('🔍 [FIX-PENDING-SALE] Request body:', req.body);
+  console.log('🔍 [FIX-PENDING-SALE] alertId:', alertId);
+
   if (!alertId) {
+    console.log('❌ [FIX-PENDING-SALE] alertId es requerido');
     return res.status(400).json({ error: 'alertId es requerido' });
   }
 
   try {
     // Buscar la alerta
+    console.log('🔍 [FIX-PENDING-SALE] Buscando alerta:', alertId);
     const alert = await Alert.findById(alertId);
     if (!alert) {
+      console.log('❌ [FIX-PENDING-SALE] Alerta no encontrada');
       return res.status(404).json({ error: 'Alerta no encontrada' });
     }
+    
+    console.log('✅ [FIX-PENDING-SALE] Alerta encontrada:', {
+      symbol: alert.symbol,
+      status: alert.status,
+      sellRangeMin: alert.sellRangeMin,
+      sellRangeMax: alert.sellRangeMax,
+      liquidityData: alert.liquidityData ? 'presente' : 'no presente'
+    });
 
     // Verificar que tiene venta programada
     if (!alert.sellRangeMin || !alert.sellRangeMax) {
-      return res.status(400).json({ error: 'La alerta no tiene rango de venta programado' });
+      console.log('❌ [FIX-PENDING-SALE] La alerta no tiene rango de venta programado');
+      return res.status(400).json({ 
+        error: 'La alerta no tiene rango de venta programado',
+        sellRangeMin: alert.sellRangeMin,
+        sellRangeMax: alert.sellRangeMax
+      });
     }
 
     // Verificar si ya existe una operación de venta para esta alerta
@@ -52,11 +71,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     if (existingOperation) {
+      console.log('⚠️ [FIX-PENDING-SALE] Ya existe operación de venta:', existingOperation._id);
       return res.status(400).json({ 
         error: 'Ya existe una operación de venta para esta alerta',
         operationId: existingOperation._id
       });
     }
+    
+    console.log('✅ [FIX-PENDING-SALE] No existe operación de venta previa, creando...');
 
     const tipo = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
     const entryPrice = alert.entryPrice || 0;
