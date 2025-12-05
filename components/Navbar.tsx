@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession, signIn, signOut } from 'next-auth/react';
-import { ChevronDown, Menu, X, User, LogOut, Settings, Bell, MessageCircle, DollarSign } from 'lucide-react';
+import { ChevronDown, Menu, X, User, LogOut, Settings, Bell, MessageCircle, DollarSign, Users } from 'lucide-react';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import ContactForm from '@/components/ContactForm';
 import { useSiteConfig } from '@/hooks/useSiteConfig';
@@ -385,6 +385,10 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
                             <Settings size={16} />
                             Panel de Administración
                           </Link>
+                          <Link href="/admin/users" className={styles.dropdownItem}>
+                            <Users size={16} />
+                            Gestión de Usuarios
+                          </Link>
                           <Link href="/admin/notifications" className={styles.dropdownItem}>
                             <Bell size={16} />
                             Gestión de Notificaciones
@@ -541,6 +545,10 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
                         <Link href="/admin/dashboard" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
                           <Settings size={16} />
                           Panel de Administración
+                        </Link>
+                        <Link href="/admin/users" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                          <Users size={16} />
+                          Gestión de Usuarios
                         </Link>
                         <Link href="/admin/notifications" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
                           <Bell size={16} />
