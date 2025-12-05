@@ -169,7 +169,7 @@ const YouTubeAutoCarousel: React.FC = () => {
       
       <div className={styles.youtubeVideoFrame}>
         <iframe
-          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          src={`https://www.youtube.com/embed/${videos[currentVideo].id}?autoplay=1&mute=1`}
           title={videos[currentVideo].title}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -403,7 +403,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                   <iframe
                     width="100%"
                     height="100%"
-                    src="https://www.youtube.com/embed/9d_IoMgtbRU"
+                    src="https://www.youtube.com/embed/9d_IoMgtbRU?autoplay=1&mute=1&loop=1&playlist=9d_IoMgtbRU"
                     title="Video Recursos"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
