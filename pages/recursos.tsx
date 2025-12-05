@@ -100,7 +100,7 @@ const WatchlistModal: React.FC<{
         </div>
         <div className={styles.modalBody}>
           <p className={styles.modalText}>
-            Recordá que solo la pueden usar usuarios <strong>ESSENTIAL</strong> en adelante de la plataforma de TradingView.
+            Record? que solo la pueden usar usuarios <strong>ESSENTIAL</strong> en adelante de la plataforma de TradingView.
           </p>
         </div>
         <div className={styles.modalFooter}>
@@ -117,7 +117,7 @@ const WatchlistModal: React.FC<{
 };
 
 /**
- * Componente de carousel automático para videos de YouTube
+ * Componente de carousel autom?tico para videos de YouTube
  */
 const YouTubeAutoCarousel: React.FC = () => {
   const [currentVideo, setCurrentVideo] = useState(0);
@@ -230,15 +230,15 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
   const [showTooltip, setShowTooltip] = useState<string | false>(false);
   const [tooltipTarget, setTooltipTarget] = useState<HTMLElement | null>(null);
 
-  // Función para manejar el clic del botón "Empezá Ahora"
+  // Funci?n para manejar el clic del bot?n "Empez? Ahora"
   const handleStartNowClick = () => {
-    const currentSession = clientSession || session; // Usar sesión del cliente o del servidor
+    const currentSession = clientSession || session; // Usar sesi?n del cliente o del servidor
     
     if (currentSession) {
-      // Si el usuario está autenticado, redirigir a /alertas
+      // Si el usuario est? autenticado, redirigir a /alertas
       router.push('/alertas');
     } else {
-      // Si no está autenticado, iniciar sesión con Google
+      // Si no est? autenticado, iniciar sesi?n con Google
       signIn('google');
     }
   };
@@ -261,44 +261,44 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
     },
     {
       id: 'dolar-ccl',
-      name: 'Fórmula Dólar CCL',
+      name: 'F?rmula D?lar CCL',
       type: 'formula',
       formula: 'BCBA:KO*5/NYSE:KO',
       image: '/logos/fdccl.png'
     },
     {
       id: 'acciones-ccl',
-      name: 'Fórmula Acciones en CCL',
+      name: 'F?rmula Acciones en CCL',
       type: 'formula',
       formula: 'BCBA:ALUA/(BCBA:KO*5/NYSE:KO)',
       image: '/logos/faccl.png',
       hasHelp: true,
-      helpText: 'Reemplazá ALUA por el ticker de la acción que querés valuar en dólar CCL. Por ejemplo: BCBA:GGAL/(BCBA:KO*5/NYSE:KO) para Grupo Galicia.'
+      helpText: 'Reemplaz? ALUA por el ticker de la acci?n que quer?s valuar en d?lar CCL. Por ejemplo: BCBA:GGAL/(BCBA:KO*5/NYSE:KO) para Grupo Galicia.'
     },
     {
       id: 'merval-ccl',
-      name: 'Fórmula Merval en CCL',
+      name: 'F?rmula Merval en CCL',
       type: 'formula',
       formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)',
       image: '/logos/fmccl.png'
     },
     {
       id: 'indices-wall-street',
-      name: 'Fórmula Promedio Índices Wall Street',
+      name: 'F?rmula Promedio ?ndices Wall Street',
       type: 'formula',
       formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)/SP:SPX',
       image: '/logos/fpiws.png'
     },
     {
       id: 'merval-vs-sp500',
-      name: 'Fórmula Comparación Merval vs S&P500',
+      name: 'F?rmula Comparaci?n Merval vs S&P500',
       type: 'formula',
       formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)/SP:SPX',
       image: '/logos/fcms500.png'
     },
     {
       id: 'nasdaq-vs-dow',
-      name: 'Fórmula Comparación Nasdaq vs Dow Jones',
+      name: 'F?rmula Comparaci?n Nasdaq vs Dow Jones',
       type: 'formula',
       formula: 'NASDAQ:NDX/TVC:DJI',
       image: '/logos/fcndj.png'
@@ -307,7 +307,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
 
   const handleToolClick = (tool: any) => {
     if (tool.type === 'formula' && tool.formula) {
-      // Para fórmulas: copiar al portapapeles
+      // Para f?rmulas: copiar al portapapeles
       copyToClipboard(tool.formula, tool.name);
     } else if (tool.type === 'watchlist' && tool.url) {
       // Para listas de seguimiento: mostrar modal de advertencia primero
@@ -319,7 +319,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
     }
   };
 
-  // Función para cerrar el modal
+  // Funci?n para cerrar el modal
   const closeModal = () => {
     setModalState({
       isOpen: false,
@@ -328,7 +328,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
     });
   };
 
-  // Función para confirmar y abrir la lista de seguimiento
+  // Funci?n para confirmar y abrir la lista de seguimiento
   const confirmAndOpenWatchlist = () => {
     if (modalState.tool && modalState.tool.url) {
       window.open(modalState.tool.url, '_blank', 'noopener,noreferrer');
@@ -340,13 +340,13 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
     <>
       <Head>
         <title>Herramientas - Centro de Recursos para Trading | Nahuel Lozano</title>
-        <meta name="description" content="Herramientas útiles para hacer análisis técnico: fórmulas de TradingView, links importantes, material complementario y libros recomendados." />
+        <meta name="description" content="Herramientas ?tiles para hacer an?lisis t?cnico: f?rmulas de TradingView, links importantes, material complementario y libros recomendados." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       <Navbar />
       
-      {/* Notificación de copia */}
+      {/* Notificaci?n de copia */}
       <CopyNotification
         isVisible={isNotificationVisible}
         itemName={notificationItemName}
@@ -392,10 +392,10 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
               <div className={styles.heroText}>
                 <h1 className={styles.heroTitle}>Recursos</h1>
                 <p className={styles.heroDescription}>
-                  <em>Herramientas útiles e indispensables para aumentar el control sobre tus inversiones en bolsa. Recursos para TradingView, información actualizada y material educativo</em>
+                  <em>Herramientas ?tiles e indispensables para aumentar el control sobre tus inversiones en bolsa. Recursos para TradingView, informaci?n actualizada y material educativo</em>
                 </p>
                 <a href="#recursos-lista" className={styles.heroButtonWhite}>
-                  Empezá ahora &gt;
+                  Empez? ahora &gt;
                 </a>
               </div>
               <div className={styles.heroVideo}>
@@ -403,7 +403,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                   <iframe
                     width="100%"
                     height="100%"
-                    src="https://www.youtube.com/embed/dQw4w9WgXcQ"
+                    src="https://www.youtube.com/embed/9d_IoMgtbRU"
                     title="Video Recursos"
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -427,18 +427,18 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
             >
               <div className={styles.tradingViewCard}>
                 <div className={styles.tradingViewContent}>
-                  <div className={styles.tradingViewIcon}>📈</div>
+                  <div className={styles.tradingViewIcon}>??</div>
                   <h2 className={styles.tradingViewTitle}>TradingView</h2>
                   <p className={styles.tradingViewSubtitle}>El aliado que necesitas</p>
                   <p className={styles.tradingViewDescription}>
-                    Plataforma amigable, rápida y portable en la cual los gráficos se guardan en una nube que no consume memoria de nuestra computadora.
+                    Plataforma amigable, r?pida y portable en la cual los gr?ficos se guardan en una nube que no consume memoria de nuestra computadora.
                     <br /><br />
-                    Personalización de muchos aspectos, tanto de la interfaz como de los gráficos, instrumentos e indicadores. Su versión gratuita es realmente buena.
+                    Personalizaci?n de muchos aspectos, tanto de la interfaz como de los gr?ficos, instrumentos e indicadores. Su versi?n gratuita es realmente buena.
                     <br /><br />
-                    Ofrece la posibilidad de analizar una gran cantidad de activos y compartirlos rápidamente con la comunidad inversora para discutir puntos de vista.
+                    Ofrece la posibilidad de analizar una gran cantidad de activos y compartirlos r?pidamente con la comunidad inversora para discutir puntos de vista.
                   </p>
                   <div className={styles.tradingViewCTA}>
-                    <h3 className={styles.discountTitle}>¡Comienza a utilizar TradingView con 15 U$D de descuento!</h3>
+                    <h3 className={styles.discountTitle}>?Comienza a utilizar TradingView con 15 U$D de descuento!</h3>
                     <a 
                       href="https://es.tradingview.com/pricing/?share_your_love=XTrader95" 
                       target="_blank" 
@@ -454,7 +454,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
           </div>
         </section>
 
-        {/* Fórmulas TradingView */}
+        {/* F?rmulas TradingView */}
         <section className={styles.sectionAlt} id="recursos-lista">
           <div className={styles.container}>
             <motion.h2 
@@ -471,7 +471,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              Para utilizarlas debe copiarlas y pegarlas al momento de añadir un nuevo símbolo en la plataforma de TradingView
+              Para utilizarlas debe copiarlas y pegarlas al momento de a?adir un nuevo s?mbolo en la plataforma de TradingView
             </motion.p>
             
             <div className={styles.cardsGridLarge}>
@@ -544,10 +544,10 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
               <div className={styles.bibliotecaCards}>
                 <div className={styles.bibliotecaCard}>
                   <a href="/logos/EMW.pdf" target="_blank" rel="noopener noreferrer" className={styles.bibliotecaCardLink}>
-                    <img src="/logos/tituloMW.png" alt="El Método Wickoff" className={styles.bibliotecaImg} />
+                    <img src="/logos/tituloMW.png" alt="El M?todo Wickoff" className={styles.bibliotecaImg} />
                     <div className={styles.bibliotecaCardText}>
-                      <div className={styles.bibliotecaBookTitle}>El Método Wickoff</div>
-                      <div className={styles.bibliotecaBookAuthor}><em>Enrique Díaz Valdecantos</em></div>
+                      <div className={styles.bibliotecaBookTitle}>El M?todo Wickoff</div>
+                      <div className={styles.bibliotecaBookAuthor}><em>Enrique D?az Valdecantos</em></div>
                     </div>
                   </a>
                 </div>
@@ -562,15 +562,15 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                 </div>
                 <div className={styles.bibliotecaCard}>
                   <a href="/logos/ATMF.pdf" target="_blank" rel="noopener noreferrer" className={styles.bibliotecaCardLink}>
-                    <img src="/logos/tituloATMF.png" alt="Análisis Técnico de los Mercados Financieros" className={styles.bibliotecaImg} />
-                    <div className={styles.bibliotecaBookTitle}>Análisis Técnico de los Mercados Financieros</div>
+                    <img src="/logos/tituloATMF.png" alt="An?lisis T?cnico de los Mercados Financieros" className={styles.bibliotecaImg} />
+                    <div className={styles.bibliotecaBookTitle}>An?lisis T?cnico de los Mercados Financieros</div>
                     <div className={styles.bibliotecaBookAuthor}><em>John J. Murphy</em></div>
                   </a>
                 </div>
                 <div className={styles.bibliotecaCard}>
                   <a href="/logos/LGI.pdf" target="_blank" rel="noopener noreferrer" className={styles.bibliotecaCardLink}>
-                    <img src="/logos/tituloGPI.png" alt="Guía para Invertir" className={styles.bibliotecaImg} />
-                    <div className={styles.bibliotecaBookTitle}>Guía para Invertir</div>
+                    <img src="/logos/tituloGPI.png" alt="Gu?a para Invertir" className={styles.bibliotecaImg} />
+                    <div className={styles.bibliotecaBookTitle}>Gu?a para Invertir</div>
                     <div className={styles.bibliotecaBookAuthor}><em>Robert T. Kiyosaki</em></div>
                   </a>
                 </div>
@@ -580,19 +580,19 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
           </div>
         </section>
 
-                 {/* Información para Traders */}
+                 {/* Informaci?n para Traders */}
          <section className={styles.infoTradersSection} id="informacion-traders">
-           <h2 className={styles.infoTradersTitle}>Información para Traders</h2>
+           <h2 className={styles.infoTradersTitle}>Informaci?n para Traders</h2>
            <div className={styles.infoTradersGrid}>
              <a href="https://es.investing.com/economic-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
-               <img src="/logos/cdeus.png" alt="Calendario datos económicos USA" className={styles.infoTradersImg} />
+               <img src="/logos/cdeus.png" alt="Calendario datos econ?micos USA" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
-               <div className={styles.infoTradersText}>Calendario datos económicos USA</div>
+               <div className={styles.infoTradersText}>Calendario datos econ?micos USA</div>
              </a>
              <a href="https://es.investing.com/economic-calendar/interest-rate-decision-168" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
-               <img src="/logos/cdtif.png" alt="Calendario datos de tasa de interés FED" className={styles.infoTradersImg} />
+               <img src="/logos/cdtif.png" alt="Calendario datos de tasa de inter?s FED" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
-               <div className={styles.infoTradersText}>Calendario datos de tasa de interés FED</div>
+               <div className={styles.infoTradersText}>Calendario datos de tasa de inter?s FED</div>
              </a>
              <a href="https://es.investing.com/earnings-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
                <img src="/logos/cbusa.png" alt="Calendario de Balances en USA" className={styles.infoTradersImg} />
@@ -600,14 +600,14 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                <div className={styles.infoTradersText}>Calendario de Balances en USA</div>
              </a>
              <a href="https://es.investing.com/economic-calendar/cpi-733" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
-               <img src="/logos/cdinfla.png" alt="Calendario datos de Inflación USA" className={styles.infoTradersImg} />
+               <img src="/logos/cdinfla.png" alt="Calendario datos de Inflaci?n USA" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
-               <div className={styles.infoTradersText}>Calendario datos de Inflación USA</div>
+               <div className={styles.infoTradersText}>Calendario datos de Inflaci?n USA</div>
              </a>
              <a href="https://es.investing.com/central-banks/fed-rate-monitor" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
-               <img src="/logos/bdtf.png" alt="Barómetro datos de tasa de interés FED" className={styles.infoTradersImg} />
+               <img src="/logos/bdtf.png" alt="Bar?metro datos de tasa de inter?s FED" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
-               <div className={styles.infoTradersText}>Barómetro datos de tasa de interés FED</div>
+               <div className={styles.infoTradersText}>Bar?metro datos de tasa de inter?s FED</div>
              </a>
              <a href="https://es.investing.com/dividends-calendar/" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
                <img src="/logos/cdusa.png" alt="Calendario de Dividendos en USA" className={styles.infoTradersImg} />
@@ -615,9 +615,9 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                <div className={styles.infoTradersText}>Calendario de Dividendos en USA</div>
              </a>
              <a href="https://cdn.prod.website-files.com/6697a441a50c6b926e1972e0/68dc420aea60e3d6ce173ea7_BYMA-Tabla-CEDEARs-2025-10-01.pdf" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
-               <img src="/logos/rccars.png" alt="Ratios de Conversión de CEDEARS" className={styles.infoTradersImg} />
+               <img src="/logos/rccars.png" alt="Ratios de Conversi?n de CEDEARS" className={styles.infoTradersImg} />
                <div className={styles.infoTradersOverlay}></div>
-               <div className={styles.infoTradersText}>Ratios de Conversión de CEDEARS</div>
+               <div className={styles.infoTradersText}>Ratios de Conversi?n de CEDEARS</div>
              </a>
              <a href="https://finviz.com/map.ashx?t=sec" target="_blank" rel="noopener noreferrer" className={styles.infoTradersCard} style={{textDecoration: 'none'}}>
                <img src="/logos/mcws.png" alt="Mapa de Calor Wall Street" className={styles.infoTradersImg} />
@@ -635,13 +635,13 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
         {/* CTA Principal */}
         <section className={styles.ctaSection}>
           <div className={styles.ctaContainer}>
-            <h2 className={styles.ctaTitle}>¿Listo para llevar tus inversiones al siguiente nivel?</h2>
-            <p className={styles.ctaSubtitle}>Únete a nuestra comunidad y comienza construir tu libertad financiera</p>
-            <button className={styles.ctaButton} onClick={handleStartNowClick}>Empezá ahora &gt;</button>
+            <h2 className={styles.ctaTitle}>?Listo para llevar tus inversiones al siguiente nivel?</h2>
+            <p className={styles.ctaSubtitle}>?nete a nuestra comunidad y comienza construir tu libertad financiera</p>
+            <button className={styles.ctaButton} onClick={handleStartNowClick}>Empez? ahora &gt;</button>
           </div>
         </section>
-        {/* Fin de Información para Traders */}
-        {/* Aquí terminan las secciones modernas, eliminamos las viejas */}
+        {/* Fin de Informaci?n para Traders */}
+        {/* Aqu? terminan las secciones modernas, eliminamos las viejas */}
         
          {/* YouTube Community Section */}
         <section className={styles.youtubeSection}>
@@ -655,11 +655,11 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
             >
               <div className={styles.youtubeText}>
                 <h2 className={styles.youtubeTitle}>
-                  ¡Sumate a nuestra comunidad<br />
+                  ?Sumate a nuestra comunidad<br />
                   en YouTube!
                 </h2>
                 <p className={styles.youtubeSubtitle}>
-                  No te pierdas nuestros últimos videos
+                  No te pierdas nuestros ?ltimos videos
                 </p>
               </div>
 
@@ -680,7 +680,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const session = await getSession(context);
   
-  // Obtener configuración del sitio
+  // Obtener configuraci?n del sitio
   let siteConfig = null;
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
@@ -695,34 +695,34 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   
   const formulasTradingView = [
     {
-      nombre: 'Dólar CCL',
-      descripcion: 'Dólar con el CEDEAR más utilizado para esta operatoria',
+      nombre: 'D?lar CCL',
+      descripcion: 'D?lar con el CEDEAR m?s utilizado para esta operatoria',
       formula: 'BCBA:KO*5/NYSE:KO',
-      icon: '💱'
+      icon: '??'
     },
     {
-      nombre: 'Acciones Argentinas en Dólar CCL',
+      nombre: 'Acciones Argentinas en D?lar CCL',
       descripcion: 'Reemplazar ALUA por el ticker del activo local que quieras',
       formula: 'BCBA:ALUA/(BCBA:KO*5/NYSE:KO)',
-      icon: '🏛️'
+      icon: '???'
     },
     {
-      nombre: 'Índice MERVAL en Dólar CCL',
-      descripcion: 'El índice MERVAL ajustado por Dólar CCL, para evitar contaminar el análisis de la devaluación del peso',
+      nombre: '?ndice MERVAL en D?lar CCL',
+      descripcion: 'El ?ndice MERVAL ajustado por D?lar CCL, para evitar contaminar el an?lisis de la devaluaci?n del peso',
       formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)',
-      icon: '📊'
+      icon: '??'
     },
     {
-      nombre: 'Comparación entre S&P500 y MERVAL',
-      descripcion: 'Cuando el gráfico está alcista, conviene estar invertido en activos del S&P500. Cuando está bajista, en activos del MERVAL',
+      nombre: 'Comparaci?n entre S&P500 y MERVAL',
+      descripcion: 'Cuando el gr?fico est? alcista, conviene estar invertido en activos del S&P500. Cuando est? bajista, en activos del MERVAL',
       formula: 'BCBA:IMV/(BCBA:KO*5/NYSE:KO)/SP:SPX',
-      icon: '⚖️'
+      icon: '??'
     },
     {
-      nombre: 'Comparación entre NASDAQ 100 y DOW JONES 30',
-      descripcion: 'Cuando el gráfico está alcista, conviene estar invertido en activos del NASDAQ 100. Cuando está bajista, en activos del DOW JONES 30',
+      nombre: 'Comparaci?n entre NASDAQ 100 y DOW JONES 30',
+      descripcion: 'Cuando el gr?fico est? alcista, conviene estar invertido en activos del NASDAQ 100. Cuando est? bajista, en activos del DOW JONES 30',
       formula: 'NASDAQ:NDX/TVC:DJI',
-      icon: '🔄'
+      icon: '??'
     }
   ];
 
@@ -731,123 +731,123 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       nombre: 'Lista de Activos de USA',
       descripcion: 'Watchlist completa con los principales activos del mercado estadounidense que analizo regularmente',
       url: 'https://www.tradingview.com/markets/stocks-usa/sectorandindustry-sector/',
-      icon: '🇺🇸'
+      icon: '????'
     },
     {
       nombre: 'Lista de Activos de ARG',
-      descripcion: 'Activos del mercado argentino: acciones locales, CEDEARs y bonos más relevantes para análisis',
+      descripcion: 'Activos del mercado argentino: acciones locales, CEDEARs y bonos m?s relevantes para an?lisis',
       url: 'https://www.tradingview.com/markets/stocks-argentina/sectorandindustry-sector/',
-      icon: '🇦🇷'
+      icon: '????'
     }
   ];
 
   const linksImportantes = [
     {
-      nombre: 'TradingView - Análisis Técnico',
-      descripcion: 'Plataforma líder para análisis técnico, gráficos en tiempo real y herramientas de trading profesionales',
+      nombre: 'TradingView - An?lisis T?cnico',
+      descripcion: 'Plataforma l?der para an?lisis t?cnico, gr?ficos en tiempo real y herramientas de trading profesionales',
       url: 'https://es.tradingview.com/pricing/?share_your_love=XTrader95',
-      icon: '📊'
+      icon: '??'
     },
     {
       nombre: 'Calendario Dato Inflacional USA',
-      descripcion: 'Calendario oficial de datos de inflación (CPI) de Estados Unidos con fechas y expectativas del mercado',
+      descripcion: 'Calendario oficial de datos de inflaci?n (CPI) de Estados Unidos con fechas y expectativas del mercado',
       url: 'https://es.investing.com/economic-calendar/cpi-733',
-      icon: '📈'
+      icon: '??'
     },
     {
-      nombre: 'Calendario FED Tasa de Interés USA',
-      descripcion: 'Calendario oficial de reuniones de la Reserva Federal y decisiones de política monetaria',
+      nombre: 'Calendario FED Tasa de Inter?s USA',
+      descripcion: 'Calendario oficial de reuniones de la Reserva Federal y decisiones de pol?tica monetaria',
       url: 'https://es.investing.com/economic-calendar/interest-rate-decision-168',
-      icon: '🏦'
+      icon: '??'
     },
     {
-      nombre: 'Barómetro FED - Monitoreo de Tasas',
-      descripcion: 'Monitoreo en tiempo real de las expectativas del mercado sobre las decisiones de tasas de interés de la Reserva Federal',
+      nombre: 'Bar?metro FED - Monitoreo de Tasas',
+      descripcion: 'Monitoreo en tiempo real de las expectativas del mercado sobre las decisiones de tasas de inter?s de la Reserva Federal',
       url: 'https://es.investing.com/central-banks/fed-rate-monitor',
-      icon: '📊'
+      icon: '??'
     },
     {
-      nombre: 'Balances Próximos',
-      descripcion: 'Fechas de presentación de resultados trimestrales de empresas argentinas e internacionales',
+      nombre: 'Balances Pr?ximos',
+      descripcion: 'Fechas de presentaci?n de resultados trimestrales de empresas argentinas e internacionales',
       url: 'https://es.investing.com/earnings-calendar/',
-      icon: '📅'
+      icon: '??'
     },
     {
-      nombre: 'Calendario Económico',
-      descripcion: 'Eventos económicos importantes que pueden afectar los mercados financieros globales',
+      nombre: 'Calendario Econ?mico',
+      descripcion: 'Eventos econ?micos importantes que pueden afectar los mercados financieros globales',
       url: 'https://es.investing.com/economic-calendar/',
-      icon: '📊'
+      icon: '??'
     },
     {
       nombre: 'Calculadora de CEDEARs',
       descripcion: 'Herramienta para calcular el precio justo de CEDEARs versus sus activos subyacentes y detectar oportunidades de arbitraje',
       url: 'https://docs.google.com/spreadsheets/d/17H8-_IUFi5Pbl4S9kWwKc0iiH0w7dlpJeoORb8rv85E/edit?gid=0#gid=0',
-      icon: '💰'
+      icon: '??'
     },
     {
       nombre: 'Indicador Fear and Greed',
       descripcion: 'Medidor de sentimiento del mercado que combina 7 indicadores diferentes de volatilidad y momentum para identificar oportunidades',
       url: 'https://edition.cnn.com/markets/fear-and-greed',
-      icon: '😰'
+      icon: '??'
     },
     {
       nombre: 'Mercap Abbaco - Renta Fija',
-      descripcion: 'Información detallada sobre bonos e instrumentos de renta fija del mercado argentino con análisis y datos actualizados',
+      descripcion: 'Informaci?n detallada sobre bonos e instrumentos de renta fija del mercado argentino con an?lisis y datos actualizados',
       url: 'https://bonds.mercapabbaco.com',
-      icon: '📋'
+      icon: '??'
     }
   ];
 
   const materialComplementario = [
     {
-      nombre: 'Ratios de Conversión COMAFI',
-      descripcion: 'Guía completa con todos los ratios de conversión de CEDEARs proporcionada por COMAFI',
+      nombre: 'Ratios de Conversi?n COMAFI',
+      descripcion: 'Gu?a completa con todos los ratios de conversi?n de CEDEARs proporcionada por COMAFI',
       descarga: 'https://www.comafi.com.ar/cedears',
-      icon: '🔄'
+      icon: '??'
     },
     {
-      nombre: 'Ratios de Conversión BYMA',
-      descripcion: 'Ratios oficiales de conversión de CEDEARs según BYMA (Bolsas y Mercados Argentinos)',
+      nombre: 'Ratios de Conversi?n BYMA',
+      descripcion: 'Ratios oficiales de conversi?n de CEDEARs seg?n BYMA (Bolsas y Mercados Argentinos)',
       descarga: 'https://www.byma.com.ar/cedears/',
-      icon: '📊'
+      icon: '??'
     },
     {
-      nombre: 'Cálculo para Comprar y Vender CEDEARs',
-      descripcion: 'Manual práctico con ejemplos para calcular correctamente operaciones con CEDEARs',
+      nombre: 'C?lculo para Comprar y Vender CEDEARs',
+      descripcion: 'Manual pr?ctico con ejemplos para calcular correctamente operaciones con CEDEARs',
       descarga: 'https://www.byma.com.ar/cedears/',
-      icon: '💵'
+      icon: '??'
     },
     {
-      nombre: '¿Cómo Medir la Cartera?',
+      nombre: '?C?mo Medir la Cartera?',
       descripcion: 'Manual para evaluar correctamente el performance de tu portafolio y compararlo con benchmarks',
       descarga: 'https://www.investing.com/portfolio/',
-      icon: '📏'
+      icon: '??'
     }
   ];
 
   const librosRecomendados = [
     {
-      nombre: 'Análisis Técnico de los Mercados Financieros',
+      nombre: 'An?lisis T?cnico de los Mercados Financieros',
       autor: 'John J. Murphy',
-      descripcion: 'El manual definitivo sobre análisis técnico. Cubre todos los conceptos fundamentales y técnicas avanzadas.',
+      descripcion: 'El manual definitivo sobre an?lisis t?cnico. Cubre todos los conceptos fundamentales y t?cnicas avanzadas.',
       descarga: '/downloads/analisis-tecnico-murphy.pdf'
     },
     {
-      nombre: 'Guía para Invertir',
+      nombre: 'Gu?a para Invertir',
       autor: 'Robert T. Kiyosaki',
-      descripcion: 'Estrategias de inversión y educación financiera para construir riqueza a largo plazo.',
+      descripcion: 'Estrategias de inversi?n y educaci?n financiera para construir riqueza a largo plazo.',
       descarga: '/downloads/guia-para-invertir-kiyosaki.pdf'
     },
     {
-      nombre: 'El Método Wyckoff',
-      autor: 'Enrique Díaz Valdecantos',
-      descripcion: 'Análisis profundo del método Wyckoff para entender la estructura del mercado y el volumen.',
+      nombre: 'El M?todo Wyckoff',
+      autor: 'Enrique D?az Valdecantos',
+      descripcion: 'An?lisis profundo del m?todo Wyckoff para entender la estructura del mercado y el volumen.',
       descarga: '/downloads/metodo-wyckoff.pdf'
     },
     {
       nombre: 'Padre Rico, Padre Pobre',
       autor: 'Robert T. Kiyosaki',
-      descripcion: 'Fundamentos de educación financiera y mentalidad para alcanzar la libertad financiera.',
+      descripcion: 'Fundamentos de educaci?n financiera y mentalidad para alcanzar la libertad financiera.',
       descarga: '/downloads/padre-rico-padre-pobre.pdf'
     }
   ];

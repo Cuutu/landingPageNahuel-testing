@@ -483,6 +483,67 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await alert.save();
       console.log(`💾 Venta programada guardada en base de datos para ${alert.symbol}`);
       
+      // ✅ NUEVO: Crear operación de VENTA con isPriceConfirmed: false para que aparezca en la tabla de operaciones
+      try {
+        console.log(`📝 Creando operación de venta programada (A confirmar) para ${alert.symbol}...`);
+        
+        const OperationModule = await import('@/models/Operation');
+        const Operation = OperationModule.default;
+        
+        // Buscar usuario admin
+        const adminUser = await User.findOne({ role: 'admin' });
+        
+        if (adminUser) {
+          // Obtener balance actual del admin para este sistema
+          const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: tipo })
+            .sort({ date: -1 })
+            .select('balance');
+          const currentBalance = currentBalanceDoc?.balance || 0;
+          
+          // NO modificar el balance aún - se hará cuando se ejecute la venta
+          const operation = new Operation({
+            ticker: alert.symbol.toUpperCase(),
+            operationType: 'VENTA',
+            quantity: -sharesToSell, // Negativo para ventas
+            price: sellPrice, // Precio estimado
+            amount: liquidityReleased, // Monto estimado
+            date: new Date(),
+            balance: currentBalance, // Balance NO cambia hasta que se ejecute
+            alertId: alert._id,
+            alertSymbol: alert.symbol.toUpperCase(),
+            system: tipo,
+            createdBy: adminUser._id,
+            isPartialSale: !isCompleteSale,
+            partialSalePercentage: percentage,
+            originalQuantity: alert.liquidityData?.originalShares || shares,
+            // ✅ IMPORTANTE: Guardar el rango de precio y marcar como NO confirmado
+            priceRange: {
+              min: notificationPriceRange.min,
+              max: notificationPriceRange.max
+            },
+            isPriceConfirmed: false, // ✅ Esto hace que aparezca como "A confirmar"
+            portfolioPercentage: (alert.liquidityData?.allocatedAmount || allocatedAmount) / 1000 * 100, // Porcentaje aproximado
+            liquidityData: {
+              allocatedAmount: allocatedAmount,
+              shares: shares,
+              entryPrice: entryPrice,
+              realizedProfit: realizedProfit // Estimado
+            },
+            executedBy: session.user.email,
+            executionMethod: 'ADMIN',
+            notes: `Venta programada (${percentage}%) - ${alert.symbol} - Rango: $${notificationPriceRange.min} - $${notificationPriceRange.max}`
+          });
+
+          await operation.save();
+          console.log(`✅ Operación de venta programada creada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones (A confirmar)`);
+        } else {
+          console.log(`⚠️ No se encontró usuario admin para crear operación`);
+        }
+      } catch (operationError) {
+        console.error('⚠️ Error creando operación de venta programada:', operationError);
+        // No fallar la venta por un error en la operación
+      }
+      
     } else {
       // ✅ EJECUTAR VENTA INMEDIATAMENTE: Solo cuando NO hay rango de precios
       console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
@@ -670,7 +731,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // ✅ ENVIAR NOTIFICACIÓN POR EMAIL SI SE ESPECIFICÓ
-    if (emailMessage || emailImageUrl) {
+    // ✅ CORREGIDO: NO enviar si ya se envió el email de venta programada (hasSellRange === true)
+    if ((emailMessage || emailImageUrl) && !hasSellRange) {
       try {
         console.log(`📧 Enviando notificación de venta parcial para alerta ${alert.symbol}...`);
         
@@ -684,7 +746,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         // ✅ NUEVO: Calcular profitPercentage si es venta ejecutada (no programada)
         let profitPercentage: number | undefined = undefined;
-        if (!hasSellRange && entryPrice > 0) {
+        if (entryPrice > 0) {
           profitPercentage = ((sellPrice - entryPrice) / entryPrice) * 100;
         }
         
@@ -705,6 +767,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('⚠️ Error enviando notificación por email:', emailError);
         // No fallar la operación por un error de email
       }
+    } else if (hasSellRange) {
+      console.log(`📧 Email de venta programada ya enviado anteriormente, omitiendo email duplicado`);
     }
 
     console.log(`✅ Venta parcial de ${percentage}% ejecutada exitosamente`);
