@@ -201,6 +201,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           
           // ✅ NUEVO: Enviar notificación de compra confirmada
           await sendEntryConfirmedNotification(alert, closePrice, entryRangeMin, entryRangeMax);
+          
+          // ✅ NUEVO: Actualizar el precio de la operación de COMPRA existente con el precio final confirmado
+          await updateOperationPriceOnConfirmation(alert._id, closePrice);
         }
         
         // Procesar rango de venta si existe
@@ -840,5 +843,93 @@ async function sendEntryConfirmedNotification(
     console.log(`✅ ${alert.symbol}: Notificación de compra confirmada enviada`);
   } catch (error) {
     console.error(`⚠️ Error enviando notificación de compra confirmada para ${alert.symbol}:`, error);
+  }
+}
+
+/**
+ * Actualiza el precio de la operación de COMPRA cuando se confirma la alerta
+ * Esto asegura que el precio en OPERACIONES coincida con el del email de confirmación
+ */
+async function updateOperationPriceOnConfirmation(alertId: any, finalPrice: number) {
+  try {
+    const Operation = (await import('@/models/Operation')).default;
+    const Liquidity = (await import('@/models/Liquidity')).default;
+    
+    // Buscar la operación de COMPRA asociada a esta alerta
+    const operation = await Operation.findOne({
+      alertId: alertId,
+      operationType: 'COMPRA'
+    });
+    
+    if (!operation) {
+      console.log(`⚠️ No se encontró operación de COMPRA para alerta ${alertId}`);
+      return;
+    }
+    
+    const oldPrice = operation.price;
+    
+    // Actualizar el precio y recalcular el monto
+    operation.price = finalPrice;
+    operation.amount = operation.quantity * finalPrice;
+    
+    // Actualizar también el precio de entrada en liquidityData si existe
+    if (operation.liquidityData) {
+      operation.liquidityData.entryPrice = finalPrice;
+      // Recalcular allocatedAmount basado en shares y nuevo precio
+      if (operation.liquidityData.shares) {
+        operation.liquidityData.allocatedAmount = operation.liquidityData.shares * finalPrice;
+      }
+    }
+    
+    // Agregar nota de actualización
+    const existingNotes = operation.notes || '';
+    operation.notes = `${existingNotes} | Precio actualizado de $${oldPrice.toFixed(2)} a $${finalPrice.toFixed(2)} al confirmar compra`;
+    
+    await operation.save();
+    
+    console.log(`✅ Operación actualizada: ${operation.ticker} - Precio: $${oldPrice.toFixed(2)} → $${finalPrice.toFixed(2)}`);
+    
+    // ✅ NUEVO: También actualizar la distribución de liquidez para mantener consistencia
+    try {
+      const alertIdString = alertId.toString();
+      
+      // Buscar todas las liquidez que tengan esta distribución
+      const liquidities = await Liquidity.find({
+        'distributions.alertId': alertIdString
+      });
+      
+      for (const liquidity of liquidities) {
+        const distribution = liquidity.distributions.find(
+          (dist: any) => dist.alertId?.toString() === alertIdString
+        );
+        
+        if (distribution) {
+          const oldEntryPrice = distribution.entryPrice;
+          
+          // Actualizar el precio de entrada
+          distribution.entryPrice = finalPrice;
+          distribution.currentPrice = finalPrice;
+          
+          // Recalcular allocatedAmount manteniendo el mismo número de shares
+          if (distribution.shares) {
+            distribution.allocatedAmount = distribution.shares * finalPrice;
+          }
+          
+          distribution.updatedAt = new Date();
+          
+          // Recalcular totales de liquidez
+          liquidity.recalculateDistributions();
+          await liquidity.save();
+          
+          console.log(`✅ Distribución de liquidez actualizada: alertId=${alertIdString} - Precio: $${oldEntryPrice.toFixed(2)} → $${finalPrice.toFixed(2)}`);
+        }
+      }
+    } catch (liquidityError) {
+      console.error(`⚠️ Error actualizando distribución de liquidez:`, liquidityError);
+      // No fallar la operación principal por un error en liquidez
+    }
+    
+  } catch (error) {
+    console.error(`⚠️ Error actualizando precio de operación para alerta ${alertId}:`, error);
   }
 }
