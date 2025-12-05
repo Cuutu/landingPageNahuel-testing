@@ -46,11 +46,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingOperation, setCreatingOperation] = useState(false);
   const [quantityType, setQuantityType] = useState<'shares' | 'percentage'>('shares');
+  const [priceType, setPriceType] = useState<'specific' | 'range'>('specific');
   const [formData, setFormData] = useState({
     ticker: '',
     operationType: 'COMPRA' as 'COMPRA' | 'VENTA',
     quantity: '',
     price: '',
+    priceMin: '',
+    priceMax: '',
     date: new Date().toISOString().split('T')[0],
     portfolioPercentage: '',
     notes: '',
@@ -60,11 +63,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   // ✅ NUEVO: Estado para editar operaciones
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOperation, setEditingOperation] = useState<any>(null);
+  const [editPriceType, setEditPriceType] = useState<'specific' | 'range'>('specific');
   const [editFormData, setEditFormData] = useState({
     ticker: '',
     operationType: 'COMPRA' as 'COMPRA' | 'VENTA',
     quantity: '',
     price: '',
+    priceMin: '',
+    priceMax: '',
     date: '',
     notes: '',
     status: 'ACTIVE' as 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'
@@ -133,10 +139,11 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       operation.priceRange.min > 0 && 
       operation.priceRange.max > 0;
     
-    // Solo mostrar rango si:
+    // Mostrar rango si:
     // 1. Tiene un rango válido
-    // 2. El precio NO está confirmado (isPriceConfirmed es explícitamente false)
-    if (hasValidPriceRange && operation.isPriceConfirmed === false) {
+    // 2. El precio NO está confirmado (isPriceConfirmed no es true)
+    // Esto aplica tanto para ventas parciales como para compras con rango
+    if (hasValidPriceRange && operation.isPriceConfirmed !== true) {
       return (
         <span style={{ 
           color: '#F59E0B', 
@@ -170,11 +177,23 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   // ✅ NUEVO: Función para abrir modal de edición
   const handleEditOperation = (operation: any) => {
     setEditingOperation(operation);
+    
+    // Determinar si tiene rango de precios
+    const hasValidPriceRange = operation.priceRange && 
+      typeof operation.priceRange.min === 'number' && 
+      typeof operation.priceRange.max === 'number' &&
+      operation.priceRange.min > 0 && 
+      operation.priceRange.max > 0;
+    
+    setEditPriceType(hasValidPriceRange ? 'range' : 'specific');
+    
     setEditFormData({
       ticker: operation.ticker,
       operationType: operation.operationType,
-      quantity: Math.abs(operation.quantity).toString(),
-      price: operation.price.toString(),
+      quantity: Math.abs(operation.quantity || 0).toString(),
+      price: operation.price?.toString() || '',
+      priceMin: hasValidPriceRange ? operation.priceRange.min.toString() : '',
+      priceMax: hasValidPriceRange ? operation.priceRange.max.toString() : '',
       date: new Date(operation.date).toISOString().split('T')[0],
       notes: operation.notes || '',
       status: operation.status || 'ACTIVE'
@@ -186,25 +205,44 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   const handleSaveEdit = async () => {
     if (!editingOperation) return;
 
+    // Validar campos según tipo de precio
+    if (editPriceType === 'range') {
+      if (!editFormData.priceMin || !editFormData.priceMax) {
+        alert('Por favor completa ambos precios del rango');
+        return;
+      }
+    } else {
+      if (!editFormData.price) {
+        alert('Por favor completa el precio');
+        return;
+      }
+    }
+
     try {
-      // console.log('📝 Guardando operación con estado:', editFormData.status);
-      
       const updateData: any = {
         ticker: editFormData.ticker,
         operationType: editFormData.operationType,
-        quantity: parseFloat(editFormData.quantity),
-        price: parseFloat(editFormData.price),
+        quantity: parseFloat(editFormData.quantity) || 0,
         date: editFormData.date,
         notes: editFormData.notes,
         status: editFormData.status
       };
 
-      // console.log('📤 Datos a enviar:', updateData);
+      // Manejar precio según tipo seleccionado
+      if (editPriceType === 'range') {
+        const priceMin = parseFloat(editFormData.priceMin);
+        const priceMax = parseFloat(editFormData.priceMax);
+        updateData.price = (priceMin + priceMax) / 2; // Precio promedio
+        updateData.priceRange = { min: priceMin, max: priceMax };
+        updateData.isPriceConfirmed = false;
+      } else {
+        updateData.price = parseFloat(editFormData.price);
+        updateData.priceRange = null;
+        updateData.isPriceConfirmed = true;
+      }
 
       // ✅ Actualizar la operación (incluye el estado)
       const result = await updateOperation(editingOperation._id, updateData);
-      
-      // console.log('📥 Resultado:', result);
       
       alert('✅ Operación actualizada exitosamente');
       setShowEditModal(false);
@@ -242,9 +280,22 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   // Función para manejar la creación de operación manual
   const handleCreateManualOperation = async () => {
-    if (!formData.ticker || !formData.quantity || !formData.price || !formData.date) {
+    // Validar campos requeridos según tipo de precio
+    if (!formData.ticker || !formData.quantity || !formData.date) {
       alert('Por favor completa todos los campos requeridos');
       return;
+    }
+
+    if (priceType === 'range') {
+      if (!formData.priceMin || !formData.priceMax) {
+        alert('Por favor completa ambos precios del rango');
+        return;
+      }
+    } else {
+      if (!formData.price) {
+        alert('Por favor completa el precio');
+        return;
+      }
     }
 
     setCreatingOperation(true);
@@ -252,12 +303,23 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       const operationData: any = {
         ticker: formData.ticker.toUpperCase(),
         operationType: formData.operationType,
-        price: parseFloat(formData.price),
         system: system,
         date: formData.date,
         notes: formData.notes || `Operación manual registrada - ${formData.operationType}`,
         isManual: true // Marcar como operación manual
       };
+
+      // Manejar precio según tipo seleccionado
+      if (priceType === 'range') {
+        const priceMin = parseFloat(formData.priceMin);
+        const priceMax = parseFloat(formData.priceMax);
+        operationData.price = (priceMin + priceMax) / 2; // Precio promedio
+        operationData.priceRange = { min: priceMin, max: priceMax };
+        operationData.isPriceConfirmed = false;
+      } else {
+        operationData.price = parseFloat(formData.price);
+        operationData.isPriceConfirmed = true;
+      }
 
       // Manejar cantidad según el tipo seleccionado
       if (quantityType === 'percentage') {
@@ -285,11 +347,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         alert('✅ Operación creada exitosamente');
         setShowCreateModal(false);
         setQuantityType('shares');
+        setPriceType('specific');
         setFormData({
           ticker: '',
           operationType: 'COMPRA',
           quantity: '',
           price: '',
+          priceMin: '',
+          priceMax: '',
           date: new Date().toISOString().split('T')[0],
           portfolioPercentage: '',
           notes: '',
@@ -884,42 +949,98 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div>
-                  <label style={{ 
-                    display: 'block', 
-                    marginBottom: '0.5rem', 
-                    fontWeight: '600',
-                    color: '#374151',
-                    fontSize: '0.95rem'
-                  }}>
-                    {quantityType === 'shares' ? 'Cantidad (Acciones)' : 'Cantidad (%)'} <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.quantity}
-                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                    placeholder={quantityType === 'shares' ? "100" : "10"}
-                    min="0"
-                    step={quantityType === 'shares' ? "1" : "0.01"}
-                    style={{
-                      width: '100%',
-                      padding: '0.875rem 1rem',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      transition: 'border-color 0.2s',
-                      outline: 'none'
-                    }}
-                    onFocus={(e) => {
-                      e.currentTarget.style.borderColor = '#3b82f6';
-                    }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = '#e5e7eb';
-                    }}
-                  />
-                </div>
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  {quantityType === 'shares' ? 'Cantidad (Acciones)' : 'Cantidad (%)'} <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                  placeholder={quantityType === 'shares' ? "100" : "10"}
+                  min="0"
+                  step={quantityType === 'shares' ? "1" : "0.01"}
+                  style={{
+                    width: '100%',
+                    padding: '0.875rem 1rem',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    transition: 'border-color 0.2s',
+                    outline: 'none'
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = '#3b82f6';
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                  }}
+                />
+              </div>
 
+              {/* Tipo de Precio: Específico o Rango */}
+              <div>
+                <label style={{ 
+                  display: 'block', 
+                  marginBottom: '0.5rem', 
+                  fontWeight: '600',
+                  color: '#374151',
+                  fontSize: '0.95rem'
+                }}>
+                  Tipo de Precio <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <div style={{ 
+                  display: 'flex', 
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem'
+                }}>
+                  <button
+                    type="button"
+                    onClick={() => setPriceType('specific')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1rem',
+                      border: `2px solid ${priceType === 'specific' ? '#3b82f6' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      backgroundColor: priceType === 'specific' ? '#eff6ff' : 'white',
+                      color: priceType === 'specific' ? '#3b82f6' : '#6b7280',
+                      fontWeight: priceType === 'specific' ? '600' : '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    Precio Específico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPriceType('range')}
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem 1rem',
+                      border: `2px solid ${priceType === 'range' ? '#F59E0B' : '#e5e7eb'}`,
+                      borderRadius: '8px',
+                      backgroundColor: priceType === 'range' ? '#FEF3C7' : 'white',
+                      color: priceType === 'range' ? '#D97706' : '#6b7280',
+                      fontWeight: priceType === 'range' ? '600' : '500',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      fontSize: '0.95rem'
+                    }}
+                  >
+                    Rango de Precios
+                  </button>
+                </div>
+              </div>
+
+              {/* Campos de precio según tipo */}
+              {priceType === 'specific' ? (
                 <div>
                   <label style={{ 
                     display: 'block', 
@@ -954,7 +1075,68 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     }}
                   />
                 </div>
-              </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '0.5rem', 
+                      fontWeight: '600',
+                      color: '#374151',
+                      fontSize: '0.95rem'
+                    }}>
+                      Precio Mínimo <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.priceMin}
+                      onChange={(e) => setFormData({ ...formData, priceMin: e.target.value })}
+                      placeholder="140.00"
+                      min="0"
+                      step="0.01"
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        transition: 'border-color 0.2s',
+                        outline: 'none',
+                        backgroundColor: '#FFFBEB'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ 
+                      display: 'block', 
+                      marginBottom: '0.5rem', 
+                      fontWeight: '600',
+                      color: '#374151',
+                      fontSize: '0.95rem'
+                    }}>
+                      Precio Máximo <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.priceMax}
+                      onChange={(e) => setFormData({ ...formData, priceMax: e.target.value })}
+                      placeholder="160.00"
+                      min="0"
+                      step="0.01"
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem 1rem',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        transition: 'border-color 0.2s',
+                        outline: 'none',
+                        backgroundColor: '#FFFBEB'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label style={{ 
@@ -1260,25 +1442,69 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
-                    Cantidad
-                  </label>
-                  <input
-                    type="number"
-                    value={editFormData.quantity}
-                    onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '1px solid #d1d5db',
-                      borderRadius: '6px',
-                      fontSize: '1rem'
-                    }}
-                  />
-                </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Cantidad
+                </label>
+                <input
+                  type="number"
+                  value={editFormData.quantity}
+                  onChange={(e) => setEditFormData({ ...editFormData, quantity: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '6px',
+                    fontSize: '1rem'
+                  }}
+                />
+              </div>
 
+              {/* Tipo de Precio: Específico o Rango */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                  Tipo de Precio
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditPriceType('specific')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: `2px solid ${editPriceType === 'specific' ? '#3b82f6' : '#d1d5db'}`,
+                      borderRadius: '6px',
+                      backgroundColor: editPriceType === 'specific' ? '#eff6ff' : 'white',
+                      color: editPriceType === 'specific' ? '#3b82f6' : '#6b7280',
+                      fontWeight: editPriceType === 'specific' ? '600' : '500',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Precio Específico
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditPriceType('range')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      border: `2px solid ${editPriceType === 'range' ? '#F59E0B' : '#d1d5db'}`,
+                      borderRadius: '6px',
+                      backgroundColor: editPriceType === 'range' ? '#FEF3C7' : 'white',
+                      color: editPriceType === 'range' ? '#D97706' : '#6b7280',
+                      fontWeight: editPriceType === 'range' ? '600' : '500',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Rango de Precios
+                  </button>
+                </div>
+              </div>
+
+              {/* Campos de precio según tipo */}
+              {editPriceType === 'specific' ? (
                 <div>
                   <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
                     Precio
@@ -1297,7 +1523,48 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     }}
                   />
                 </div>
-              </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                      Precio Mínimo
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editFormData.priceMin}
+                      onChange={(e) => setEditFormData({ ...editFormData, priceMin: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        backgroundColor: '#FFFBEB'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
+                      Precio Máximo
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={editFormData.priceMax}
+                      onChange={(e) => setEditFormData({ ...editFormData, priceMax: e.target.value })}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        border: '2px solid #F59E0B',
+                        borderRadius: '6px',
+                        fontSize: '1rem',
+                        backgroundColor: '#FFFBEB'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
