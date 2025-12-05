@@ -577,8 +577,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   <tr key={operation._id} className={operation.operationType === 'COMPRA' ? styles.buyRow : styles.sellRow}>
                     <td>
                       <div className="flex flex-col">
-                        <div className="flex items-center space-x-2">
-                          {getOperationIcon(operation.operationType)}
+                        <div className="flex items-center">
                           <span className={operation.operationType === 'COMPRA' ? styles.positive : styles.negative}>
                             {operation.operationType}
                           </span>
