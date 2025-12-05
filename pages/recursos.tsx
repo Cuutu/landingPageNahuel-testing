@@ -395,7 +395,7 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
                   <em>Herramientas útiles e indispensables para aumentar el control sobre tus inversiones en bolsa. Recursos para TradingView, información actualizada y material educativo</em>
                 </p>
                 <a href="#recursos-lista" className={styles.heroButtonWhite}>
-                  Empez? ahora &gt;
+                  Empezá ahora &gt;
                 </a>
               </div>
               <div className={styles.heroVideo}>
