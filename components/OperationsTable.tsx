@@ -124,8 +124,19 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
   // ✅ NUEVO: Formatear precio mostrando rango si no está confirmado
   const formatPriceDisplay = (operation: any) => {
-    // Si tiene rango de precio y el precio NO está confirmado, mostrar el rango
-    if (operation.priceRange && !operation.isPriceConfirmed) {
+    // Verificar si tiene un rango de precio VÁLIDO (min y max definidos y numéricos)
+    const hasValidPriceRange = operation.priceRange && 
+      typeof operation.priceRange.min === 'number' && 
+      typeof operation.priceRange.max === 'number' &&
+      !isNaN(operation.priceRange.min) && 
+      !isNaN(operation.priceRange.max) &&
+      operation.priceRange.min > 0 && 
+      operation.priceRange.max > 0;
+    
+    // Solo mostrar rango si:
+    // 1. Tiene un rango válido
+    // 2. El precio NO está confirmado (isPriceConfirmed es explícitamente false)
+    if (hasValidPriceRange && operation.isPriceConfirmed === false) {
       return (
         <span style={{ 
           color: '#F59E0B', 
@@ -136,7 +147,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         </span>
       );
     }
-    // Si el precio está confirmado, mostrar el precio fijo
+    // En cualquier otro caso, mostrar el precio fijo
     return formatCurrency(operation.price);
   };
 
