@@ -72,9 +72,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (existingOperation) {
       console.log('⚠️ [FIX-PENDING-SALE] Ya existe operación de venta:', existingOperation._id);
-      return res.status(400).json({ 
-        error: 'Ya existe una operación de venta para esta alerta',
-        operationId: existingOperation._id
+      console.log('🔍 [FIX-PENDING-SALE] Estado actual de la operación:', {
+        isPriceConfirmed: existingOperation.isPriceConfirmed,
+        priceRange: existingOperation.priceRange,
+        operationType: existingOperation.operationType
+      });
+      
+      // ✅ ACTUALIZAR la operación existente para que aparezca como "A confirmar"
+      existingOperation.isPriceConfirmed = false;
+      existingOperation.priceRange = {
+        min: alert.sellRangeMin,
+        max: alert.sellRangeMax
+      };
+      await existingOperation.save();
+      
+      console.log('✅ [FIX-PENDING-SALE] Operación actualizada con isPriceConfirmed: false');
+      
+      return res.status(200).json({ 
+        success: true,
+        message: 'Operación de venta actualizada para aparecer como "A confirmar"',
+        operationId: existingOperation._id,
+        updated: {
+          isPriceConfirmed: false,
+          priceRange: existingOperation.priceRange
+        }
       });
     }
     
