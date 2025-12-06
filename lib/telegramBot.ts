@@ -103,8 +103,12 @@ function formatAlertMessage(alert: IAlert, options?: {
   
   // Solo mostrar TP/SL para compras o si no es una venta
   if (alert.action === 'BUY' || !options?.price) {
-    message += `🎯 Take Profit: $${alert.takeProfit.toFixed(2)}\n`;
-    message += `🛑 Stop Loss: $${alert.stopLoss.toFixed(2)}\n`;
+    if (alert.takeProfit != null) {
+      message += `🎯 Take Profit: $${alert.takeProfit.toFixed(2)}\n`;
+    }
+    if (alert.stopLoss != null) {
+      message += `🛑 Stop Loss: $${alert.stopLoss.toFixed(2)}\n`;
+    }
   }
   
   if (options?.liquidityPercentage) {
