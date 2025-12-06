@@ -261,7 +261,7 @@ export async function sendAlertToTelegram(
 }
 
 /**
- * Formatea el mensaje de un informe para Telegram
+ * Formatea el mensaje de un informe para Telegram (solo título y link)
  */
 function formatReportMessage(report: any): string {
   // Mapear categoría a nombre del servicio
@@ -269,49 +269,17 @@ function formatReportMessage(report: any): string {
                       report.category === 'trader-call' ? 'TraderCall' : 
                       'General';
   
-  // Construir mensaje
+  // Obtener ID del informe
+  const reportId = report._id?.toString() || report.id?.toString();
+  
+  // Construir URL del informe usando NEXTAUTH_URL
+  const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+  const reportUrl = `${baseUrl}/reports/${reportId}`;
+  
+  // Construir mensaje simple con título y link
   let message = `📰 *Nuevo Informe ${serviceType}*\n\n`;
   message += `*${report.title}*\n\n`;
-  
-  // Agregar resumen o preview del contenido
-  if (report.summary) {
-    const summaryPreview = report.summary.length > 300 
-      ? report.summary.substring(0, 300) + '...' 
-      : report.summary;
-    message += `${summaryPreview}\n\n`;
-  } else if (report.content) {
-    // Limpiar HTML tags para preview
-    const textContent = report.content
-      .replace(/<[^>]*>/g, '') // Remover tags HTML
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .trim();
-    
-    const contentPreview = textContent.length > 300 
-      ? textContent.substring(0, 300) + '...' 
-      : textContent;
-    message += `${contentPreview}\n\n`;
-  }
-  
-  // Agregar información del autor si está disponible
-  if (report.author && typeof report.author === 'object' && report.author.name) {
-    message += `👤 Autor: ${report.author.name}\n`;
-  }
-  
-  // Formatear fecha de publicación
-  const fecha = new Date(report.publishedAt || report.createdAt || new Date());
-  const fechaFormateada = fecha.toLocaleString('es-AR', { 
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  
-  message += `📅 ${fechaFormateada}`;
+  message += `🔗 [Ver informe completo](${reportUrl})`;
   
   return message;
 }
@@ -350,60 +318,16 @@ export async function sendReportToTelegram(report: any): Promise<boolean> {
     // Formatear mensaje
     const message = formatReportMessage(report);
 
-    // Enviar mensaje de texto
+    // Enviar mensaje de texto con el link (sin imágenes)
     try {
       await bot.sendMessage(channelId, message, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        disable_web_page_preview: false // Habilitar preview para que se vea el link
       });
       console.log(`✅ [TELEGRAM] Mensaje de informe enviado a canal ${serviceType}: ${report.title}`);
     } catch (messageError: any) {
       console.error('❌ [TELEGRAM] Error enviando mensaje de informe:', messageError.message);
       return false;
-    }
-
-    // Enviar todas las imágenes del informe
-    const imagesToSend: string[] = [];
-    
-    // Agregar imagen principal si existe
-    if (report.thumbnailUrl) {
-      imagesToSend.push(report.thumbnailUrl);
-    } else if (report.imageUrl) {
-      imagesToSend.push(report.imageUrl);
-    }
-    
-    // Agregar imágenes adicionales del array images
-    if (report.images && Array.isArray(report.images) && report.images.length > 0) {
-      report.images.forEach((img: any) => {
-        const imageUrl = img.secure_url || img.url;
-        if (imageUrl && !imagesToSend.includes(imageUrl)) {
-          imagesToSend.push(imageUrl);
-        }
-      });
-    }
-    
-    // Enviar cada imagen
-    for (let i = 0; i < imagesToSend.length; i++) {
-      try {
-        const imageUrl = imagesToSend[i];
-        const caption = i === 0 
-          ? `${report.title} - ${serviceType}` 
-          : `${report.title} - Imagen ${i + 1}`;
-        
-        await bot.sendPhoto(channelId, imageUrl, {
-          caption: caption,
-          parse_mode: 'Markdown'
-        });
-        console.log(`✅ [TELEGRAM] Imagen ${i + 1}/${imagesToSend.length} enviada del informe: ${report.title}`);
-        
-        // Pequeña pausa entre imágenes para evitar rate limiting
-        if (i < imagesToSend.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
-      } catch (imageError: any) {
-        console.error(`❌ [TELEGRAM] Error enviando imagen ${i + 1} del informe:`, imageError.message);
-        // Continuar con las siguientes imágenes aunque una falle
-      }
     }
 
     return true;
