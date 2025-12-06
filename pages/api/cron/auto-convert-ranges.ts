@@ -850,7 +850,7 @@ async function sendEntryConfirmedNotification(
  * Actualiza el precio de la operación de COMPRA cuando se confirma la alerta
  * Esto asegura que el precio en OPERACIONES coincida con el del email de confirmación
  */
-async function updateOperationPriceOnConfirmation(alertId: any, finalPrice: number) {
+export async function updateOperationPriceOnConfirmation(alertId: any, finalPrice: number) {
   try {
     const Operation = (await import('@/models/Operation')).default;
     const Liquidity = (await import('@/models/Liquidity')).default;

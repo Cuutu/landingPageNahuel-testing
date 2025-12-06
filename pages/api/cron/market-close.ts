@@ -4,6 +4,7 @@ import Alert from '@/models/Alert';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import { sendEmail } from '@/lib/emailService';
+import { updateOperationPriceOnConfirmation } from './auto-convert-ranges';
 
 /**
  * API para fijar precios finales al cierre del mercado (17:30)
@@ -180,6 +181,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             alert.precioMinimo = undefined;
             alert.precioMaximo = undefined;
             console.log(`🔄 ${alert.symbol}: Rango ${oldRange} convertido a precio fijo ${closePrice}`);
+            
+            // ✅ NUEVO: Actualizar la operación de COMPRA para cambiar el rango de precio por el precio de cierre
+            try {
+              await updateOperationPriceOnConfirmation(alert._id, closePrice);
+              console.log(`✅ ${alert.symbol}: Operación de COMPRA actualizada con precio de cierre: $${closePrice}`);
+            } catch (operationError) {
+              console.error(`⚠️ Error actualizando operación de COMPRA para ${alert.symbol}:`, operationError);
+              // No fallar el proceso si hay error actualizando la operación
+            }
           } else if (!alert.entryPrice && alert.status === 'ACTIVE') {
             // Si no hay precio de entrada, usar el precio de cierre
             alert.entryPrice = closePrice;
