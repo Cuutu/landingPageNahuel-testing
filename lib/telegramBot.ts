@@ -93,7 +93,7 @@ function formatAlertMessage(alert: IAlert, options?: {
       } else if (messageLower.includes('cierre de mercado') || messageLower.includes('cierre')) {
         titleAction = 'CIERRE';
         titleEmoji = '📊';
-      } else if (messageLower.includes('venta ejecutada') || messageLower.includes('venta parcial') || messageLower.includes('venta programada')) {
+      } else if (messageLower.includes('venta ejecutada') || messageLower.includes('venta parcial') || messageLower.includes('venta programada') || (messageLower.includes('venta') && !messageLower.includes('compra'))) {
         titleAction = 'VENTA';
         titleEmoji = '🔴';
       }
@@ -223,6 +223,9 @@ export async function sendAlertToTelegram(
     // Formatear mensaje
     const message = formatAlertMessage(alert, options);
 
+    // ✅ CORREGIDO: Usar action de options si existe (para ventas), sino usar action de la alerta
+    const actionForCaption = options?.action || alert.action;
+
     // Enviar mensaje de texto
     try {
       await bot.sendMessage(channelId, message, {
@@ -239,7 +242,7 @@ export async function sendAlertToTelegram(
     if (options?.imageUrl) {
       try {
         await bot.sendPhoto(channelId, options.imageUrl, {
-          caption: `${alert.action} ${alert.symbol} - ${alert.tipo}`,
+          caption: `${actionForCaption} ${alert.symbol} - ${alert.tipo}`,
           parse_mode: 'Markdown'
         });
         console.log(`✅ [TELEGRAM] Imagen enviada a canal ${alert.tipo}: ${alert.symbol}`);

@@ -384,6 +384,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         imageUrl: overrides?.imageUrl || notification.metadata?.imageUrl,
         priceRange: overrides?.priceRange || notification.metadata?.priceRange,
         price: overrides?.price,
+        action: overrides?.action, // ✅ CORREGIDO: Pasar action para ventas
         liquidityPercentage: overrides?.liquidityPercentage || notification.metadata?.liquidityPercentage,
         soldPercentage: overrides?.soldPercentage || notification.metadata?.soldPercentage,
         profitPercentage: overrides?.profitPercentage || notification.metadata?.profitPercentage,
