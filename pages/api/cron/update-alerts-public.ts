@@ -77,6 +77,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 alert.profit = 0;
                 desestimadasCount++;
                 console.log(`❌ Alerta ${alert.symbol} desestimada: ${reason}`);
+                
+                // ✅ NUEVO: Enviar notificación de alerta desestimada
+                try {
+                  const { createAlertNotification } = await import('@/lib/notificationUtils');
+                  await createAlertNotification(alert, {
+                    message: `🚫 Alerta desestimada: ${alert.symbol} - El precio actual ($${currentPrice}) rompió el rango de entrada. Motivo: ${reason}`,
+                    price: currentPrice,
+                    skipDuplicateCheck: true // Siempre enviar para desestimaciones
+                  });
+                  console.log(`✅ Notificación de alerta desestimada enviada para ${alert.symbol}`);
+                } catch (notificationError) {
+                  console.error(`⚠️ Error enviando notificación para ${alert.symbol}:`, notificationError);
+                }
               }
             }
             

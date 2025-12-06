@@ -32,6 +32,7 @@ function formatAlertMessage(alert: IAlert, options?: {
   imageUrl?: string;
   priceRange?: { min: number; max: number };
   price?: number;
+  action?: 'BUY' | 'SELL';
   liquidityPercentage?: number;
   soldPercentage?: number;
   profitPercentage?: number;
@@ -51,8 +52,10 @@ function formatAlertMessage(alert: IAlert, options?: {
       options: options
     });
 
-    const actionEmoji = alert.action === 'BUY' ? '🟢' : '🔴';
-    const actionText = alert.action === 'BUY' ? 'COMPRA' : 'VENTA';
+    // ✅ CORREGIDO: Usar action de options si existe (para ventas), sino usar action de la alerta
+    const action = options?.action || alert.action;
+    const actionEmoji = action === 'BUY' ? '🟢' : '🔴';
+    const actionText = action === 'BUY' ? 'COMPRA' : 'VENTA';
     
     // Determinar precio a mostrar
     // ✅ PRIORIDAD: Si hay price en options (venta/cierre), usar ese primero
@@ -77,10 +80,35 @@ function formatAlertMessage(alert: IAlert, options?: {
     }
 
     // Construir mensaje
-    let message = `${actionEmoji} *${actionText} ${alert.symbol}*\n\n`;
+    // ✅ NUEVO: Si hay mensaje personalizado que indica cierre/venta, usar título apropiado
+    let titleAction = actionText;
+    let titleEmoji = actionEmoji;
+    
+    // Detectar si es un cierre de mercado, venta o desestimación desde el mensaje
+    if (options?.message) {
+      const messageLower = options.message.toLowerCase();
+      if (messageLower.includes('alerta desestimada') || messageLower.includes('desestimada')) {
+        titleAction = 'DESESTIMADA';
+        titleEmoji = '🚫';
+      } else if (messageLower.includes('cierre de mercado') || messageLower.includes('cierre')) {
+        titleAction = 'CIERRE';
+        titleEmoji = '📊';
+      } else if (messageLower.includes('venta ejecutada') || messageLower.includes('venta parcial') || messageLower.includes('venta programada')) {
+        titleAction = 'VENTA';
+        titleEmoji = '🔴';
+      }
+    }
+    
+    // ✅ NUEVO: También verificar el status de la alerta directamente
+    if (alert.status === 'DESESTIMADA') {
+      titleAction = 'DESESTIMADA';
+      titleEmoji = '🚫';
+    }
+    
+    let message = `${titleEmoji} *${titleAction} ${alert.symbol}*\n\n`;
     
     // ✅ NUEVO: Para ventas, mostrar precio de venta; para compras, precio de entrada
-    if (alert.action === 'SELL' && options?.price != null) {
+    if (action === 'SELL' && options?.price != null) {
       message += `💰 Precio de Venta: ${priceDisplay}\n`;
       // Mostrar precio de entrada si está disponible
       if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
@@ -105,7 +133,7 @@ function formatAlertMessage(alert: IAlert, options?: {
     }
     
     // Solo mostrar TP/SL para compras o si no es una venta
-    if (alert.action === 'BUY' || !options?.price) {
+    if (action === 'BUY' || !options?.price) {
       if (alert.takeProfit != null && !isNaN(Number(alert.takeProfit))) {
         message += `🎯 Take Profit: $${Number(alert.takeProfit).toFixed(2)}\n`;
       }
@@ -130,6 +158,11 @@ function formatAlertMessage(alert: IAlert, options?: {
       message += `\n💬 ${options.message}\n`;
     }
     
+    // ✅ NUEVO: Para alertas desestimadas, mostrar motivo si está disponible
+    if (alert.status === 'DESESTIMADA' && (alert as any).desestimacionMotivo) {
+      message += `\n📋 Motivo: ${(alert as any).desestimacionMotivo}\n`;
+    }
+    
     // Formatear fecha en zona horaria de Argentina
     const fecha = new Date(alert.date || alert.createdAt || new Date());
     const fechaFormateada = fecha.toLocaleString('es-AR', { 
@@ -148,7 +181,8 @@ function formatAlertMessage(alert: IAlert, options?: {
     console.error('❌ [TELEGRAM] Error formateando mensaje:', error);
     console.error('❌ [TELEGRAM] Stack:', error.stack);
     // Retornar mensaje básico en caso de error
-    return `${alert.action === 'BUY' ? '🟢' : '🔴'} *${alert.action} ${alert.symbol}*\n\n` +
+    const fallbackAction = options?.action || alert.action;
+    return `${fallbackAction === 'BUY' ? '🟢' : '🔴'} *${fallbackAction} ${alert.symbol}*\n\n` +
            `💰 Precio: ${options?.price || alert.entryPrice || alert.currentPrice || 'N/A'}\n` +
            (options?.message ? `\n💬 ${options.message}\n` : '');
   }
@@ -164,6 +198,7 @@ export async function sendAlertToTelegram(
     imageUrl?: string;
     priceRange?: { min: number; max: number };
     price?: number;
+    action?: 'BUY' | 'SELL';
     liquidityPercentage?: number;
     soldPercentage?: number;
     profitPercentage?: number;
