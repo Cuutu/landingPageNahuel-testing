@@ -53,7 +53,7 @@ npm install --save-dev @types/node-telegram-bot-api
 
 ### Paso 3: Configurar Variables de Entorno
 
-Agregar al archivo `.env.local` (y documentar en `.env.example`):
+Agregar al archivo `.env.local` (y documentar en `.env.example`)
 
 ```env
 # Telegram Bot Configuration
