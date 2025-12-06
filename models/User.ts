@@ -73,6 +73,16 @@ export interface IUser extends Document {
   googleAccessToken?: string;
   googleRefreshToken?: string;
   googleTokenExpiry?: number;
+  // Campos para Telegram
+  telegramUserId?: number; // ID único del usuario en Telegram
+  telegramUsername?: string; // Username de Telegram (@usuario)
+  telegramLinkedAt?: Date; // Fecha de vinculación
+  telegramChannelAccess?: Array<{
+    service: 'TraderCall' | 'SmartMoney';
+    channelId: string;
+    joinedAt: Date;
+    inviteLink?: string;
+  }>;
 }
 
 const UserSchema: Schema = new Schema({
@@ -275,7 +285,38 @@ const UserSchema: Schema = new Schema({
   },
   googleAccessToken: { type: String },
   googleRefreshToken: { type: String },
-  googleTokenExpiry: { type: Number }
+  googleTokenExpiry: { type: Number },
+  // Campos para Telegram
+  telegramUserId: {
+    type: Number,
+    sparse: true, // Permite null pero único cuando existe
+    index: true
+  },
+  telegramUsername: {
+    type: String,
+    trim: true
+  },
+  telegramLinkedAt: {
+    type: Date
+  },
+  telegramChannelAccess: [{
+    service: {
+      type: String,
+      enum: ['TraderCall', 'SmartMoney'],
+      required: true
+    },
+    channelId: {
+      type: String,
+      required: true
+    },
+    joinedAt: {
+      type: Date,
+      default: Date.now
+    },
+    inviteLink: {
+      type: String
+    }
+  }]
 }, {
   timestamps: true
 });
