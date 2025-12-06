@@ -37,110 +37,121 @@ function formatAlertMessage(alert: IAlert, options?: {
   profitPercentage?: number;
   profitLoss?: number;
 }): string {
-  // ✅ DEBUG: Log de los datos recibidos
-  console.log('🔍 [TELEGRAM] formatAlertMessage - Datos recibidos:', {
-    symbol: alert.symbol,
-    action: alert.action,
-    entryPrice: alert.entryPrice,
-    entryPriceRange: alert.entryPriceRange,
-    currentPrice: alert.currentPrice,
-    tipoAlerta: (alert as any).tipoAlerta,
-    options: options
-  });
+  try {
+    // ✅ DEBUG: Log de los datos recibidos
+    console.log('🔍 [TELEGRAM] formatAlertMessage - Datos recibidos:', {
+      symbol: alert.symbol,
+      action: alert.action,
+      entryPrice: alert.entryPrice,
+      entryPriceRange: alert.entryPriceRange,
+      currentPrice: alert.currentPrice,
+      tipoAlerta: (alert as any).tipoAlerta,
+      takeProfit: alert.takeProfit,
+      stopLoss: alert.stopLoss,
+      options: options
+    });
 
-  const actionEmoji = alert.action === 'BUY' ? '🟢' : '🔴';
-  const actionText = alert.action === 'BUY' ? 'COMPRA' : 'VENTA';
-  
-  // Determinar precio a mostrar
-  // ✅ PRIORIDAD: Si hay price en options (venta/cierre), usar ese primero
-  let priceDisplay = 'N/A';
-  if (options?.price) {
-    priceDisplay = `$${options.price.toFixed(2)}`;
-    console.log('💰 [TELEGRAM] Usando precio desde options.price (venta/cierre):', priceDisplay);
-  } else if (options?.priceRange) {
-    priceDisplay = `$${options.priceRange.min.toFixed(2)} - $${options.priceRange.max.toFixed(2)}`;
-    console.log('💰 [TELEGRAM] Usando precio desde options.priceRange:', priceDisplay);
-  } else if (alert.entryPriceRange?.min && alert.entryPriceRange?.max) {
-    priceDisplay = `$${alert.entryPriceRange.min.toFixed(2)} - $${alert.entryPriceRange.max.toFixed(2)}`;
-    console.log('💰 [TELEGRAM] Usando precio desde alert.entryPriceRange:', priceDisplay);
-  } else if (alert.entryPrice) {
-    priceDisplay = `$${alert.entryPrice.toFixed(2)}`;
-    console.log('💰 [TELEGRAM] Usando precio desde alert.entryPrice:', priceDisplay);
-  } else if (alert.currentPrice) {
-    priceDisplay = `$${alert.currentPrice.toFixed(2)}`;
-    console.log('💰 [TELEGRAM] Usando precio desde alert.currentPrice:', priceDisplay);
-  } else {
-    console.warn('⚠️ [TELEGRAM] No se encontró precio válido en la alerta');
-  }
+    const actionEmoji = alert.action === 'BUY' ? '🟢' : '🔴';
+    const actionText = alert.action === 'BUY' ? 'COMPRA' : 'VENTA';
+    
+    // Determinar precio a mostrar
+    // ✅ PRIORIDAD: Si hay price en options (venta/cierre), usar ese primero
+    let priceDisplay = 'N/A';
+    if (options?.price != null && !isNaN(options.price)) {
+      priceDisplay = `$${options.price.toFixed(2)}`;
+      console.log('💰 [TELEGRAM] Usando precio desde options.price (venta/cierre):', priceDisplay);
+    } else if (options?.priceRange && options.priceRange.min != null && options.priceRange.max != null) {
+      priceDisplay = `$${options.priceRange.min.toFixed(2)} - $${options.priceRange.max.toFixed(2)}`;
+      console.log('💰 [TELEGRAM] Usando precio desde options.priceRange:', priceDisplay);
+    } else if (alert.entryPriceRange?.min != null && alert.entryPriceRange?.max != null) {
+      priceDisplay = `$${alert.entryPriceRange.min.toFixed(2)} - $${alert.entryPriceRange.max.toFixed(2)}`;
+      console.log('💰 [TELEGRAM] Usando precio desde alert.entryPriceRange:', priceDisplay);
+    } else if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+      priceDisplay = `$${alert.entryPrice.toFixed(2)}`;
+      console.log('💰 [TELEGRAM] Usando precio desde alert.entryPrice:', priceDisplay);
+    } else if (alert.currentPrice != null && !isNaN(alert.currentPrice)) {
+      priceDisplay = `$${alert.currentPrice.toFixed(2)}`;
+      console.log('💰 [TELEGRAM] Usando precio desde alert.currentPrice:', priceDisplay);
+    } else {
+      console.warn('⚠️ [TELEGRAM] No se encontró precio válido en la alerta');
+    }
 
-  // Construir mensaje
-  let message = `${actionEmoji} *${actionText} ${alert.symbol}*\n\n`;
-  
-  // ✅ NUEVO: Para ventas, mostrar precio de venta; para compras, precio de entrada
-  if (alert.action === 'SELL' && options?.price) {
-    message += `💰 Precio de Venta: ${priceDisplay}\n`;
-    // Mostrar precio de entrada si está disponible
-    if (alert.entryPrice) {
-      message += `📥 Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
+    // Construir mensaje
+    let message = `${actionEmoji} *${actionText} ${alert.symbol}*\n\n`;
+    
+    // ✅ NUEVO: Para ventas, mostrar precio de venta; para compras, precio de entrada
+    if (alert.action === 'SELL' && options?.price != null) {
+      message += `💰 Precio de Venta: ${priceDisplay}\n`;
+      // Mostrar precio de entrada si está disponible
+      if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+        message += `📥 Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
+      }
+    } else {
+      message += `💰 Precio: ${priceDisplay}\n`;
     }
-  } else {
-    message += `💰 Precio: ${priceDisplay}\n`;
-  }
-  
-  // ✅ NUEVO: Mostrar información de venta parcial si existe
-  if (options?.soldPercentage) {
-    message += `📊 Porcentaje Vendido: ${options.soldPercentage}%\n`;
-  }
-  
-  // ✅ NUEVO: Mostrar profit/loss si existe
-  if (options?.profitPercentage !== undefined) {
-    const profitSign = options.profitPercentage >= 0 ? '+' : '';
-    message += `📈 Profit/Loss: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
-  } else if (options?.profitLoss !== undefined) {
-    const profitSign = options.profitLoss >= 0 ? '+' : '';
-    message += `📈 Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
-  }
-  
-  // Solo mostrar TP/SL para compras o si no es una venta
-  if (alert.action === 'BUY' || !options?.price) {
-    if (alert.takeProfit != null) {
-      message += `🎯 Take Profit: $${alert.takeProfit.toFixed(2)}\n`;
+    
+    // ✅ NUEVO: Mostrar información de venta parcial si existe
+    if (options?.soldPercentage) {
+      message += `📊 Porcentaje Vendido: ${options.soldPercentage}%\n`;
     }
-    if (alert.stopLoss != null) {
-      message += `🛑 Stop Loss: $${alert.stopLoss.toFixed(2)}\n`;
+    
+    // ✅ NUEVO: Mostrar profit/loss si existe (verificar tanto null como undefined)
+    if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
+      const profitSign = options.profitPercentage >= 0 ? '+' : '';
+      message += `📈 Profit/Loss: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
+    } else if (options?.profitLoss != null && !isNaN(options.profitLoss)) {
+      const profitSign = options.profitLoss >= 0 ? '+' : '';
+      message += `📈 Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
     }
+    
+    // Solo mostrar TP/SL para compras o si no es una venta
+    if (alert.action === 'BUY' || !options?.price) {
+      if (alert.takeProfit != null && !isNaN(Number(alert.takeProfit))) {
+        message += `🎯 Take Profit: $${Number(alert.takeProfit).toFixed(2)}\n`;
+      }
+      if (alert.stopLoss != null && !isNaN(Number(alert.stopLoss))) {
+        message += `🛑 Stop Loss: $${Number(alert.stopLoss).toFixed(2)}\n`;
+      }
+    }
+    
+    if (options?.liquidityPercentage) {
+      message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;
+    }
+    
+    if (alert.analysis && !options?.message) {
+      const analysisPreview = alert.analysis.length > 200 
+        ? alert.analysis.substring(0, 200) + '...' 
+        : alert.analysis;
+      message += `\n📊 Análisis:\n${analysisPreview}\n`;
+    }
+    
+    // ✅ Agregar mensaje personalizado si existe (tiene prioridad sobre análisis)
+    if (options?.message) {
+      message += `\n💬 ${options.message}\n`;
+    }
+    
+    // Formatear fecha en zona horaria de Argentina
+    const fecha = new Date(alert.date || alert.createdAt || new Date());
+    const fechaFormateada = fecha.toLocaleString('es-AR', { 
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    message += `\n📅 ${fechaFormateada}`;
+    
+    return message;
+  } catch (error: any) {
+    console.error('❌ [TELEGRAM] Error formateando mensaje:', error);
+    console.error('❌ [TELEGRAM] Stack:', error.stack);
+    // Retornar mensaje básico en caso de error
+    return `${alert.action === 'BUY' ? '🟢' : '🔴'} *${alert.action} ${alert.symbol}*\n\n` +
+           `💰 Precio: ${options?.price || alert.entryPrice || alert.currentPrice || 'N/A'}\n` +
+           (options?.message ? `\n💬 ${options.message}\n` : '');
   }
-  
-  if (options?.liquidityPercentage) {
-    message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;
-  }
-  
-  if (alert.analysis && !options?.message) {
-    const analysisPreview = alert.analysis.length > 200 
-      ? alert.analysis.substring(0, 200) + '...' 
-      : alert.analysis;
-    message += `\n📊 Análisis:\n${analysisPreview}\n`;
-  }
-  
-  // ✅ Agregar mensaje personalizado si existe (tiene prioridad sobre análisis)
-  if (options?.message) {
-    message += `\n💬 ${options.message}\n`;
-  }
-  
-  // Formatear fecha en zona horaria de Argentina
-  const fecha = new Date(alert.date || alert.createdAt || new Date());
-  const fechaFormateada = fecha.toLocaleString('es-AR', { 
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-  
-  message += `\n📅 ${fechaFormateada}`;
-  
-  return message;
 }
 
 /**
