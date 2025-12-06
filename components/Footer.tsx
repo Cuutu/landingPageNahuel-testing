@@ -77,6 +77,7 @@ const Footer: React.FC = () => {
               <h4 className={styles.cardTitle}>Empresa</h4>
               <ul className={styles.linkList}>
                 <li><button onClick={openContactModal} className={styles.footerButton}>Contacto</button></li>
+                <li><Link href="/cookies" className={styles.footerLink}>Política de Cookies</Link></li>
               </ul>
             </div>
 
