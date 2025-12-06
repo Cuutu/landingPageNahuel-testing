@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/googleAuth';
 import connectDB from '../../../../lib/mongodb';
 import Report from '../../../../models/Report';
 import User from '../../../../models/User';
+import { createReportNotification } from '@/lib/notificationUtils';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -114,6 +115,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('✅ [API CREATE] Informe guardado exitosamente. ID:', newReport._id);
     console.log('📚 [API CREATE] Artículos guardados:', newReport.articles?.length || 0);
+
+    // 📰 NUEVA FUNCIONALIDAD: Crear notificación automática (incluye Telegram)
+    try {
+      await createReportNotification(newReport);
+      console.log('✅ Notificación automática enviada para informe:', newReport._id);
+    } catch (notificationError) {
+      console.error('❌ Error al enviar notificación automática:', notificationError);
+      // No fallar la creación del informe si la notificación falla
+    }
 
     return res.status(201).json({
       success: true,

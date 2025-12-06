@@ -87,6 +87,26 @@ export default async function handler(
         });
       }
 
+      // ✅ DEBUG: Mostrar información de la alerta obtenida
+      console.log('🔍 [TELEGRAM TEST] Datos de la alerta obtenida:', {
+        _id: (lastAlert as any)._id,
+        symbol: (lastAlert as any).symbol,
+        action: (lastAlert as any).action,
+        tipo: (lastAlert as any).tipo,
+        entryPrice: (lastAlert as any).entryPrice,
+        entryPriceRange: (lastAlert as any).entryPriceRange,
+        currentPrice: (lastAlert as any).currentPrice,
+        stopLoss: (lastAlert as any).stopLoss,
+        takeProfit: (lastAlert as any).takeProfit,
+        tipoAlerta: (lastAlert as any).tipoAlerta,
+        precioMinimo: (lastAlert as any).precioMinimo,
+        precioMaximo: (lastAlert as any).precioMaximo,
+        analysis: (lastAlert as any).analysis?.substring(0, 50),
+        date: (lastAlert as any).date,
+        createdAt: (lastAlert as any).createdAt,
+        chartImage: (lastAlert as any).chartImage ? 'presente' : 'ausente'
+      });
+
       // Enviar alerta de prueba
       const sent = await sendAlertToTelegram(lastAlert as any);
 

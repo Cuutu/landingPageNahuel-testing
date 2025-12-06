@@ -229,6 +229,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           console.log(`✅ ${alert.symbol}: Precio final fijado en ${closePrice}`);
           
+          // ✅ NUEVO: Enviar notificación a Telegram de cierre de mercado
+          try {
+            const { sendAlertToTelegram } = await import('@/lib/telegramBot');
+            
+            // Calcular profit si hay precio de entrada
+            let profitPercentage: number | undefined = undefined;
+            const entryPrice = alert.entryPrice || alert.entryPriceRange?.min || alert.entryPriceRange?.max || 0;
+            if (entryPrice > 0) {
+              profitPercentage = ((closePrice - entryPrice) / entryPrice) * 100;
+            }
+            
+            const message = `📊 Cierre de mercado: ${alert.symbol} cerró a $${closePrice.toFixed(2)}. ` +
+              (profitPercentage !== undefined 
+                ? `Resultado: ${profitPercentage >= 0 ? '+' : ''}${profitPercentage.toFixed(2)}%` 
+                : 'Precio final fijado.');
+            
+            await sendAlertToTelegram(alert, {
+              message: message,
+              price: closePrice,
+              profitPercentage: profitPercentage
+            });
+            console.log(`✅ Notificación de cierre enviada a Telegram para ${alert.symbol}`);
+          } catch (telegramError: any) {
+            console.error(`❌ Error enviando notificación a Telegram para ${alert.symbol}:`, telegramError.message);
+            // No fallar el proceso si Telegram falla
+          }
+          
           // ✅ NUEVO: Enviar email de cierre al usuario
           try {
             await sendMarketCloseEmail(alert, closePrice);

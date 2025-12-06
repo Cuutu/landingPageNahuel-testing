@@ -383,7 +383,11 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         message: overrides?.message,
         imageUrl: overrides?.imageUrl || notification.metadata?.imageUrl,
         priceRange: overrides?.priceRange || notification.metadata?.priceRange,
-        liquidityPercentage: overrides?.liquidityPercentage || notification.metadata?.liquidityPercentage
+        price: overrides?.price,
+        liquidityPercentage: overrides?.liquidityPercentage || notification.metadata?.liquidityPercentage,
+        soldPercentage: overrides?.soldPercentage || notification.metadata?.soldPercentage,
+        profitPercentage: overrides?.profitPercentage || notification.metadata?.profitPercentage,
+        profitLoss: overrides?.profitLoss || notification.metadata?.profitLoss
       });
     } catch (telegramError) {
       console.error('❌ [ALERT NOTIFICATION] Error enviando a Telegram:', telegramError);
@@ -625,6 +629,15 @@ export async function createReportNotification(report: any): Promise<void> {
 
     console.log(`✅ [REPORT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
     console.log(`📊 [REPORT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${serviceType} (incluye ${trialUsers.length} con trial)`);
+
+    // ✅ NUEVO: Enviar notificación a Telegram
+    try {
+      const { sendReportToTelegram } = await import('@/lib/telegramBot');
+      await sendReportToTelegram(report);
+    } catch (telegramError) {
+      console.error('❌ [REPORT NOTIFICATION] Error enviando a Telegram:', telegramError);
+      // No fallar la notificación si Telegram falla
+    }
 
     // Enviar emails a usuarios suscritos (incluye trials) con rate limiting
     let emailsSent = 0;
