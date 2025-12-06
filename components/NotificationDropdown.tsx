@@ -203,12 +203,28 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
     checkUserRole();
   }, [session]);
 
-  // Función para manejar enlaces a informes
-  const handleReportLink = (actionUrl: string, actionText: string) => {
+  // Función para manejar enlaces a informes y alertas
+  const handleReportLink = (actionUrl: string, notificationTitle?: string) => {
     // Todos los usuarios pueden acceder a los informes para leerlos
     // Usar router.push en lugar de window.open para evitar bloqueos del navegador
     if (actionUrl.startsWith('/')) {
-      router.push(actionUrl);
+      let finalUrl = actionUrl;
+      
+      // Si es una URL de alertas sin query parameter, agregar el tab correspondiente
+      // Esto asegura compatibilidad con notificaciones antiguas en la base de datos
+      if (actionUrl === '/alertas/trader-call' || actionUrl === '/alertas/smart-money') {
+        // Determinar el tab basado en el título de la notificación
+        // Si contiene "Venta Ejecutada" o "Compra Confirmada", ir a operaciones
+        const isOperation = notificationTitle && (
+          notificationTitle.includes('Venta Ejecutada') || 
+          notificationTitle.includes('Compra Confirmada')
+        );
+        const targetTab = isOperation ? 'operaciones' : 'seguimiento';
+        finalUrl = `${actionUrl}?tab=${targetTab}`;
+      }
+      // Si ya tiene query parameter, usar como está
+      
+      router.push(finalUrl);
     } else {
       window.open(actionUrl, '_blank', 'noopener,noreferrer');
     }
@@ -396,7 +412,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
                       <button 
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleReportLink(notification.actionUrl!, notification.actionText!);
+                          handleReportLink(notification.actionUrl!, notification.title);
                           onClose();
                         }}
                         className={styles.actionButton}

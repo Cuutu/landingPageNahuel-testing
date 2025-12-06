@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         targetUsers: "todos",
         createdBy: session.user.email,
         icon: "🚀",
-        actionUrl: "/alertas/smart-money",
+        actionUrl: "/alertas/smart-money?tab=seguimiento",
         actionText: "Ver Smart Money"
       },
       {
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         targetUsers: "todos",
         createdBy: session.user.email,
         icon: "🎉",
-        actionUrl: "/alertas/trader-call",
+        actionUrl: "/alertas/trader-call?tab=seguimiento",
         actionText: "Aprovechar Oferta"
       },
       {

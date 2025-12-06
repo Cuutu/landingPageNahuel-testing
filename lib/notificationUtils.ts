@@ -249,6 +249,15 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
 
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
 
+      // Determinar el tab según si es una operación ejecutada
+      // Si hay soldPercentage o profitPercentage, es una operación ejecutada -> operaciones
+      // Si el título contiene "Venta Ejecutada" o "Compra Confirmada", también es operación ejecutada
+      const isExecutedOperation = overrides?.soldPercentage != null || 
+                                   overrides?.profitPercentage != null || 
+                                   overrides?.profitLoss != null ||
+                                   (overrides?.title && (overrides.title.includes('Venta Ejecutada') || overrides.title.includes('Compra Confirmada')));
+      const targetTab = isExecutedOperation ? 'operaciones' : 'seguimiento';
+
       notification = {
         title: overrides?.title || rendered.title,
         message: overrides?.message || rendered.message,
@@ -256,7 +265,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         priority: 'alta', // Usar valor válido en español
         targetUsers: targetUsers,
         icon: '🚨',
-        actionUrl: getAlertActionUrl(alert.tipo),
+        actionUrl: getAlertActionUrl(alert.tipo, targetTab),
         actionText: 'Ver Alertas',
         isActive: true,
         createdBy: 'sistema', // Campo requerido
@@ -295,6 +304,16 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
       
       const defaultMessage = `${alert.action} ${alert.symbol} en ${priceMessage}. TP: $${alert.takeProfit}, SL: $${alert.stopLoss}`;
       const finalImageUrl = overrides?.imageUrl || (alert as any)?.chartImage?.secure_url || (alert as any)?.chartImage?.url || null;
+      
+      // Determinar el tab según si es una operación ejecutada
+      // Si hay soldPercentage o profitPercentage, es una operación ejecutada -> operaciones
+      // Si el título contiene "Venta Ejecutada" o "Compra Confirmada", también es operación ejecutada
+      const isExecutedOperation = overrides?.soldPercentage != null || 
+                                   overrides?.profitPercentage != null || 
+                                   overrides?.profitLoss != null ||
+                                   (overrides?.title && (overrides.title.includes('Venta Ejecutada') || overrides.title.includes('Compra Confirmada')));
+      const targetTab = isExecutedOperation ? 'operaciones' : 'seguimiento';
+      
       notification = {
         title: overrides?.title || `🚨 Nueva Alerta ${alert.tipo} 🚨`,
         message: overrides?.message || defaultMessage,
@@ -302,7 +321,7 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         priority: 'alta', // Usar valor válido en español
         targetUsers: targetUsers,
         icon: '🚨',
-        actionUrl: getAlertActionUrl(alert.tipo),
+        actionUrl: getAlertActionUrl(alert.tipo, targetTab),
         actionText: 'Ver Alertas',
         isActive: true,
         createdBy: 'sistema', // Campo requerido
@@ -1087,13 +1106,15 @@ export async function getNotificationStats(): Promise<{
 
 /**
  * Obtiene la URL de acción para las alertas según el tipo
+ * @param tipo - Tipo de alerta (TraderCall, SmartMoney, etc.)
+ * @param tab - Tab específico a mostrar (seguimiento, operaciones). Si no se especifica, usa 'seguimiento' por defecto
  */
-function getAlertActionUrl(tipo: string): string {
+function getAlertActionUrl(tipo: string, tab: string = 'seguimiento'): string {
   switch (tipo) {
     case 'TraderCall':
-      return '/alertas/trader-call';
+      return `/alertas/trader-call?tab=${tab}`;
     case 'SmartMoney':
-      return '/alertas/smart-money';
+      return `/alertas/smart-money?tab=${tab}`;
 
     default:
       return '/alertas';
