@@ -196,7 +196,7 @@ async function handleGetNotifications(req: NextApiRequest, res: NextApiResponse)
     // ✅ CORREGIDO: Obtener notificaciones sin duplicados
     // Usar distinct para evitar duplicados por ID
     const notifications = await Notification.find(query)
-      .sort({ priority: -1, createdAt: -1 }) // Prioridad alta primero, luego por fecha
+      .sort({ createdAt: -1 }) // Ordenar por tiempo de creación (más recientes primero)
       .limit(limitNum)
       .skip(skip)
       .lean();

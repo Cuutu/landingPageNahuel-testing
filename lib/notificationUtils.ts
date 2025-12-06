@@ -1077,9 +1077,9 @@ export async function getNotificationStats(): Promise<{
 function getAlertActionUrl(tipo: string): string {
   switch (tipo) {
     case 'TraderCall':
-      return '/alertas/trader-call';
+      return '/alertas/trader-call?tab=seguimiento';
     case 'SmartMoney':
-      return '/alertas/smart-money';
+      return '/alertas/smart-money?tab=seguimiento';
 
     default:
       return '/alertas';

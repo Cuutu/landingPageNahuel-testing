@@ -802,6 +802,16 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const { data: session } = useSession();
   const router = useRouter();
 
+  // Leer query parameter 'tab' para establecer la pestaña activa inicialmente
+  React.useEffect(() => {
+    if (router.query.tab && typeof router.query.tab === 'string') {
+      const validTabs = ['dashboard', 'seguimiento', 'operaciones', 'vigentes', 'informes', 'comunidad', 'faq'];
+      if (validTabs.includes(router.query.tab)) {
+        setActiveTab(router.query.tab);
+      }
+    }
+  }, [router.query.tab]);
+
   // Verificar rol del usuario
   React.useEffect(() => {
     const checkUserRole = async () => {
