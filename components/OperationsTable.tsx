@@ -388,6 +388,18 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           break;
       }
     }
+
+    // ✅ PRIORIDAD 2: Si tiene rango de precio y NO está confirmado, siempre es "A confirmar"
+    // Una operación con precio por confirmar NUNCA puede estar "Ejecutada"
+    const hasValidPriceRange = operation.priceRange && 
+      typeof operation.priceRange.min === 'number' && 
+      typeof operation.priceRange.max === 'number' &&
+      operation.priceRange.min > 0 && 
+      operation.priceRange.max > 0;
+    
+    if (hasValidPriceRange && operation.isPriceConfirmed !== true) {
+      return 'A confirmar';
+    }
     
     if (!operation.alert) {
       // Si no hay información de la alerta, retornar "A confirmar" por defecto
