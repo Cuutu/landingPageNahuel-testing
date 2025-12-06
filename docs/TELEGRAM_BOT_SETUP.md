@@ -134,7 +134,7 @@ function formatAlertMessage(alert: IAlert, options?: {
   
   message += `\n📅 ${new Date(alert.date).toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' })}`;
   
-  return message;
+  return message; 
 }
 
 /**
