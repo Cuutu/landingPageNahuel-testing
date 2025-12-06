@@ -574,6 +574,10 @@ export default async function handler(
               
               const newBalance = currentBalance - liquidityAmount;
 
+              // ✅ NUEVO: Determinar si tiene rango de precio
+              const hasRange = tipoAlerta === 'rango' && newAlert.entryPriceRange?.min && newAlert.entryPriceRange?.max;
+              const isPriceConfirmed = !hasRange; // Si no hay rango, el precio ya está confirmado
+
               const operation = new Operation({
                 ticker: symbol.toUpperCase(),
                 operationType: 'COMPRA',
@@ -587,6 +591,12 @@ export default async function handler(
                 system: pool,
                 createdBy: adminUser._id,
                 portfolioPercentage: liquidityPercentage,
+                // ✅ NUEVO: Guardar el rango de precio si existe
+                priceRange: hasRange ? {
+                  min: newAlert.entryPriceRange.min,
+                  max: newAlert.entryPriceRange.max
+                } : undefined,
+                isPriceConfirmed: isPriceConfirmed,
                 liquidityData: {
                   allocatedAmount: liquidityAmount,
                   shares: sharesTotales,

@@ -19,6 +19,8 @@ interface CreateOperationRequest {
   partialSalePercentage?: number;
   originalQuantity?: number;
   portfolioPercentage?: number; // ✅ NUEVO: Porcentaje de la cartera para compras
+  priceRange?: { min: number; max: number }; // ✅ NUEVO: Rango de precio
+  isPriceConfirmed?: boolean; // ✅ NUEVO: Si el precio ya fue confirmado
   liquidityData?: {
     allocatedAmount: number;
     shares: number;
@@ -78,6 +80,8 @@ export default async function handler(
       partialSalePercentage,
       originalQuantity,
       portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
+      priceRange, // ✅ NUEVO: Rango de precio
+      isPriceConfirmed, // ✅ NUEVO: Si el precio ya fue confirmado
       liquidityData,
       notes,
       isManual = false // ✅ NUEVO: Flag para operaciones manuales
@@ -205,6 +209,8 @@ export default async function handler(
       partialSalePercentage,
       originalQuantity,
       portfolioPercentage, // ✅ NUEVO: Porcentaje de la cartera para compras
+      priceRange, // ✅ NUEVO: Rango de precio para mostrar en tabla
+      isPriceConfirmed: isPriceConfirmed ?? !priceRange, // ✅ NUEVO: Si no hay rango, está confirmado
       liquidityData,
       executedBy: session.user.email, // ✅ Mantener quién ejecutó la operación
       executionMethod: isManual ? 'MANUAL' : 'ADMIN',
