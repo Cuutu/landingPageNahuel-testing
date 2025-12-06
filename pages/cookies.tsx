@@ -232,7 +232,7 @@ export default function CookiesPage() {
               <div className={styles.contactInfo}>
                 <p>
                   <strong>Email:</strong>{' '}
-                  <a href="mailto:contacto@lozanonahuel.com">contacto@lozanonahuel.com</a>
+                  <a href="mailto:soporte@lozanonahuel.com">soporte@lozanonahuel.com</a>
                 </p>
               </div>
             </section>
