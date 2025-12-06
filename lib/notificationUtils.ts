@@ -357,6 +357,20 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
     console.log(`✅ [ALERT NOTIFICATION] Notificación global creada exitosamente: ${notificationDoc._id}`);
     console.log(`📊 [ALERT NOTIFICATION] Se mostrará a ${finalSubscribedUsers.length} usuarios suscritos al servicio ${alert.tipo} (incluye ${trialUsers.length} con trial)`);
 
+    // ✅ NUEVO: Enviar notificación a Telegram
+    try {
+      const { sendAlertToTelegram } = await import('@/lib/telegramBot');
+      await sendAlertToTelegram(alert, {
+        message: overrides?.message,
+        imageUrl: overrides?.imageUrl || notification.metadata?.imageUrl,
+        priceRange: overrides?.priceRange || notification.metadata?.priceRange,
+        liquidityPercentage: overrides?.liquidityPercentage || notification.metadata?.liquidityPercentage
+      });
+    } catch (telegramError) {
+      console.error('❌ [ALERT NOTIFICATION] Error enviando a Telegram:', telegramError);
+      // No fallar la notificación si Telegram falla
+    }
+
     // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
     const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
     
