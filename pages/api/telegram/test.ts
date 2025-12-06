@@ -23,11 +23,12 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<TelegramTestResponse>
 ) {
-    if (req.method !== 'POST') {
-      return res.status(405).json({ success: false, error: 'Método no permitido' });
-    }
+  // Permitir tanto GET como POST para facilitar pruebas
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ success: false, error: 'Método no permitido. Use GET o POST.' });
+  }
 
-    try {
+  try {
       // Verificar autenticación
       const session = await getServerSession(req, res, authOptions);
       
@@ -68,7 +69,10 @@ export default async function handler(
     const botInfo = await bot.getMe();
 
     // Si se solicita enviar una alerta de prueba
-    const { sendTestAlert } = req.body;
+    // Para GET, leer desde query params; para POST, desde body
+    const sendTestAlert = req.method === 'GET' 
+      ? req.query.sendTestAlert === 'true' 
+      : req.body?.sendTestAlert;
 
     if (sendTestAlert) {
       // Obtener última alerta activa para prueba
