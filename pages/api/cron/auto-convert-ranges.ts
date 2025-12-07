@@ -1224,7 +1224,10 @@ async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen
     if (comprasConfirmadas.length > 0) {
       mensaje += `✅ *COMPRAS CONFIRMADAS (${comprasConfirmadas.length})*\n`;
       comprasConfirmadas.forEach(a => {
-        mensaje += `• ${a.symbol}: $${a.precio.toFixed(2)}\n`;
+        const rangoInfo = a.detalles.rangoOriginal 
+          ? ` (Rango: $${a.detalles.rangoOriginal.min.toFixed(2)} - $${a.detalles.rangoOriginal.max.toFixed(2)})`
+          : '';
+        mensaje += `• *${a.symbol}*: Entrada confirmada a $${a.precio.toFixed(2)}${rangoInfo}\n`;
       });
       mensaje += `\n`;
     }
@@ -1232,8 +1235,15 @@ async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen
     if (ventasEjecutadas.length > 0) {
       mensaje += `🔴 *VENTAS EJECUTADAS (${ventasEjecutadas.length})*\n`;
       ventasEjecutadas.forEach(a => {
-        const profitSign = (a.detalles.profitPorcentaje || 0) >= 0 ? '+' : '';
-        mensaje += `• ${a.symbol}: $${a.precio.toFixed(2)} (${profitSign}${(a.detalles.profitPorcentaje || 0).toFixed(2)}%)\n`;
+        const profitPorcentaje = a.detalles.profitPorcentaje || 0;
+        const profitSign = profitPorcentaje >= 0 ? '+' : '';
+        const profitEmoji = profitPorcentaje >= 0 ? '📈' : '📉';
+        const ventaInfo = a.detalles.posicionCerrada 
+          ? 'Posición cerrada'
+          : (a.detalles.porcentajeVendido 
+              ? `Venta parcial (${a.detalles.porcentajeVendido}%)`
+              : 'Venta ejecutada');
+        mensaje += `• *${a.symbol}*: ${ventaInfo} a $${a.precio.toFixed(2)} ${profitEmoji} ${profitSign}${profitPorcentaje.toFixed(2)}%\n`;
       });
       mensaje += `\n`;
     }
@@ -1253,8 +1263,23 @@ async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen
       });
     }
     
-    await sendMessageToChannel(tipoAlerta, mensaje);
-    console.log(`✅ [TELEGRAM] Resumen enviado para ${tipoAlerta}`);
+    // ✅ NUEVO: Crear botones inline para ir a operaciones
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+    const operacionesUrl = tipoAlerta === 'TraderCall' 
+      ? `${baseUrl}/alertas/trader-call?tab=operaciones`
+      : `${baseUrl}/alertas/smart-money?tab=operaciones`;
+    
+    const inlineKeyboard = [
+      [
+        {
+          text: '📊 Ver Operaciones',
+          url: operacionesUrl
+        }
+      ]
+    ];
+    
+    await sendMessageToChannel(tipoAlerta, mensaje, { inlineKeyboard });
+    console.log(`✅ [TELEGRAM] Resumen enviado para ${tipoAlerta} con botón de operaciones`);
     
   } catch (error) {
     console.error(`❌ [TELEGRAM] Error enviando resumen:`, error);

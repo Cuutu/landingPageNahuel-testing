@@ -318,13 +318,30 @@ export async function sendReportToTelegram(report: any): Promise<boolean> {
     // Formatear mensaje
     const message = formatReportMessage(report);
 
-    // Enviar mensaje de texto con el link (sin imágenes)
+    // ✅ NUEVO: Crear botón inline para ir al informe
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
+    const reportId = report._id?.toString() || report.id?.toString();
+    const reportUrl = `${baseUrl}/reports/${reportId}`;
+    
+    const inlineKeyboard = [
+      [
+        {
+          text: '📰 Leer Informe',
+          url: reportUrl
+        }
+      ]
+    ];
+    
+    // Enviar mensaje de texto con el link y botón (sin imágenes)
     try {
       await bot.sendMessage(channelId, message, {
         parse_mode: 'Markdown',
-        disable_web_page_preview: false // Habilitar preview para que se vea el link
+        disable_web_page_preview: false, // Habilitar preview para que se vea el link
+        reply_markup: {
+          inline_keyboard: inlineKeyboard
+        }
       });
-      console.log(`✅ [TELEGRAM] Mensaje de informe enviado a canal ${serviceType}: ${report.title}`);
+      console.log(`✅ [TELEGRAM] Mensaje de informe enviado a canal ${serviceType}: ${report.title} con botón`);
     } catch (messageError: any) {
       console.error('❌ [TELEGRAM] Error enviando mensaje de informe:', messageError.message);
       return false;
@@ -361,7 +378,13 @@ export async function testTelegramConnection(): Promise<boolean> {
  * ✅ NUEVO: Envía un mensaje de texto a un canal específico
  * Usado para enviar resúmenes consolidados de operaciones
  */
-export async function sendMessageToChannel(tipoAlerta: string, mensaje: string): Promise<boolean> {
+export async function sendMessageToChannel(
+  tipoAlerta: string, 
+  mensaje: string, 
+  options?: {
+    inlineKeyboard?: TelegramBot.InlineKeyboardButton[][];
+  }
+): Promise<boolean> {
   try {
     if (!bot || process.env.TELEGRAM_ENABLED !== 'true') {
       console.log('⚠️ [TELEGRAM] Bot no habilitado, mensaje no enviado');
@@ -374,10 +397,19 @@ export async function sendMessageToChannel(tipoAlerta: string, mensaje: string):
       return false;
     }
 
-    await bot.sendMessage(channelId, mensaje, {
+    const messageOptions: TelegramBot.SendMessageOptions = {
       parse_mode: 'Markdown',
       disable_web_page_preview: true
-    });
+    };
+
+    // Agregar botones inline si se proporcionan
+    if (options?.inlineKeyboard && options.inlineKeyboard.length > 0) {
+      messageOptions.reply_markup = {
+        inline_keyboard: options.inlineKeyboard
+      };
+    }
+
+    await bot.sendMessage(channelId, mensaje, messageOptions);
 
     console.log(`✅ [TELEGRAM] Mensaje enviado a canal ${tipoAlerta}`);
     return true;
