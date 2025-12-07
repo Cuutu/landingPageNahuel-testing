@@ -123,7 +123,6 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       let closedAlerts = 0;
       let winRate = 0;
       let totalTrades = 0;
-      let portfolioReturn = null; // ✅ Rendimiento calculado desde portfolio-evolution (igual que PortfolioTimeRange)
 
       if (portfolioResponse.ok) {
         const portfolioData = await portfolioResponse.json();
@@ -132,49 +131,25 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
           closedAlerts = portfolioData.stats.closedAlerts || 0;
           winRate = portfolioData.stats.winRate || 0;
           totalTrades = portfolioData.stats.totalAlerts || 0;
-          
-          // ✅ CORREGIDO: Calcular portfolioReturn desde los datos de evolución (EXACTAMENTE igual que PortfolioTimeRange)
-          if (portfolioData.data && portfolioData.data.length > 0) {
-            const firstValue = portfolioData.data[0]?.value || 10000;
-            const lastValue = portfolioData.data[portfolioData.data.length - 1]?.value || 10000;
-            const change = lastValue - firstValue;
-            portfolioReturn = firstValue ? (change / firstValue) * 100 : 0;
-            
-            // console.log(`📊 [SP500] Calculado portfolioReturn desde evolución (igual que PortfolioTimeRange):`, {
-            //   firstValue,
-            //   lastValue,
-            //   change,
-            //   portfolioReturn,
-            //   dataLength: portfolioData.data.length
-            // });
-          } else {
-            // Si no hay datos de evolución, usar 0
-            portfolioReturn = 0;
-          }
         }
       }
       
-      // ✅ CORREGIDO: Usar EXACTAMENTE la misma lógica que PortfolioTimeRange.calculatePerformance()
-      // PortfolioTimeRange usa serviceReturn si está disponible, sino calcula desde portfolioData
-      // Para asegurar que muestre el MISMO valor, usamos portfolioReturn cuando esté disponible
+      // ✅ CORREGIDO: SIEMPRE usar el rendimiento de /api/portfolio/returns que compara
+      // snapshots históricos (valorTotalCartera de hace X días vs valor actual)
+      // NO usar el cálculo desde portfolio-evolution porque ese cálculo aplica
+      // el P&L ACTUAL a días pasados, causando valores incorrectos
       const returnsKey = periodToReturnsKey(selectedPeriod);
       const rawReturnValue = returnsData.data.returns[returnsKey];
       
-      // ✅ IMPORTANTE: Priorizar el cálculo desde portfolioData (igual que PortfolioTimeRange cuando serviceReturn es null)
-      // Esto asegura que el rendimiento sea EXACTAMENTE el mismo que en "Evolución del Portafolio Real"
       let totalReturnPercent: number;
       
-      // Si tenemos el cálculo desde portfolioData, usarlo (es la misma fuente que PortfolioTimeRange)
-      if (portfolioReturn !== null && portfolioReturn !== undefined) {
-        totalReturnPercent = portfolioReturn;
-        // console.log(`📊 [SP500] Usando cálculo desde portfolio-evolution: ${totalReturnPercent}% (igual que Evolución del Portafolio Real)`);
-      } else if (rawReturnValue !== null && rawReturnValue !== undefined) {
-        // Fallback: usar /api/portfolio/returns solo si no hay datos de portfolioData
+      if (rawReturnValue !== null && rawReturnValue !== undefined) {
+        // ✅ Usar el rendimiento calculado desde snapshots históricos (método correcto)
         totalReturnPercent = rawReturnValue;
-        // console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns (fallback): ${totalReturnPercent}%`);
+        console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns: ${totalReturnPercent}% para período ${selectedPeriod}`);
       } else {
         totalReturnPercent = 0;
-        // console.warn(`⚠️ [SP500] No hay datos disponibles para período ${selectedPeriod}`);
+        console.warn(`⚠️ [SP500] No hay datos de snapshots disponibles para período ${selectedPeriod}`);
       }
       
       // console.log(`📊 [SP500] Rendimiento final del servicio para período ${selectedPeriod}:`, {

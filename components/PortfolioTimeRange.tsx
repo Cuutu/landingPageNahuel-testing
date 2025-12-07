@@ -297,46 +297,31 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   };
 
   const calculatePerformance = () => {
-    // ✅ CORREGIDO: Usar el rendimiento del servicio desde el API si está disponible
-    // Esto asegura que el rendimiento varíe según el período seleccionado
+    // ✅ CORREGIDO: SIEMPRE usar el rendimiento del servicio desde /api/portfolio/returns
+    // Este valor compara snapshots históricos (valorTotalCartera de hace X días vs valor actual)
+    // NO usar el cálculo desde portfolioData porque ese cálculo aplica el P&L ACTUAL 
+    // a días pasados, causando valores incorrectos cuando hay volatilidad
     if (serviceReturn !== null && serviceReturn !== undefined) {
-      // Calcular el cambio y valor actual basado en el rendimiento porcentual
       const baseValue = portfolioStats?.baseValue || 10000;
       const percentage = serviceReturn;
       const change = (baseValue * percentage) / 100;
       const currentValue = baseValue + change;
       
-      // console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde API:', {
-      //   serviceReturn,
-      //   baseValue,
-      //   change,
-      //   percentage,
-      //   currentValue,
-      //   selectedRange
-      // });
+      console.log('📊 [PortfolioTimeRange] Rendimiento desde snapshots históricos:', {
+        serviceReturn,
+        baseValue,
+        percentage,
+        selectedRange
+      });
       
       return { change, percentage, currentValue };
     }
     
-    // Fallback: calcular desde los datos de evolución si no hay rendimiento del API
-    if (portfolioData.length === 0) return { change: 0, percentage: 0, currentValue: 10000 };
-    
-    const firstValue = portfolioData[0]?.value || 10000;
-    const lastValue = portfolioData[portfolioData.length - 1]?.value || 10000;
-    
-    const change = lastValue - firstValue;
-    const percentage = firstValue ? (change / firstValue) * 100 : 0;
-    
-    // console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución (fallback):', {
-    //   firstValue,
-    //   lastValue,
-    //   change,
-    //   percentage,
-    //   dataLength: portfolioData.length,
-    //   selectedRange
-    // });
-    
-    return { change, percentage, currentValue: lastValue };
+    // ✅ CORREGIDO: Si no hay rendimiento del API (no hay snapshots), mostrar 0%
+    // NO calcular desde portfolioData porque ese cálculo es incorrecto para períodos
+    console.log('⚠️ [PortfolioTimeRange] No hay snapshots disponibles para el período, mostrando 0%');
+    const baseValue = portfolioStats?.baseValue || 10000;
+    return { change: 0, percentage: 0, currentValue: baseValue };
   };
 
   const performance = calculatePerformance();

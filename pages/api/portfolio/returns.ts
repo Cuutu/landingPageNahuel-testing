@@ -100,11 +100,15 @@ export default async function handler(
     }
 
     console.log(`📊 [Portfolio Returns] Datos históricos para ${poolType}:`, {
+      valorActualCartera: valorActualCartera,
+      liquidezInicial: currentValue.liquidezInicial,
+      totalProfitLoss: currentValue.totalProfitLoss,
       oldestDate: oldestSnapshotDate,
       newestDate: newestSnapshot ? new Date(newestSnapshot.snapshotDate) : null,
       availableDays,
       daysSinceOldest,
-      oldestValorTotalCartera: oldestSnapshot?.valorTotalCartera
+      oldestValorTotalCartera: oldestSnapshot?.valorTotalCartera,
+      newestValorTotalCartera: newestSnapshot?.valorTotalCartera
     });
 
     for (const [periodKey, days] of Object.entries(periods)) {
