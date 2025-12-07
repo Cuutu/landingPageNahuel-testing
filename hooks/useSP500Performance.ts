@@ -139,17 +139,17 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       // NO usar el cálculo desde portfolio-evolution porque ese cálculo aplica
       // el P&L ACTUAL a días pasados, causando valores incorrectos
       const returnsKey = periodToReturnsKey(selectedPeriod);
-      const rawReturnValue = returnsData.data.returns[returnsKey];
+      const rawReturnValue = returnsData.data?.returns?.[returnsKey] ?? null;
       
       let totalReturnPercent: number;
       
       if (rawReturnValue !== null && rawReturnValue !== undefined) {
         // ✅ Usar el rendimiento calculado desde snapshots históricos (método correcto)
         totalReturnPercent = rawReturnValue;
-        console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns: ${totalReturnPercent}% para período ${selectedPeriod}`);
+        // console.log(`📊 [SP500] Usando rendimiento desde /api/portfolio/returns: ${totalReturnPercent}% para período ${selectedPeriod}`);
       } else {
         totalReturnPercent = 0;
-        console.warn(`⚠️ [SP500] No hay datos de snapshots disponibles para período ${selectedPeriod}`);
+        // console.warn(`⚠️ [SP500] No hay datos de snapshots disponibles para período ${selectedPeriod}`);
       }
       
       // console.log(`📊 [SP500] Rendimiento final del servicio para período ${selectedPeriod}:`, {

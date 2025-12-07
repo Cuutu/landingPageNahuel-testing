@@ -307,19 +307,11 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       const change = (baseValue * percentage) / 100;
       const currentValue = baseValue + change;
       
-      console.log('📊 [PortfolioTimeRange] Rendimiento desde snapshots históricos:', {
-        serviceReturn,
-        baseValue,
-        percentage,
-        selectedRange
-      });
-      
       return { change, percentage, currentValue };
     }
     
     // ✅ CORREGIDO: Si no hay rendimiento del API (no hay snapshots), mostrar 0%
     // NO calcular desde portfolioData porque ese cálculo es incorrecto para períodos
-    console.log('⚠️ [PortfolioTimeRange] No hay snapshots disponibles para el período, mostrando 0%');
     const baseValue = portfolioStats?.baseValue || 10000;
     return { change: 0, percentage: 0, currentValue: baseValue };
   };
