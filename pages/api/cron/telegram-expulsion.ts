@@ -39,17 +39,20 @@ export default async function handler(
 ) {
   // Verificar autorización del cron
   const authHeader = req.headers.authorization;
+  const querySecret = req.query.secret as string; // Secret en URL para cronjob.org
   const cronSecret = process.env.CRON_SECRET;
   
   // Permitir ejecución si:
   // 1. Viene de Vercel Cron (header de Vercel)
-  // 2. Tiene el secret correcto
-  // 3. Es una llamada local en desarrollo
+  // 2. Tiene el secret correcto en header Authorization
+  // 3. Tiene el secret correcto en query string (?secret=xxx) - para cronjob.org
+  // 4. Es una llamada local en desarrollo
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
-  const hasValidSecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const hasValidHeaderSecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const hasValidQuerySecret = cronSecret && querySecret === cronSecret;
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  if (!isVercelCron && !hasValidSecret && !isDevelopment) {
+  if (!isVercelCron && !hasValidHeaderSecret && !hasValidQuerySecret && !isDevelopment) {
     console.log('⚠️ [TELEGRAM EXPULSION] Acceso no autorizado');
     return res.status(401).json({ error: 'No autorizado' });
   }
