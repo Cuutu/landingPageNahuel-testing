@@ -113,7 +113,7 @@ LiquiditySchema.methods.updateDistribution = function(this: any, alertId: string
   if (!distribution) {
     throw new Error("Distribución no encontrada");
   }
-  distribution.currentPrice = currentPrice;
+  distribution.currentPrice = currentPrice; 
   
   // ✅ CORREGIDO: Calcular P&L porcentual primero
   distribution.profitLossPercentage = distribution.entryPrice > 0
