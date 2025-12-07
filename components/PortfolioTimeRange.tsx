@@ -248,33 +248,18 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       };
     }
     
-    // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns si está disponible
-    // Esto asegura consistencia con el componente SP500Comparison
-    let portfolioReturn = 0;
-    
-    if (serviceReturnFromAPI !== null && serviceReturnFromAPI !== undefined) {
-      // Usar el rendimiento del API de returns (mismo que usa SP500Comparison)
-      portfolioReturn = serviceReturnFromAPI;
-      // console.log('📊 [PortfolioTimeRange] Usando rendimiento del servicio desde /api/portfolio/returns:', portfolioReturn);
-    } else {
-      // Fallback: calcular desde los datos de evolución
-      const portfolioDataForCalc = data.length > 0 ? data : [];
-      const firstValue = portfolioDataForCalc[0]?.value || 10000;
-      const lastValue = portfolioDataForCalc[portfolioDataForCalc.length - 1]?.value || 10000;
-      portfolioReturn = firstValue ? ((lastValue - firstValue) / firstValue) * 100 : 0;
-      // console.log('📊 [PortfolioTimeRange] Calculando rendimiento desde datos de evolución:', {
-      //   portfolioReturn,
-      //   firstValue,
-      //   lastValue,
-      //   dataLength: data.length
-      // });
-    }
+    // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns
+    // Este valor ahora se calcula como diferencia de P&L% (más robusto)
+    const portfolioReturn = (serviceReturnFromAPI !== null && serviceReturnFromAPI !== undefined) 
+      ? serviceReturnFromAPI 
+      : (baseStats.totalProfit && baseStats.baseValue > 0 
+          ? (baseStats.totalProfit / baseStats.baseValue) * 100 
+          : 0);
     
     const sp500Return = baseStats.sp500Return || 0; // Rendimiento del S&P 500 para el período seleccionado
     
-    // ✅ CORREGIDO: Calcular diferencia simple en puntos porcentuales
+    // Calcular diferencia simple en puntos porcentuales
     // Fórmula: Rendimiento del Portfolio - Rendimiento del S&P 500
-    // Esto muestra cuántos puntos porcentuales más (o menos) rindió el portfolio vs el S&P 500
     const relativePerformanceVsSP500 = portfolioReturn - sp500Return;
     
     // console.log('📊 [PortfolioTimeRange] Calculando rendimiento relativo vs S&P 500:', {
@@ -297,12 +282,11 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
   };
 
   const calculatePerformance = () => {
-    // ✅ CORREGIDO: SIEMPRE usar el rendimiento del servicio desde /api/portfolio/returns
-    // Este valor compara snapshots históricos (valorTotalCartera de hace X días vs valor actual)
-    // NO usar el cálculo desde portfolioData porque ese cálculo aplica el P&L ACTUAL 
-    // a días pasados, causando valores incorrectos cuando hay volatilidad
+    // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns
+    // Este valor ahora se calcula como la diferencia de P&L% (más robusto)
+    const baseValue = portfolioStats?.baseValue || 10000;
+    
     if (serviceReturn !== null && serviceReturn !== undefined) {
-      const baseValue = portfolioStats?.baseValue || 10000;
       const percentage = serviceReturn;
       const change = (baseValue * percentage) / 100;
       const currentValue = baseValue + change;
@@ -310,10 +294,16 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
       return { change, percentage, currentValue };
     }
     
-    // ✅ CORREGIDO: Si no hay rendimiento del API (no hay snapshots), mostrar 0%
-    // NO calcular desde portfolioData porque ese cálculo es incorrecto para períodos
-    const baseValue = portfolioStats?.baseValue || 10000;
-    return { change: 0, percentage: 0, currentValue: baseValue };
+    // Si no hay snapshots disponibles, mostrar el P&L% general del portfolio
+    const generalPercentage = portfolioStats?.totalProfit && baseValue > 0 
+      ? (portfolioStats.totalProfit / baseValue) * 100 
+      : 0;
+    
+    return { 
+      change: portfolioStats?.totalProfit || 0, 
+      percentage: generalPercentage, 
+      currentValue: baseValue + (portfolioStats?.totalProfit || 0) 
+    };
   };
 
   const performance = calculatePerformance();

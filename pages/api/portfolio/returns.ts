@@ -117,14 +117,19 @@ export default async function handler(
         // Esto asegura que siempre usemos el máximo período disponible cuando se solicita un período más largo
         if (days > daysSinceOldest && oldestSnapshot) {
           // El período solicitado excede los días disponibles desde el snapshot más antiguo
-          // Usar el snapshot más antiguo disponible para mostrar el máximo período posible
-          const valorHistorico = oldestSnapshot.valorTotalCartera;
-          const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico); 
+          // Calcular rendimiento como diferencia de P&L%
+          const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+          const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
+          const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
           
           returns[periodKey] = Number(returnPercentage.toFixed(2));
-          historicalValues[periodKey] = valorHistorico;
+          historicalValues[periodKey] = oldestSnapshot.valorTotalCartera;
           
-          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período solicitado (${days}d) > días desde snapshot más antiguo (${daysSinceOldest}d). Usando snapshot más antiguo disponible`);
+          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período (${days}d) > días disponibles (${daysSinceOldest}d). Usando snapshot más antiguo`, {
+            currentProfitLossPercent,
+            historicalProfitLossPercent,
+            returnPercentage
+          });
         } else {
           // ✅ Hay suficientes datos históricos, buscar snapshot exacto para el período
           const targetDate = new Date(now);
@@ -151,36 +156,53 @@ export default async function handler(
           }).sort({ snapshotDate: 1 }); // Obtener el más antiguo en el rango
 
           if (snapshot) {
-            // ✅ Caso ideal: encontramos un snapshot para el período exacto
-            const valorHistorico = snapshot.valorTotalCartera;
-            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+            // ✅ CORREGIDO: Calcular rendimiento del período como la diferencia en porcentaje de P&L
+            // Fórmula: (P&L% actual) - (P&L% del snapshot)
+            // Esto es más robusto que comparar valorTotalCartera cuando los valores base cambian
+            const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+            const historicalProfitLossPercent = snapshot.totalProfitLossPercentage || 0;
+            const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = valorHistorico;
+            historicalValues[periodKey] = snapshot.valorTotalCartera;
             
-            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot exacto del ${snapshot.snapshotDate.toISOString().split('T')[0]}`);
+            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot del ${snapshot.snapshotDate.toISOString().split('T')[0]}`, {
+              currentProfitLossPercent,
+              historicalProfitLossPercent,
+              returnPercentage
+            });
           } else if (days === 1 && newestSnapshot) {
             // ✅ CASO ESPECIAL: Para 1 día, si no hay snapshot de ayer (fin de semana), usar el último snapshot disponible
             // Esto maneja el caso cuando el mercado está cerrado (fines de semana)
-            const valorHistorico = newestSnapshot.valorTotalCartera;
-            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+            const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+            const historicalProfitLossPercent = newestSnapshot.totalProfitLossPercentage || 0;
+            const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = valorHistorico;
+            historicalValues[periodKey] = newestSnapshot.valorTotalCartera;
             
             const newestDate = new Date(newestSnapshot.snapshotDate);
             const daysSinceNewest = Math.floor((now.getTime() - newestDate.getTime()) / (1000 * 60 * 60 * 24));
             
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot de ayer (probablemente fin de semana). Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`);
+            console.log(`⚠️ [Portfolio Returns] ${periodKey}: Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`, {
+              currentProfitLossPercent,
+              historicalProfitLossPercent,
+              returnPercentage
+            });
           } else if (oldestSnapshot) {
             // Fallback: no encontramos snapshot exacto pero hay datos históricos, usar el más antiguo
-            const valorHistorico = oldestSnapshot.valorTotalCartera;
-            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+            const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+            const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
+            const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = valorHistorico;
+            historicalValues[periodKey] = oldestSnapshot.valorTotalCartera;
             
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot exacto para ${days} días. Usando snapshot más antiguo (${daysSinceOldest} días atrás)`);
+            console.log(`⚠️ [Portfolio Returns] ${periodKey}: Usando snapshot más antiguo (${daysSinceOldest} días atrás)`, {
+              currentProfitLossPercent,
+              historicalProfitLossPercent,
+              returnPercentage
+            });
           } else {
             // ❌ No hay ningún snapshot disponible
             returns[periodKey] = null;
