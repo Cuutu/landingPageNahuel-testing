@@ -455,13 +455,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
     console.log(`📧 CRON: ${resumenAcciones.length} acciones para notificar en resumen consolidado`);
 
-    // ✅ NUEVO: Enviar resumen de operaciones de forma ASÍNCRONA (fire-and-forget)
-    // Esto permite que el cron responda rápidamente sin esperar los emails
+    // ✅ CORREGIDO: Enviar resumen ANTES de responder (serverless cierra la función después de res.json)
+    // Como ahora es solo 1 email de resumen (en lugar de 40 individuales), debería ser rápido
     if (resumenAcciones.length > 0) {
-      enviarResumenOperaciones(resumenAcciones).catch(err => {
+      try {
+        console.log(`📧 CRON: Enviando resumen de operaciones...`);
+        await enviarResumenOperaciones(resumenAcciones);
+        console.log(`✅ CRON: Resumen de operaciones enviado correctamente`);
+      } catch (err) {
         console.error('❌ CRON: Error enviando resumen de operaciones:', err);
-      });
-      console.log(`📧 CRON: Resumen de operaciones enviándose en segundo plano...`);
+        // No fallar el cron si falla el envío de emails
+      }
     }
 
     if (isCronJobOrg) {
