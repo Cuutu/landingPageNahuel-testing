@@ -279,7 +279,7 @@ function formatReportMessage(report: any): string {
   // Construir mensaje simple con título y link
   let message = `📰 *Nuevo Informe ${serviceType}*\n\n`;
   message += `*${report.title}*\n\n`;
-  message += `🔗 [Ver informe completo](${reportUrl})`;
+  message += `🔗 [Ver informe completo](${reportUrl})`; 
   
   return message;
 }
