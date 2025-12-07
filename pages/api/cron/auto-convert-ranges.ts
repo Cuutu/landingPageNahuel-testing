@@ -709,6 +709,7 @@ async function executeScheduledSale(
 
 /**
  * Registra una operación de venta
+ * ✅ CORREGIDO: Ahora actualiza la operación pendiente existente en lugar de crear una nueva
  */
 async function registerSaleOperation(
   alert: any,
@@ -718,64 +719,97 @@ async function registerSaleOperation(
   adminUser: any,
   percentage: number,
   isCompleteSale: boolean,
-  liquidityReleased?: number // ✅ NUEVO: Liquidez real liberada del sistema
+  liquidityReleased?: number
 ) {
-      try {
-        const OperationModule = await import('@/models/Operation');
-        const Operation = OperationModule.default;
-        
-        const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
-          .sort({ date: -1 })
-          .select('balance');
-        const currentBalance = currentBalanceDoc?.balance || 0;
-        
-    // ✅ CORREGIDO: Usar liquidez real si está disponible, sino calcular valor de mercado
+  try {
+    const OperationModule = await import('@/models/Operation');
+    const Operation = OperationModule.default;
+    
+    const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: pool })
+      .sort({ date: -1 })
+      .select('balance');
+    const currentBalance = currentBalanceDoc?.balance || 0;
+    
     const actualLiquidityReleased = liquidityReleased ?? (sharesToSell * closePrice);
     const newBalance = currentBalance + actualLiquidityReleased;
-        
-        const buyOperation = await Operation.findOne({ 
-          alertId: alert._id, 
-          operationType: 'COMPRA',
-          system: pool
-        }).sort({ date: -1 });
-        
+    
+    const buyOperation = await Operation.findOne({ 
+      alertId: alert._id, 
+      operationType: 'COMPRA',
+      system: pool
+    }).sort({ date: -1 });
+    
     const entryPrice = alert.entryPrice || closePrice;
     const marketValue = sharesToSell * closePrice;
-    // ✅ CORREGIDO: Ganancia = valor de mercado - liquidez asignada original
     const realizedProfit = marketValue - actualLiquidityReleased;
-        
-        // ✅ CRÍTICO: Usar el precio de cierre del cronjob para registrar la operación
-        // Este precio es el precio del momento de cierre de la alerta cuando se ejecuta el cronjob
-        const operation = new Operation({
-          ticker: alert.symbol.toUpperCase(),
-          operationType: 'VENTA',
-      quantity: -sharesToSell,
-          price: closePrice, // ✅ Precio de cierre del cronjob (precio del momento de ejecución)
-      amount: actualLiquidityReleased,
-          date: new Date(),
-          balance: newBalance,
-          alertId: alert._id,
-          alertSymbol: alert.symbol.toUpperCase(),
-          system: pool,
-          createdBy: adminUser._id,
-      isPartialSale: !isCompleteSale,
-      partialSalePercentage: percentage,
-      portfolioPercentage: buyOperation?.portfolioPercentage,
-          liquidityData: {
-            entryPrice: entryPrice,
+    
+    // ✅ NUEVO: Buscar operación de VENTA pendiente (con rango) para actualizarla
+    const pendingOperation = await Operation.findOne({
+      alertId: alert._id,
+      operationType: 'VENTA',
+      system: pool,
+      $or: [
+        { priceRange: { $exists: true } },
+        { isPriceConfirmed: { $ne: true } }
+      ]
+    }).sort({ date: -1 });
+    
+    if (pendingOperation) {
+      // ✅ ACTUALIZAR la operación existente en lugar de crear una nueva
+      console.log(`🔄 ${alert.symbol}: Actualizando operación de venta pendiente...`);
+      
+      pendingOperation.price = closePrice;
+      pendingOperation.quantity = -sharesToSell;
+      pendingOperation.amount = actualLiquidityReleased;
+      pendingOperation.balance = newBalance;
+      pendingOperation.isPriceConfirmed = true;
+      pendingOperation.priceRange = undefined; // Limpiar el rango
+      pendingOperation.executedBy = 'SYSTEM';
+      pendingOperation.executionMethod = 'AUTOMATIC';
+      pendingOperation.liquidityData = {
+        entryPrice: entryPrice,
         realizedProfit: realizedProfit
-          },
-          executedBy: 'SYSTEM',
-          executionMethod: 'AUTOMATIC',
-      notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice} - ${alert.symbol}`
-        });
-        
-        await operation.save();
-    console.log(`✅ ${alert.symbol}: Operación de venta registrada`);
+      };
+      pendingOperation.notes = `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice} - ${alert.symbol}`;
+      
+      await pendingOperation.save();
+      console.log(`✅ ${alert.symbol}: Operación de venta actualizada (precio confirmado: $${closePrice})`);
+    } else {
+      // Si no hay operación pendiente, crear una nueva
+      console.log(`📝 ${alert.symbol}: Creando nueva operación de venta...`);
+      
+      const operation = new Operation({
+        ticker: alert.symbol.toUpperCase(),
+        operationType: 'VENTA',
+        quantity: -sharesToSell,
+        price: closePrice,
+        amount: actualLiquidityReleased,
+        date: new Date(),
+        balance: newBalance,
+        alertId: alert._id,
+        alertSymbol: alert.symbol.toUpperCase(),
+        system: pool,
+        createdBy: adminUser._id,
+        isPartialSale: !isCompleteSale,
+        partialSalePercentage: percentage,
+        portfolioPercentage: buyOperation?.portfolioPercentage,
+        isPriceConfirmed: true,
+        liquidityData: {
+          entryPrice: entryPrice,
+          realizedProfit: realizedProfit
+        },
+        executedBy: 'SYSTEM',
+        executionMethod: 'AUTOMATIC',
+        notes: `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice} - ${alert.symbol}`
+      });
+      
+      await operation.save();
+      console.log(`✅ ${alert.symbol}: Operación de venta registrada`);
+    }
   } catch (error) {
     console.error(`⚠️ Error registrando operación de venta para ${alert.symbol}:`, error);
   }
-      }
+}
       
 /**
  * Actualiza el precio de la operación de COMPRA cuando se confirma la alerta
@@ -1036,8 +1070,6 @@ function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]):
   
   // Calcular estadísticas
   const totalAcciones = acciones.length;
-  const profitTotal = ventasEjecutadas.reduce((sum, v) => sum + (v.detalles.profitPorcentaje || 0), 0);
-  const profitPromedio = ventasEjecutadas.length > 0 ? profitTotal / ventasEjecutadas.length : 0;
   
   // Generar secciones HTML
   let seccionesHTML = '';
@@ -1146,18 +1178,10 @@ function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]):
       
       <!-- Stats Summary -->
       <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 20px; text-align: center;">
-        <div style="display: inline-block; margin: 0 15px;">
+        <div style="display: inline-block;">
           <div style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase;">Total Operaciones</div>
           <div style="color: white; font-size: 28px; font-weight: 700;">${totalAcciones}</div>
         </div>
-        ${ventasEjecutadas.length > 0 ? `
-          <div style="display: inline-block; margin: 0 15px;">
-            <div style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase;">Profit Promedio</div>
-            <div style="color: ${profitPromedio >= 0 ? '#86efac' : '#fca5a5'}; font-size: 28px; font-weight: 700;">
-              ${profitPromedio >= 0 ? '+' : ''}${profitPromedio.toFixed(2)}%
-            </div>
-          </div>
-        ` : ''}
       </div>
       
       <!-- Content -->
