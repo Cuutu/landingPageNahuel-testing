@@ -47,14 +47,20 @@ export default async function handler(
   // 2. Tiene el secret correcto en header Authorization
   // 3. Tiene el secret correcto en query string (?secret=xxx) - para cronjob.org
   // 4. Es una llamada local en desarrollo
+  // 5. NO hay CRON_SECRET configurado (permite acceso libre - NO RECOMENDADO en producción)
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
   const hasValidHeaderSecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
   const hasValidQuerySecret = cronSecret && querySecret === cronSecret;
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const noCronSecretConfigured = !cronSecret; // Si no hay secret configurado, permitir acceso
   
-  if (!isVercelCron && !hasValidHeaderSecret && !hasValidQuerySecret && !isDevelopment) {
+  if (!isVercelCron && !hasValidHeaderSecret && !hasValidQuerySecret && !isDevelopment && !noCronSecretConfigured) {
     console.log('⚠️ [TELEGRAM EXPULSION] Acceso no autorizado');
     return res.status(401).json({ error: 'No autorizado' });
+  }
+  
+  if (noCronSecretConfigured) {
+    console.log('⚠️ [TELEGRAM EXPULSION] CRON_SECRET no configurado - acceso sin autenticación');
   }
 
   console.log('🚀 [TELEGRAM EXPULSION] Iniciando cronjob de expulsión...');

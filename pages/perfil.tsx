@@ -208,6 +208,128 @@ export default function PerfilPage() {
     brokerPreferencia: ''
   });
 
+  // Estados para Telegram
+  const [telegramData, setTelegramData] = useState<{
+    isLinked: boolean;
+    telegramUserId: number | null;
+    telegramUsername: string | null;
+    linkedAt: string | null;
+  }>({ isLinked: false, telegramUserId: null, telegramUsername: null, linkedAt: null });
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramIdInput, setTelegramIdInput] = useState('');
+  const [telegramUsernameInput, setTelegramUsernameInput] = useState('');
+  const [inviteLinks, setInviteLinks] = useState<{ [key: string]: string }>({});
+  const [generatingLink, setGeneratingLink] = useState<string | null>(null);
+
+  // Función para obtener estado de Telegram
+  const fetchTelegramStatus = async () => {
+    try {
+      const response = await fetch('/api/telegram/link-account');
+      if (response.ok) {
+        const data = await response.json();
+        setTelegramData({
+          isLinked: data.isLinked,
+          telegramUserId: data.telegramUserId,
+          telegramUsername: data.telegramUsername,
+          linkedAt: data.linkedAt
+        });
+      }
+    } catch (error) {
+      console.error('Error obteniendo estado de Telegram:', error);
+    }
+  };
+
+  // Vincular Telegram
+  const handleLinkTelegram = async () => {
+    if (!telegramIdInput.trim()) {
+      toast.error('Ingresa tu ID de Telegram');
+      return;
+    }
+
+    setTelegramLoading(true);
+    try {
+      const response = await fetch('/api/telegram/link-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          telegramUserId: telegramIdInput.trim(),
+          telegramUsername: telegramUsernameInput.trim() || undefined
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast.success('¡Telegram vinculado exitosamente!');
+        setTelegramIdInput('');
+        setTelegramUsernameInput('');
+        fetchTelegramStatus();
+      } else {
+        toast.error(data.error || 'Error al vincular Telegram');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  // Desvincular Telegram
+  const handleUnlinkTelegram = async () => {
+    if (!confirm('¿Estás seguro de desvincular tu cuenta de Telegram?')) return;
+
+    setTelegramLoading(true);
+    try {
+      const response = await fetch('/api/telegram/link-account', {
+        method: 'DELETE'
+      });
+
+      if (response.ok) {
+        toast.success('Telegram desvinculado');
+        setTelegramData({ isLinked: false, telegramUserId: null, telegramUsername: null, linkedAt: null });
+        setInviteLinks({});
+      } else {
+        const data = await response.json();
+        toast.error(data.error || 'Error al desvincular');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  // Generar link de invitación
+  const handleGenerateInvite = async (service: string) => {
+    setGeneratingLink(service);
+    try {
+      const response = await fetch('/api/telegram/generate-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ service })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setInviteLinks(prev => ({ ...prev, [service]: data.inviteLink }));
+        toast.success(`Link generado para ${service}`);
+      } else {
+        toast.error(data.error || 'Error al generar link');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
+    } finally {
+      setGeneratingLink(null);
+    }
+  };
+
+  // Copiar link al portapapeles
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Link copiado al portapapeles');
+  };
+
   // Función para obtener el perfil del usuario
   const fetchUserProfile = async () => {
     try {
@@ -244,6 +366,7 @@ export default function PerfilPage() {
   useEffect(() => {
     if (session?.user?.email) {
       fetchUserProfile();
+      fetchTelegramStatus();
     }
   }, [session]);
 
@@ -374,6 +497,12 @@ export default function PerfilPage() {
       title: 'Notificaciones',
       description: 'Central de Notificaciones del usuario respecto al pago y novedades',
       icon: <Bell size={20} />
+    },
+    {
+      id: 4,
+      title: 'Telegram',
+      description: 'Vincular cuenta de Telegram para recibir alertas en tu celular',
+      icon: <Send size={20} />
     }
   ];
 
@@ -601,6 +730,371 @@ export default function PerfilPage() {
               {/* Notificaciones */}
               {activeSection === 3 && (
                 <NotificationsSection />
+              )}
+
+              {/* Telegram */}
+              {activeSection === 4 && (
+                <motion.div
+                  className={styles.sectionContent}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <div className={styles.sectionHeader}>
+                    <h2>Vincular Telegram</h2>
+                  </div>
+
+                  {/* Estado actual */}
+                  <div className={styles.infoGrid}>
+                    <div className={styles.infoCard} style={{ gridColumn: '1 / -1' }}>
+                      <div className={styles.cardIcon}>
+                        <Send size={24} />
+                      </div>
+                      <h3>Estado de Vinculación</h3>
+                      
+                      {telegramData.isLinked ? (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '0.5rem',
+                            padding: '1rem',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderRadius: '8px',
+                            marginBottom: '1rem'
+                          }}>
+                            <CheckCircle size={20} color="#10B981" />
+                            <span style={{ color: '#10B981', fontWeight: 500 }}>
+                              Telegram Vinculado
+                            </span>
+                          </div>
+                          
+                          <div className={styles.infoList}>
+                            <div className={styles.infoItem}>
+                              <span className={styles.label}>ID de Telegram:</span>
+                              <span className={styles.value}>{telegramData.telegramUserId}</span>
+                            </div>
+                            {telegramData.telegramUsername && (
+                              <div className={styles.infoItem}>
+                                <span className={styles.label}>Username:</span>
+                                <span className={styles.value}>@{telegramData.telegramUsername}</span>
+                              </div>
+                            )}
+                            {telegramData.linkedAt && (
+                              <div className={styles.infoItem}>
+                                <span className={styles.label}>Vinculado el:</span>
+                                <span className={styles.value}>
+                                  {new Date(telegramData.linkedAt).toLocaleDateString('es-AR')}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={handleUnlinkTelegram}
+                            disabled={telegramLoading}
+                            style={{
+                              marginTop: '1rem',
+                              padding: '0.75rem 1.5rem',
+                              backgroundColor: '#EF4444',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            <Unlink size={16} />
+                            {telegramLoading ? 'Desvinculando...' : 'Desvincular Telegram'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: '1rem' }}>
+                          <div style={{ 
+                            padding: '1rem',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            borderRadius: '8px',
+                            marginBottom: '1.5rem'
+                          }}>
+                            <p style={{ margin: 0, color: '#D97706', fontSize: '0.9rem' }}>
+                              <strong>¿Cómo obtener tu ID de Telegram?</strong><br />
+                              1. Abrí Telegram y buscá <code>@userinfobot</code><br />
+                              2. Enviále cualquier mensaje<br />
+                              3. El bot te responderá con tu ID (ej: 123456789)
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                                ID de Telegram *
+                              </label>
+                              <input
+                                type="text"
+                                value={telegramIdInput}
+                                onChange={(e) => setTelegramIdInput(e.target.value)}
+                                placeholder="Ej: 123456789"
+                                className={styles.formInput}
+                                style={{ width: '100%', maxWidth: '300px' }}
+                              />
+                            </div>
+                            
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                                Username (opcional)
+                              </label>
+                              <input
+                                type="text"
+                                value={telegramUsernameInput}
+                                onChange={(e) => setTelegramUsernameInput(e.target.value)}
+                                placeholder="Ej: @tuusuario"
+                                className={styles.formInput}
+                                style={{ width: '100%', maxWidth: '300px' }}
+                              />
+                            </div>
+
+                            <button
+                              onClick={handleLinkTelegram}
+                              disabled={telegramLoading || !telegramIdInput.trim()}
+                              style={{
+                                padding: '0.75rem 1.5rem',
+                                backgroundColor: '#0088cc',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: telegramLoading || !telegramIdInput.trim() ? 'not-allowed' : 'pointer',
+                                opacity: telegramLoading || !telegramIdInput.trim() ? 0.6 : 1,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                fontSize: '0.9rem',
+                                width: 'fit-content'
+                              }}
+                            >
+                              <Link2 size={16} />
+                              {telegramLoading ? 'Vinculando...' : 'Vincular Telegram'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Links de invitación - Solo si está vinculado */}
+                  {telegramData.isLinked && (
+                    <div className={styles.infoGrid} style={{ marginTop: '2rem' }}>
+                      <div className={styles.infoCard} style={{ gridColumn: '1 / -1' }}>
+                        <div className={styles.cardIcon}>
+                          <ExternalLink size={24} />
+                        </div>
+                        <h3>Links de Invitación a Canales</h3>
+                        <p style={{ color: '#9CA3AF', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                          Genera un link para unirte a los canales de alertas. Cada link es de un solo uso y expira en 24 horas.
+                        </p>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
+                          {/* TraderCall */}
+                          <div style={{
+                            padding: '1rem',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(59, 130, 246, 0.2)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                              <div>
+                                <h4 style={{ margin: 0, color: '#3B82F6' }}>📊 TraderCall</h4>
+                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#9CA3AF' }}>
+                                  Canal de alertas TraderCall
+                                </p>
+                              </div>
+                              
+                              {inviteLinks.TraderCall ? (
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <input
+                                    type="text"
+                                    value={inviteLinks.TraderCall}
+                                    readOnly
+                                    style={{
+                                      padding: '0.5rem',
+                                      borderRadius: '4px',
+                                      border: '1px solid #374151',
+                                      backgroundColor: '#1F2937',
+                                      color: 'white',
+                                      fontSize: '0.8rem',
+                                      width: '200px'
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => copyToClipboard(inviteLinks.TraderCall)}
+                                    style={{
+                                      padding: '0.5rem',
+                                      backgroundColor: '#374151',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'white'
+                                    }}
+                                  >
+                                    <Copy size={16} />
+                                  </button>
+                                  <a
+                                    href={inviteLinks.TraderCall}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      padding: '0.5rem',
+                                      backgroundColor: '#0088cc',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'white',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <ExternalLink size={16} />
+                                  </a>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleGenerateInvite('TraderCall')}
+                                  disabled={generatingLink === 'TraderCall'}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#3B82F6',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  {generatingLink === 'TraderCall' ? (
+                                    <><RefreshCw size={14} className="animate-spin" /> Generando...</>
+                                  ) : (
+                                    <>Generar Link</>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* SmartMoney */}
+                          <div style={{
+                            padding: '1rem',
+                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid rgba(168, 85, 247, 0.2)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                              <div>
+                                <h4 style={{ margin: 0, color: '#A855F7' }}>💰 SmartMoney</h4>
+                                <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#9CA3AF' }}>
+                                  Canal de alertas SmartMoney
+                                </p>
+                              </div>
+                              
+                              {inviteLinks.SmartMoney ? (
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <input
+                                    type="text"
+                                    value={inviteLinks.SmartMoney}
+                                    readOnly
+                                    style={{
+                                      padding: '0.5rem',
+                                      borderRadius: '4px',
+                                      border: '1px solid #374151',
+                                      backgroundColor: '#1F2937',
+                                      color: 'white',
+                                      fontSize: '0.8rem',
+                                      width: '200px'
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => copyToClipboard(inviteLinks.SmartMoney)}
+                                    style={{
+                                      padding: '0.5rem',
+                                      backgroundColor: '#374151',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'white'
+                                    }}
+                                  >
+                                    <Copy size={16} />
+                                  </button>
+                                  <a
+                                    href={inviteLinks.SmartMoney}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      padding: '0.5rem',
+                                      backgroundColor: '#0088cc',
+                                      border: 'none',
+                                      borderRadius: '4px',
+                                      cursor: 'pointer',
+                                      color: 'white',
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <ExternalLink size={16} />
+                                  </a>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleGenerateInvite('SmartMoney')}
+                                  disabled={generatingLink === 'SmartMoney'}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    backgroundColor: '#A855F7',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    fontSize: '0.85rem'
+                                  }}
+                                >
+                                  {generatingLink === 'SmartMoney' ? (
+                                    <><RefreshCw size={14} className="animate-spin" /> Generando...</>
+                                  ) : (
+                                    <>Generar Link</>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ 
+                          marginTop: '1.5rem', 
+                          padding: '1rem', 
+                          backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          color: '#9CA3AF'
+                        }}>
+                          <strong>⚠️ Importante:</strong>
+                          <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
+                            <li>Cada link solo puede usarse 1 vez</li>
+                            <li>Los links expiran en 24 horas</li>
+                            <li>Solo puedes generar links si tienes suscripción activa al servicio</li>
+                            <li>Si tu suscripción expira, serás removido del canal automáticamente</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
               )}
             </div>
           </motion.div>
