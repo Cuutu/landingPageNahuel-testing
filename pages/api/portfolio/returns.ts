@@ -122,64 +122,82 @@ export default async function handler(
           
           console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período solicitado (${days}d) > días desde snapshot más antiguo (${daysSinceOldest}d). Usando snapshot más antiguo disponible`);
         } else {
-          // ✅ Hay suficientes datos históricos, buscar snapshot exacto para el período
+          // ✅ CORREGIDO: Buscar snapshot más cercano a la fecha objetivo (no el más reciente en el rango)
           const targetDate = new Date(now);
           targetDate.setDate(targetDate.getDate() - days);
           targetDate.setHours(16, 30, 0, 0); // Normalizar a las 16:30
 
-          // Buscar el snapshot más cercano a la fecha objetivo
-          // Buscar en un rango de ±1 día para encontrar el snapshot más cercano
+          // Buscar snapshots en un rango de ±2 días para encontrar el más cercano
           const startDate = new Date(targetDate);
-          startDate.setDate(startDate.getDate() - 1);
+          startDate.setDate(startDate.getDate() - 2);
           
           const endDate = new Date(targetDate);
-          endDate.setDate(endDate.getDate() + 1);
+          endDate.setDate(endDate.getDate() + 2);
 
-          const snapshot = await PortfolioSnapshot.findOne({
+          // Obtener todos los snapshots en el rango y encontrar el más cercano
+          const snapshotsInRange = await PortfolioSnapshot.find({
             pool: poolType,
             snapshotDate: {
               $gte: startDate,
               $lte: endDate
             }
-          }).sort({ snapshotDate: -1 }); // Obtener el más reciente en el rango
+          }).sort({ snapshotDate: 1 }).lean();
 
-          if (snapshot) {
-            // ✅ Caso ideal: encontramos un snapshot para el período exacto
+          let snapshot: any = null;
+          let minDaysDifference = Infinity;
+
+          // Encontrar el snapshot más cercano a la fecha objetivo
+          for (const snap of snapshotsInRange) {
+            const snapDate = new Date(snap.snapshotDate);
+            const daysDifference = Math.abs((targetDate.getTime() - snapDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (daysDifference < minDaysDifference) {
+              minDaysDifference = daysDifference;
+              snapshot = snap;
+            }
+          }
+
+          // ✅ CORREGIDO: Solo usar el snapshot si está dentro de 2 días de diferencia
+          // Si la diferencia es mayor, es mejor calcular desde portfolio-evolution
+          if (snapshot && minDaysDifference <= 2) {
             const valorHistorico = snapshot.valorTotalCartera;
             const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
             historicalValues[periodKey] = valorHistorico;
             
-            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot exacto del ${snapshot.snapshotDate.toISOString().split('T')[0]}`);
+            const snapshotDate = new Date(snapshot.snapshotDate);
+            const actualDaysDifference = Math.floor((now.getTime() - snapshotDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot del ${snapshotDate.toISOString().split('T')[0]} (${actualDaysDifference} días atrás, diferencia: ${minDaysDifference.toFixed(1)} días)`);
           } else if (days === 1 && newestSnapshot) {
             // ✅ CASO ESPECIAL: Para 1 día, si no hay snapshot de ayer (fin de semana), usar el último snapshot disponible
             // Esto maneja el caso cuando el mercado está cerrado (fines de semana)
-            const valorHistorico = newestSnapshot.valorTotalCartera;
-            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
-            
-            returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = valorHistorico;
-            
             const newestDate = new Date(newestSnapshot.snapshotDate);
             const daysSinceNewest = Math.floor((now.getTime() - newestDate.getTime()) / (1000 * 60 * 60 * 24));
             
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot de ayer (probablemente fin de semana). Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`);
-          } else if (oldestSnapshot) {
-            // Fallback: no encontramos snapshot exacto pero hay datos históricos, usar el más antiguo
-            const valorHistorico = oldestSnapshot.valorTotalCartera;
-            const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
-            
-            returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = valorHistorico;
-            
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot exacto para ${days} días. Usando snapshot más antiguo (${daysSinceOldest} días atrás)`);
+            // Solo usar si tiene menos de 3 días de diferencia (para manejar fines de semana)
+            if (daysSinceNewest <= 3) {
+              const valorHistorico = newestSnapshot.valorTotalCartera;
+              const returnPercentage = calculateReturnPercentage(valorActualCartera, valorHistorico);
+              
+              returns[periodKey] = Number(returnPercentage.toFixed(2));
+              historicalValues[periodKey] = valorHistorico;
+              
+              console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot de ayer (probablemente fin de semana). Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`);
+            } else {
+              // Si el snapshot más reciente es muy antiguo, no usar (devolver null)
+              returns[periodKey] = null;
+              historicalValues[periodKey] = null;
+              console.log(`⚠️ [Portfolio Returns] ${periodKey}: El snapshot más reciente es muy antiguo (${daysSinceNewest} días). No se puede calcular rendimiento confiable.`);
+            }
           } else {
-            // ❌ No hay ningún snapshot disponible
+            // ✅ CORREGIDO: Si no hay snapshot cercano, devolver null
+            // Los componentes frontend usarán el cálculo desde portfolio-evolution directamente
+            // Esto evita usar fetch dentro del endpoint y mantiene la lógica separada
             returns[periodKey] = null;
             historicalValues[periodKey] = null;
             
-            console.log(`❌ [Portfolio Returns] ${periodKey}: No hay snapshots disponibles`);
+            console.log(`⚠️ [Portfolio Returns] ${periodKey}: No se encontró snapshot cercano (dentro de 2 días). Los componentes usarán cálculo desde portfolio-evolution`);
           }
         }
       } catch (error) {

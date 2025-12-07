@@ -444,10 +444,38 @@ export default async function handler(
     const sp500Return = sp500Data.length > 0 && sp500Data[0].value > 0 ? 
       ((sp500Data[sp500Data.length - 1].value - sp500Data[0].value) / sp500Data[0].value) * 100 : 0;
     
-    // ✅ CORREGIDO: Calcular rendimiento porcentual usando valorTotalCartera (método oficial)
-    const portfolioReturn = initialLiquidity > 0 
-      ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
-      : 0;
+    // ✅ CORREGIDO: Calcular rendimiento del PERÍODO específico (no desde el inicio)
+    // Para el período solicitado, comparar el valor del primer día con el último día
+    let portfolioReturn = 0;
+    let periodStartValue = initialLiquidity; // Valor por defecto
+    
+    if (evolutionData.length > 0) {
+      // Obtener el valor del primer día del período (hace X días)
+      const firstDayData = evolutionData[0];
+      const lastDayData = evolutionData[evolutionData.length - 1];
+      
+      periodStartValue = firstDayData.value || initialLiquidity;
+      const periodEndValue = lastDayData.value || valorTotalCarteraActual;
+      
+      // Calcular rendimiento del período: (valor final - valor inicial) / valor inicial * 100
+      if (periodStartValue > 0) {
+        portfolioReturn = ((periodEndValue - periodStartValue) / periodStartValue) * 100;
+      }
+      
+      console.log(`📊 [PORTFOLIO] Rendimiento del período (${daysNum} días):`, {
+        periodStartValue: periodStartValue.toFixed(2),
+        periodEndValue: periodEndValue.toFixed(2),
+        portfolioReturn: portfolioReturn.toFixed(2) + '%',
+        firstDay: firstDayData.date,
+        lastDay: lastDayData.date
+      });
+    } else {
+      // Si no hay datos de evolución, calcular desde el inicio (fallback)
+      portfolioReturn = initialLiquidity > 0 
+        ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
+        : 0;
+      console.log(`⚠️ [PORTFOLIO] No hay datos de evolución, usando cálculo desde inicio`);
+    }
     
     console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);
     console.log(`📊 [PORTFOLIO] Total Alertas: ${totalAlerts} (${activeAlerts.length} activas, ${closedAlerts.length} cerradas)`);
