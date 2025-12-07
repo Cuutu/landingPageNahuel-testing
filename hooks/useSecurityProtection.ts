@@ -130,12 +130,13 @@ export const useSecurityProtection = () => {
       return false;
     };
 
-    // Aplicar protecciones globales solo si no es página administrativa
+    // ✅ OPTIMIZADO: Aplicar protecciones globales de forma menos intrusiva
+    // Removido 'mousedown' que bloqueaba clics de navegación
     document.addEventListener('contextmenu', preventContextMenu);
     document.addEventListener('keydown', preventKeyCombinations);
     document.addEventListener('dragstart', preventDrag);
     document.addEventListener('selectstart', preventSelect);
-    document.addEventListener('mousedown', preventSelect);
+    // ✅ REMOVIDO: document.addEventListener('mousedown', preventSelect) - causaba problemas de navegación
 
     // Proteger todas las imágenes existentes
     const protectImages = () => {
@@ -190,7 +191,6 @@ export const useSecurityProtection = () => {
         document.removeEventListener('keydown', preventKeyCombinations);
         document.removeEventListener('dragstart', preventDrag);
         document.removeEventListener('selectstart', preventSelect);
-        document.removeEventListener('mousedown', preventSelect);
         observer.disconnect();
       }
     };

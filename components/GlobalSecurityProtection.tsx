@@ -225,35 +225,11 @@ const GlobalSecurityProtection: React.FC = () => {
       const widthThreshold = window.outerWidth - window.innerWidth > threshold;
       const heightThreshold = window.outerHeight - window.innerHeight > threshold;
       
-      // Detectar por tamaño de ventana
+      // Detectar solo por tamaño de ventana (método más ligero)
+      // ✅ OPTIMIZADO: Eliminamos detección por console y debugger que bloqueaban la navegación
       const sizeDetected = widthThreshold || heightThreshold;
-      
-      // Detectar por console (si está disponible)
-      let consoleDetected = false;
-      try {
-        const start = performance.now();
-        (window as any).console.log('%c', '');
-        const end = performance.now();
-        // Si console.log tarda mucho, puede indicar DevTools abiertos
-        consoleDetected = end - start > 100;
-      } catch (e) {
-        // Ignorar errores
-      }
-      
-      // Detectar por debugger
-      let debuggerDetected = false;
-      try {
-        // Intentar detectar si hay un debugger activo
-        const start = Date.now();
-        // eslint-disable-next-line no-debugger
-        debugger;
-        const end = Date.now();
-        debuggerDetected = end - start > 100;
-      } catch (e) {
-        // Ignorar errores
-      }
 
-      if (sizeDetected || consoleDetected || debuggerDetected) {
+      if (sizeDetected) {
         devToolsDetected = true;
         devToolsCheckCount++;
         
@@ -375,8 +351,8 @@ const GlobalSecurityProtection: React.FC = () => {
     document.addEventListener('dragstart', preventDrag);
     document.addEventListener('selectstart', preventSelect);
 
-    // Detectar DevTools periódicamente (más frecuente para detectar desde iframes)
-    const devToolsInterval = setInterval(detectDevTools, 200);
+    // ✅ OPTIMIZADO: Reducir frecuencia de 200ms a 2000ms para no afectar navegación
+    const devToolsInterval = setInterval(detectDevTools, 2000);
     
     // También detectar cuando cambia el foco (cuando salen del iframe)
     const handleFocus = () => {

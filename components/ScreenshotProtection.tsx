@@ -95,95 +95,40 @@ const ScreenshotProtection: React.FC<ScreenshotProtectionProps> = ({
       }
     };
 
-    // Método 3: Detectar herramientas de desarrollador
+    // Método 3: Detectar herramientas de desarrollador (optimizado)
     const handleDevTools = () => {
       if (window.outerHeight - window.innerHeight > 200 || 
           window.outerWidth - window.innerWidth > 200) {
-        detectScreenshotAttempt();
+        detectScreenshotAttempt('devtools');
       }
     };
 
-    // Método 4: Detectar cambios de foco rápidos
-    let focusTimeout: NodeJS.Timeout;
-    const handleFocusChange = () => {
-      clearTimeout(focusTimeout);
-      focusTimeout = setTimeout(() => {
-        if (document.hasFocus()) {
-          // Verificar si hay herramientas de desarrollador abiertas
-          handleDevTools();
-        }
-      }, 100);
-    };
-
-    // Método 5: Detectar intentos de selección de texto (posible screenshot)
-    const handleSelection = () => {
-      const selection = window.getSelection();
-      if (selection && selection.toString().length > 50) {
-        // Selección larga de texto podría ser para screenshot
-        detectScreenshotAttempt();
-      }
-    };
-
-    // Método 6: Detectar cambios en el viewport
+    // Método 4: Detectar cambios en el viewport
     const handleResize = () => {
       handleDevTools();
     };
 
-    // Método adicional: Detectar cualquier tecla que pueda ser PrintScreen
-    const handleAnyKey = (event: KeyboardEvent) => {
-      // Log detallado para debugging
-      // console.log('🔍 ANY KEY:', {
-      //   key: event.key,
-      //   code: event.code,
-      //   keyCode: event.keyCode,
-      //   which: event.which,
-      //   type: event.type,
-      //   altKey: event.altKey,
-      //   ctrlKey: event.ctrlKey,
-      //   shiftKey: event.shiftKey,
-      //   metaKey: event.metaKey
-      // });
-      
-      // Detectar por código de tecla (más confiable)
-      if (event.keyCode === 44 || event.which === 44) {
-        // console.log('🎯 PrintScreen detected by keyCode!');
-        detectScreenshotAttempt('printscreen_keycode');
-        return;
-      }
-    };
-
-    // Agregar event listeners
+    // ✅ OPTIMIZADO: Reducir event listeners para mejor rendimiento de navegación
+    // Solo escuchar keydown (keyup y keypress son redundantes y afectan rendimiento)
     document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyDown); // También escuchar keyup
-    document.addEventListener('keypress', handleKeyDown); // También escuchar keypress
-    document.addEventListener('keydown', handleAnyKey); // Listener adicional
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    document.addEventListener('focus', handleFocusChange);
-    document.addEventListener('blur', handleFocusChange);
-    document.addEventListener('selectionchange', handleSelection);
+    // ✅ OPTIMIZADO: Removidos focus/blur/selectionchange que causaban falsos positivos
     window.addEventListener('resize', handleResize);
 
-    // Detectar herramientas de desarrollador periódicamente
+    // ✅ OPTIMIZADO: Aumentar intervalo de 1000ms a 5000ms (menos intrusivo)
     const devToolsInterval = setInterval(() => {
       handleDevTools();
-    }, 1000);
+    }, 5000);
 
     // Cleanup
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('keyup', handleKeyDown);
-      document.removeEventListener('keypress', handleKeyDown);
-      document.removeEventListener('keydown', handleAnyKey);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('focus', handleFocusChange);
-      document.removeEventListener('blur', handleFocusChange);
-      document.removeEventListener('selectionchange', handleSelection);
       window.removeEventListener('resize', handleResize);
       clearInterval(devToolsInterval);
       if (protectionTimeoutRef.current) {
         clearTimeout(protectionTimeoutRef.current);
       }
-      clearTimeout(focusTimeout);
     };
   }, []);
 
