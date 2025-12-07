@@ -902,6 +902,7 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
       
       // Buscar usuarios suscritos UNA sola vez
       const now = new Date();
+      console.log(`🔍 [RESUMEN] Buscando usuarios suscritos a ${tipoAlerta}...`);
       const subscribedUsers = await User.find({
         $or: [
           {
@@ -923,21 +924,33 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
             }
           }
         ]
-      }, 'email name role activeSubscriptions').lean();
+      }, 'email name role activeSubscriptions suscripciones').lean();
       
-      // Filtrar usuarios válidos
+      // Filtrar usuarios válidos - verificar AMBOS sistemas de suscripciones
       const validUsers = subscribedUsers.filter(user => {
+        // Verificar activeSubscriptions (sistema nuevo)
         const hasActiveSub = (user as any).activeSubscriptions?.some((sub: any) => 
           sub.service === tipoAlerta && 
           sub.isActive === true && 
           new Date(sub.expiryDate) >= now
         );
-        return hasActiveSub;
+        
+        // Verificar suscripciones (sistema legacy)
+        const hasLegacySub = (user as any).suscripciones?.some((sub: any) => 
+          sub.servicio === tipoAlerta && 
+          sub.activa === true && 
+          new Date(sub.fechaVencimiento) >= now
+        );
+        
+        return hasActiveSub || hasLegacySub;
       });
       
-      console.log(`👥 [RESUMEN] ${validUsers.length} usuarios suscritos a ${tipoAlerta}`);
+      console.log(`👥 [RESUMEN] ${subscribedUsers.length} usuarios encontrados, ${validUsers.length} válidos para ${tipoAlerta}`);
       
-      if (validUsers.length === 0) continue;
+      if (validUsers.length === 0) {
+        console.log(`⚠️ [RESUMEN] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
+        continue;
+      }
       
       // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
       const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
@@ -948,6 +961,13 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
       if (TESTING_MODE) {
         console.log(`🧪 [RESUMEN] MODO TESTING - Solo enviando a ${usersToEmail.length} admins`);
       }
+      
+      if (usersToEmail.length === 0) {
+        console.log(`⚠️ [RESUMEN] No hay usuarios para enviar emails de ${tipoAlerta}, saltando...`);
+        continue;
+      }
+      
+      console.log(`📤 [RESUMEN] Preparando envío a ${usersToEmail.length} usuarios de ${tipoAlerta}...`);
       
       // Generar HTML del resumen
       const htmlResumen = generarEmailResumenHTML(tipoAlerta, accionesTipo);
