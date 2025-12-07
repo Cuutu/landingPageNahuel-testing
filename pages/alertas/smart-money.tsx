@@ -4843,6 +4843,12 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           Seguimiento
         </button>
         <button
+          className={`${styles.mobileTab} ${activeTab === 'operaciones' ? styles.mobileTabActive : ''}`}
+          onClick={() => setActiveTab('operaciones')}
+        >
+          Operaciones
+        </button>
+        <button
           className={`${styles.mobileTab} ${activeTab === 'vigentes' ? styles.mobileTabActive : ''}`}
           onClick={() => setActiveTab('vigentes')}
         >
