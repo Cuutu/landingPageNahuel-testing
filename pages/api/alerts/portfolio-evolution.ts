@@ -474,7 +474,7 @@ export default async function handler(
       portfolioReturn = initialLiquidity > 0 
         ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
         : 0;
-      console.log(`⚠️ [PORTFOLIO] No hay datos de evolución, usando cálculo desde inicio`);
+      console.log(`⚠️ [PORTFOLIO] No hay datos de evolución, usando cálculo desde inicio.`);
     }
     
     console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);
