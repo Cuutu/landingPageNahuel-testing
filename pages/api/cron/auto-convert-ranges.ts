@@ -9,6 +9,24 @@ interface AutoConvertCronResponse {
   processed?: number;
 }
 
+/**
+ * Interfaz para acumular acciones del cron y enviar email de resumen
+ */
+interface AccionResumen {
+  symbol: string;
+  tipo: 'COMPRA_CONFIRMADA' | 'VENTA_EJECUTADA' | 'COMPRA_DESCARTADA' | 'VENTA_DESCARTADA';
+  precio: number;
+  alertaTipo: 'SmartMoney' | 'TraderCall';
+  alertId: string;
+  detalles: {
+    rangoOriginal?: { min: number; max: number };
+    porcentajeVendido?: number;
+    profitPorcentaje?: number;
+    motivo?: string;
+    posicionCerrada?: boolean;
+  };
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse<AutoConvertCronResponse>) {
   // Permitir GET para cronjobs externos (cron-job.org)
   if (req.method !== 'GET') {
@@ -79,6 +97,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     const conversionDetails = [];
+    
+    // ✅ NUEVO: Acumulador de acciones para email de resumen consolidado
+    const resumenAcciones: AccionResumen[] = [];
 
     for (const alert of alertsWithRange) {
       try {
@@ -183,8 +204,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               reason: motivo
             });
           
-            // Enviar notificación de compra descartada
-            await sendDiscardedBuyNotification(alert, closePrice, entryRangeMin, entryRangeMax, motivo);
+            // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
+            resumenAcciones.push({
+              symbol: alert.symbol,
+              tipo: 'COMPRA_DESCARTADA',
+              precio: closePrice,
+              alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+              alertId: alert._id.toString(),
+              detalles: {
+                rangoOriginal: { min: entryRangeMin, max: entryRangeMax },
+                motivo: motivo
+              }
+            });
             
             continue;
           }
@@ -199,8 +230,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           unsetFields.precioMinimo = 1;
           unsetFields.precioMaximo = 1;
           
-          // ✅ NUEVO: Enviar notificación de compra confirmada
-          await sendEntryConfirmedNotification(alert, closePrice, entryRangeMin, entryRangeMax);
+          // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
+          resumenAcciones.push({
+            symbol: alert.symbol,
+            tipo: 'COMPRA_CONFIRMADA',
+            precio: closePrice,
+            alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+            alertId: alert._id.toString(),
+            detalles: {
+              rangoOriginal: { min: entryRangeMin, max: entryRangeMax }
+            }
+          });
           
           // ✅ NUEVO: Actualizar el precio de la operación de COMPRA existente con el precio final confirmado
           await updateOperationPriceOnConfirmation(alert._id, closePrice);
@@ -251,8 +291,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               unsetFields.sellRangeMin = 1;
               unsetFields.sellRangeMax = 1;
               
-              // Enviar notificación de VENTA
-              await sendSaleNotification(alert, closePrice, pendingSale.percentage, saleResult.profitPercentage);
+              // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
+              resumenAcciones.push({
+                symbol: alert.symbol,
+                tipo: 'VENTA_EJECUTADA',
+                precio: closePrice,
+                alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                alertId: alert._id.toString(),
+                detalles: {
+                  porcentajeVendido: pendingSale.percentage,
+                  profitPorcentaje: saleResult.profitPercentage,
+                  posicionCerrada: saleResult.shouldClose
+                }
+              });
               
           } else {
               // ✅ Si NO hay venta programada pero el precio está en rango, 
@@ -285,8 +336,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               unsetFields.sellRangeMin = 1;
               unsetFields.sellRangeMax = 1;
               
-              // Enviar notificación de VENTA ejecutada (no solo conversión)
-              await sendSaleNotification(alert, closePrice, remainingPercentage, saleResult.profitPercentage);
+              // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
+              resumenAcciones.push({
+                symbol: alert.symbol,
+                tipo: 'VENTA_EJECUTADA',
+                precio: closePrice,
+                alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                alertId: alert._id.toString(),
+                detalles: {
+                  porcentajeVendido: remainingPercentage,
+                  profitPorcentaje: saleResult.profitPercentage,
+                  posicionCerrada: saleResult.shouldClose
+                }
+              });
                   }
                 } else {
             // ❌ Precio FUERA del rango → DESCARTAR la venta programada (no ejecutar)
@@ -330,8 +392,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             
             console.log(`🗑️ ${alert.symbol}: Venta descartada - Posición sigue ACTIVA sin venta programada`);
             
-            // Enviar notificación de venta descartada
-            await sendDiscardedSaleNotification(alert, closePrice, sellRangeMin, sellRangeMax, motivo);
+            // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
+            resumenAcciones.push({
+              symbol: alert.symbol,
+              tipo: 'VENTA_DESCARTADA',
+              precio: closePrice,
+              alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+              alertId: alert._id.toString(),
+              detalles: {
+                rangoOriginal: { min: sellRangeMin, max: sellRangeMax },
+                motivo: motivo
+              }
+            });
             
             conversionDetails.push({
               symbol: alert.symbol,
@@ -381,6 +453,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
+    console.log(`📧 CRON: ${resumenAcciones.length} acciones para notificar en resumen consolidado`);
+
+    // ✅ NUEVO: Enviar resumen de operaciones de forma ASÍNCRONA (fire-and-forget)
+    // Esto permite que el cron responda rápidamente sin esperar los emails
+    if (resumenAcciones.length > 0) {
+      enviarResumenOperaciones(resumenAcciones).catch(err => {
+        console.error('❌ CRON: Error enviando resumen de operaciones:', err);
+      });
+      console.log(`📧 CRON: Resumen de operaciones enviándose en segundo plano...`);
+    }
 
     if (isCronJobOrg) {
       return res.status(200).json({
@@ -692,161 +774,6 @@ async function registerSaleOperation(
       }
       
 /**
- * Envía notificación de VENTA ejecutada
- */
-async function sendSaleNotification(
-  alert: any,
-  closePrice: number,
-  percentage: number,
-  profitPercentage: number,
-  isPositionClosed?: boolean // ✅ NUEVO: Indica si la posición se cerró completamente
-) {
-  try {
-    const { createAlertNotification } = await import('@/lib/notificationUtils');
-
-    const profitSign = profitPercentage >= 0 ? '+' : '';
-    
-    // ✅ CORREGIDO: Si la posición se cerró completamente (participación = 0%), 
-    // mostrar mensaje de cierre completo, aunque el % vendido no sea 100%
-    const positionClosed = isPositionClosed || percentage >= 100;
-    
-    const message = positionClosed
-      ? `✅ VENTA EJECUTADA: Se cerró completamente la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`
-      : `✅ VENTA PARCIAL EJECUTADA: Se vendió el ${percentage}% de la posición en ${alert.symbol} a $${closePrice.toFixed(2)}. Profit: ${profitSign}${profitPercentage.toFixed(2)}%`;
-    
-    // ✅ CORREGIDO: El % vendido en el email debe reflejar que se cerró todo si es cierre completo
-    const displayPercentage = positionClosed ? 100 : percentage;
-        
-    await createAlertNotification(alert, {
-      message: message,
-          price: closePrice,
-      action: 'SELL', // ✅ Siempre SELL para ventas
-      skipDuplicateCheck: true,
-      title: `✅ Venta Ejecutada: ${alert.symbol}`,
-      soldPercentage: displayPercentage,
-      profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual
-        });
-        
-    console.log(`✅ ${alert.symbol}: Notificación de venta enviada (${positionClosed ? 'cierre completo' : 'venta parcial'} - ${displayPercentage}%)`);
-  } catch (error) {
-    console.error(`⚠️ Error enviando notificación de venta para ${alert.symbol}:`, error);
-  }
-}
-
-/**
- * Envía notificación de conversión de rango (sin cierre de posición)
- */
-async function sendConversionNotification(
-  alert: any, 
-  closePrice: number, 
-  oldRange: string
-) {
-  try {
-    const { createAlertNotification } = await import('@/lib/notificationUtils');
-    
-    const message = `🎯 Rango de venta convertido: ${alert.symbol} - El rango ${oldRange} se convirtió a precio fijo $${closePrice.toFixed(2)}. La posición sigue activa.`;
-    
-    await createAlertNotification(alert, {
-      message: message,
-      price: closePrice,
-      action: 'SELL',
-      skipDuplicateCheck: true,
-      title: `🎯 Rango Convertido: ${alert.symbol}`
-    });
-    
-    console.log(`✅ ${alert.symbol}: Notificación de conversión enviada`);
-  } catch (error) {
-    console.error(`⚠️ Error enviando notificación de conversión para ${alert.symbol}:`, error);
-  }
-}
-
-/**
- * Envía notificación de venta DESCARTADA (precio fuera del rango)
- */
-async function sendDiscardedSaleNotification(
-  alert: any, 
-  closePrice: number, 
-  rangeMin: number,
-  rangeMax: number,
-  motivo: string
-) {
-  try {
-    const { createAlertNotification } = await import('@/lib/notificationUtils');
-    
-    const message = `❌ Venta descartada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está fuera del rango programado ($${rangeMin}-$${rangeMax}). La posición sigue ACTIVA sin venta programada.`;
-    
-    await createAlertNotification(alert, {
-      message: message,
-      price: closePrice,
-      action: 'SELL',
-      skipDuplicateCheck: true,
-      title: `❌ Venta Descartada: ${alert.symbol}`
-    });
-    
-    console.log(`✅ ${alert.symbol}: Notificación de venta descartada enviada`);
-  } catch (error) {
-    console.error(`⚠️ Error enviando notificación de venta descartada para ${alert.symbol}:`, error);
-  }
-}
-
-/**
- * Envía notificación de compra DESCARTADA (precio fuera del rango de entrada)
- */
-async function sendDiscardedBuyNotification(
-  alert: any, 
-  closePrice: number, 
-  rangeMin: number,
-  rangeMax: number,
-  motivo: string
-) {
-  try {
-    const { createAlertNotification } = await import('@/lib/notificationUtils');
-    
-    const message = `❌ Compra descartada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está fuera del rango de entrada ($${rangeMin}-$${rangeMax}). La alerta ha sido cancelada.`;
-    
-    await createAlertNotification(alert, {
-      message: message,
-      price: closePrice,
-      action: 'BUY',
-      skipDuplicateCheck: true,
-      title: `❌ Compra Descartada: ${alert.symbol}`
-    });
-    
-    console.log(`✅ ${alert.symbol}: Notificación de compra descartada enviada`);
-  } catch (error) {
-    console.error(`⚠️ Error enviando notificación de compra descartada para ${alert.symbol}:`, error);
-  }
-}
-
-/**
- * Envía notificación de compra CONFIRMADA (precio dentro del rango de entrada)
- */
-async function sendEntryConfirmedNotification(
-  alert: any, 
-  closePrice: number, 
-  rangeMin: number,
-  rangeMax: number
-) {
-  try {
-    const { createAlertNotification } = await import('@/lib/notificationUtils');
-    
-    const message = `✅ Compra confirmada: ${alert.symbol} - El precio de cierre ($${closePrice.toFixed(2)}) está dentro del rango de entrada ($${rangeMin}-$${rangeMax}). La posición está ahora activa con precio de entrada $${closePrice.toFixed(2)}.`;
-    
-    await createAlertNotification(alert, {
-      message: message,
-      price: closePrice,
-      action: 'BUY',
-      skipDuplicateCheck: true,
-      title: `✅ Compra Confirmada: ${alert.symbol}`
-    });
-    
-    console.log(`✅ ${alert.symbol}: Notificación de compra confirmada enviada`);
-  } catch (error) {
-    console.error(`⚠️ Error enviando notificación de compra confirmada para ${alert.symbol}:`, error);
-  }
-}
-
-/**
  * Actualiza el precio de la operación de COMPRA cuando se confirma la alerta
  * Esto asegura que el precio en OPERACIONES coincida con el del email de confirmación
  */
@@ -935,5 +862,353 @@ export async function updateOperationPriceOnConfirmation(alertId: any, finalPric
     
   } catch (error) {
     console.error(`⚠️ Error actualizando precio de operación para alerta ${alertId}:`, error);
+  }
+}
+
+/**
+ * ✅ NUEVO: Envía un email de resumen consolidado con todas las operaciones del cron
+ * Esta función reemplaza el envío de múltiples emails individuales por UN solo email de resumen
+ */
+async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void> {
+  try {
+    console.log(`📧 [RESUMEN] Iniciando envío de resumen con ${acciones.length} acciones...`);
+    
+    if (acciones.length === 0) {
+      console.log('📧 [RESUMEN] No hay acciones para notificar');
+      return;
+    }
+    
+    // Agrupar acciones por tipo de alerta (SmartMoney, TraderCall)
+    const accionesPorTipo: Record<string, AccionResumen[]> = {
+      SmartMoney: [],
+      TraderCall: []
+    };
+    
+    for (const accion of acciones) {
+      if (accionesPorTipo[accion.alertaTipo]) {
+        accionesPorTipo[accion.alertaTipo].push(accion);
+      }
+    }
+    
+    // Importar módulos necesarios
+    const { sendEmail } = await import('@/lib/emailService');
+    const User = (await import('@/models/User')).default;
+    
+    // Procesar cada tipo de alerta por separado
+    for (const [tipoAlerta, accionesTipo] of Object.entries(accionesPorTipo)) {
+      if (accionesTipo.length === 0) continue;
+      
+      console.log(`📧 [RESUMEN] Procesando ${accionesTipo.length} acciones para ${tipoAlerta}...`);
+      
+      // Buscar usuarios suscritos UNA sola vez
+      const now = new Date();
+      const subscribedUsers = await User.find({
+        $or: [
+          {
+            'activeSubscriptions': {
+              $elemMatch: {
+                service: tipoAlerta,
+                isActive: true,
+                expiryDate: { $gte: now }
+              }
+            }
+          },
+          {
+            'suscripciones': {
+              $elemMatch: {
+                servicio: tipoAlerta,
+                activa: true,
+                fechaVencimiento: { $gte: now }
+              }
+            }
+          }
+        ]
+      }, 'email name role activeSubscriptions').lean();
+      
+      // Filtrar usuarios válidos
+      const validUsers = subscribedUsers.filter(user => {
+        const hasActiveSub = (user as any).activeSubscriptions?.some((sub: any) => 
+          sub.service === tipoAlerta && 
+          sub.isActive === true && 
+          new Date(sub.expiryDate) >= now
+        );
+        return hasActiveSub;
+      });
+      
+      console.log(`👥 [RESUMEN] ${validUsers.length} usuarios suscritos a ${tipoAlerta}`);
+      
+      if (validUsers.length === 0) continue;
+      
+      // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
+      const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
+      const usersToEmail = TESTING_MODE 
+        ? validUsers.filter((user: any) => user.role === 'admin')
+        : validUsers;
+      
+      if (TESTING_MODE) {
+        console.log(`🧪 [RESUMEN] MODO TESTING - Solo enviando a ${usersToEmail.length} admins`);
+      }
+      
+      // Generar HTML del resumen
+      const htmlResumen = generarEmailResumenHTML(tipoAlerta, accionesTipo);
+      const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      });
+      
+      // Enviar a Telegram primero (un solo mensaje consolidado)
+      try {
+        await enviarResumenTelegram(tipoAlerta, accionesTipo);
+      } catch (telegramError) {
+        console.error(`❌ [RESUMEN] Error enviando a Telegram:`, telegramError);
+      }
+      
+      // Enviar emails
+      let emailsSent = 0;
+      for (const user of usersToEmail) {
+        try {
+          await sendEmail({
+            to: (user as any).email,
+            subject: `📊 Resumen de Operaciones ${tipoAlerta} - ${fechaHoy}`,
+            html: htmlResumen
+          });
+          emailsSent++;
+          
+          // Pequeña pausa para evitar rate limiting (100ms en lugar de 500ms)
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (emailError) {
+          console.error(`❌ [RESUMEN] Error enviando email a ${(user as any).email}:`, emailError);
+        }
+      }
+      
+      console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails enviados`);
+    }
+    
+    console.log('🎉 [RESUMEN] Resumen de operaciones enviado completamente');
+    
+  } catch (error) {
+    console.error('❌ [RESUMEN] Error general enviando resumen:', error);
+    throw error;
+  }
+}
+
+/**
+ * Genera el HTML del email de resumen de operaciones
+ */
+function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]): string {
+  const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+    weekday: 'long',
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+  });
+  
+  // Agrupar acciones por tipo
+  const comprasConfirmadas = acciones.filter(a => a.tipo === 'COMPRA_CONFIRMADA');
+  const ventasEjecutadas = acciones.filter(a => a.tipo === 'VENTA_EJECUTADA');
+  const comprasDescartadas = acciones.filter(a => a.tipo === 'COMPRA_DESCARTADA');
+  const ventasDescartadas = acciones.filter(a => a.tipo === 'VENTA_DESCARTADA');
+  
+  // Calcular estadísticas
+  const totalAcciones = acciones.length;
+  const profitTotal = ventasEjecutadas.reduce((sum, v) => sum + (v.detalles.profitPorcentaje || 0), 0);
+  const profitPromedio = ventasEjecutadas.length > 0 ? profitTotal / ventasEjecutadas.length : 0;
+  
+  // Generar secciones HTML
+  let seccionesHTML = '';
+  
+  if (comprasConfirmadas.length > 0) {
+    seccionesHTML += `
+      <div style="margin-bottom: 25px;">
+        <h3 style="color: #22c55e; margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid #22c55e; padding-bottom: 8px;">
+          ✅ COMPRAS CONFIRMADAS (${comprasConfirmadas.length})
+        </h3>
+        ${comprasConfirmadas.map(a => `
+          <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+            <div style="font-weight: 600; color: #166534; font-size: 15px;">📈 ${a.symbol}</div>
+            <div style="color: #15803d; margin-top: 5px;">
+              Entrada confirmada a <strong>$${a.precio.toFixed(2)}</strong>
+              ${a.detalles.rangoOriginal ? `<br><span style="color: #64748b; font-size: 13px;">Rango original: $${a.detalles.rangoOriginal.min.toFixed(2)} - $${a.detalles.rangoOriginal.max.toFixed(2)}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (ventasEjecutadas.length > 0) {
+    seccionesHTML += `
+      <div style="margin-bottom: 25px;">
+        <h3 style="color: #ef4444; margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid #ef4444; padding-bottom: 8px;">
+          🔴 VENTAS EJECUTADAS (${ventasEjecutadas.length})
+        </h3>
+        ${ventasEjecutadas.map(a => {
+          const profitSign = (a.detalles.profitPorcentaje || 0) >= 0 ? '+' : '';
+          const profitColor = (a.detalles.profitPorcentaje || 0) >= 0 ? '#22c55e' : '#ef4444';
+          return `
+            <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+              <div style="font-weight: 600; color: #dc2626; font-size: 15px;">📉 ${a.symbol}</div>
+              <div style="color: #b91c1c; margin-top: 5px;">
+                ${a.detalles.posicionCerrada ? 'Posición cerrada' : `Vendido ${a.detalles.porcentajeVendido}%`} a <strong>$${a.precio.toFixed(2)}</strong>
+                <br><span style="color: ${profitColor}; font-weight: 600;">Profit: ${profitSign}${(a.detalles.profitPorcentaje || 0).toFixed(2)}%</span>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+  
+  if (comprasDescartadas.length > 0) {
+    seccionesHTML += `
+      <div style="margin-bottom: 25px;">
+        <h3 style="color: #f97316; margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid #f97316; padding-bottom: 8px;">
+          ❌ COMPRAS DESCARTADAS (${comprasDescartadas.length})
+        </h3>
+        ${comprasDescartadas.map(a => `
+          <div style="background: #fff7ed; border-left: 4px solid #f97316; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+            <div style="font-weight: 600; color: #c2410c; font-size: 15px;">🚫 ${a.symbol}</div>
+            <div style="color: #9a3412; margin-top: 5px;">
+              Precio de cierre: <strong>$${a.precio.toFixed(2)}</strong> - Fuera del rango
+              ${a.detalles.rangoOriginal ? `<br><span style="color: #64748b; font-size: 13px;">Rango: $${a.detalles.rangoOriginal.min.toFixed(2)} - $${a.detalles.rangoOriginal.max.toFixed(2)}</span>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  if (ventasDescartadas.length > 0) {
+    seccionesHTML += `
+      <div style="margin-bottom: 25px;">
+        <h3 style="color: #a855f7; margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid #a855f7; padding-bottom: 8px;">
+          ⏸️ VENTAS DESCARTADAS (${ventasDescartadas.length})
+        </h3>
+        ${ventasDescartadas.map(a => `
+          <div style="background: #faf5ff; border-left: 4px solid #a855f7; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
+            <div style="font-weight: 600; color: #7e22ce; font-size: 15px;">⏸️ ${a.symbol}</div>
+            <div style="color: #6b21a8; margin-top: 5px;">
+              Precio de cierre: <strong>$${a.precio.toFixed(2)}</strong> - Fuera del rango de venta
+              ${a.detalles.rangoOriginal ? `<br><span style="color: #64748b; font-size: 13px;">Rango: $${a.detalles.rangoOriginal.min.toFixed(2)} - $${a.detalles.rangoOriginal.max.toFixed(2)}</span>` : ''}
+              <br><span style="color: #64748b; font-size: 13px;">La posición sigue activa sin venta programada</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+  
+  // Construir email completo
+  return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Resumen de Operaciones - ${tipoAlerta}</title>
+    </head>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+      
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 30px 25px; text-align: center;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+          📊 Resumen de Operaciones
+        </h1>
+        <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 15px;">
+          ${tipoAlerta} • ${fechaHoy}
+        </p>
+      </div>
+      
+      <!-- Stats Summary -->
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 20px; text-align: center;">
+        <div style="display: inline-block; margin: 0 15px;">
+          <div style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase;">Total Operaciones</div>
+          <div style="color: white; font-size: 28px; font-weight: 700;">${totalAcciones}</div>
+        </div>
+        ${ventasEjecutadas.length > 0 ? `
+          <div style="display: inline-block; margin: 0 15px;">
+            <div style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase;">Profit Promedio</div>
+            <div style="color: ${profitPromedio >= 0 ? '#86efac' : '#fca5a5'}; font-size: 28px; font-weight: 700;">
+              ${profitPromedio >= 0 ? '+' : ''}${profitPromedio.toFixed(2)}%
+            </div>
+          </div>
+        ` : ''}
+      </div>
+      
+      <!-- Content -->
+      <div style="padding: 25px; background: white;">
+        ${seccionesHTML}
+      </div>
+      
+      <!-- Footer -->
+      <div style="text-align: center; padding: 20px 25px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
+          Este es un email automático de <strong>Nahuel Lozano Trading</strong>
+        </p>
+        <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+          Para configurar tus preferencias de notificación, visita tu <a href="/perfil" style="color: #3b82f6;">perfil</a>
+        </p>
+      </div>
+      
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Envía un mensaje de resumen consolidado a Telegram
+ */
+async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen[]): Promise<void> {
+  try {
+    const { sendMessageToChannel } = await import('@/lib/telegramBot');
+    
+    // Agrupar acciones
+    const comprasConfirmadas = acciones.filter(a => a.tipo === 'COMPRA_CONFIRMADA');
+    const ventasEjecutadas = acciones.filter(a => a.tipo === 'VENTA_EJECUTADA');
+    const comprasDescartadas = acciones.filter(a => a.tipo === 'COMPRA_DESCARTADA');
+    const ventasDescartadas = acciones.filter(a => a.tipo === 'VENTA_DESCARTADA');
+    
+    let mensaje = `📊 *RESUMEN DE OPERACIONES - ${tipoAlerta}*\n`;
+    mensaje += `📅 ${new Date().toLocaleDateString('es-AR')}\n`;
+    mensaje += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    
+    if (comprasConfirmadas.length > 0) {
+      mensaje += `✅ *COMPRAS CONFIRMADAS (${comprasConfirmadas.length})*\n`;
+      comprasConfirmadas.forEach(a => {
+        mensaje += `• ${a.symbol}: $${a.precio.toFixed(2)}\n`;
+      });
+      mensaje += `\n`;
+    }
+    
+    if (ventasEjecutadas.length > 0) {
+      mensaje += `🔴 *VENTAS EJECUTADAS (${ventasEjecutadas.length})*\n`;
+      ventasEjecutadas.forEach(a => {
+        const profitSign = (a.detalles.profitPorcentaje || 0) >= 0 ? '+' : '';
+        mensaje += `• ${a.symbol}: $${a.precio.toFixed(2)} (${profitSign}${(a.detalles.profitPorcentaje || 0).toFixed(2)}%)\n`;
+      });
+      mensaje += `\n`;
+    }
+    
+    if (comprasDescartadas.length > 0) {
+      mensaje += `❌ *COMPRAS DESCARTADAS (${comprasDescartadas.length})*\n`;
+      comprasDescartadas.forEach(a => {
+        mensaje += `• ${a.symbol}: Precio fuera de rango\n`;
+      });
+      mensaje += `\n`;
+    }
+    
+    if (ventasDescartadas.length > 0) {
+      mensaje += `⏸️ *VENTAS DESCARTADAS (${ventasDescartadas.length})*\n`;
+      ventasDescartadas.forEach(a => {
+        mensaje += `• ${a.symbol}: Precio fuera de rango\n`;
+      });
+    }
+    
+    await sendMessageToChannel(tipoAlerta, mensaje);
+    console.log(`✅ [TELEGRAM] Resumen enviado para ${tipoAlerta}`);
+    
+  } catch (error) {
+    console.error(`❌ [TELEGRAM] Error enviando resumen:`, error);
   }
 }

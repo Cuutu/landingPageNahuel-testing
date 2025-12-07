@@ -357,3 +357,33 @@ export async function testTelegramConnection(): Promise<boolean> {
   }
 }
 
+/**
+ * ✅ NUEVO: Envía un mensaje de texto a un canal específico
+ * Usado para enviar resúmenes consolidados de operaciones
+ */
+export async function sendMessageToChannel(tipoAlerta: string, mensaje: string): Promise<boolean> {
+  try {
+    if (!bot || process.env.TELEGRAM_ENABLED !== 'true') {
+      console.log('⚠️ [TELEGRAM] Bot no habilitado, mensaje no enviado');
+      return false;
+    }
+
+    const channelId = CHANNEL_MAP[tipoAlerta];
+    if (!channelId) {
+      console.log(`⚠️ [TELEGRAM] No hay canal configurado para ${tipoAlerta}`);
+      return false;
+    }
+
+    await bot.sendMessage(channelId, mensaje, {
+      parse_mode: 'Markdown',
+      disable_web_page_preview: true
+    });
+
+    console.log(`✅ [TELEGRAM] Mensaje enviado a canal ${tipoAlerta}`);
+    return true;
+  } catch (error: any) {
+    console.error(`❌ [TELEGRAM] Error enviando mensaje:`, error.message || error);
+    return false;
+  }
+}
+
