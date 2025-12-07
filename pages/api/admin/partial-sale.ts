@@ -494,48 +494,82 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const adminUser = await User.findOne({ role: 'admin' });
         
         if (adminUser) {
-          // Obtener balance actual del admin para este sistema
-          const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: tipo })
-            .sort({ date: -1 })
-            .select('balance');
-          const currentBalance = currentBalanceDoc?.balance || 0;
-          
-          // NO modificar el balance aún - se hará cuando se ejecute la venta
-          const operation = new Operation({
-            ticker: alert.symbol.toUpperCase(),
-            operationType: 'VENTA',
-            quantity: -sharesToSell, // Negativo para ventas
-            price: sellPrice, // Precio estimado
-            amount: liquidityReleased, // Monto estimado
-            date: new Date(),
-            balance: currentBalance, // Balance NO cambia hasta que se ejecute
+          // ✅ NUEVO: Verificar si ya existe una operación de VENTA pendiente para evitar duplicados
+          const existingPendingOp = await Operation.findOne({
             alertId: alert._id,
-            alertSymbol: alert.symbol.toUpperCase(),
+            operationType: 'VENTA',
             system: tipo,
-            createdBy: adminUser._id,
-            isPartialSale: !isCompleteSale,
-            partialSalePercentage: percentage,
-            originalQuantity: alert.liquidityData?.originalShares || shares,
-            // ✅ IMPORTANTE: Guardar el rango de precio y marcar como NO confirmado
-            priceRange: {
+            isPriceConfirmed: false,
+            priceRange: { $exists: true }
+          });
+          
+          if (existingPendingOp) {
+            console.log(`⚠️ Ya existe una operación de venta pendiente para ${alert.symbol}, actualizando...`);
+            
+            // Actualizar la operación existente en lugar de crear una nueva
+            existingPendingOp.quantity = -sharesToSell;
+            existingPendingOp.price = sellPrice;
+            existingPendingOp.amount = liquidityReleased;
+            existingPendingOp.date = new Date();
+            existingPendingOp.isPartialSale = !isCompleteSale;
+            existingPendingOp.partialSalePercentage = percentage;
+            existingPendingOp.priceRange = {
               min: notificationPriceRange.min,
               max: notificationPriceRange.max
-            },
-            isPriceConfirmed: false, // ✅ Esto hace que aparezca como "A confirmar"
-            portfolioPercentage: (alert.liquidityData?.allocatedAmount || allocatedAmount) / 1000 * 100, // Porcentaje aproximado
-            liquidityData: {
+            };
+            existingPendingOp.liquidityData = {
               allocatedAmount: allocatedAmount,
               shares: shares,
               entryPrice: entryPrice,
-              realizedProfit: realizedProfit // Estimado
-            },
-            executedBy: session.user.email,
-            executionMethod: 'ADMIN',
-            notes: `Venta programada (${percentage}%) - ${alert.symbol} - Rango: $${notificationPriceRange.min} - $${notificationPriceRange.max}`
-          });
+              realizedProfit: realizedProfit
+            };
+            existingPendingOp.notes = `Venta programada actualizada (${percentage}%) - ${alert.symbol} - Rango: $${notificationPriceRange.min} - $${notificationPriceRange.max}`;
+            
+            await existingPendingOp.save();
+            console.log(`✅ Operación de venta pendiente ACTUALIZADA: ${alert.symbol}`);
+          } else {
+            // Obtener balance actual del admin para este sistema
+            const currentBalanceDoc = await Operation.findOne({ createdBy: adminUser._id, system: tipo })
+              .sort({ date: -1 })
+              .select('balance');
+            const currentBalance = currentBalanceDoc?.balance || 0;
+            
+            // NO modificar el balance aún - se hará cuando se ejecute la venta
+            const operation = new Operation({
+              ticker: alert.symbol.toUpperCase(),
+              operationType: 'VENTA',
+              quantity: -sharesToSell,
+              price: sellPrice,
+              amount: liquidityReleased,
+              date: new Date(),
+              balance: currentBalance,
+              alertId: alert._id,
+              alertSymbol: alert.symbol.toUpperCase(),
+              system: tipo,
+              createdBy: adminUser._id,
+              isPartialSale: !isCompleteSale,
+              partialSalePercentage: percentage,
+              originalQuantity: alert.liquidityData?.originalShares || shares,
+              priceRange: {
+                min: notificationPriceRange.min,
+                max: notificationPriceRange.max
+              },
+              isPriceConfirmed: false,
+              portfolioPercentage: (alert.liquidityData?.allocatedAmount || allocatedAmount) / 1000 * 100,
+              liquidityData: {
+                allocatedAmount: allocatedAmount,
+                shares: shares,
+                entryPrice: entryPrice,
+                realizedProfit: realizedProfit
+              },
+              executedBy: session.user.email,
+              executionMethod: 'ADMIN',
+              notes: `Venta programada (${percentage}%) - ${alert.symbol} - Rango: $${notificationPriceRange.min} - $${notificationPriceRange.max}`
+            });
 
-          await operation.save();
-          console.log(`✅ Operación de venta programada creada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones (A confirmar)`);
+            await operation.save();
+            console.log(`✅ Operación de venta programada creada: ${alert.symbol} - ${sharesToSell.toFixed(4)} acciones (A confirmar)`);
+          }
         } else {
           console.log(`⚠️ No se encontró usuario admin para crear operación`);
         }
