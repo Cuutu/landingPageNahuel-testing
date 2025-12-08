@@ -1355,7 +1355,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       // Imágenes adicionales optimizadas
       images: optimizedImages,
       // Procesar artículos si existen
-      articles: reportDoc.articles ? reportDoc.articles.map((article: any) => ({
+      articles: reportDoc.articles ? reportDoc.articles.map((article: any) => ({ 
         ...article,
         _id: article._id.toString()
       })) : []
