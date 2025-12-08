@@ -31,7 +31,14 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import UserSubscriptions from '@/components/UserSubscriptions';
+import { useUserSubscriptions } from '@/hooks/useUserSubscriptions';
 import styles from '@/styles/Perfil.module.css';
+
+// Links estáticos de canales de Telegram
+const TELEGRAM_CHANNEL_LINKS = {
+  TraderCall: 'https://t.me/+iV_hFto-Y90zODRh',
+  SmartMoney: 'https://t.me/+9Q3WJ8kcNsdkNmE5'
+};
 
 // Componente para mostrar notificaciones reales
 const NotificationsSection = () => {
@@ -220,6 +227,18 @@ export default function PerfilPage() {
   const [telegramUsernameInput, setTelegramUsernameInput] = useState('');
   const [inviteLinks, setInviteLinks] = useState<{ [key: string]: string }>({});
   const [generatingLink, setGeneratingLink] = useState<string | null>(null);
+
+  // Hook para obtener suscripciones activas del usuario
+  const { subscriptions } = useUserSubscriptions();
+
+  // Función para verificar si el usuario tiene suscripción activa a un servicio
+  const hasActiveSubscription = (service: string): boolean => {
+    return subscriptions.some(sub => 
+      sub.service === service && 
+      sub.status === 'active' && 
+      new Date(sub.expiryDate) > new Date()
+    );
+  };
 
   // Función para obtener estado de Telegram
   const fetchTelegramStatus = async () => {
@@ -883,104 +902,77 @@ export default function PerfilPage() {
                     </div>
                   </div>
 
-                  {/* Links de invitación - Solo si está vinculado */}
+                  {/* Links de invitación a canales - Solo si está vinculado */}
                   {telegramData.isLinked && (
                     <div className={styles.infoGrid} style={{ marginTop: '2rem' }}>
                       <div className={styles.infoCard} style={{ gridColumn: '1 / -1' }}>
                         <div className={styles.cardIcon}>
                           <ExternalLink size={24} />
                         </div>
-                        <h3>Links de Invitación a Canales</h3>
+                        <h3>Canales de Alertas</h3>
                         <p style={{ color: '#9CA3AF', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                          Genera un link para unirte a los canales de alertas. Cada link es de un solo uso y expira en 24 horas.
+                          Únete a los canales de alertas de los servicios a los que estás suscrito.
                         </p>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1.5rem' }}>
                           {/* TraderCall */}
                           <div style={{
                             padding: '1rem',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            backgroundColor: hasActiveSubscription('TraderCall') 
+                              ? 'rgba(59, 130, 246, 0.1)' 
+                              : 'rgba(107, 114, 128, 0.1)',
                             borderRadius: '8px',
-                            border: '1px solid rgba(59, 130, 246, 0.2)'
+                            border: hasActiveSubscription('TraderCall') 
+                              ? '1px solid rgba(59, 130, 246, 0.2)' 
+                              : '1px solid rgba(107, 114, 128, 0.2)'
                           }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                               <div>
-                                <h4 style={{ margin: 0, color: '#3B82F6' }}>📊 TraderCall</h4>
+                                <h4 style={{ margin: 0, color: hasActiveSubscription('TraderCall') ? '#3B82F6' : '#6B7280' }}>
+                                  📊 Trader Call
+                                </h4>
                                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#9CA3AF' }}>
-                                  Canal de alertas TraderCall
+                                  Canal de alertas de corto-mediano plazo
                                 </p>
                               </div>
                               
-                              {inviteLinks.TraderCall ? (
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  <input
-                                    type="text"
-                                    value={inviteLinks.TraderCall}
-                                    readOnly
-                                    style={{
-                                      padding: '0.5rem',
-                                      borderRadius: '4px',
-                                      border: '1px solid #374151',
-                                      backgroundColor: '#1F2937',
-                                      color: 'white',
-                                      fontSize: '0.8rem',
-                                      width: '200px'
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() => copyToClipboard(inviteLinks.TraderCall)}
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#374151',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      color: 'white'
-                                    }}
-                                  >
-                                    <Copy size={16} />
-                                  </button>
-                                  <a
-                                    href={inviteLinks.TraderCall}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#0088cc',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      color: 'white',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}
-                                  >
-                                    <ExternalLink size={16} />
-                                  </a>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => handleGenerateInvite('TraderCall')}
-                                  disabled={generatingLink === 'TraderCall'}
+                              {hasActiveSubscription('TraderCall') ? (
+                                <a
+                                  href={TELEGRAM_CHANNEL_LINKS.TraderCall}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                   style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#3B82F6',
-                                    color: 'white',
+                                    padding: '0.75rem 1.5rem',
+                                    backgroundColor: '#0088cc',
                                     border: 'none',
-                                    borderRadius: '6px',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
+                                    color: 'white',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.5rem',
-                                    fontSize: '0.85rem'
+                                    textDecoration: 'none',
+                                    fontWeight: 500,
+                                    fontSize: '0.9rem'
                                   }}
                                 >
-                                  {generatingLink === 'TraderCall' ? (
-                                    <><RefreshCw size={14} className="animate-spin" /> Generando...</>
-                                  ) : (
-                                    <>Generar Link</>
-                                  )}
-                                </button>
+                                  <Send size={16} />
+                                  Unirse al Canal
+                                </a>
+                              ) : (
+                                <div style={{
+                                  padding: '0.75rem 1.5rem',
+                                  backgroundColor: 'rgba(107, 114, 128, 0.2)',
+                                  borderRadius: '8px',
+                                  color: '#9CA3AF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  fontSize: '0.85rem'
+                                }}>
+                                  <AlertTriangle size={16} />
+                                  Requiere suscripción activa
+                                </div>
                               )}
                             </div>
                           </div>
@@ -988,88 +980,61 @@ export default function PerfilPage() {
                           {/* SmartMoney */}
                           <div style={{
                             padding: '1rem',
-                            backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                            backgroundColor: hasActiveSubscription('SmartMoney') 
+                              ? 'rgba(168, 85, 247, 0.1)' 
+                              : 'rgba(107, 114, 128, 0.1)',
                             borderRadius: '8px',
-                            border: '1px solid rgba(168, 85, 247, 0.2)'
+                            border: hasActiveSubscription('SmartMoney') 
+                              ? '1px solid rgba(168, 85, 247, 0.2)' 
+                              : '1px solid rgba(107, 114, 128, 0.2)'
                           }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                               <div>
-                                <h4 style={{ margin: 0, color: '#A855F7' }}>💰 SmartMoney</h4>
+                                <h4 style={{ margin: 0, color: hasActiveSubscription('SmartMoney') ? '#A855F7' : '#6B7280' }}>
+                                  💰 Smart Money
+                                </h4>
                                 <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: '#9CA3AF' }}>
-                                  Canal de alertas SmartMoney
+                                  Canal de alertas de largo plazo
                                 </p>
                               </div>
                               
-                              {inviteLinks.SmartMoney ? (
-                                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                  <input
-                                    type="text"
-                                    value={inviteLinks.SmartMoney}
-                                    readOnly
-                                    style={{
-                                      padding: '0.5rem',
-                                      borderRadius: '4px',
-                                      border: '1px solid #374151',
-                                      backgroundColor: '#1F2937',
-                                      color: 'white',
-                                      fontSize: '0.8rem',
-                                      width: '200px'
-                                    }}
-                                  />
-                                  <button
-                                    onClick={() => copyToClipboard(inviteLinks.SmartMoney)}
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#374151',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      color: 'white'
-                                    }}
-                                  >
-                                    <Copy size={16} />
-                                  </button>
-                                  <a
-                                    href={inviteLinks.SmartMoney}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{
-                                      padding: '0.5rem',
-                                      backgroundColor: '#0088cc',
-                                      border: 'none',
-                                      borderRadius: '4px',
-                                      cursor: 'pointer',
-                                      color: 'white',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}
-                                  >
-                                    <ExternalLink size={16} />
-                                  </a>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => handleGenerateInvite('SmartMoney')}
-                                  disabled={generatingLink === 'SmartMoney'}
+                              {hasActiveSubscription('SmartMoney') ? (
+                                <a
+                                  href={TELEGRAM_CHANNEL_LINKS.SmartMoney}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
                                   style={{
-                                    padding: '0.5rem 1rem',
-                                    backgroundColor: '#A855F7',
-                                    color: 'white',
+                                    padding: '0.75rem 1.5rem',
+                                    backgroundColor: '#0088cc',
                                     border: 'none',
-                                    borderRadius: '6px',
+                                    borderRadius: '8px',
                                     cursor: 'pointer',
+                                    color: 'white',
                                     display: 'flex',
                                     alignItems: 'center',
                                     gap: '0.5rem',
-                                    fontSize: '0.85rem'
+                                    textDecoration: 'none',
+                                    fontWeight: 500,
+                                    fontSize: '0.9rem'
                                   }}
                                 >
-                                  {generatingLink === 'SmartMoney' ? (
-                                    <><RefreshCw size={14} className="animate-spin" /> Generando...</>
-                                  ) : (
-                                    <>Generar Link</>
-                                  )}
-                                </button>
+                                  <Send size={16} />
+                                  Unirse al Canal
+                                </a>
+                              ) : (
+                                <div style={{
+                                  padding: '0.75rem 1.5rem',
+                                  backgroundColor: 'rgba(107, 114, 128, 0.2)',
+                                  borderRadius: '8px',
+                                  color: '#9CA3AF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.5rem',
+                                  fontSize: '0.85rem'
+                                }}>
+                                  <AlertTriangle size={16} />
+                                  Requiere suscripción activa
+                                </div>
                               )}
                             </div>
                           </div>
@@ -1078,17 +1043,16 @@ export default function PerfilPage() {
                         <div style={{ 
                           marginTop: '1.5rem', 
                           padding: '1rem', 
-                          backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                          backgroundColor: 'rgba(16, 185, 129, 0.1)',
                           borderRadius: '8px',
                           fontSize: '0.85rem',
-                          color: '#9CA3AF'
+                          color: '#10B981'
                         }}>
-                          <strong>⚠️ Importante:</strong>
+                          <strong>💡 Información:</strong>
                           <ul style={{ margin: '0.5rem 0 0', paddingLeft: '1.25rem' }}>
-                            <li>Cada link solo puede usarse 1 vez</li>
-                            <li>Los links expiran en 24 horas</li>
-                            <li>Solo puedes generar links si tienes suscripción activa al servicio</li>
-                            <li>Si tu suscripción expira, serás removido del canal automáticamente</li>
+                            <li>Solo puedes unirte a los canales de los servicios que tengas activos (pago o prueba)</li>
+                            <li>Una vez dentro del canal, recibirás las alertas en tiempo real</li>
+                            <li>Si tu suscripción expira, deberás renovar para seguir recibiendo alertas</li>
                           </ul>
                         </div>
                       </div>
