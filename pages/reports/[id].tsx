@@ -1242,6 +1242,68 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           notFound: true,
         };
       }
+
+      // ✅ Verificar suscripción según la categoría del reporte
+      const reportCategory = reportDoc.category;
+      
+      // Si el reporte requiere suscripción (trader-call o smart-money)
+      if (reportCategory === 'trader-call' || reportCategory === 'smart-money') {
+        // Los administradores siempre tienen acceso
+        if (userRole !== 'admin') {
+          // Obtener el usuario completo para verificar suscripciones
+          const fullUser = await User.findOne({ email: session.user.email });
+          
+          if (!fullUser) {
+            return {
+              redirect: {
+                destination: '/auth/signin',
+                permanent: false,
+              },
+            };
+          }
+
+          // Mapear categoría del reporte al nombre del servicio
+          const serviceName = reportCategory === 'trader-call' ? 'TraderCall' : 'SmartMoney';
+          
+          // Verificar suscripciones en los diferentes formatos
+          const suscripcionActiva = fullUser.suscripciones?.find(
+            (sub: any) => 
+              sub.servicio === serviceName && 
+              sub.activa === true && 
+              new Date(sub.fechaVencimiento) > new Date()
+          );
+          
+          const subscriptionActiva = fullUser.subscriptions?.find(
+            (sub: any) => 
+              sub.tipo === serviceName && 
+              sub.activa === true &&
+              (!sub.fechaFin || new Date(sub.fechaFin) > new Date())
+          );
+
+          const activeSubscription = fullUser.activeSubscriptions?.find(
+            (sub: any) => 
+              sub.service === serviceName && 
+              sub.isActive === true &&
+              new Date(sub.expiryDate) > new Date()
+          );
+
+          const hasSubscription = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
+
+          if (!hasSubscription) {
+            // Redirigir a la página de alertas correspondiente si no tiene suscripción
+            const redirectPath = reportCategory === 'trader-call' 
+              ? '/alertas/trader-call' 
+              : '/alertas/smart-money';
+            
+            return {
+              redirect: {
+                destination: redirectPath,
+                permanent: false,
+              },
+            };
+          }
+        }
+      }
     } catch (dbError) {
       console.error('💥 [REPORT] Error de base de datos:', dbError);
       return {
