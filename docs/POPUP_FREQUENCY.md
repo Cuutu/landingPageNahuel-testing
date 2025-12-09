@@ -20,7 +20,7 @@ El sistema de frecuencia de popup permite controlar cuándo se muestra el popup 
 ## 🔧 Configuración
 
 ### Hook `usePopupFrequency`
-
+##
 ```tsx
 const { isVisible: showPopup, closePopupExtended } = usePopupFrequency({
   frequencyDays: 7, // Mostrar cada semana (cambiar a 30 para mensual)
