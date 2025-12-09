@@ -455,6 +455,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         console.log(`📧 Enviando email de VENTA PROGRAMADA para alerta ${alert.symbol}...`);
         
+        // ✅ NUEVO: Calcular P&L aproximado para venta programada basado en el precio actual
+        let profitPercentageAprox: number | undefined = undefined;
+        if (entryPrice > 0 && sellPrice > 0) {
+          profitPercentageAprox = ((sellPrice - entryPrice) / entryPrice) * 100;
+        }
+        
         // Construir el mensaje de notificación
         const notificationMessage = emailMessage || 
           `Venta programada para ${alert.symbol}: Se venderá el ${percentage}% de la posición cuando el precio llegue al rango de $${notificationPriceRange.min} a $${notificationPriceRange.max}. ` +
@@ -470,7 +476,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           title: `📅 Venta Programada - ${alert.symbol}`,
           action: 'SELL', // ✅ Asegurar que sea SELL
           priceRange: notificationPriceRange,
-          soldPercentage: percentage // ✅ Pasar el porcentaje vendido
+          soldPercentage: percentage, // ✅ Pasar el porcentaje vendido
+          profitPercentage: profitPercentageAprox, // ✅ NUEVO: P&L aproximado basado en precio actual
+          isExecutedSale: false, // ✅ NUEVO: Es venta PROGRAMADA (no ejecutada todavía)
+          isCompleteSale: isCompleteSale // ✅ NUEVO: Indicar si es venta total o parcial
         });
         
         console.log(`✅ Email de venta programada enviado exitosamente para ${alert.symbol}`);
@@ -792,7 +801,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           action: 'SELL',
           priceRange: notificationPriceRange || undefined,
           soldPercentage: percentage, // ✅ NUEVO: Pasar el porcentaje vendido
-          profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual si está disponible
+          profitPercentage: profitPercentage, // ✅ NUEVO: Pasar el P&L porcentual si está disponible
+          isExecutedSale: true, // ✅ NUEVO: Es venta EJECUTADA inmediatamente
+          isCompleteSale: isCompleteSale // ✅ NUEVO: Indicar si es venta total o parcial
         });
         
         console.log(`✅ Notificación de venta parcial enviada exitosamente para ${alert.symbol}`);

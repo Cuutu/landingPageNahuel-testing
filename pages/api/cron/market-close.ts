@@ -258,7 +258,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             await sendAlertToTelegram(alert, {
               message: message,
               price: closePrice,
-              profitPercentage: profitPercentage
+              profitPercentage: profitPercentage,
+              isExecutedSale: true // ✅ NUEVO: Indicar que es venta ejecutada (cierre de mercado)
             });
             console.log(`✅ Notificación de cierre enviada a Telegram para ${alert.symbol}`);
           } catch (telegramError: any) {

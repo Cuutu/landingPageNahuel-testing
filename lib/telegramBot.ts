@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { IAlert } from '@/models/Alert';
+import { getGlobalTimezone } from '@/lib/timeConfig';
 
 // Inicializar el bot solo si está habilitado
 let bot: TelegramBot | null = null;
@@ -37,6 +38,8 @@ function formatAlertMessage(alert: IAlert, options?: {
   soldPercentage?: number;
   profitPercentage?: number;
   profitLoss?: number;
+  isExecutedSale?: boolean; // ✅ NUEVO: true = venta ejecutada (16:30), false = venta programada
+  isCompleteSale?: boolean; // ✅ NUEVO: true = venta total (100%), false = venta parcial
 }): string {
   try {
     // ✅ DEBUG: Log de los datos recibidos
@@ -118,29 +121,45 @@ function formatAlertMessage(alert: IAlert, options?: {
       message += `💰 Precio: ${priceDisplay}\n`;
     }
     
-    // ✅ NUEVO: Mostrar información de venta parcial si existe
+    // ✅ NUEVO: Mostrar información de venta con indicación si es parcial o total
     if (options?.soldPercentage) {
-      message += `📊 Porcentaje Vendido: ${options.soldPercentage}%\n`;
+      // Determinar si es venta parcial o total
+      const tipoVenta = options.isCompleteSale || options.soldPercentage >= 100 
+        ? '🔴 Venta TOTAL' 
+        : '🟡 Venta PARCIAL';
+      
+      // Usar "Porcentaje vendido" si es venta ejecutada (16:30), sino "Porcentaje a vender"
+      const textoVenta = options.isExecutedSale 
+        ? 'Porcentaje vendido' 
+        : 'Porcentaje a vender';
+      
+      message += `${tipoVenta}\n`;
+      message += `📊 ${textoVenta}: ${options.soldPercentage}%\n`;
+      
+      // ✅ NUEVO: Mostrar rendimiento aproximado prominentemente para ventas
+      if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
+        const profitSign = options.profitPercentage >= 0 ? '+' : '';
+        const profitEmoji = options.profitPercentage >= 0 ? '💰' : '📉';
+        // Usar "Rendimiento aproximado" para ventas programadas, "Rendimiento" para ejecutadas
+        const textoRendimiento = options.isExecutedSale 
+          ? 'Rendimiento' 
+          : 'Rendimiento aproximado';
+        message += `${profitEmoji} *${textoRendimiento}: ${profitSign}${options.profitPercentage.toFixed(2)}%*\n`;
+      }
+    } else {
+      // ✅ Mostrar profit/loss genérico si no es una venta con porcentaje
+      if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
+        const profitSign = options.profitPercentage >= 0 ? '+' : '';
+        const profitEmoji = options.profitPercentage >= 0 ? '💰' : '📉';
+        message += `${profitEmoji} Profit/Loss: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
+      } else if (options?.profitLoss != null && !isNaN(options.profitLoss)) {
+        const profitSign = options.profitLoss >= 0 ? '+' : '';
+        const profitEmoji = options.profitLoss >= 0 ? '💰' : '📉';
+        message += `${profitEmoji} Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
+      }
     }
     
-    // ✅ NUEVO: Mostrar profit/loss si existe (verificar tanto null como undefined)
-    if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
-      const profitSign = options.profitPercentage >= 0 ? '+' : '';
-      message += `📈 Profit/Loss: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
-    } else if (options?.profitLoss != null && !isNaN(options.profitLoss)) {
-      const profitSign = options.profitLoss >= 0 ? '+' : '';
-      message += `📈 Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
-    }
-    
-    // Solo mostrar TP/SL para compras o si no es una venta
-    if (action === 'BUY' || !options?.price) {
-      if (alert.takeProfit != null && !isNaN(Number(alert.takeProfit))) {
-        message += `🎯 Take Profit: $${Number(alert.takeProfit).toFixed(2)}\n`;
-      }
-      if (alert.stopLoss != null && !isNaN(Number(alert.stopLoss))) {
-        message += `🛑 Stop Loss: $${Number(alert.stopLoss).toFixed(2)}\n`;
-      }
-    }
+    // ✅ ELIMINADO: Take Profit y Stop Loss ya no se muestran en las alertas de Telegram
     
     if (options?.liquidityPercentage) {
       message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;
@@ -163,10 +182,12 @@ function formatAlertMessage(alert: IAlert, options?: {
       message += `\n📋 Motivo: ${(alert as any).desestimacionMotivo}\n`;
     }
     
-    // Formatear fecha en zona horaria de Argentina
-    const fecha = new Date(alert.date || alert.createdAt || new Date());
-    const fechaFormateada = fecha.toLocaleString('es-AR', { 
-      timeZone: 'America/Argentina/Buenos_Aires',
+    // ✅ CORREGIDO: Usar la hora actual del momento de envío y la zona horaria de la variable de entorno
+    const fechaActual = new Date(); // Hora del momento de envío de la alerta
+    const zonaHoraria = getGlobalTimezone(); // Usar zona horaria de la variable de entorno
+    
+    const fechaFormateada = fechaActual.toLocaleString('es-AR', { 
+      timeZone: zonaHoraria,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -203,6 +224,8 @@ export async function sendAlertToTelegram(
     soldPercentage?: number;
     profitPercentage?: number;
     profitLoss?: number;
+    isExecutedSale?: boolean; // ✅ NUEVO: true = venta ejecutada (16:30), false = venta programada
+    isCompleteSale?: boolean; // ✅ NUEVO: true = venta total (100%), false = venta parcial
   }
 ): Promise<boolean> {
   try {
@@ -223,10 +246,32 @@ export async function sendAlertToTelegram(
     // Formatear mensaje
     const message = formatAlertMessage(alert, options);
 
-    // ✅ CORREGIDO: Usar action de options si existe (para ventas), sino usar action de la alerta
-    const actionForCaption = options?.action || alert.action;
+    // ✅ NUEVO: Si hay imagen, enviar foto con mensaje como caption (unificado en un solo envío)
+    if (options?.imageUrl) {
+      try {
+        // Telegram tiene un límite de 1024 caracteres para caption de fotos
+        // Si el mensaje es muy largo, lo truncamos y añadimos indicador
+        const maxCaptionLength = 1024;
+        let caption = message;
+        
+        if (message.length > maxCaptionLength) {
+          caption = message.substring(0, maxCaptionLength - 50) + '\n\n... (mensaje truncado)';
+        }
+        
+        await bot.sendPhoto(channelId, options.imageUrl, {
+          caption: caption,
+          parse_mode: 'Markdown'
+        });
+        console.log(`✅ [TELEGRAM] Foto con mensaje enviada a canal ${alert.tipo}: ${alert.symbol}`);
+        return true;
+      } catch (imageError: any) {
+        console.error('❌ [TELEGRAM] Error enviando foto con mensaje:', imageError.message);
+        // Si falla la foto, intentar enviar solo el mensaje de texto
+        console.log('🔄 [TELEGRAM] Intentando enviar solo mensaje de texto como fallback...');
+      }
+    }
 
-    // Enviar mensaje de texto
+    // Enviar solo mensaje de texto (si no hay imagen o si falló el envío de la foto)
     try {
       await bot.sendMessage(channelId, message, {
         parse_mode: 'Markdown',
@@ -236,20 +281,6 @@ export async function sendAlertToTelegram(
     } catch (messageError: any) {
       console.error('❌ [TELEGRAM] Error enviando mensaje:', messageError.message);
       return false;
-    }
-
-    // Si hay imagen, enviarla también
-    if (options?.imageUrl) {
-      try {
-        await bot.sendPhoto(channelId, options.imageUrl, {
-          caption: `${actionForCaption} ${alert.symbol} - ${alert.tipo}`,
-          parse_mode: 'Markdown'
-        });
-        console.log(`✅ [TELEGRAM] Imagen enviada a canal ${alert.tipo}: ${alert.symbol}`);
-      } catch (imageError: any) {
-        console.error('❌ [TELEGRAM] Error enviando imagen:', imageError.message);
-        // Continuar aunque falle la imagen
-      }
     }
 
     return true;

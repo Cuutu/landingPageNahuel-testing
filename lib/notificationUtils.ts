@@ -11,8 +11,10 @@ import { sendEmail, generateAlertEmailTemplate } from '@/lib/emailService';
  * @param alert - La alerta para la cual crear la notificación
  * @param overrides - Opciones para sobreescribir valores por defecto
  * @param overrides.skipDuplicateCheck - Si es true, omite la verificación de duplicados (útil para notificaciones de conversión de rango)
+ * @param overrides.isExecutedSale - Si es true, indica que es una venta ejecutada (16:30), sino es venta programada
+ * @param overrides.isCompleteSale - Si es true, indica que es venta total (100%), sino es venta parcial
  */
-export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean }): Promise<void> {
+export async function createAlertNotification(alert: IAlert, overrides?: { message?: string; imageUrl?: string; price?: number; action?: 'BUY' | 'SELL'; title?: string; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean; isExecutedSale?: boolean; isCompleteSale?: boolean }): Promise<void> {
   try {
     await dbConnect();
     
@@ -388,7 +390,9 @@ export async function createAlertNotification(alert: IAlert, overrides?: { messa
         liquidityPercentage: overrides?.liquidityPercentage || notification.metadata?.liquidityPercentage,
         soldPercentage: overrides?.soldPercentage || notification.metadata?.soldPercentage,
         profitPercentage: overrides?.profitPercentage || notification.metadata?.profitPercentage,
-        profitLoss: overrides?.profitLoss || notification.metadata?.profitLoss
+        profitLoss: overrides?.profitLoss || notification.metadata?.profitLoss,
+        isExecutedSale: overrides?.isExecutedSale, // ✅ NUEVO: Indicar si es venta ejecutada
+        isCompleteSale: overrides?.isCompleteSale // ✅ NUEVO: Indicar si es venta total
       });
     } catch (telegramError) {
       console.error('❌ [ALERT NOTIFICATION] Error enviando a Telegram:', telegramError);
@@ -1356,11 +1360,12 @@ export async function diagnoseNotificationSystem(): Promise<{
 
 export async function notifyAlertSubscribers(
   alert: IAlert,
-  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean }
+  options: { message?: string; imageUrl?: string; price?: number; title?: string; action?: 'BUY' | 'SELL'; priceRange?: { min: number; max: number }; liquidityPercentage?: number; soldPercentage?: number; profitPercentage?: number; profitLoss?: number; skipDuplicateCheck?: boolean; isExecutedSale?: boolean; isCompleteSale?: boolean }
 ): Promise<void> {
   // Reutilizamos createAlertNotification pero permitimos sobreescribir título si llega
   // Si llega title, lo aplicamos después de crear notificationDoc
   // ✅ NUEVO: Soporta skipDuplicateCheck para notificaciones de venta automática
+  // ✅ NUEVO: Soporta isExecutedSale e isCompleteSale para Telegram
   await createAlertNotification(alert, {
     message: options.message,
     imageUrl: options.imageUrl,
@@ -1372,6 +1377,8 @@ export async function notifyAlertSubscribers(
     soldPercentage: options.soldPercentage,
     profitPercentage: options.profitPercentage,
     profitLoss: options.profitLoss,
-    skipDuplicateCheck: options.skipDuplicateCheck || true // ✅ Por defecto true para ventas
+    skipDuplicateCheck: options.skipDuplicateCheck || true, // ✅ Por defecto true para ventas
+    isExecutedSale: options.isExecutedSale, // ✅ NUEVO: Indicar si es venta ejecutada
+    isCompleteSale: options.isCompleteSale // ✅ NUEVO: Indicar si es venta total
   });
 } 
