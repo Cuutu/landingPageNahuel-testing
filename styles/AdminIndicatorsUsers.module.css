@@ -434,6 +434,17 @@
   cursor: not-allowed;
 }
 
+/* ✅ NUEVO: Estilo para botón cuando ya fue notificado */
+.notifyButton.notified {
+  background: linear-gradient(135deg, #64748b, #475569);
+  opacity: 1;
+}
+
+.notifyButton.notified:disabled {
+  opacity: 0.8;
+  cursor: default;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .container {

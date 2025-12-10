@@ -38,6 +38,7 @@ interface IndicatorUser {
   tradingViewUser?: string;
   formSubmitted: boolean;
   paymentId: string;
+  notificationSent: boolean; // ✅ NUEVO: Estado de notificación
 }
 
 interface AdminIndicatorsUsersProps {
@@ -96,8 +97,12 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
       if (data.success) {
         toast.success('Notificación enviada exitosamente');
-        // Remover del listado inmediatamente tras notificar
-        setIndicatorUsers(prev => prev.filter(user => user.paymentId !== paymentId));
+        // ✅ CORREGIDO: Actualizar el estado de notificación en lugar de remover
+        setIndicatorUsers(prev => prev.map(user => 
+          user.paymentId === paymentId 
+            ? { ...user, notificationSent: true }
+            : user
+        ));
       } else {
         toast.error(data.error || 'Error al enviar notificación.');
       }
@@ -123,13 +128,13 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
     }
 
     // Filtro por estado de notificación
-    if (filterSubmitted === 'new' && (user as any).notificationSent) {
+    if (filterSubmitted === 'new' && user.notificationSent) {
       return false;
     }
-    if (filterSubmitted === 'without-notification' && (user as any).notificationSent) {
+    if (filterSubmitted === 'without-notification' && user.notificationSent) {
       return false;
     }
-    if (filterSubmitted === 'notified' && !(user as any).notificationSent) {
+    if (filterSubmitted === 'notified' && !user.notificationSent) {
       return false;
     }
 
@@ -138,9 +143,9 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
   const stats = {
     total: indicatorUsers.length,
-    newUsers: indicatorUsers.filter(u => !(u as any).notificationSent).length,
-    withoutNotification: indicatorUsers.filter(u => !(u as any).notificationSent).length,
-    notified: indicatorUsers.filter(u => (u as any).notificationSent).length
+    newUsers: indicatorUsers.filter(u => !u.notificationSent).length,
+    withoutNotification: indicatorUsers.filter(u => !u.notificationSent).length,
+    notified: indicatorUsers.filter(u => u.notificationSent).length
   };
 
   return (
@@ -370,13 +375,18 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                           indicatorUser.userName,
                           indicatorUser.tradingViewUser
                         )}
-                        disabled={(indicatorUser as any).notificationSent || notifyingUser === indicatorUser.paymentId}
-                        className={styles.notifyButton}
+                        disabled={indicatorUser.notificationSent || notifyingUser === indicatorUser.paymentId}
+                        className={`${styles.notifyButton} ${indicatorUser.notificationSent ? styles.notified : ''}`}
                       >
                         {notifyingUser === indicatorUser.paymentId ? (
                           <>
                             <RefreshCw size={16} className={styles.spinning} />
                             Enviando...
+                          </>
+                        ) : indicatorUser.notificationSent ? (
+                          <>
+                            <CheckCircle size={16} />
+                            Notificado
                           </>
                         ) : (
                           <>

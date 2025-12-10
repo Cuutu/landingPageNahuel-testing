@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
+/**
+ * ✅ OPTIMIZADO: Middleware de Next.js
+ * - Solo se ejecuta en rutas que realmente lo necesitan (admin + rutas sospechosas)
+ * - Eliminados console.logs innecesarios para mejorar rendimiento
+ * - Token solo se obtiene para rutas /admin (evita llamadas innecesarias)
+ */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Filtrar rutas sospechosas (bots/scanners buscando archivos sensibles)
-  // Estas rutas devuelven 404 silencioso sin pasar por _error.tsx
+  // ✅ SEGURIDAD: Filtrar rutas sospechosas (bots/scanners)
+  // Devuelve 404 silencioso sin pasar por _error.tsx
   const suspiciousPaths = [
     '/.env',
     '/.env.local',
@@ -30,68 +36,37 @@ export async function middleware(request: NextRequest) {
     '/env.json',
     '/env.yml',
     '/env.yaml',
-    '/estrategiaymetododetrading', // Ruta específica que aparece en los logs
+    '/estrategiaymetododetrading',
   ];
   
-  // Si es una ruta sospechosa, devolver 404 silencioso
+  // Bloquear rutas sospechosas inmediatamente
   if (suspiciousPaths.some(path => pathname === path || pathname.startsWith(path))) {
     return new NextResponse(null, { status: 404 });
   }
   
-  // Verificar token para todas las rutas (no solo admin)
-  const token = await getToken({ 
-    req: request, 
-    secret: process.env.NEXTAUTH_SECRET 
-  });
-  
-  // ❌ DESHABILITADO: No procesar pagos automáticamente desde middleware
-  // Esto causaba que se otorgara acceso sin verificar pagos reales
-  if (false && token?.email && shouldCheckPendingPayments(pathname)) {
-    console.log('🔄 [MIDDLEWARE] Verificando pagos pendientes para:', token?.email);
-    
-    try {
-      // ❌ DESHABILITADO - Solo verificar pagos cuando se solicite explícitamente
-      fetch(`${request.nextUrl.origin}/api/auto-process-user-payments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXTAUTH_SECRET}`,
-        },
-        body: JSON.stringify({ userEmail: token?.email })
-      }).catch(error => {
-        console.error('Error en procesamiento automático:', error);
-      });
-    } catch (error) {
-      console.error('Error iniciando procesamiento automático:', error);
-    }
-  }
-  
-  // Solo aplicar protección a rutas administrativas
+  // ✅ PROTECCIÓN DE RUTAS ADMIN
+  // Solo obtener token cuando es necesario (mejora rendimiento)
   if (pathname.startsWith('/admin')) {
-    console.log('🔒 [MIDDLEWARE] Protegiendo ruta administrativa:', pathname);
-    
     try {
-      console.log('🔍 [MIDDLEWARE] Token encontrado:', !!token);
-      console.log('👤 [MIDDLEWARE] Usuario:', token?.email);
-      console.log('🔧 [MIDDLEWARE] Rol:', token?.role);
+      const token = await getToken({ 
+        req: request, 
+        secret: process.env.NEXTAUTH_SECRET 
+      });
       
       // Si no hay token, redirigir a login
       if (!token) {
-        console.log('❌ [MIDDLEWARE] No hay token - redirigiendo a login');
         return NextResponse.redirect(new URL('/api/auth/signin', request.url));
       }
       
       // Si no es admin, redirigir a home
       if (token.role !== 'admin') {
-        console.log('❌ [MIDDLEWARE] Usuario no es admin - redirigiendo a home');
         return NextResponse.redirect(new URL('/', request.url));
       }
       
-      console.log('✅ [MIDDLEWARE] Acceso de admin confirmado para:', token.email);
-      
+      // ✅ Acceso permitido - continuar
     } catch (error) {
-      console.error('💥 [MIDDLEWARE] Error verificando token:', error);
-      // En caso de error, redirigir a login por seguridad
+      // Solo loguear errores reales (no info de debug)
+      console.error('[MIDDLEWARE] Error verificando token admin:', error);
       return NextResponse.redirect(new URL('/api/auth/signin', request.url));
     }
   }
@@ -99,31 +74,21 @@ export async function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-/**
- * Determina si debemos verificar pagos pendientes para esta ruta
- */
-function shouldCheckPendingPayments(pathname: string): boolean {
-  // Verificar en páginas importantes donde el usuario podría necesitar acceso
-  const checkRoutes = [
-    '/alertas/trader-call',
-    '/alertas/smart-money',
-    '/entrenamientos',
-    '/perfil',
-    '/' // página principal
-  ];
-  
-  return checkRoutes.some(route => pathname.startsWith(route)) || pathname === '/';
-}
-
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * ✅ OPTIMIZADO: Solo ejecutar middleware en rutas necesarias
+     * - /admin/* (protección de rutas administrativas)
+     * - Rutas sospechosas se manejan arriba con la lista
+     * 
+     * Excluir:
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
+     * - favicon.ico, logos, videos (archivos estáticos)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/admin/:path*',
+    // Incluir rutas raíz para filtrar bots (pero saldrá rápido si no es sospechosa)
+    '/((?!api|_next/static|_next/image|favicon.ico|logos|videos).*)',
   ],
 }; 

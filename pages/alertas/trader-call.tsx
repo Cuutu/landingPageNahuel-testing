@@ -5,6 +5,19 @@ import { useSession, signIn } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../lib/googleAuth';
+import dynamic from 'next/dynamic';
+
+// ✅ OPTIMIZADO: Modales cargados dinámicamente para reducir bundle inicial
+const ReportViewModal = dynamic(() => import('@/components/alerts/ReportViewModal'), {
+  ssr: false,
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</div>
+});
+
+const CreateReportModal = dynamic(() => import('@/components/alerts/CreateReportModal'), {
+  ssr: false,
+  loading: () => <div style={{ padding: '2rem', textAlign: 'center' }}>Cargando...</div>
+});
+
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import VideoPlayerMux from '@/components/VideoPlayerMux';
@@ -16,7 +29,8 @@ import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import AlertExamplesCarousel from '@/components/AlertExamplesCarousel';
 import FAQAccordion from '@/components/FAQAccordion';
 import SP500Comparison from '@/components/SP500Comparison';
-import { motion } from 'framer-motion';
+// ✅ OPTIMIZADO: Usar LazyMotion para reducir el bundle de framer-motion (~60% más pequeño)
+import { LazyMotion, domAnimation, m } from 'framer-motion';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -347,6 +361,8 @@ const NonSubscriberView: React.FC<{
         onSubscribe={handleSubscribe}
         serviceName="TraderCall"
       />
+      {/* ✅ OPTIMIZADO: LazyMotion reduce el bundle de framer-motion ~60% */}
+      <LazyMotion features={domAnimation}>
       {/* Hero Section con Imagen de Fondo */}
       <section className={styles.heroSection}>
         {/* Image Background */}
@@ -355,7 +371,7 @@ const NonSubscriberView: React.FC<{
         </div>
         
         <div className={styles.container}>
-          <motion.div 
+          <m.div 
             className={styles.heroContent}
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -466,23 +482,23 @@ const NonSubscriberView: React.FC<{
                 )}
               </div>
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
       {/* Ejemplo de Alertas */}
       <section className={styles.examplesSection}>
         <div className={styles.container}>
-          <motion.h2 
+          <m.h2 
             className={styles.sectionTitle}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
             Ejemplo de Alertas
-          </motion.h2>
+          </m.h2>
           
-          <motion.div 
+          <m.div 
             className={styles.carouselContainer}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -493,7 +509,7 @@ const NonSubscriberView: React.FC<{
               autoplay={true}
               interval={5000}
             />
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
@@ -519,16 +535,16 @@ const NonSubscriberView: React.FC<{
       {/* Preguntas Frecuentes */}
       <section className={styles.faqSection}>
         <div className={styles.container}>
-          <motion.h2 
+          <m.h2 
             className={styles.sectionTitle}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
             Preguntas Frecuentes
-          </motion.h2>
+          </m.h2>
           
-          <motion.div 
+          <m.div 
             className={styles.faqContainer}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -539,14 +555,14 @@ const NonSubscriberView: React.FC<{
               category="trader-call"
               maxItems={10}
             />
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
       {/* CTA Final */}
       <section className={styles.finalCtaSection}>
         <div className={styles.container}>
-          <motion.div 
+          <m.div 
             className={styles.finalCtaCard}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -612,14 +628,14 @@ const NonSubscriberView: React.FC<{
                 </p>
               )}
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </section>
 
       {/* YouTube Community Section */}
       <section className={styles.youtubeSection}>
         <div className="container">
-          <motion.div
+          <m.div
             className={styles.youtubeContent}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -639,9 +655,10 @@ const NonSubscriberView: React.FC<{
             <div className={styles.youtubeVideoContainer}>
               <YouTubeAutoCarousel />
             </div>
-          </motion.div>
+          </m.div>
         </div>
       </section>
+      </LazyMotion>
     </div>
   );
 };
@@ -5364,1034 +5381,6 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         <div className={styles.tooltipLiquidity}></div>
         <div className={styles.tooltipShares}></div>
         <div className={styles.tooltipRealized}></div>
-      </div>
-    </div>
-  );
-};
-
-// Componente para modal de visualización de informes mejorado
-const ReportViewModal = ({ report, onClose, onEdit, userRole }: {
-  report: any;
-  onClose: () => void;
-  onEdit?: (report: any) => void;
-  userRole?: string;
-}) => {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(1);
-  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [stickyImage, setStickyImage] = useState<any>(null);
-  const [showStickyModal, setShowStickyModal] = useState(false);
-
-  const handleImageClick = (index: number) => {
-    setCurrentImageIndex(index);
-    setShowImageModal(true);
-  };
-
-  const closeImageModal = () => {
-    setShowImageModal(false);
-    setZoomLevel(1);
-    setImagePosition({ x: 0, y: 0 });
-  };
-
-  const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.5, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.5, 0.5));
-  };
-
-  const resetZoom = () => {
-    setZoomLevel(1);
-    setImagePosition({ x: 0, y: 0 });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoomLevel > 1) {
-      setIsDragging(true);
-      setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging && zoomLevel > 1) {
-      setImagePosition({
-        x: e.clientX - dragStart.x,
-        y: e.clientY - dragStart.y
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      handleZoomIn();
-    } else {
-      handleZoomOut();
-    }
-  };
-
-  const handleImageSticky = (image: any, index: number) => {
-    setStickyImage({ ...image, index });
-  };
-
-  const closeStickyImage = () => {
-    setStickyImage(null);
-  };
-
-  const openStickyModal = () => {
-    if (stickyImage) {
-      setCurrentImageIndex(stickyImage.index);
-      setShowStickyModal(true);
-    }
-  };
-
-  const closeStickyModal = () => {
-    setShowStickyModal(false);
-    setZoomLevel(1);
-    setImagePosition({ x: 0, y: 0 });
-  };
-
-  const nextImage = () => {
-    if (report.images && report.images.length > 0 && currentImageIndex < report.images.length - 1) {
-      setCurrentImageIndex(currentImageIndex + 1);
-      resetZoom();
-    }
-  };
-
-  const prevImage = () => {
-    if (report.images && report.images.length > 0 && currentImageIndex > 0) {
-      setCurrentImageIndex(currentImageIndex - 1);
-      resetZoom();
-    }
-  };
-
-  // Navegación con teclado
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (!showImageModal) return;
-      
-      if (e.key === 'ArrowLeft') {
-        prevImage();
-      } else if (e.key === 'ArrowRight') {
-        nextImage();
-      } else if (e.key === 'Escape') {
-        closeImageModal();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyPress);
-    return () => document.removeEventListener('keydown', handleKeyPress);
-  }, [showImageModal, currentImageIndex, report.images]);
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getReportTypeIcon = (type: string) => {
-    switch (type) {
-      case 'video':
-        return '🎥';
-      case 'analisis':
-        return '📊';
-      case 'mixed':
-        return '📋';
-      default:
-        return '📄';
-    }
-  };
-
-  const getReportTypeLabel = (type: string) => {
-    switch (type) {
-      case 'video':
-        return 'Video';
-      case 'analisis':
-        return 'Análisis';
-      case 'mixed':
-        return 'Mixto';
-      default:
-        return 'Informe';
-    }
-  };
-
-  // Funciones de descarga y compartir ELIMINADAS POR SEGURIDAD
-  // Los botones de descargar y compartir han sido removidos para prevenir filtración de información
-
-
-
-  return (
-    <>
-      <div className={styles.modalOverlay} onClick={onClose}>
-        <div className={styles.reportViewModal} onClick={(e) => e.stopPropagation()}>
-          <div className={styles.modalHeader}>
-            <div className={styles.modalTitle}>
-              <h2>{report.title}</h2>
-              {/* Información del informe - OCULTA */}
-              <div className={styles.reportMeta} style={{ display: 'none' }}>
-                <span className={styles.reportDate}>
-                  📅 {formatDate(report.publishedAt || report.createdAt)}
-                </span>
-                <span className={styles.reportType}>
-                  {getReportTypeIcon(report.type)} {getReportTypeLabel(report.type)}
-                </span>
-                {report.author && (
-                  <span className={styles.reportAuthor}>
-                    👤 {typeof report.author === 'object' ? report.author.name || report.author.email : report.author}
-                  </span>
-                )}
-                {report.category && (
-                  <span className={styles.reportType}>
-                    📂 {report.category.replace('-', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className={styles.modalActions}>
-              {userRole === 'admin' && onEdit && (
-                <button
-                  className={styles.editButton}
-                  onClick={() => onEdit(report)}
-                  aria-label="Editar informe"
-                  title="Editar informe"
-                >
-                  ✏️ Editar
-                </button>
-              )}
-              <button
-                className={styles.closeModal}
-                onClick={onClose}
-                aria-label="Cerrar modal"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <div className={styles.reportContent}>
-            {/* Imagen de portada */}
-            {report.coverImage && (
-              <div className={styles.reportCover}>
-                <img 
-                  src={report.coverImage.secure_url || report.coverImage.url} 
-                  alt={report.title}
-                  className={styles.coverImage}
-                  loading="lazy"
-                />
-              </div>
-            )}
-
-            {/* Contenido del informe */}
-            <div className={styles.reportText}>
-              <div 
-                className={styles.reportBody}
-                dangerouslySetInnerHTML={{ __html: report.content }}
-              />
-            </div>
-
-            {/* Imágenes adicionales */}
-            {report.images && report.images.length > 0 && (
-              <div className={styles.reportImages}>
-                <h3>📸 Imágenes del Informe ({report.images.length})</h3>
-                <div className={styles.imagesGrid}>
-                  {report.images.map((image: any, index: number) => (
-                    <div 
-                      key={image.public_id} 
-                      className={styles.imageThumbnail}
-                    >
-                      <div className={styles.imageContainer}>
-                        <img 
-                          src={image.secure_url || image.url} 
-                          alt={image.caption || `Imagen ${index + 1}`}
-                          loading="lazy"
-                          onClick={() => handleImageClick(index)}
-                        />
-                        <div className={styles.imageActions}>
-                          <button 
-                            className={styles.stickyButton}
-                            onClick={() => handleImageSticky(image, index)}
-                            title="Hacer sticky"
-                          >
-                            📌
-                          </button>
-                          <button 
-                            className={styles.viewButton}
-                            onClick={() => handleImageClick(index)}
-                            title="Ver en grande"
-                          >
-                            👁️
-                          </button>
-                        </div>
-                      </div>
-                      {image.caption && (
-                        <div className={styles.imageCaption}>
-                          {image.caption}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-
-
-            {/* Estadísticas del informe */}
-            <div className={styles.reportStats}>
-              {report.images && report.images.length > 0 && (
-                <div className={styles.statItem}>
-                  <span className={styles.statLabel}>📸 Imágenes</span>
-                  <span className={styles.statValue}>{report.images.length}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.modalFooter}>
-            {/* Botones de descarga y compartir ELIMINADOS POR SEGURIDAD */}
-            {/* Los botones de descargar y compartir han sido removidos para prevenir filtración de información */}
-          </div>
-        </div>
-      </div>
-
-      {/* Modal para imágenes */}
-      {showImageModal && report.images && report.images.length > 0 && (
-        <div className={styles.imageModalOverlay} onClick={closeImageModal}>
-          <div className={styles.imageModal} onClick={(e) => e.stopPropagation()}>
-            <button 
-              className={styles.closeImageModal} 
-              onClick={closeImageModal}
-              aria-label="Cerrar modal de imagen"
-            >
-              ×
-            </button>
-            
-            {/* Controles de zoom */}
-            <div className={styles.zoomControls}>
-              <button 
-                className={styles.zoomButton} 
-                onClick={handleZoomOut}
-                disabled={zoomLevel <= 0.5}
-                aria-label="Alejar"
-              >
-                −
-              </button>
-              <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
-              <button 
-                className={styles.zoomButton} 
-                onClick={handleZoomIn}
-                disabled={zoomLevel >= 3}
-                aria-label="Acercar"
-              >
-                +
-              </button>
-              <button 
-                className={styles.zoomButton} 
-                onClick={resetZoom}
-                aria-label="Resetear zoom"
-              >
-                ⌂
-              </button>
-            </div>
-
-            <div 
-              className={styles.imageModalContent}
-              onWheel={handleWheel}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
-            >
-              {report.images.length > 1 && (
-                <button 
-                  className={styles.imageNavButton} 
-                  onClick={prevImage}
-                  disabled={currentImageIndex === 0}
-                  aria-label="Imagen anterior"
-                >
-                  ‹
-                </button>
-              )}
-              <div 
-                className={styles.zoomableImageContainer}
-                style={{
-                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                  transformOrigin: 'center center'
-                }}
-              >
-                <img 
-                  src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
-                  alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
-                  className={styles.modalImage}
-                  loading="lazy"
-                  draggable={false}
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '100%', 
-                    width: 'auto', 
-                    height: 'auto',
-                    objectFit: 'contain'
-                  }}
-                />
-              </div>
-              {report.images.length > 1 && (
-                <button 
-                  className={styles.imageNavButton} 
-                  onClick={nextImage}
-                  disabled={currentImageIndex === report.images.length - 1}
-                  aria-label="Imagen siguiente"
-                >
-                  ›
-                </button>
-              )}
-            </div>
-            <div className={styles.imageModalInfo}>
-              <span className={styles.imageCounter}>
-                {currentImageIndex + 1} de {report.images.length}
-              </span>
-              {report.images[currentImageIndex].caption && (
-                <span className={styles.imageCaption}>
-                  {report.images[currentImageIndex].caption}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Imagen Sticky Flotante */}
-      {stickyImage && (
-        <div className={styles.stickyImageContainer}>
-          <div className={styles.stickyImage} onClick={openStickyModal}>
-            <img 
-              src={stickyImage.secure_url || stickyImage.url}
-              alt={stickyImage.caption || `Imagen ${stickyImage.index + 1}`}
-            />
-            <div className={styles.stickyImageTitle}>
-              {stickyImage.caption || `Imagen ${stickyImage.index + 1}`}
-            </div>
-            <button 
-              className={styles.closeStickyButton}
-              onClick={closeStickyImage}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para imagen sticky */}
-      {showStickyModal && report.images && report.images.length > 0 && (
-        <div className={styles.imageModalOverlay} onClick={closeStickyModal}>
-          <div className={styles.imageModal} onClick={(e) => e.stopPropagation()}>
-            <button 
-              className={styles.closeImageModal} 
-              onClick={closeStickyModal}
-              aria-label="Cerrar modal de imagen"
-            >
-              ×
-            </button>
-            
-            {/* Controles de zoom */}
-            <div className={styles.zoomControls}>
-              <button 
-                className={styles.zoomButton} 
-                onClick={handleZoomOut}
-                disabled={zoomLevel <= 0.5}
-                aria-label="Alejar"
-              >
-                −
-              </button>
-              <span className={styles.zoomLevel}>{Math.round(zoomLevel * 100)}%</span>
-              <button 
-                className={styles.zoomButton} 
-                onClick={handleZoomIn}
-                disabled={zoomLevel >= 3}
-                aria-label="Acercar"
-              >
-                +
-              </button>
-              <button 
-                className={styles.zoomButton} 
-                onClick={resetZoom}
-                aria-label="Resetear zoom"
-              >
-                ⌂
-              </button>
-            </div>
-
-            <div 
-              className={styles.imageModalContent}
-              onWheel={handleWheel}
-              onMouseDown={handleMouseDown}
-              onMouseMove={handleMouseMove}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-              style={{ cursor: zoomLevel > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default' }}
-            >
-              {report.images.length > 1 && (
-                <button 
-                  className={styles.imageNavButton} 
-                  onClick={prevImage}
-                  disabled={currentImageIndex === 0}
-                  aria-label="Imagen anterior"
-                >
-                  ‹
-                </button>
-              )}
-              <div 
-                className={styles.zoomableImageContainer}
-                style={{
-                  transform: `scale(${zoomLevel}) translate(${imagePosition.x / zoomLevel}px, ${imagePosition.y / zoomLevel}px)`,
-                  transformOrigin: 'center center'
-                }}
-              >
-                <img 
-                  src={report.images[currentImageIndex].secure_url || report.images[currentImageIndex].url}
-                  alt={report.images[currentImageIndex].caption || `Imagen ${currentImageIndex + 1}`}
-                  className={styles.modalImage}
-                  loading="lazy"
-                  draggable={false}
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '100%', 
-                    width: 'auto', 
-                    height: 'auto',
-                    objectFit: 'contain'
-                  }}
-                />
-              </div>
-              {report.images.length > 1 && (
-                <button 
-                  className={styles.imageNavButton} 
-                  onClick={nextImage}
-                  disabled={currentImageIndex === report.images.length - 1}
-                  aria-label="Imagen siguiente"
-                >
-                  ›
-                </button>
-              )}
-            </div>
-            <div className={styles.imageModalInfo}>
-              <span className={styles.imageCounter}>
-                {currentImageIndex + 1} de {report.images.length}
-              </span>
-              {report.images[currentImageIndex].caption && (
-                <span className={styles.imageCaption}>
-                  {report.images[currentImageIndex].caption}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-};
-
-// Componente para modal de creación/edición de informes
-const CreateReportModal = ({ onClose, onSubmit, loading, initialData, isEdit = false }: {
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-  loading: boolean;
-  initialData?: any;
-  isEdit?: boolean;
-}) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    type: 'text',
-    category: 'trader-call',
-    content: '',
-    isFeature: false,
-    publishedAt: new Date().toISOString().split('T')[0],
-    status: 'published'
-  });
-
-  const [images, setImages] = useState<CloudinaryImage[]>([]);
-  const [uploadingImages, setUploadingImages] = useState(false);
-
-  // Cargar datos iniciales cuando se edita
-  React.useEffect(() => {
-    if (isEdit && initialData) {
-      // console.log('📝 Cargando datos para edición:', {
-      //   title: initialData.title,
-      //   contentLength: initialData.content?.length || 0,
-      //   contentPreview: initialData.content?.substring(0, 100) || 'sin contenido',
-      //   hasContent: !!initialData.content
-      // });
-      
-      // Resetear el formulario primero
-      setFormData({
-        title: '',
-        type: 'text',
-        category: 'trader-call',
-        content: '',
-        isFeature: false,
-        publishedAt: new Date().toISOString().split('T')[0],
-        status: 'published'
-      });
-      
-      // Convertir HTML a texto plano
-      const originalContent = initialData.content || '';
-      // console.log('🔍 Contenido original (primeros 200 caracteres):', originalContent.substring(0, 200));
-      
-      const plainTextContent = htmlToText(originalContent);
-      
-      // console.log('🔄 Conversión HTML a texto:', {
-      //   originalLength: originalContent.length,
-      //   convertedLength: plainTextContent.length,
-      //   originalPreview: originalContent.substring(0, 200),
-      //   convertedPreview: plainTextContent.substring(0, 200),
-      //   hasTags: /<[^>]+>/.test(originalContent),
-      //   hasTagsAfter: /<[^>]+>/.test(plainTextContent)
-      // });
-      
-      // Actualizar el formulario con los datos convertidos
-      setFormData({
-        title: initialData.title || '',
-        type: initialData.type || 'text',
-        category: initialData.category || 'trader-call',
-        content: plainTextContent, // Convertir HTML a texto plano
-        isFeature: initialData.isFeature || false,
-        publishedAt: initialData.publishedAt ?
-          new Date(initialData.publishedAt).toISOString().split('T')[0] :
-          new Date().toISOString().split('T')[0],
-        status: initialData.status || 'published'
-      });
-
-      // Cargar imágenes si existen
-      if (initialData.images && Array.isArray(initialData.images)) {
-        setImages(initialData.images.map((img: any) => ({
-          public_id: img.public_id,
-          url: img.url || img.secure_url,
-          secure_url: img.secure_url || img.url,
-          width: img.width,
-          height: img.height,
-          format: img.format,
-          bytes: img.bytes,
-          caption: img.caption || '',
-          order: img.order || 0
-        })));
-      } else {
-        setImages([]);
-      }
-    } else if (!isEdit) {
-      // Resetear formulario cuando se cierra o se abre para crear nuevo
-      setFormData({
-        title: '',
-        type: 'text',
-        category: 'trader-call',
-        content: '',
-        isFeature: false,
-        publishedAt: new Date().toISOString().split('T')[0],
-        status: 'published'
-      });
-      setImages([]);
-    }
-  }, [isEdit, initialData]);
-
-  // Función para actualizar el caption de una imagen
-  const updateImageCaption = (publicId: string, caption: string) => {
-    setImages(prev => prev.map(img => 
-      img.public_id === publicId ? { ...img, caption } : img
-    ));
-  };
-
-
-  // Debug: monitorear cambios en formData
-  React.useEffect(() => {
-    // console.log('📊 [FORM] Estado actual del formulario:', {
-    //   title: formData.title,
-    //   type: formData.type,
-    //   category: formData.category,
-    //   hasContent: !!formData.content
-    // });
-  }, [formData]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.title.trim() || !formData.content.trim()) {
-      alert('Título y contenido son obligatorios');
-      return;
-    }
-
-    // Preparar datos con imágenes de Cloudinary con orden correcto
-    const imagesWithOrder = images.map((img, index) => ({
-      ...img,
-      order: index + 1 // Asignar orden basado en la posición actual
-    }));
-    
-    const submitData = {
-      ...formData,
-      publishedAt: new Date(formData.publishedAt),
-      images: imagesWithOrder
-    };
-
-    // Debug: mostrar qué datos se están enviando
-    // console.log('🔍 [FORM] Datos a enviar:', {
-    //   title: submitData.title,
-    //   type: submitData.type,
-    //   category: submitData.category,
-    //   content: submitData.content?.substring(0, 100) + '...',
-    //   hasImages: submitData.images?.length || 0
-    // });
-    
-    onSubmit(submitData);
-  };
-
-  const handleInputChange = (field: string, value: string) => {
-    // console.log(`🔄 [FORM] Cambiando campo '${field}' de '${formData[field as keyof typeof formData]}' a '${value}'`);
-    
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-
-
-
-  const handleImageUploaded = (image: CloudinaryImage) => {
-    setImages(prev => [...prev, image]);
-    // console.log('✅ Imagen adicional agregada:', image.public_id);
-  };
-
-  const handleUploadComplete = () => {
-    setUploadingImages(false);
-    // console.log('✅ Todas las imágenes subidas');
-  };
-
-
-
-  const removeImage = (publicId: string) => {
-    setImages(prev => prev.filter(img => img.public_id !== publicId));
-  };
-
-  // Funciones para reordenar imágenes
-  const moveImageUp = (index: number) => {
-    if (index <= 0) return;
-    setImages(prev => {
-      const newImages = [...prev];
-      [newImages[index - 1], newImages[index]] = [newImages[index], newImages[index - 1]];
-      return newImages;
-    });
-  };
-
-  const moveImageDown = (index: number) => {
-    if (index >= images.length - 1) return;
-    setImages(prev => {
-      const newImages = [...prev];
-      [newImages[index], newImages[index + 1]] = [newImages[index + 1], newImages[index]];
-      return newImages;
-    });
-  };
-
-  return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.createReportModal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2>{isEdit ? 'Editar Informe Trader Call' : 'Crear Nuevo Informe Trader Call'}</h2>
-          <button 
-            className={styles.closeModal}
-            onClick={onClose}
-            disabled={loading}
-          >
-            ×
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className={styles.createReportForm}>
-          {/* Campos del formulario - VISIBLES */}
-          <div className={styles.formSection}>
-            <div className={styles.formGroup}>
-              <label htmlFor="title">Título *</label>
-              <input
-                id="title"
-                type="text"
-                value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Título del informe Trader Call"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {/* Campo Tipo - OCULTO */}
-            <div className={styles.formGroup} style={{ display: 'none' }}>
-              <label htmlFor="type">Tipo</label>
-              <input
-                id="type"
-                type="text"
-                value={formData.type}
-                onChange={(e) => {
-                  // console.log('🎯 [INPUT] Cambio detectado en tipo:', e.target.value);
-                  handleInputChange('type', e.target.value);
-                }}
-                placeholder="Ej: Texto, Video, Mixto, Análisis, Reporte..."
-                disabled={loading}
-                style={{ 
-                  cursor: 'text',
-                  backgroundColor: '#1e293b',
-                  color: '#ffffff',
-                  border: '2px solid rgba(139, 92, 246, 0.3)',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1rem',
-                  fontSize: '1rem',
-                  width: '100%'
-                }}
-              />
-              {/* Debug: mostrar el valor actual */}
-              <div style={{ 
-                fontSize: '0.8rem', 
-                color: '#94a3b8', 
-                marginTop: '0.5rem',
-                padding: '0.5rem',
-                backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                borderRadius: '8px',
-                border: '1px solid rgba(139, 92, 246, 0.2)'
-              }}>
-                🔍 Valor actual del tipo: <strong>{formData.type}</strong>
-              </div>
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label htmlFor="publishedAt">Fecha de Publicación</label>
-                <input
-                  id="publishedAt"
-                  type="date"
-                  value={formData.publishedAt}
-                  onChange={(e) => handleInputChange('publishedAt', e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            <div className={styles.formGroup}>
-              <label htmlFor="content">Contenido Principal del Informe *</label>
-              <textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => handleInputChange('content', e.target.value)}
-                placeholder="Contenido principal del informe"
-                rows={6}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            {/* Imágenes adicionales */}
-            <div className={styles.formGroup}>
-              <label>Imágenes Adicionales</label>
-              <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                Imágenes que se mostrarán dentro del contenido del informe
-              </p>
-              
-              <ImageUploader
-                onImageUploaded={handleImageUploaded}
-                onUploadStart={() => setUploadingImages(true)}
-                onUploadComplete={handleUploadComplete}
-                onError={(error) => {
-                  // console.error('Error subiendo imagen adicional:', error);
-                  alert('Error subiendo imagen: ' + error);
-                  setUploadingImages(false);
-                }}
-                maxFiles={5}
-                multiple={true}
-                buttonText="Subir Imágenes Adicionales"
-                className={styles.additionalImagesUploader}
-              />
-
-              {/* Preview de imágenes adicionales */}
-              {images.length > 0 && (
-                <div className={styles.additionalImagesPreview}>
-                  <h4>Imágenes Adicionales ({images.length}/5)</h4>
-                  <div className={styles.imagesGrid}>
-                    {images.map((image, index) => (
-                      <div key={image.public_id} className={styles.imagePreviewItem} style={{ position: 'relative' }}>
-                        {/* Badge numérico y botones de mover en la esquina superior izquierda */}
-                        <div style={{
-                          position: 'absolute',
-                          top: '5px',
-                          left: '5px',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: '2px',
-                          zIndex: 10
-                        }}>
-                          <div className={styles.imageOrderBadge} style={{
-                            backgroundColor: 'rgba(139, 92, 246, 0.9)',
-                            color: 'white',
-                            borderRadius: '50%',
-                            width: '25px',
-                            height: '25px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '0.875rem',
-                            fontWeight: 'bold'
-                          }}>
-                            {index + 1}
-                          </div>
-                          {/* Botones de reordenar debajo del número */}
-                          <div style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '2px'
-                          }}>
-                            {index > 0 && (
-                              <button 
-                                type="button" 
-                                onClick={() => moveImageUp(index)}
-                                className={styles.reorderButton}
-                                title="Mover arriba"
-                                style={{
-                                  backgroundColor: 'rgba(59, 130, 246, 0.9)',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  padding: '2px 4px',
-                                  fontSize: '0.75rem',
-                                  minWidth: '20px',
-                                  height: '20px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  lineHeight: 1
-                                }}
-                              >
-                                ↑
-                              </button>
-                            )}
-                            {index < images.length - 1 && (
-                              <button 
-                                type="button" 
-                                onClick={() => moveImageDown(index)}
-                                className={styles.reorderButton}
-                                title="Mover abajo"
-                                style={{
-                                  backgroundColor: 'rgba(59, 130, 246, 0.9)',
-                                  border: 'none',
-                                  borderRadius: '3px',
-                                  color: 'white',
-                                  cursor: 'pointer',
-                                  padding: '2px 4px',
-                                  fontSize: '0.75rem',
-                                  minWidth: '20px',
-                                  height: '20px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  lineHeight: 1
-                                }}
-                              >
-                                ↓
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Botón de eliminar en la esquina superior derecha */}
-                        <button 
-                          type="button" 
-                          onClick={() => removeImage(image.public_id)}
-                          className={styles.removeImageButton}
-                          title="Eliminar imagen"
-                          style={{
-                            position: 'absolute',
-                            top: '5px',
-                            right: '5px',
-                            backgroundColor: 'rgba(239, 68, 68, 0.9)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            color: 'white',
-                            cursor: 'pointer',
-                            padding: '4px 8px',
-                            fontSize: '0.875rem',
-                            minWidth: '28px',
-                            height: '28px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            lineHeight: 1,
-                            zIndex: 10
-                          }}
-                        >
-                          ×
-                        </button>
-                        <img 
-                          src={image.secure_url} 
-                          alt={`Imagen adicional ${index + 1}`}
-                          className={styles.previewThumbnail}
-                        />
-                        {/* Campo para título/caption de la imagen */}
-                        <div className={styles.imageCaptionInput}>
-                          <label htmlFor={`caption-${image.public_id}`} style={{ fontSize: '0.875rem', marginBottom: '0.25rem', display: 'block', color: 'var(--text-muted)' }}>
-                            Título de la imagen:
-                          </label>
-                          <input
-                            id={`caption-${image.public_id}`}
-                            type="text"
-                            value={image.caption || ''}
-                            onChange={(e) => updateImageCaption(image.public_id, e.target.value)}
-                            placeholder="Ej: Gráfico de tendencia alcista"
-                            className={styles.captionInput}
-                            style={{
-                              width: '100%',
-                              padding: '0.5rem',
-                              borderRadius: '6px',
-                              border: '1px solid rgba(255, 255, 255, 0.1)',
-                              backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                              color: '#ffffff',
-                              fontSize: '0.875rem',
-                              marginTop: '0.5rem'
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-
-          <div className={styles.formActions}>
-            <button 
-              type="button" 
-              onClick={onClose}
-              className={styles.cancelButton}
-              disabled={loading}
-            >
-              Cancelar
-            </button>
-                          <button 
-                type="submit" 
-                className={styles.submitButton}
-                disabled={loading || uploadingImages}
-              >
-                {loading ? (isEdit ? 'Actualizando...' : 'Creando...') : uploadingImages ? 'Subiendo...' : (isEdit ? 'Actualizar Informe' : 'Crear Informe')}
-              </button>
-          </div>
-        </form>
       </div>
     </div>
   );

@@ -216,6 +216,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.log('🎨 [BULK EMAIL] Creando plantilla de email tipo:', emailType);
     console.log('🖼️ [BULK EMAIL] Imágenes incluidas:', images.length);
 
+    // ✅ NUEVO: Función para convertir saltos de línea a HTML
+    // Cada Enter del administrador se convierte en un nuevo párrafo
+    const convertLineBreaksToHtml = (text: string): string => {
+      if (!text) return '';
+      
+      // Dividir por saltos de línea y crear párrafos HTML
+      return text
+        .split('\n')
+        .map((line: string) => {
+          const trimmedLine = line.trim();
+          // Si la línea está vacía, crear un espacio
+          if (!trimmedLine) {
+            return '<p style="margin: 0 0 16px 0;">&nbsp;</p>';
+          }
+          return `<p style="margin: 0 0 16px 0;">${trimmedLine}</p>`;
+        })
+        .join('');
+    };
+
     // Función para generar HTML de imágenes
     const generateImagesHtml = (images: any[]) => {
       if (!images || images.length === 0) return '';
@@ -238,12 +257,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Crear HTML del email basado en el tipo
     let emailHtml: string;
     
+    // ✅ CORREGIDO: Convertir saltos de línea del mensaje a HTML en todos los tipos
+    const messageHtml = convertLineBreaksToHtml(message);
+    
     switch (emailType) {
       case 'promotional':
         console.log('🎨 [BULK EMAIL] Creando plantilla promocional...');
         emailHtml = createPromotionalEmailTemplate({
           title: subject,
-          content: message + generateImagesHtml(images),
+          content: messageHtml + generateImagesHtml(images), // ✅ Usar messageHtml con saltos convertidos
           offer,
           expiryDate,
           buttonText,
@@ -258,9 +280,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           content: `
             <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; border-left: 4px solid #f59e0b; margin: 20px 0;">
               <h3 style="color: #92400e; margin-top: 0;">⚠️ Alerta Importante</h3>
-              <p style="margin: 0; color: #92400e;">
-                ${message}
-              </p>
+              <div style="color: #92400e;">
+                ${messageHtml}
+              </div>
             </div>
             ${generateImagesHtml(images)}
           `,
@@ -277,9 +299,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #3b82f6; margin: 20px 0;">
               <h3 style="color: #1e3a8a; margin-top: 0;">📧 Newsletter</h3>
               <div style="color: #1e3a8a;">
-                ${message.split('\n').map((paragraph: string) => 
-                  paragraph.trim() ? `<p style="margin: 0 0 12px 0;">${paragraph}</p>` : ''
-                ).join('')}
+                ${messageHtml}
               </div>
             </div>
             ${generateImagesHtml(images)}
@@ -293,7 +313,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         console.log('🎨 [BULK EMAIL] Creando plantilla general...');
         emailHtml = createEmailTemplate({
           title: subject,
-          content: message + generateImagesHtml(images),
+          content: messageHtml + generateImagesHtml(images), // ✅ Usar messageHtml con saltos convertidos
           buttonText,
           buttonUrl
         });
