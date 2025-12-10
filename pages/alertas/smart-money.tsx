@@ -221,7 +221,7 @@ const NonSubscriberView: React.FC<{
       }
     } catch (error) {
       // console.error('Error:', error);
-      alert('Error al procesar el pago. Por favor intenta nuevamente.');
+      alert('Error al procesar el pago. Por favor intenta nuevamente');
     } finally {
       setIsProcessingTrial(false);
     }
