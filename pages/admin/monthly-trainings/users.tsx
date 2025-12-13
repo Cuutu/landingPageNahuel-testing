@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
@@ -16,7 +17,6 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-import AdminRouteGuard from '../../../components/AdminRouteGuard';
 import styles from '../../../styles/admin/MonthlyTrainingUsers.module.css';
 
 interface Student {
@@ -54,8 +54,11 @@ interface StatsData {
   totalRevenue: number;
 }
 
-export default function MonthlyTrainingUsers() {
-  const { data: session, status } = useSession();
+interface MonthlyTrainingUsersProps {
+  user: any;
+}
+
+export default function MonthlyTrainingUsers({ user }: MonthlyTrainingUsersProps) {
   const [trainings, setTrainings] = useState<TrainingData[]>([]);
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,10 +67,8 @@ export default function MonthlyTrainingUsers() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      loadData();
-    }
-  }, [status]);
+    loadData();
+  }, []);
 
   const loadData = async () => {
     try {
@@ -156,7 +157,7 @@ export default function MonthlyTrainingUsers() {
   }
 
   return (
-    <AdminRouteGuard>
+    <>
       <div className={styles.container}>
         <Head>
           <title>Gestión de Usuarios - Entrenamientos Mensuales</title>
@@ -382,6 +383,36 @@ export default function MonthlyTrainingUsers() {
           )}
         </div>
       </div>
-    </AdminRouteGuard>
+    </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
+};

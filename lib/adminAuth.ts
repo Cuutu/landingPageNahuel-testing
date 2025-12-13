@@ -13,45 +13,61 @@ interface AdminVerificationResult {
 
 /**
  * Verifica si el usuario actual tiene permisos de administrador
+ * ✅ SIMPLIFICADO: Solo confía en la BD para el rol, no compara sesión vs BD
  */
 export async function verifyAdminAccess(context: GetServerSidePropsContext): Promise<AdminVerificationResult> {
   try {
     console.log('🔍 [ADMIN AUTH] Verificando acceso de administrador...');
     
+    // 1. Obtener sesión del servidor
     const session = await getServerSession(context.req, context.res, authOptions);
     
+    console.log('🔍 [ADMIN AUTH] Sesión obtenida:', !!session);
+    console.log('🔍 [ADMIN AUTH] Email en sesión:', session?.user?.email || 'NO HAY');
+    
+    // 2. Si no hay sesión o email, redirigir a login
     if (!session?.user?.email) {
-      console.log('❌ [ADMIN AUTH] No hay sesión válida');
+      console.log('❌ [ADMIN AUTH] No hay sesión válida - redirigiendo a login');
       return {
         isAdmin: false,
         redirectTo: '/api/auth/signin'
       };
     }
 
-    console.log('👤 [ADMIN AUTH] Usuario:', session.user.email);
-    console.log('🔧 [ADMIN AUTH] Rol en sesión:', session.user.role);
-    console.log('🆔 [ADMIN AUTH] ID de usuario:', session.user.id);
+    console.log('👤 [ADMIN AUTH] Usuario autenticado:', session.user.email);
+    console.log('🔧 [ADMIN AUTH] Rol en sesión JWT:', session.user.role);
 
-    // Verificación adicional: consultar la base de datos para confirmar el rol
+    // 3. ✅ SIEMPRE verificar en la BD (fuente de verdad)
     try {
       await connectDB();
-      const dbUser = await User.findOne({ email: session.user.email }).lean();
+      const dbUser = await User.findOne({ email: session.user.email }).lean() as any;
       
-      if (!dbUser || Array.isArray(dbUser)) {
-        console.log('❌ [ADMIN AUTH] Usuario no encontrado en base de datos o resultado inválido');
+      console.log('🗄️ [ADMIN AUTH] Usuario encontrado en BD:', !!dbUser);
+      
+      if (!dbUser) {
+        console.log('❌ [ADMIN AUTH] Usuario no existe en BD');
         return {
           isAdmin: false,
-          redirectTo: '/api/auth/signin',
-          user: session.user,
+          redirectTo: '/',
           session: session
         };
       }
       
-      console.log('🗄️ [ADMIN AUTH] Rol en base de datos:', dbUser.role);
+      console.log('🗄️ [ADMIN AUTH] Rol en BD:', dbUser.role);
       
-      // Verificar que el rol en la base de datos sea admin
-      if (dbUser.role !== 'admin') {
-        console.log('❌ [ADMIN AUTH] Usuario no es admin en BD. Rol actual:', dbUser.role);
+      // 4. ✅ SOLO confiar en el rol de la BD
+      if (dbUser.role === 'admin') {
+        console.log('✅ [ADMIN AUTH] Acceso PERMITIDO - Usuario es admin en BD');
+        return {
+          isAdmin: true,
+          user: {
+            ...session.user,
+            role: dbUser.role // Usar rol de BD
+          },
+          session: session
+        };
+      } else {
+        console.log('❌ [ADMIN AUTH] Acceso DENEGADO - Usuario NO es admin. Rol en BD:', dbUser.role);
         return {
           isAdmin: false,
           redirectTo: '/',
@@ -60,27 +76,20 @@ export async function verifyAdminAccess(context: GetServerSidePropsContext): Pro
         };
       }
       
-      // Verificar que el rol en la sesión también sea admin
-      if (session.user.role !== 'admin') {
-        console.log('⚠️ [ADMIN AUTH] Rol en sesión no coincide con BD. Sesión:', session.user.role, 'BD:', dbUser.role);
-        // Aunque el rol en BD sea admin, si la sesión no lo refleja, redirigir a login para refrescar
+    } catch (dbError) {
+      console.error('💥 [ADMIN AUTH] Error consultando BD:', dbError);
+      
+      // ✅ FALLBACK: Si no podemos consultar BD, confiar en la sesión JWT
+      console.log('⚠️ [ADMIN AUTH] FALLBACK: Usando rol de sesión JWT:', session.user.role);
+      
+      if (session.user.role === 'admin') {
         return {
-          isAdmin: false,
-          redirectTo: '/api/auth/signin',
-          user: { ...session.user, role: dbUser.role },
+          isAdmin: true,
+          user: session.user,
           session: session
         };
       }
       
-    } catch (dbError) {
-      console.error('💥 [ADMIN AUTH] Error consultando base de datos:', dbError);
-      // Si no se puede consultar la BD, confiar en la sesión pero con advertencia
-      console.log('⚠️ [ADMIN AUTH] Confiando en rol de sesión por error de BD');
-    }
-
-    // Verificación final del rol en la sesión
-    if (session.user.role !== 'admin') {
-      console.log('❌ [ADMIN AUTH] Usuario no es admin. Rol actual:', session.user.role);
       return {
         isAdmin: false,
         redirectTo: '/',
@@ -89,18 +98,11 @@ export async function verifyAdminAccess(context: GetServerSidePropsContext): Pro
       };
     }
 
-    console.log('✅ [ADMIN AUTH] Acceso de admin confirmado para:', session.user.email);
-    return {
-      isAdmin: true,
-      user: session.user,
-      session: session
-    };
-
   } catch (error) {
-    console.error('💥 [ADMIN AUTH] Error verificando acceso de admin:', error);
+    console.error('💥 [ADMIN AUTH] Error general:', error);
     return {
       isAdmin: false,
-      redirectTo: '/'
+      redirectTo: '/api/auth/signin'
     };
   }
 }

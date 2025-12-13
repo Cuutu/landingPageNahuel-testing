@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 /**
- * ✅ OPTIMIZADO: Middleware de Next.js
- * - Solo se ejecuta en rutas que realmente lo necesitan (admin + rutas sospechosas)
- * - Eliminados console.logs innecesarios para mejorar rendimiento
- * - Token solo se obtiene para rutas /admin (evita llamadas innecesarias)
+ * ✅ SIMPLIFICADO: Middleware de Next.js
+ * 
+ * IMPORTANTE: La protección de rutas admin se maneja SOLO con getServerSideProps
+ * en cada página. Esto es más confiable porque:
+ * - getServerSession funciona correctamente con las cookies de producción
+ * - Evita problemas con el prefijo __Secure- de cookies en HTTPS
+ * - Permite verificar el rol directamente desde la base de datos
+ * 
+ * Este middleware solo bloquea rutas sospechosas (bots/scanners)
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -44,51 +48,21 @@ export async function middleware(request: NextRequest) {
     return new NextResponse(null, { status: 404 });
   }
   
-  // ✅ PROTECCIÓN DE RUTAS ADMIN
-  // Solo obtener token cuando es necesario (mejora rendimiento)
-  if (pathname.startsWith('/admin')) {
-    try {
-      const token = await getToken({ 
-        req: request, 
-        secret: process.env.NEXTAUTH_SECRET 
-      });
-      
-      // Si no hay token, redirigir a login
-      if (!token) {
-        return NextResponse.redirect(new URL('/api/auth/signin', request.url));
-      }
-      
-      // Si no es admin, redirigir a home
-      if (token.role !== 'admin') {
-        return NextResponse.redirect(new URL('/', request.url));
-      }
-      
-      // ✅ Acceso permitido - continuar
-    } catch (error) {
-      // Solo loguear errores reales (no info de debug)
-      console.error('[MIDDLEWARE] Error verificando token admin:', error);
-      return NextResponse.redirect(new URL('/api/auth/signin', request.url));
-    }
-  }
+  // ✅ NOTA: La protección de rutas /admin se maneja en getServerSideProps
+  // de cada página usando verifyAdminAccess() que usa getServerSession
+  // Esto es más confiable que usar getToken en el middleware
   
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * ✅ OPTIMIZADO: Solo ejecutar middleware en rutas necesarias
-     * - /admin/* (protección de rutas administrativas)
-     * - Rutas sospechosas se manejan arriba con la lista
-     * 
-     * Excluir:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, logos, videos (archivos estáticos)
-     */
-    '/admin/:path*',
-    // Incluir rutas raíz para filtrar bots (pero saldrá rápido si no es sospechosa)
-    '/((?!api|_next/static|_next/image|favicon.ico|logos|videos).*)',
+    // Solo rutas sospechosas específicas (bots/scanners)
+    '/.env',
+    '/.env.local',
+    '/.env.production',
+    '/config',
+    '/config.json',
+    '/settings',
   ],
 }; 

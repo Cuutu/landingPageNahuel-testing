@@ -21,16 +21,20 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: '/api/auth/signin',
+    signIn: '/auth/signin',
     error: '/auth/error',
     signOut: '/',
   },
   debug: process.env.NODE_ENV === 'development',
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log('🔐 [SIGNIN] Iniciando sesión:', user.email);
-      console.log('🔐 [SIGNIN] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
-      console.log('🔐 [SIGNIN] Account provider:', account?.provider);
+      // Solo loguear en desarrollo para evitar lentitud en producción
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        console.log('🔐 [SIGNIN] Iniciando sesión:', user.email);
+        console.log('🔐 [SIGNIN] NEXTAUTH_URL:', process.env.NEXTAUTH_URL);
+        console.log('🔐 [SIGNIN] Account provider:', account?.provider);
+      }
       
       try {
         await dbConnect();
@@ -41,7 +45,7 @@ export const authOptions: NextAuthOptions = {
         const userImageUrl = user.image || (profile as any)?.picture;
         
         if (!existingUser) {
-          console.log('👤 [SIGNIN] Creando nuevo usuario:', user.email);
+          if (isDev) console.log('👤 [SIGNIN] Creando nuevo usuario:', user.email);
           existingUser = await User.create({
             googleId: account?.providerAccountId,
             name: user.name,
@@ -56,15 +60,12 @@ export const authOptions: NextAuthOptions = {
 
           // Agregar email a la lista de envío masivo
           try {
-            console.log('📧 [SIGNIN] Agregando email a lista de envío masivo:', user.email);
             await (EmailList as any).addEmailIfNotExists(user.email, 'registration');
-            console.log('✅ [SIGNIN] Email agregado exitosamente a la lista');
           } catch (emailError) {
-            console.error('⚠️ [SIGNIN] Error agregando email a la lista (no crítico):', emailError);
             // No fallar el registro si no se puede agregar a la lista
           }
         } else {
-          console.log('👤 [SIGNIN] Actualizando usuario existente:', user.email);
+          if (isDev) console.log('👤 [SIGNIN] Actualizando usuario existente:', user.email);
           await User.findByIdAndUpdate(existingUser._id, {
             name: user.name,
             picture: userImageUrl,
@@ -72,18 +73,15 @@ export const authOptions: NextAuthOptions = {
             lastLogin: new Date(),
           });
 
-          // Asegurar que el email esté en la lista de envío masivo (por si no estaba)
+          // Asegurar que el email esté en la lista de envío masivo
           try {
-            console.log('📧 [SIGNIN] Verificando email en lista de envío masivo:', user.email);
             await (EmailList as any).addEmailIfNotExists(user.email, 'registration');
-            console.log('✅ [SIGNIN] Email verificado/agregado a la lista');
           } catch (emailError) {
-            console.error('⚠️ [SIGNIN] Error verificando email en la lista (no crítico):', emailError);
             // No fallar el login si no se puede verificar en la lista
           }
         }
         
-        console.log('✅ [SIGNIN] Usuario procesado correctamente, rol:', existingUser.role);
+        if (isDev) console.log('✅ [SIGNIN] Usuario procesado correctamente, rol:', existingUser.role);
         return true;
       } catch (error) {
         console.error('❌ [SIGNIN] Error en signIn callback:', error);
@@ -92,47 +90,97 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async jwt({ token, account, user, trigger }) {
-      console.log('🔑 [JWT] Callback ejecutado, trigger:', trigger, 'email:', token.email);
+      const isDev = process.env.NODE_ENV === 'development';
       
-      // Cargar información del usuario desde BD en cada creación de token o cuando se force update
-      if (token.email && (trigger === 'signIn' || trigger === 'update' || !token.role)) {
-        try {
-          await dbConnect();
-          const dbUser = await User.findOne({ email: token.email }).lean() as any;
+      // ✅ CORREGIDO: Validar que el token tenga email antes de procesar
+      if (!token.email) {
+        // Si hay un user object (signIn inicial), usar su email
+        if (user?.email) {
+          token.email = user.email;
+        } else {
+          if (isDev) console.warn('⚠️ [JWT] Token sin email, saltando callback');
+          return token;
+        }
+      }
+      
+      // ✅ CRÍTICO: SIEMPRE cargar de BD para asegurar que los datos estén actualizados
+      // Esto es especialmente importante para roles y suscripciones que pueden cambiar
+      if (isDev) {
+        console.log('🔑 [JWT] Cargando datos desde BD, trigger:', trigger, 'email:', token.email);
+      }
+      
+      try {
+        await dbConnect();
+        const dbUser = await User.findOne({ email: token.email }).lean() as any;
+        
+        if (dbUser && !Array.isArray(dbUser)) {
+          // ✅ CRÍTICO: Siempre actualizar con datos de BD para asegurar consistencia
+          token.role = dbUser.role || 'normal';
+          token.id = dbUser._id.toString();
+          token.suscripciones = dbUser.suscripciones || [];
+          token.picture = dbUser.picture || token.picture || user?.image;
+          token.name = dbUser.name || token.name || user?.name;
           
-          if (dbUser && !Array.isArray(dbUser)) {
-            console.log('🔑 [JWT] Cargando datos desde BD, rol:', dbUser.role);
-            token.role = dbUser.role;
-            token.id = dbUser._id.toString();
-            token.suscripciones = dbUser.suscripciones || [];
-            token.picture = dbUser.picture || token.picture;
-            token.name = dbUser.name || token.name;
-          } else {
-            console.log('⚠️ [JWT] Usuario no encontrado en BD:', token.email);
-            token.role = 'normal';
-            token.suscripciones = [];
+          // ✅ MEJORADO: Agregar timestamp para tracking
+          token.lastRefresh = Date.now();
+          
+          if (isDev) {
+            console.log('✅ [JWT] Datos cargados desde BD:', {
+              email: token.email,
+              role: token.role,
+              id: token.id,
+              suscripciones: Array.isArray(token.suscripciones) ? token.suscripciones.length : 0
+            });
           }
-        } catch (error) {
-          console.error('❌ [JWT] Error cargando usuario:', error);
-          // Mantener datos existentes en caso de error, pero asegurar rol por defecto
-          if (!token.role) {
-            token.role = 'normal';
-            token.suscripciones = [];
+        } else {
+          // Usuario no encontrado en BD - establecer valores por defecto
+          if (isDev) console.warn('⚠️ [JWT] Usuario no encontrado en BD:', token.email);
+          token.role = 'normal';
+          token.suscripciones = [];
+          if (!token.id && user?.id) {
+            token.id = user.id;
           }
+        }
+      } catch (error) {
+        console.error('❌ [JWT] Error cargando usuario:', error);
+        // ✅ CORREGIDO: En caso de error, mantener valores existentes o usar defaults
+        if (!token.role) {
+          token.role = 'normal';
+        }
+        if (!token.suscripciones) {
+          token.suscripciones = [];
         }
       }
       
       return token;
     },
     async session({ session, token }) {
-      console.log('📋 [SESSION] Callback ejecutado para:', session.user?.email);
-      
-      if (session.user && token) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as 'normal' | 'suscriptor' | 'admin';
-        session.user.suscripciones = token.suscripciones as any[] || [];
+      // ✅ CORREGIDO: Validación más robusta de la sesión
+      if (!session || !session.user) {
+        return session;
+      }
+
+      if (token) {
+        // ✅ CORREGIDO: Siempre usar valores del token (que vienen de BD en signIn/update)
+        // Asegurar que siempre haya valores válidos
+        if (token.id) {
+          session.user.id = token.id as string;
+        }
         
-        // Asegurar que la información esté actualizada
+        if (token.role) {
+          session.user.role = token.role as 'normal' | 'suscriptor' | 'admin';
+        } else {
+          // Si no hay rol en el token, usar 'normal' como default
+          session.user.role = 'normal';
+        }
+        
+        if (token.suscripciones) {
+          session.user.suscripciones = token.suscripciones as any[];
+        } else {
+          session.user.suscripciones = [];
+        }
+        
+        // Actualizar imagen y nombre si están disponibles en el token
         if (token.picture) {
           session.user.image = token.picture as string;
         }
@@ -140,7 +188,18 @@ export const authOptions: NextAuthOptions = {
           session.user.name = token.name as string;
         }
         
-        console.log('📋 [SESSION] Usuario procesado - Email:', session.user.email, 'Rol:', session.user.role);
+        // ✅ CORREGIDO: Si falta información crítica después de asignar valores,
+        // puede indicar un problema - loguear en desarrollo
+        if (process.env.NODE_ENV === 'development') {
+          if (!session.user.id || !session.user.role) {
+            console.warn('⚠️ [SESSION] Información crítica faltante después de asignar valores:', {
+              hasId: !!session.user.id,
+              hasRole: !!session.user.role,
+              role: session.user.role,
+              email: session.user.email
+            });
+          }
+        }
       }
       
       return session;
@@ -149,7 +208,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
-    updateAge: 24 * 60 * 60, // Actualizar cada 24 horas
+    updateAge: 0, // ✅ CRÍTICO: Actualizar en cada request para asegurar datos frescos de BD
   },
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 días
@@ -157,22 +216,20 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.session-token' 
-        : 'next-auth.session-token',
+      // ✅ CORREGIDO: Usar nombres simples sin prefijos problemáticos para mejor compatibilidad
+      name: 'next-auth.session-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // Simplificar dominio para Vercel
-        domain: undefined // Dejar que Vercel maneje automáticamente
+        // ✅ MEJORADO: No especificar dominio para que funcione en todos los subdominios de Vercel
+        // Esto evita problemas cuando se accede desde .vercel.app o dominio personalizado
+        domain: undefined
       }
     },
     callbackUrl: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Secure-next-auth.callback-url' 
-        : 'next-auth.callback-url',
+      name: 'next-auth.callback-url',
       options: {
         sameSite: 'lax',
         path: '/',
@@ -181,9 +238,7 @@ export const authOptions: NextAuthOptions = {
       }
     },
     csrfToken: {
-      name: process.env.NODE_ENV === 'production' 
-        ? '__Host-next-auth.csrf-token' 
-        : 'next-auth.csrf-token',
+      name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
@@ -193,16 +248,21 @@ export const authOptions: NextAuthOptions = {
       }
     }
   },
-  // Eventos para debugging
+  // Eventos de NextAuth (necesarios para el funcionamiento correcto)
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
-      console.log('🎉 [EVENT] SignIn exitoso:', user.email, 'Nuevo usuario:', isNewUser);
+    async signIn({ user, isNewUser }) {
+      // Solo loguear en desarrollo
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🎉 [EVENT] SignIn exitoso:', user.email, 'Nuevo:', isNewUser);
+      }
     },
     async signOut({ session, token }) {
-      console.log('👋 [EVENT] SignOut:', session?.user?.email || token?.email);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('👋 [EVENT] SignOut:', session?.user?.email || token?.email);
+      }
     },
     async session({ session, token }) {
-      console.log('🔄 [EVENT] Session actualizada:', session?.user?.email);
+      // Evento necesario para mantener sesión sincronizada
     }
   }
 };
@@ -235,5 +295,6 @@ declare module 'next-auth' {
     suscripciones?: any[];
     picture?: string;
     name?: string;
+    lastRefresh?: number;
   }
 } 

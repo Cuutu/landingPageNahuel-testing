@@ -1,4 +1,6 @@
 import React from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
@@ -14,7 +16,11 @@ import {
 } from 'lucide-react';
 import styles from '../../styles/Admin.module.css';
 
-const DebugSession: React.FC = () => {
+interface DebugSessionProps {
+  user: any;
+}
+
+const DebugSession: React.FC<DebugSessionProps> = ({ user: serverUser }) => {
   const { data: session, status, update } = useSession();
   const router = useRouter();
 
@@ -331,6 +337,36 @@ const DebugSession: React.FC = () => {
       </div>
     </div>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default DebugSession; 

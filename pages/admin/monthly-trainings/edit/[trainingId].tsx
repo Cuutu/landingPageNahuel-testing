@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
@@ -13,7 +14,6 @@ import {
   Trash2,
   Save
 } from 'lucide-react';
-import AdminRouteGuard from '../../../../components/AdminRouteGuard';
 import styles from '../../../../styles/admin/MonthlyTrainings.module.css';
 
 interface TrainingClass {
@@ -58,10 +58,13 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelado' }
 ];
 
-export default function EditMonthlyTraining() {
+interface EditMonthlyTrainingProps {
+  user: any;
+}
+
+export default function EditMonthlyTraining({ user }: EditMonthlyTrainingProps) {
   const router = useRouter();
   const { trainingId } = router.query;
-  const { data: session, status } = useSession();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -83,10 +86,10 @@ export default function EditMonthlyTraining() {
   const [classes, setClasses] = useState<TrainingClass[]>([]);
 
   useEffect(() => {
-    if (trainingId && status === 'authenticated') {
+    if (trainingId) {
       loadTraining();
     }
-  }, [trainingId, status]);
+  }, [trainingId]);
 
   const loadTraining = async () => {
     setLoading(true);
@@ -214,7 +217,7 @@ export default function EditMonthlyTraining() {
     }
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className={styles.loading}>
         <div className={styles.loadingCard}>
@@ -238,7 +241,7 @@ export default function EditMonthlyTraining() {
   }
 
   return (
-    <AdminRouteGuard>
+    <>
       <div className={styles.container}>
         <Head>
           <title>Editar Entrenamiento - {training.title}</title>
@@ -489,6 +492,36 @@ export default function EditMonthlyTraining() {
           </div>
         </form>
       </div>
-    </AdminRouteGuard>
+    </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
+};

@@ -81,7 +81,7 @@ const YouTubeAutoCarousel: React.FC = () => {
       </button>
 
       <div className={styles.youtubeIndicators}>
-        {videos.map((_, index) => (
+        {videos.map((_, index) => ( 
           <button
             key={index}
             onClick={() => setCurrentVideo(index)}
@@ -220,9 +220,9 @@ export default function MediasMovilesAutomaticasPage() {
               >
                 <div className={styles.videoContainer}>
                   <YouTubePlayer
-                    videoId="dQw4w9WgXcQ"
+                    videoId="2fd95k3BM9c"
                     title="Medias Móviles Automáticas - Video"
-                    autoplay={false}
+                    autoplay={true}
                     muted={true}
                     loop={false}
                     controls={true}

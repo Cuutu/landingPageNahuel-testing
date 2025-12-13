@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
@@ -18,7 +19,6 @@ import {
   UserMinus,
   Edit
 } from 'lucide-react';
-import AdminRouteGuard from '../../../components/AdminRouteGuard';
 import styles from '../../../styles/admin/MonthlyTrainingDetail.module.css';
 
 interface TrainingClass {
@@ -72,10 +72,13 @@ interface MonthlyTraining {
   createdBy: string;
 }
 
-export default function MonthlyTrainingDetail() {
+interface MonthlyTrainingDetailProps {
+  user: any;
+}
+
+export default function MonthlyTrainingDetail({ user }: MonthlyTrainingDetailProps) {
   const router = useRouter();
   const { trainingId } = router.query;
-  const { data: session, status } = useSession();
   
   const [training, setTraining] = useState<MonthlyTraining | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -93,11 +96,11 @@ export default function MonthlyTrainingDetail() {
   });
 
   useEffect(() => {
-    if (trainingId && status === 'authenticated') {
+    if (trainingId) {
       loadTraining();
       loadStudents();
     }
-  }, [trainingId, status]);
+  }, [trainingId]);
 
   const loadTraining = async () => {
     try {
@@ -251,7 +254,7 @@ export default function MonthlyTrainingDetail() {
     );
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className={styles.loading}>
         <div className={styles.loadingSpinner}></div>
@@ -272,7 +275,7 @@ export default function MonthlyTrainingDetail() {
   }
 
   return (
-    <AdminRouteGuard>
+    <>
       <div className={styles.container}>
         <Head>
           <title>{training.title} - Admin</title>
@@ -657,6 +660,36 @@ export default function MonthlyTrainingDetail() {
           </div>
         )}
       </div>
-    </AdminRouteGuard>
+    </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
+};

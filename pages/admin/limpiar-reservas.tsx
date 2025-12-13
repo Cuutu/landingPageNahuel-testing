@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
-import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { Trash2, RefreshCw, AlertTriangle, Database, CheckCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -20,17 +21,18 @@ interface Booking {
   googleEventId: string;
 }
 
-const LimpiarReservasPage = () => {
-  const { data: session, status } = useSession();
+interface LimpiarReservasPageProps {
+  user: any;
+}
+
+const LimpiarReservasPage = ({ user }: LimpiarReservasPageProps) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      loadBookings();
-    }
-  }, [status]);
+    loadBookings();
+  }, []);
 
   const loadBookings = async () => {
     try {
@@ -122,40 +124,6 @@ const LimpiarReservasPage = () => {
       setProcessing(false);
     }
   };
-
-  if (status === 'loading') {
-    return (
-      <>
-        <Navbar />
-        <div className={styles.adminPage}>
-          <div className={styles.container}>
-            <div className={styles.loading}>
-              <div className={styles.spinner} />
-              <p>Cargando...</p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!session || session.user?.role !== 'admin') {
-    return (
-      <>
-        <Navbar />
-        <div className={styles.adminPage}>
-          <div className={styles.container}>
-            <div className={styles.error}>
-              <h1>🚫 Acceso Denegado</h1>
-              <p>Solo el administrador puede acceder a esta página.</p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
 
   const ghostBookings = bookings.filter(b => !b.hasGoogleEventId && b.serviceType === 'ConsultorioFinanciero');
   const consultorioBookings = bookings.filter(b => b.serviceType === 'ConsultorioFinanciero');
@@ -348,6 +316,36 @@ const LimpiarReservasPage = () => {
       <Footer />
     </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default LimpiarReservasPage; 

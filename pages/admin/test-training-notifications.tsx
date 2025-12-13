@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { 
@@ -20,42 +21,16 @@ interface TestResult {
   details?: any;
 }
 
-const TestTrainingNotifications: React.FC = () => {
-  const { data: session, status } = useSession();
+interface TestTrainingNotificationsProps {
+  user: any;
+}
+
+const TestTrainingNotifications: React.FC<TestTrainingNotificationsProps> = ({ user }) => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [testResult, setTestResult] = useState<TestResult | null>(null);
   const [testEmail, setTestEmail] = useState('');
   const [testName, setTestName] = useState('');
-
-  // Verificar si es admin
-  if (status === 'loading') {
-    return (
-      <div className={styles.loadingContainer}>
-        <Loader size={40} className={styles.loadingSpinner} />
-        <p>Verificando permisos...</p>
-      </div>
-    );
-  }
-
-  if (!session?.user?.email || session.user.role !== 'admin') {
-    return (
-      <div className={styles.errorContainer}>
-        <AlertCircle size={40} color="#ef4444" />
-        <h2>Acceso Denegado</h2>
-        <p>Solo los administradores pueden acceder a esta página.</p>
-        <p style={{ fontSize: '0.9rem', opacity: 0.8, marginTop: '0.5rem' }}>
-          Tu rol actual: {session?.user?.role || 'No definido'}
-        </p>
-        <button 
-          onClick={() => router.push('/')}
-          className={styles.primaryButton}
-        >
-          Volver al Inicio
-        </button>
-      </div>
-    );
-  }
 
   const runTest = async (testType: 'enrollment' | 'schedule') => {
     setIsLoading(true);
@@ -327,6 +302,36 @@ const TestTrainingNotifications: React.FC = () => {
       </div>
     </div>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default TestTrainingNotifications; 

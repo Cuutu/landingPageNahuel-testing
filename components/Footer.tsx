@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useContact } from '@/contexts/ContactContext';
 import styles from '@/styles/Footer.module.css';
 
 /**
- * Componente Footer - Diseño idéntico a la imagen proporcionada
+ * ✅ OPTIMIZADO: Footer con React.memo para evitar re-renders innecesarios
  */
-const Footer: React.FC = () => {
+const FooterComponent: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const { openContactModal } = useContact();
 
@@ -155,5 +155,8 @@ const Footer: React.FC = () => {
     </footer>
   );
 };
+
+const Footer = memo(FooterComponent);
+Footer.displayName = 'Footer';
 
 export default Footer; 

@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
 
-const MigrateReportsPage = () => {
-  const { data: session } = useSession();
+interface MigrateReportsPageProps {
+  user: any;
+}
+
+const MigrateReportsPage = ({ user }: MigrateReportsPageProps) => {
   const router = useRouter();
   const [migrating, setMigrating] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -33,18 +37,6 @@ const MigrateReportsPage = () => {
       setMigrating(false);
     }
   };
-
-  if (!session) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <h1>🔐 Acceso Denegado</h1>
-        <p>Debes iniciar sesión para acceder a esta página.</p>
-        <button onClick={() => router.push('/api/auth/signin')}>
-          Iniciar Sesión
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div style={{ 
@@ -163,6 +155,36 @@ const MigrateReportsPage = () => {
       </div>
     </div>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default MigrateReportsPage; 

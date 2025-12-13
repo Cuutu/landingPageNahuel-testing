@@ -21,7 +21,6 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import DateRangePicker from '@/components/DateRangePicker';
 import TimeSlotManager from '@/components/TimeSlotManager';
-import AdminRouteGuard from '@/components/AdminRouteGuard';
 import styles from '@/styles/AdminHorarios.module.css';
 
 interface AdvisorySchedule {

@@ -81,6 +81,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     if (alertsWithRange.length === 0) {
       console.log(`⚠️ CRON: No hay alertas de rango para convertir`);
+      
+      // ✅ NUEVO: Si no hay alertas, enviar notificación de "sin operaciones"
+      try {
+        console.log(`📧 CRON: No hay alertas - Enviando notificación de "sin operaciones"...`);
+        await enviarNotificacionSinOperaciones();
+        console.log(`✅ CRON: Notificación de "sin operaciones" enviada correctamente`);
+      } catch (err) {
+        console.error('❌ CRON: Error enviando notificación de "sin operaciones":', err);
+        // No fallar el cron si falla el envío de emails
+      }
+      
       return res.status(200).json({
         success: true,
         message: 'OK - No hay alertas para convertir',
@@ -455,32 +466,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
     console.log(`📧 CRON: ${resumenAcciones.length} acciones para notificar en resumen consolidado`);
 
-    // ✅ CORREGIDO: Enviar resumen ANTES de responder (serverless cierra la función después de res.json)
-    // Como ahora es solo 1 email de resumen (en lugar de 40 individuales), debería ser rápido
-    if (resumenAcciones.length > 0) {
-      try {
-        console.log(`📧 CRON: Enviando resumen de operaciones...`);
-        await enviarResumenOperaciones(resumenAcciones);
-        console.log(`✅ CRON: Resumen de operaciones enviado correctamente`);
-      } catch (err) {
-        console.error('❌ CRON: Error enviando resumen de operaciones:', err);
-        // No fallar el cron si falla el envío de emails
-      }
-    }
-
-    if (isCronJobOrg) {
-      return res.status(200).json({
-        success: true,
-        message: 'OK',
-        processed: conversionDetails.length
-      });
-    }
-
-    return res.status(200).json({
+    // ✅ OPTIMIZADO: Responder HTTP ANTES de enviar emails para evitar timeout
+    // Los emails se envían en background después de responder
+    const responseMessage = isCronJobOrg 
+      ? 'OK'
+      : `OK - ${conversionDetails.length} alertas convertidas`;
+    
+    res.status(200).json({
       success: true,
-      message: `OK - ${conversionDetails.length} alertas convertidas`,
+      message: responseMessage,
       processed: conversionDetails.length
     });
+
+    // ✅ OPTIMIZADO: Enviar emails en background (sin await para no bloquear)
+    // Esto permite que el cronjob responda rápido y evite timeout
+    (async () => {
+      try {
+        if (resumenAcciones.length > 0) {
+          // Hay alertas procesadas → enviar resumen (incluye compras/ventas descartadas)
+          console.log(`📧 CRON: Enviando resumen de operaciones en background (incluye descartadas)...`);
+          await enviarResumenOperaciones(resumenAcciones);
+          console.log(`✅ CRON: Resumen de operaciones enviado correctamente`);
+        } else {
+          // No hay alertas procesadas → enviar mensaje de "sin operaciones"
+          console.log(`📧 CRON: No hay alertas procesadas - Enviando notificación de "sin operaciones" en background...`);
+          await enviarNotificacionSinOperaciones();
+          console.log(`✅ CRON: Notificación de "sin operaciones" enviada correctamente`);
+        }
+      } catch (err) {
+        console.error('❌ CRON: Error enviando notificaciones en background:', err);
+        // No fallar el cron si falla el envío de emails
+      }
+    })();
 
   } catch (error) {
     console.error('❌ CRON: Error en conversión automática:', error);
@@ -904,7 +921,124 @@ export async function updateOperationPriceOnConfirmation(alertId: any, finalPric
 }
 
 /**
- * ✅ NUEVO: Envía un email de resumen consolidado con todas las operaciones del cron
+ * ✅ OPTIMIZADO: Helper para dividir array en chunks
+ */
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+/**
+ * ✅ OPTIMIZADO: Cachear usuarios suscritos para ambos servicios
+ */
+async function getSubscribedUsersCache(): Promise<Record<string, any[]>> {
+  const User = (await import('@/models/User')).default;
+  const now = new Date();
+  
+  // Buscar TODOS los usuarios suscritos a cualquier servicio UNA sola vez
+  const allSubscribedUsers = await User.find({
+    $or: [
+      {
+        'activeSubscriptions': {
+          $elemMatch: {
+            isActive: true,
+            expiryDate: { $gte: now }
+          }
+        }
+      },
+      {
+        'suscripciones': {
+          $elemMatch: {
+            activa: true,
+            fechaVencimiento: { $gte: now }
+          }
+        }
+      }
+    ]
+  }, 'email name role activeSubscriptions suscripciones').lean();
+  
+  // Filtrar por servicio y cachear
+  const cache: Record<string, any[]> = {
+    SmartMoney: [],
+    TraderCall: []
+  };
+  
+  for (const user of allSubscribedUsers) {
+    // Verificar SmartMoney
+    const hasSmartMoneyActive = (user as any).activeSubscriptions?.some((sub: any) => 
+      sub.service === 'SmartMoney' && sub.isActive === true && new Date(sub.expiryDate) >= now
+    );
+    const hasSmartMoneyLegacy = (user as any).suscripciones?.some((sub: any) => 
+      sub.servicio === 'SmartMoney' && sub.activa === true && new Date(sub.fechaVencimiento) >= now
+    );
+    if (hasSmartMoneyActive || hasSmartMoneyLegacy) {
+      cache.SmartMoney.push(user);
+    }
+    
+    // Verificar TraderCall
+    const hasTraderCallActive = (user as any).activeSubscriptions?.some((sub: any) => 
+      sub.service === 'TraderCall' && sub.isActive === true && new Date(sub.expiryDate) >= now
+    );
+    const hasTraderCallLegacy = (user as any).suscripciones?.some((sub: any) => 
+      sub.servicio === 'TraderCall' && sub.activa === true && new Date(sub.fechaVencimiento) >= now
+    );
+    if (hasTraderCallActive || hasTraderCallLegacy) {
+      cache.TraderCall.push(user);
+    }
+  }
+  
+  return cache;
+}
+
+/**
+ * ✅ OPTIMIZADO: Envía emails en paralelo con chunks
+ */
+async function sendEmailsInParallel(
+  users: any[],
+  subject: string,
+  html: string,
+  chunkSize: number = 10
+): Promise<number> {
+  const { sendEmail } = await import('@/lib/emailService');
+  let emailsSent = 0;
+  
+  // Dividir usuarios en chunks
+  const userChunks = chunkArray(users, chunkSize);
+  
+  // Procesar chunks en paralelo
+  for (const chunk of userChunks) {
+    const emailPromises = chunk.map(async (user: any) => {
+      try {
+        await sendEmail({
+          to: user.email,
+          subject,
+          html
+        });
+        return true;
+      } catch (emailError) {
+        console.error(`❌ [RESUMEN] Error enviando email a ${user.email}:`, emailError);
+        return false;
+      }
+    });
+    
+    // Esperar que se completen todos los emails del chunk
+    const results = await Promise.all(emailPromises);
+    emailsSent += results.filter(r => r === true).length;
+    
+    // Pequeña pausa entre chunks para evitar rate limiting
+    if (userChunks.length > 1) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  }
+  
+  return emailsSent;
+}
+
+/**
+ * ✅ OPTIMIZADO: Envía un email de resumen consolidado con todas las operaciones del cron
  * Esta función reemplaza el envío de múltiples emails individuales por UN solo email de resumen
  */
 async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void> {
@@ -928,62 +1062,22 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
       }
     }
     
-    // Importar módulos necesarios
-    const { sendEmail } = await import('@/lib/emailService');
-    const User = (await import('@/models/User')).default;
+    // ✅ OPTIMIZADO: Cachear usuarios UNA sola vez para ambos servicios
+    console.log(`🔍 [RESUMEN] Cacheando usuarios suscritos para ambos servicios...`);
+    const usersCache = await getSubscribedUsersCache();
+    console.log(`👥 [RESUMEN] Usuarios cacheados - SmartMoney: ${usersCache.SmartMoney.length}, TraderCall: ${usersCache.TraderCall.length}`);
     
-    // Procesar cada tipo de alerta por separado
+    // ✅ CORREGIDO: Procesar cada tipo de alerta por separado
+    // SIEMPRE procesar ambos servicios (SmartMoney y TraderCall)
+    // Si un servicio no tiene acciones, enviar mensaje de "sin operaciones"
     for (const [tipoAlerta, accionesTipo] of Object.entries(accionesPorTipo)) {
-      if (accionesTipo.length === 0) continue;
+      // ✅ OPTIMIZADO: Usar usuarios del cache en lugar de buscar de nuevo
+      const subscribedUsers = usersCache[tipoAlerta] || [];
       
-      console.log(`📧 [RESUMEN] Procesando ${accionesTipo.length} acciones para ${tipoAlerta}...`);
+      // ✅ OPTIMIZADO: Los usuarios ya están filtrados en el cache
+      const validUsers = subscribedUsers;
       
-      // Buscar usuarios suscritos UNA sola vez
-      const now = new Date();
-      console.log(`🔍 [RESUMEN] Buscando usuarios suscritos a ${tipoAlerta}...`);
-      const subscribedUsers = await User.find({
-        $or: [
-          {
-            'activeSubscriptions': {
-              $elemMatch: {
-                service: tipoAlerta,
-                isActive: true,
-                expiryDate: { $gte: now }
-              }
-            }
-          },
-          {
-            'suscripciones': {
-              $elemMatch: {
-                servicio: tipoAlerta,
-                activa: true,
-                fechaVencimiento: { $gte: now }
-              }
-            }
-          }
-        ]
-      }, 'email name role activeSubscriptions suscripciones').lean();
-      
-      // Filtrar usuarios válidos - verificar AMBOS sistemas de suscripciones
-      const validUsers = subscribedUsers.filter(user => {
-        // Verificar activeSubscriptions (sistema nuevo)
-        const hasActiveSub = (user as any).activeSubscriptions?.some((sub: any) => 
-          sub.service === tipoAlerta && 
-          sub.isActive === true && 
-          new Date(sub.expiryDate) >= now
-        );
-        
-        // Verificar suscripciones (sistema legacy)
-        const hasLegacySub = (user as any).suscripciones?.some((sub: any) => 
-          sub.servicio === tipoAlerta && 
-          sub.activa === true && 
-          new Date(sub.fechaVencimiento) >= now
-        );
-        
-        return hasActiveSub || hasLegacySub;
-      });
-      
-      console.log(`👥 [RESUMEN] ${subscribedUsers.length} usuarios encontrados, ${validUsers.length} válidos para ${tipoAlerta}`);
+      console.log(`👥 [RESUMEN] ${validUsers.length} usuarios válidos para ${tipoAlerta}`);
       
       if (validUsers.length === 0) {
         console.log(`⚠️ [RESUMEN] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
@@ -1005,6 +1099,82 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
         continue;
       }
       
+      // ✅ NUEVO: Si NO hay acciones para este servicio, enviar mensaje de "sin operaciones"
+      if (accionesTipo.length === 0) {
+        console.log(`📧 [RESUMEN] No hay acciones para ${tipoAlerta} - Enviando mensaje de "sin operaciones"...`);
+        try {
+          // Enviar a Telegram
+          const { sendMessageToChannel } = await import('@/lib/telegramBot');
+          const mensaje = "👋🏻 ¡Buenas a todos! ¿Cómo están? Hoy no tenemos activos para comprar ni para vender. Por lo que mantenemos la cartera tal cual como la tenemos hasta ahora.";
+          await sendMessageToChannel(tipoAlerta, mensaje);
+          console.log(`✅ [RESUMEN] Telegram "sin operaciones" enviado para ${tipoAlerta}`);
+          
+          // Enviar emails
+          const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+            weekday: 'long',
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric' 
+          });
+          
+          const htmlEmail = `
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+              <meta charset="utf-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Sin Operaciones - ${tipoAlerta}</title>
+            </head>
+            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+              
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 30px 25px; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+                  👋🏻 Actualización del Día
+                </h1>
+                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 15px;">
+                  ${tipoAlerta} • ${fechaHoy}
+                </p>
+              </div>
+              
+              <!-- Content -->
+              <div style="padding: 30px 25px; background: white;">
+                <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #334155;">
+                  ${mensaje}
+                </p>
+              </div>
+              
+              <!-- Footer -->
+              <div style="text-align: center; padding: 20px 25px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+                <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
+                  Este es un email automático de <strong>Nahuel Lozano Trading</strong>
+                </p>
+                <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                  Para configurar tus preferencias de notificación, visita tu <a href="/perfil" style="color: #3b82f6;">perfil</a>
+                </p>
+              </div>
+              
+            </body>
+            </html>
+          `;
+          
+          // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
+          const emailsSent = await sendEmailsInParallel(
+            usersToEmail,
+            `👋🏻 Actualización ${tipoAlerta} - ${fechaHoy}`,
+            htmlEmail,
+            10 // 10 emails a la vez
+          );
+          
+          console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails "sin operaciones" enviados`);
+        } catch (error) {
+          console.error(`❌ [RESUMEN] Error enviando "sin operaciones" para ${tipoAlerta}:`, error);
+        }
+        continue; // Continuar con el siguiente servicio
+      }
+      
+      // Si hay acciones, procesar normalmente
+      console.log(`📧 [RESUMEN] Procesando ${accionesTipo.length} acciones para ${tipoAlerta}...`);
       console.log(`📤 [RESUMEN] Preparando envío a ${usersToEmail.length} usuarios de ${tipoAlerta}...`);
       
       // Generar HTML del resumen
@@ -1022,23 +1192,13 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
         console.error(`❌ [RESUMEN] Error enviando a Telegram:`, telegramError);
       }
       
-      // Enviar emails
-      let emailsSent = 0;
-      for (const user of usersToEmail) {
-        try {
-          await sendEmail({
-            to: (user as any).email,
-            subject: `📊 Resumen de Operaciones ${tipoAlerta} - ${fechaHoy}`,
-            html: htmlResumen
-          });
-          emailsSent++;
-          
-          // Pequeña pausa para evitar rate limiting (100ms en lugar de 500ms)
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (emailError) {
-          console.error(`❌ [RESUMEN] Error enviando email a ${(user as any).email}:`, emailError);
-        }
-      }
+      // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
+      const emailsSent = await sendEmailsInParallel(
+        usersToEmail,
+        `📊 Resumen de Operaciones ${tipoAlerta} - ${fechaHoy}`,
+        htmlResumen,
+        10 // 10 emails a la vez
+      );
       
       console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails enviados`);
     }
@@ -1202,6 +1362,127 @@ function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]):
     </body>
     </html>
   `;
+}
+
+/**
+ * ✅ OPTIMIZADO: Envía notificación cuando no hay compras ni ventas
+ */
+async function enviarNotificacionSinOperaciones(): Promise<void> {
+  try {
+    console.log(`📧 [SIN OPERACIONES] Iniciando envío de notificación...`);
+    
+    const mensaje = "👋🏻 ¡Buenas a todos! ¿Cómo están? Hoy no tenemos activos para comprar ni para vender. Por lo que mantenemos la cartera tal cual como la tenemos hasta ahora.";
+    
+    // Importar módulos necesarios
+    const { sendMessageToChannel } = await import('@/lib/telegramBot');
+    
+    // ✅ OPTIMIZADO: Cachear usuarios UNA sola vez para ambos servicios
+    console.log(`🔍 [SIN OPERACIONES] Cacheando usuarios suscritos para ambos servicios...`);
+    const usersCache = await getSubscribedUsersCache();
+    console.log(`👥 [SIN OPERACIONES] Usuarios cacheados - SmartMoney: ${usersCache.SmartMoney.length}, TraderCall: ${usersCache.TraderCall.length}`);
+    
+    // Procesar ambos servicios (TraderCall y SmartMoney)
+    const servicios = ['TraderCall', 'SmartMoney'];
+    
+    for (const tipoAlerta of servicios) {
+      try {
+        // ✅ OPTIMIZADO: Usar usuarios del cache
+        const validUsers = usersCache[tipoAlerta] || [];
+        
+        console.log(`👥 [SIN OPERACIONES] ${validUsers.length} usuarios válidos para ${tipoAlerta}`);
+        
+        if (validUsers.length === 0) {
+          console.log(`⚠️ [SIN OPERACIONES] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
+          continue;
+        }
+        
+        // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
+        const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
+        const usersToEmail = TESTING_MODE 
+          ? validUsers.filter((user: any) => user.role === 'admin')
+          : validUsers;
+        
+        if (TESTING_MODE) {
+          console.log(`🧪 [SIN OPERACIONES] MODO TESTING - Solo enviando a ${usersToEmail.length} admins`);
+        }
+        
+        // Enviar a Telegram
+        try {
+          await sendMessageToChannel(tipoAlerta, mensaje);
+          console.log(`✅ [SIN OPERACIONES] Telegram enviado para ${tipoAlerta}`);
+        } catch (telegramError) {
+          console.error(`❌ [SIN OPERACIONES] Error enviando a Telegram:`, telegramError);
+        }
+        
+        // Generar HTML del email
+        const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+          weekday: 'long',
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        
+        const htmlEmail = `
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Sin Operaciones - ${tipoAlerta}</title>
+          </head>
+          <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 30px 25px; text-align: center;">
+              <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+                👋🏻 Actualización del Día
+              </h1>
+              <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 15px;">
+                ${tipoAlerta} • ${fechaHoy}
+              </p>
+            </div>
+            
+            <!-- Content -->
+            <div style="padding: 30px 25px; background: white;">
+              <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #334155;">
+                ${mensaje}
+              </p>
+            </div>
+            
+            <!-- Footer -->
+            <div style="text-align: center; padding: 20px 25px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+              <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
+                Este es un email automático de <strong>Nahuel Lozano Trading</strong>
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                Para configurar tus preferencias de notificación, visita tu <a href="/perfil" style="color: #3b82f6;">perfil</a>
+              </p>
+            </div>
+            
+          </body>
+          </html>
+        `;
+        
+        // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
+        const emailsSent = await sendEmailsInParallel(
+          usersToEmail,
+          `👋🏻 Actualización ${tipoAlerta} - ${fechaHoy}`,
+          htmlEmail,
+          10 // 10 emails a la vez
+        );
+        
+        console.log(`✅ [SIN OPERACIONES] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails enviados`);
+      } catch (error) {
+        console.error(`❌ [SIN OPERACIONES] Error procesando ${tipoAlerta}:`, error);
+      }
+    }
+    
+    console.log('🎉 [SIN OPERACIONES] Notificación enviada completamente');
+    
+  } catch (error) {
+    console.error('❌ [SIN OPERACIONES] Error general enviando notificación:', error);
+    throw error;
+  }
 }
 
 /**

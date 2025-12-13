@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export interface PricingData {
   _id: string;
@@ -64,34 +64,65 @@ export interface PricingData {
   updatedBy: string;
 }
 
-export const usePricing = () => {
-  const [pricing, setPricing] = useState<PricingData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// ✅ OPTIMIZADO: Cache global para evitar requests duplicados
+let globalPricingCache: PricingData | null = null;
+let globalPricingPromise: Promise<PricingData | null> | null = null;
+const CACHE_DURATION = 60000; // 1 minuto
+let lastPricingFetchTime = 0;
 
-  const fetchPricing = async () => {
+export const usePricing = () => {
+  const [pricing, setPricing] = useState<PricingData | null>(globalPricingCache);
+  const [loading, setLoading] = useState(!globalPricingCache);
+  const [error, setError] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+
+  const fetchPricing = async (force = false) => {
+    const now = Date.now();
+    
+    // Usar cache si es válido
+    if (!force && globalPricingCache && (now - lastPricingFetchTime) < CACHE_DURATION) {
+      setPricing(globalPricingCache);
+      setLoading(false);
+      return;
+    }
+
+    // Si ya hay un fetch en progreso, esperar
+    if (globalPricingPromise && !force) {
+      const result = await globalPricingPromise;
+      if (mountedRef.current) {
+        setPricing(result);
+        setLoading(false);
+      }
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/pricing');
+      globalPricingPromise = fetch('/api/pricing')
+        .then(res => res.ok ? res.json() : null)
+        .then(data => data?.success ? data.data : null)
+        .catch(() => null);
       
-      if (!response.ok) {
-        throw new Error('Error al obtener precios');
-      }
+      const data = await globalPricingPromise;
+      globalPricingPromise = null;
       
-      const data = await response.json();
-      
-      if (data.success) {
-        setPricing(data.data);
-      } else {
-        throw new Error(data.error || 'Error al obtener precios');
+      if (data) {
+        globalPricingCache = data;
+        lastPricingFetchTime = Date.now();
+        if (mountedRef.current) {
+          setPricing(data);
+        }
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
-      console.error('Error fetching pricing:', err);
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Error desconocido');
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   };
 
@@ -132,7 +163,9 @@ export const usePricing = () => {
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     fetchPricing();
+    return () => { mountedRef.current = false; };
   }, []);
 
   // Función helper para formatear precios
@@ -162,7 +195,8 @@ export const usePricing = () => {
     pricing,
     loading,
     error,
-    fetchPricing,
+    fetchPricing: () => fetchPricing(false),
+    refetchPricing: () => fetchPricing(true),
     updatePricing,
     formatPrice,
     calculateDiscountedPrice,

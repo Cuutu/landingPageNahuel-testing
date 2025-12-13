@@ -110,44 +110,50 @@ function formatAlertMessage(alert: IAlert, options?: {
     
     let message = `${titleEmoji} *${titleAction} ${alert.symbol}*\n\n`;
     
-    // ✅ NUEVO: Para ventas, mostrar precio de venta; para compras, precio de entrada
-    if (action === 'SELL' && options?.price != null) {
-      message += `💰 Precio de Venta: ${priceDisplay}\n`;
-      // Mostrar precio de entrada si está disponible
-      if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
-        message += `📥 Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
-      }
-    } else {
-      message += `💰 Precio: ${priceDisplay}\n`;
-    }
-    
-    // ✅ NUEVO: Mostrar información de venta con indicación si es parcial o total
+    // ✅ CORREGIDO: Orden según solicitud - TIPO DE VENTA primero, luego PRECIO
+    // Para ventas con porcentaje, mostrar tipo de venta primero
     if (options?.soldPercentage) {
       // Determinar si es venta parcial o total
       const tipoVenta = options.isCompleteSale || options.soldPercentage >= 100 
         ? '🔴 Venta TOTAL' 
         : '🟡 Venta PARCIAL';
       
+      message += `${tipoVenta}\n\n`;
+      
+      // Luego mostrar precio
+      message += `💰 Precio: ${priceDisplay}\n`;
+      
       // Usar "Porcentaje vendido" si es venta ejecutada (16:30), sino "Porcentaje a vender"
       const textoVenta = options.isExecutedSale 
         ? 'Porcentaje vendido' 
         : 'Porcentaje a vender';
       
-      message += `${tipoVenta}\n`;
       message += `📊 ${textoVenta}: ${options.soldPercentage}%\n`;
       
       // ✅ NUEVO: Mostrar rendimiento aproximado prominentemente para ventas
       if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
         const profitSign = options.profitPercentage >= 0 ? '+' : '';
-        const profitEmoji = options.profitPercentage >= 0 ? '💰' : '📉';
+        const profitEmoji = options.profitPercentage >= 0 ? '💲' : '📉';
         // Usar "Rendimiento aproximado" para ventas programadas, "Rendimiento" para ejecutadas
         const textoRendimiento = options.isExecutedSale 
           ? 'Rendimiento' 
           : 'Rendimiento aproximado';
         message += `${profitEmoji} *${textoRendimiento}: ${profitSign}${options.profitPercentage.toFixed(2)}%*\n`;
       }
+    } else if (action === 'SELL' && options?.price != null) {
+      // Venta sin porcentaje específico (venta completa tradicional)
+      message += `💰 Precio de Venta: ${priceDisplay}\n`;
+      // Mostrar precio de entrada si está disponible
+      if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+        message += `📥 Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
+      }
     } else {
-      // ✅ Mostrar profit/loss genérico si no es una venta con porcentaje
+      // Compra o alerta sin venta
+      message += `💰 Precio: ${priceDisplay}\n`;
+    }
+    
+    // ✅ Mostrar profit/loss genérico solo si NO es una venta con porcentaje (ya se mostró arriba)
+    if (!options?.soldPercentage) {
       if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
         const profitSign = options.profitPercentage >= 0 ? '+' : '';
         const profitEmoji = options.profitPercentage >= 0 ? '💰' : '📉';
@@ -159,7 +165,15 @@ function formatAlertMessage(alert: IAlert, options?: {
       }
     }
     
-    // ✅ ELIMINADO: Take Profit y Stop Loss ya no se muestran en las alertas de Telegram
+    // ✅ NUEVO: Mostrar Take Profit y Stop Loss solo en notificaciones de COMPRA
+    if (action === 'BUY') {
+      if (alert.takeProfit != null && !isNaN(alert.takeProfit) && alert.takeProfit > 0) {
+        message += `🎯 Take Profit: $${alert.takeProfit.toFixed(2)}\n`;
+      }
+      if (alert.stopLoss != null && !isNaN(alert.stopLoss) && alert.stopLoss > 0) {
+        message += `🛑 Stop Loss: $${alert.stopLoss.toFixed(2)}\n`;
+      }
+    }
     
     if (options?.liquidityPercentage) {
       message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;

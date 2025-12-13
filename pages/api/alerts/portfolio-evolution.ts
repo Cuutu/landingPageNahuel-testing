@@ -431,14 +431,66 @@ export default async function handler(
     const totalAlerts = allAlerts.length;
     const closedAlerts = allAlerts.filter(alert => alert.status === 'CLOSED');
     const activeAlerts = allAlerts.filter(alert => alert.status === 'ACTIVE');
-    const winningAlerts = closedAlerts.filter(alert => {
-      const profitValue = alert.profit || 0;
-      return profitValue > 0;
-    });
     
-    // Winrate basado solo en alertas cerradas, máximo 100%
-    const winRate = closedAlerts.length > 0 ? 
-      Math.min((winningAlerts.length / closedAlerts.length) * 100, 100) : 0;
+    // ✅ CORREGIDO: Win Rate incluye alertas cerradas Y alertas activas con ventas parciales ejecutadas
+    // Un "trade ejecutado" es:
+    // 1. Alerta cerrada completamente, O
+    // 2. Alerta activa con al menos una venta parcial ejecutada
+    
+    // Función helper para verificar si una alerta tiene ventas parciales ejecutadas
+    const hasExecutedPartialSales = (alert: any): boolean => {
+      if (alert.liquidityData?.partialSales && Array.isArray(alert.liquidityData.partialSales)) {
+        return alert.liquidityData.partialSales.some((sale: any) => 
+          sale.executed === true && !sale.discarded
+        );
+      }
+      return false;
+    };
+    
+    // Función helper para calcular ganancia realizada de ventas parciales
+    const getRealizedProfitFromPartialSales = (alert: any): number => {
+      if (alert.liquidityData?.partialSales && Array.isArray(alert.liquidityData.partialSales)) {
+        const executedSales = alert.liquidityData.partialSales.filter((sale: any) => 
+          sale.executed === true && !sale.discarded
+        );
+        return executedSales.reduce((sum: number, sale: any) => {
+          return sum + (sale.realizedProfit || 0);
+        }, 0);
+      }
+      return 0;
+    };
+    
+    // Contar trades ejecutados (denominador)
+    const executedTrades = [
+      ...closedAlerts, // Todas las alertas cerradas cuentan como trade ejecutado
+      ...activeAlerts.filter(alert => hasExecutedPartialSales(alert)) // Alertas activas con ventas parciales ejecutadas
+    ];
+    
+    // Contar trades ganadores (numerador)
+    const winningTrades = [
+      // Alertas cerradas con profit positivo
+      ...closedAlerts.filter(alert => {
+        const profitValue = alert.profit || 0;
+        return profitValue > 0;
+      }),
+      // Alertas activas con ventas parciales ejecutadas y ganancia realizada positiva
+      ...activeAlerts.filter(alert => {
+        if (!hasExecutedPartialSales(alert)) return false;
+        const realizedProfit = getRealizedProfitFromPartialSales(alert);
+        return realizedProfit > 0;
+      })
+    ];
+    
+    // Calcular Win Rate
+    const winRate = executedTrades.length > 0 ? 
+      Math.min((winningTrades.length / executedTrades.length) * 100, 100) : 0;
+    
+    // Log para debugging
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      console.log(`📊 [WIN RATE] Trades ejecutados: ${executedTrades.length} (${closedAlerts.length} cerradas + ${executedTrades.length - closedAlerts.length} con ventas parciales)`);
+      console.log(`📊 [WIN RATE] Trades ganadores: ${winningTrades.length}`);
+    }
     
     // ✅ CORREGIDO: Calcular profit total usando valorTotalCartera (método oficial)
     const totalProfit = valorTotalCarteraActual - initialLiquidity;
@@ -452,14 +504,16 @@ export default async function handler(
       ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
       : 0;
     
-    console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);
-    console.log(`📊 [PORTFOLIO] Total Alertas: ${totalAlerts} (${activeAlerts.length} activas, ${closedAlerts.length} cerradas)`);
-    console.log(`📊 [PORTFOLIO] Win Rate: ${winRate.toFixed(1)}%`);
+    if (isDev) {
+      console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);
+      console.log(`📊 [PORTFOLIO] Total Alertas: ${totalAlerts} (${activeAlerts.length} activas, ${closedAlerts.length} cerradas)`);
+      console.log(`📊 [PORTFOLIO] Win Rate: ${winRate.toFixed(1)}% (incluye ventas parciales)`);
+    }
     
     const stats = {
       totalProfit: Number(totalProfit.toFixed(2)), // ✅ NUEVO: P&L total real (realizado + no realizado)
       totalAlerts,
-      closedAlerts: closedAlerts.length,
+      closedAlerts: executedTrades.length, // ✅ CORREGIDO: Incluye alertas cerradas + activas con ventas parciales ejecutadas
       winRate: Number(winRate.toFixed(1)),
       sp500Return: Number(sp500Return.toFixed(2)),
       baseValue: initialLiquidity // ✅ NUEVO: Usar liquidez inicial como base

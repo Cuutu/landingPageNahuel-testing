@@ -679,22 +679,50 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
   let gananciaRealizadaUSD = 0; // Ganancia realizada en dólares
   let gananciaRealizada = 0; // Ganancia realizada en porcentaje
   
+  // ✅ CORREGIDO: Calcular promedio ponderado combinando liquidityData.partialSales y ventasParciales
+  // Promedio ponderado = Σ(porcentaje_vendido × ganancia_porcentual) / Σ(porcentaje_vendido)
+  let totalPercentageSold = 0;
+  let weightedProfitSum = 0;
+  
+  // Procesar ventas de liquidityData.partialSales (sistema nuevo)
   if (this.liquidityData?.partialSales && Array.isArray(this.liquidityData.partialSales)) {
-    // Sumar todas las ganancias realizadas de ventas ejecutadas
     const executedSales = this.liquidityData.partialSales.filter((sale: any) => sale.executed === true && !sale.discarded);
-    gananciaRealizadaUSD = executedSales.reduce((sum: number, sale: any) => {
-      return sum + (sale.realizedProfit || 0);
-    }, 0);
     
-    // Convertir a porcentaje basándose en el monto original asignado
-    const originalAllocatedAmount = this.liquidityData.originalAllocatedAmount || this.liquidityData.allocatedAmount || 0;
-    if (originalAllocatedAmount > 0) {
-      gananciaRealizada = (gananciaRealizadaUSD / originalAllocatedAmount) * 100;
-    }
-  } else if (this.ventasParciales && this.ventasParciales.length > 0) {
-    // Fallback: usar ventasParciales si no hay liquidityData.partialSales
-    // Sumar todas las ganancias porcentuales (no promedio)
-    gananciaRealizada = this.ventasParciales.reduce((sum, venta) => sum + (venta.gananciaRealizada || 0), 0);
+    executedSales.forEach((sale: any) => {
+      const salePercentage = sale.percentage || 0;
+      const saleEntryPrice = entryPrice || 0;
+      const saleSellPrice = sale.sellPrice || 0;
+      
+      // Calcular ganancia porcentual de esta venta específica
+      let saleProfitPercentage = 0;
+      if (saleEntryPrice > 0 && saleSellPrice > 0) {
+        saleProfitPercentage = ((saleSellPrice - saleEntryPrice) / saleEntryPrice) * 100;
+      }
+      
+      // Acumular para promedio ponderado
+      totalPercentageSold += salePercentage;
+      weightedProfitSum += salePercentage * saleProfitPercentage;
+      
+      // También acumular ganancia en USD
+      gananciaRealizadaUSD += (sale.realizedProfit || 0);
+    });
+  }
+  
+  // Procesar ventas de ventasParciales (sistema legacy) - COMBINAR con las anteriores
+  if (this.ventasParciales && Array.isArray(this.ventasParciales) && this.ventasParciales.length > 0) {
+    this.ventasParciales.forEach((venta: any) => {
+      const ventaPercentage = venta.porcentajeVendido || 0;
+      const ventaProfitPercentage = venta.gananciaRealizada || 0;
+      
+      // Acumular para promedio ponderado
+      totalPercentageSold += ventaPercentage;
+      weightedProfitSum += ventaPercentage * ventaProfitPercentage;
+    });
+  }
+  
+  // Calcular promedio ponderado final
+  if (totalPercentageSold > 0) {
+    gananciaRealizada = weightedProfitSum / totalPercentageSold;
   }
   
   // Ganancia no realizada (posición actual)

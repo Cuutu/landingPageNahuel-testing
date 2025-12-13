@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import styles from '../../styles/AdminReports.module.css';
@@ -28,8 +29,11 @@ interface Report {
   articles?: Article[];
 }
 
-const AdminReportsPage: React.FC = () => {
-  const { data: session, status } = useSession();
+interface AdminReportsPageProps {
+  user: any;
+}
+
+const AdminReportsPage: React.FC<AdminReportsPageProps> = ({ user }) => {
   const router = useRouter();
   
   const [reports, setReports] = useState<Report[]>([]);
@@ -58,18 +62,10 @@ const AdminReportsPage: React.FC = () => {
     isPublished: true
   });
 
-  // Verificar autenticación y permisos
+  // Cargar reportes al montar el componente
   useEffect(() => {
-    if (status === 'loading') return;
-    
-    if (!session) {
-      router.push('/auth/signin');
-      return;
-    }
-
-    // Verificar si es admin (esto deberías hacerlo en el servidor idealmente)
     loadReports();
-  }, [session, status, router]);
+  }, []);
 
   const loadReports = async () => {
     try {
@@ -804,6 +800,36 @@ const AdminReportsPage: React.FC = () => {
       </div>
     </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default AdminReportsPage; 

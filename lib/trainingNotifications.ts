@@ -2,6 +2,7 @@ import dbConnect from '@/lib/mongodb';
 import Notification from '@/models/Notification';
 import User from '@/models/User';
 import { sendEmail } from '@/lib/emailService';
+import { getTimezone } from '@/lib/timeConfig';
 
 /**
  * Crea notificación cuando un usuario se inscribe a un entrenamiento
@@ -375,7 +376,7 @@ function createAdminEnrollmentNotificationTemplate(
             <li><strong>Entrenamiento:</strong> ${trainingName}</li>
             <li><strong>Precio:</strong> $${price}</li>
             <li><strong>Fecha:</strong> ${new Date().toLocaleString('es-ES', { 
-              timeZone: process.env.TZ || 'America/Montevideo',
+              timeZone: getTimezone(),
               year: 'numeric', 
               month: 'long', 
               day: 'numeric',

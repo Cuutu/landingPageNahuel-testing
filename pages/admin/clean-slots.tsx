@@ -1,31 +1,18 @@
 import React, { useState } from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
 import { Trash2, AlertTriangle, CheckCircle, Loader } from 'lucide-react';
 import styles from '@/styles/Admin.module.css';
 
-export default function CleanSlotsPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
+interface CleanSlotsPageProps {
+  user: any;
+}
+
+export default function CleanSlotsPage({ user }: CleanSlotsPageProps) {
   const [isCleaning, setIsCleaning] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string>('');
-
-  // Verificar si es admin
-  if (status === 'loading') {
-    return (
-      <div className={styles.loadingContainer}>
-        <Loader size={32} className={styles.spinner} />
-        <p>Verificando sesión...</p>
-      </div>
-    );
-  }
-
-  if (!session || session.user?.role !== 'admin') {
-    router.push('/admin');
-    return null;
-  }
 
   const handleCleanSlots = async () => {
     if (!confirm('¿Estás seguro de que quieres eliminar TODOS los horarios disponibles? Esta acción no se puede deshacer.')) {
@@ -156,4 +143,34 @@ export default function CleanSlotsPage() {
       </div>
     </>
   );
-} 
+}
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
+}; 

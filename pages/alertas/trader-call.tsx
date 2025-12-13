@@ -3129,7 +3129,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         {alert.participationPercentage || 100}%
                         {alert.participationPercentage && alert.participationPercentage < 100 && (
                           <span className={styles.partialSaleIndicator} title="Venta parcial realizada">
-                            📉
+                            
                           </span>
                         )}
                       </strong>
@@ -3541,9 +3541,27 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 const readTime = informe.readTime || 1;
                 
                 return (
-                  <div key={informe.id || informe._id} className={styles.informeCard}>
+                  <div key={informe.id || informe._id} className={styles.informeCard} style={informe.isPublished === false ? { border: '2px solid #ef4444', opacity: 0.85 } : {}}>
                     <div className={styles.informeHeader}>
-                      <h3>{informe.title}</h3>
+                      <h3>
+                        {informe.title}
+                        {/* Badge de "No publicado" solo visible para admins */}
+                        {userRole === 'admin' && informe.isPublished === false && (
+                          <span style={{
+                            marginLeft: '10px',
+                            padding: '2px 8px',
+                            fontSize: '0.7rem',
+                            fontWeight: 'bold',
+                            backgroundColor: '#ef4444',
+                            color: 'white',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase',
+                            verticalAlign: 'middle'
+                          }}>
+                            ⚠️ OCULTO
+                          </span>
+                        )}
+                      </h3>
                       {/* Información del informe en lista - OCULTA */}
                       <div className={styles.informeMeta} style={{ display: 'none' }}>
                         <span className={styles.informeDate}>
@@ -5426,71 +5444,13 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
 };
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  // Verificar autenticación y suscripción
-  let isSubscribed = false;
+  // ✅ SIMPLIFICADO: Usar helper centralizado para verificar suscripción
+  const { verifySubscriptionAccess } = await import('@/lib/subscriptionAuth');
   
-  try {
-    // Importar dinámicamente para evitar errores de SSR
-    const { getSession } = await import('next-auth/react');
-    const dbConnect = (await import('@/lib/mongodb')).default;
-    const User = (await import('@/models/User')).default;
-
-    const session = await getSession(context);
-    
-    if (session?.user?.email) {
-      await dbConnect();
-      const user = await User.findOne({ email: session.user.email });
-      
-      if (user) {
-        // Verificar si tiene suscripción activa a TraderCall
-        const suscripcionActiva = user.suscripciones?.find(
-          (sub: any) => 
-            sub.servicio === 'TraderCall' && 
-            sub.activa === true && 
-            new Date(sub.fechaVencimiento) > new Date()
-        );
-        
-        // También verificar en el array alternativo
-        const subscriptionActiva = user.subscriptions?.find(
-          (sub: any) => 
-            sub.tipo === 'TraderCall' && 
-            sub.activa === true &&
-            (!sub.fechaFin || new Date(sub.fechaFin) > new Date())
-        );
-
-        // ✅ IMPORTANTE: Verificar también en activeSubscriptions (MercadoPago)
-        const activeSubscription = user.activeSubscriptions?.find(
-          (sub: any) => 
-            sub.service === 'TraderCall' && 
-            sub.isActive === true &&
-            new Date(sub.expiryDate) > new Date()
-        );
-
-        // ✅ IMPORTANTE: Solo verificar suscripciones específicas a TraderCall
-        // NO verificar por rol general para evitar acceso cruzado entre servicios
-        isSubscribed = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
-        
-        // console.log('🔍 Verificación de suscripción TraderCall:', {
-        //   email: user.email,
-        //   role: user.role,
-        //   suscripcionActiva: !!suscripcionActiva,
-        //   subscriptionActiva: !!subscriptionActiva,
-        //   activeSubscription: !!activeSubscription,
-        //   activeSubscriptionDetails: activeSubscription ? {
-        //     service: activeSubscription.service,
-        //     isActive: activeSubscription.isActive,
-        //     expiryDate: activeSubscription.expiryDate,
-        //     expired: new Date(activeSubscription.expiryDate) <= new Date()
-        //   } : null,
-        //   isSubscribed
-        // });
-      }
-    }
-  } catch (error) {
-    // console.error('Error verificando suscripción:', error);
-    // En caso de error, mostramos vista no suscrita por defecto
-    isSubscribed = false;
-  }
+  const verification = await verifySubscriptionAccess(context, 'TraderCall');
+  const isSubscribed = verification.isSubscribed;
+  
+  console.log('✅ [TRADER-CALL] Resultado final - isSubscribed:', isSubscribed);
 
   const metrics = {
     performance: '+87.5%',
@@ -5841,6 +5801,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const siteConfig = siteConfigRes.ok ? await siteConfigRes.json() : null;
   const traderHeroVideo = siteConfig?.alertsVideos?.traderCall?.heroVideo || null;
 
+  // ✅ Serializar la sesión para pasarla al SessionProvider
+  let sessionData = null;
+  if (verification.session) {
+    try {
+      sessionData = JSON.parse(JSON.stringify(verification.session));
+    } catch (e) {
+      console.error('💥 [TRADER-CALL] Error serializando sesión:', e);
+    }
+  }
+
   return {
     props: {
       isSubscribed,
@@ -5848,7 +5818,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       historicalAlerts,
       alertExamples,
       faqs,
-      traderHeroVideo
+      traderHeroVideo,
+      session: sessionData, // ✅ Pasar sesión al SessionProvider
     }
   };
 };

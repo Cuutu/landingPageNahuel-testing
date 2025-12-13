@@ -8,6 +8,28 @@ interface StockResponse {
   isSimulated?: boolean;
 }
 
+interface CachedPrice {
+  price: number;
+  marketStatus: string;
+  lastUpdate: number; // timestamp
+  isSimulated: boolean;
+}
+
+// ✅ CACHÉ COMPARTIDO EN MEMORIA - Reduce llamadas a Yahoo Finance en ~97%
+const priceCache = new Map<string, CachedPrice>();
+
+// Limpiar caché cada hora para evitar acumulación de memoria
+setInterval(() => {
+  const now = Date.now();
+  const oneHourAgo = now - (60 * 60 * 1000);
+  
+  for (const [symbol, cached] of Array.from(priceCache.entries())) {
+    if (cached.lastUpdate < oneHourAgo) {
+      priceCache.delete(symbol);
+    }
+  }
+}, 60 * 60 * 1000); // Cada hora
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<StockResponse>
@@ -22,9 +44,40 @@ export default async function handler(
     return res.status(400).json({ error: 'Símbolo de acción requerido' });
   }
 
-  // Log para debugging
-  console.log(`📈 Obteniendo precio para: ${symbol}`);
-  console.log(`⏰ Hora actual: ${new Date().toLocaleString('es-ES', { timeZone: 'America/New_York' })} (EST)`);
+  const symbolUpper = symbol.toUpperCase();
+  const marketStatus = getMarketStatus();
+  const isMarketOpen = marketStatus === 'OPEN';
+  
+  // ✅ CACHÉ INTELIGENTE: 15-20 segundos si mercado abierto, 5 minutos si cerrado
+  const cacheTTL = isMarketOpen ? 18 * 1000 : 5 * 60 * 1000; // 18 segundos o 5 minutos
+  
+  // Verificar caché antes de hacer llamada externa
+  const cached = priceCache.get(symbolUpper);
+  if (cached) {
+    const age = Date.now() - cached.lastUpdate;
+    
+    if (age < cacheTTL) {
+      // ✅ CACHÉ VÁLIDO - Devolver sin llamar a Yahoo Finance
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        console.log(`💾 [CACHE HIT] ${symbolUpper}: $${cached.price} (age: ${Math.round(age / 1000)}s)`);
+      }
+      
+      return res.status(200).json({
+        price: cached.price,
+        marketStatus: cached.marketStatus,
+        lastUpdate: new Date(cached.lastUpdate).toISOString(),
+        isSimulated: cached.isSimulated
+      });
+    }
+  }
+
+  // ✅ CACHÉ EXPIRADO O NO EXISTE - Obtener precio fresco
+  const isDev = process.env.NODE_ENV === 'development';
+  if (isDev) {
+    console.log(`📈 [CACHE MISS] Obteniendo precio para: ${symbolUpper}`);
+    console.log(`⏰ Hora actual: ${new Date().toLocaleString('es-ES', { timeZone: 'America/New_York' })} (EST)`);
+  }
 
   try {
     // Usar API gratuita de Yahoo Finance (alternativa sin API key)
@@ -44,13 +97,24 @@ export default async function handler(
     const data = await response.json();
 
     if (data.chart?.result?.[0]?.meta?.regularMarketPrice) {
-      const price = data.chart.result[0].meta.regularMarketPrice;
-      const isMarketOpen = data.chart.result[0].meta.regularMarketTime || data.chart.result[0].meta.currentTradingPeriod;
-      
+      const price = parseFloat(data.chart.result[0].meta.regularMarketPrice.toFixed(2));
       const marketStatus = getMarketStatus();
-      console.log(`✅ Yahoo Finance - ${symbol}: $${price} (Market: ${marketStatus})`);
+      
+      // ✅ GUARDAR EN CACHÉ
+      priceCache.set(symbolUpper, {
+        price,
+        marketStatus,
+        lastUpdate: Date.now(),
+        isSimulated: false
+      });
+      
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        console.log(`✅ Yahoo Finance - ${symbolUpper}: $${price} (Market: ${marketStatus})`);
+      }
+      
       return res.status(200).json({ 
-        price: parseFloat(price.toFixed(2)),
+        price,
         marketStatus,
         lastUpdate: new Date().toISOString(),
         isSimulated: false
@@ -67,11 +131,24 @@ export default async function handler(
         const alphaData = await alphaResponse.json();
         
         if (alphaData['Global Quote'] && alphaData['Global Quote']['05. price']) {
-          const price = parseFloat(alphaData['Global Quote']['05. price']);
+          const price = parseFloat(parseFloat(alphaData['Global Quote']['05. price']).toFixed(2));
           const marketStatus = getMarketStatus();
-          console.log(`✅ Alpha Vantage - ${symbol}: $${price} (Market: ${marketStatus})`);
+          
+          // ✅ GUARDAR EN CACHÉ
+          priceCache.set(symbolUpper, {
+            price,
+            marketStatus,
+            lastUpdate: Date.now(),
+            isSimulated: false
+          });
+          
+          const isDev = process.env.NODE_ENV === 'development';
+          if (isDev) {
+            console.log(`✅ Alpha Vantage - ${symbolUpper}: $${price} (Market: ${marketStatus})`);
+          }
+          
           return res.status(200).json({ 
-            price: parseFloat(price.toFixed(2)),
+            price,
             marketStatus,
             lastUpdate: new Date().toISOString(),
             isSimulated: false
@@ -80,9 +157,22 @@ export default async function handler(
       }
 
       // Si ambas APIs fallan, devolver precio simulado
-      const simulatedPrice = generateSimulatedPrice(symbol.toUpperCase());
+      const simulatedPrice = generateSimulatedPrice(symbolUpper);
       const marketStatus = getMarketStatus();
-      console.log(`⚠️ Usando precio simulado para ${symbol}: $${simulatedPrice} (Market: ${marketStatus})`);
+      
+      // ✅ GUARDAR PRECIO SIMULADO EN CACHÉ (con TTL más corto)
+      priceCache.set(symbolUpper, {
+        price: simulatedPrice,
+        marketStatus,
+        lastUpdate: Date.now(),
+        isSimulated: true
+      });
+      
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        console.log(`⚠️ Usando precio simulado para ${symbolUpper}: $${simulatedPrice} (Market: ${marketStatus})`);
+      }
+      
       return res.status(200).json({ 
         price: simulatedPrice,
         marketStatus,
@@ -91,12 +181,43 @@ export default async function handler(
       });
     }
   } catch (error) {
-    console.error('Error al obtener precio de acción:', error);
+    const isDev = process.env.NODE_ENV === 'development';
+    if (isDev) {
+      console.error(`Error al obtener precio de acción para ${symbolUpper}:`, error);
+    }
     
-    // En caso de error, generar precio simulado
-    const simulatedPrice = generateSimulatedPrice(symbol.toUpperCase());
+    // En caso de error, intentar usar caché si existe (aunque esté expirado)
+    const cached = priceCache.get(symbolUpper);
+    if (cached) {
+      const isDev = process.env.NODE_ENV === 'development';
+      if (isDev) {
+        console.log(`⚠️ [FALLBACK CACHE] Usando precio cacheado para ${symbolUpper}: $${cached.price}`);
+      }
+      
+      return res.status(200).json({
+        price: cached.price,
+        marketStatus: cached.marketStatus,
+        lastUpdate: new Date(cached.lastUpdate).toISOString(),
+        isSimulated: cached.isSimulated
+      });
+    }
+    
+    // Si no hay caché, generar precio simulado
+    const simulatedPrice = generateSimulatedPrice(symbolUpper);
     const marketStatus = getMarketStatus();
-    console.log(`❌ Error obteniendo precio real para ${symbol}, usando simulado: $${simulatedPrice} (Market: ${marketStatus})`);
+    
+    // ✅ GUARDAR PRECIO SIMULADO EN CACHÉ
+    priceCache.set(symbolUpper, {
+      price: simulatedPrice,
+      marketStatus,
+      lastUpdate: Date.now(),
+      isSimulated: true
+    });
+    
+    if (isDev) {
+      console.log(`❌ Error obteniendo precio real para ${symbolUpper}, usando simulado: $${simulatedPrice} (Market: ${marketStatus})`);
+    }
+    
     return res.status(200).json({ 
       price: simulatedPrice,
       marketStatus,

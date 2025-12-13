@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import Head from 'next/head';
-import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { Calendar, Clock, Plus, Settings, CheckCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import styles from '@/styles/Admin.module.css';
 
-const CreateSlotsPage = () => {
-  const { data: session, status } = useSession();
+interface CreateSlotsPageProps {
+  user: any;
+}
+
+const CreateSlotsPage = ({ user }: CreateSlotsPageProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     serviceType: 'ConsultorioFinanciero',
@@ -152,40 +156,6 @@ const CreateSlotsPage = () => {
       timeSlots: prev.timeSlots.filter((_, i) => i !== index)
     }));
   };
-
-  if (status === 'loading') {
-    return (
-      <>
-        <Navbar />
-        <div className={styles.adminPage}>
-          <div className={styles.container}>
-            <div className={styles.loading}>
-              <div className={styles.spinner} />
-              <p>Cargando...</p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
-
-  if (!session || session.user?.role !== 'admin') {
-    return (
-      <>
-        <Navbar />
-        <div className={styles.adminPage}>
-          <div className={styles.container}>
-            <div className={styles.error}>
-              <h1>🚫 Acceso Denegado</h1>
-              <p>Solo el administrador puede acceder a esta página.</p>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    );
-  }
 
   return (
     <>
@@ -534,6 +504,36 @@ const CreateSlotsPage = () => {
       <Footer />
     </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default CreateSlotsPage; 

@@ -30,18 +30,27 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
 
-  // Obtener conteo de notificaciones
-  const fetchNotificationCount = async () => {
+  // ✅ OPTIMIZADO: Obtener conteo de notificaciones con cache
+  const lastFetchRef = React.useRef<number>(0);
+  const NOTIFICATION_CACHE_TIME = 30000; // 30 segundos
+
+  const fetchNotificationCount = async (force = false) => {
     if (!session?.user?.email) return;
+    
+    const now = Date.now();
+    if (!force && (now - lastFetchRef.current) < NOTIFICATION_CACHE_TIME) {
+      return; // Usar cache
+    }
     
     try {
       const response = await fetch('/api/notifications/get?limit=1');
       if (response.ok) {
         const data = await response.json();
         setNotificationCount(data.unreadCount || 0);
+        lastFetchRef.current = now;
       }
     } catch (error) {
-      console.error('Error al obtener conteo de notificaciones:', error);
+      // Silenciar error
     }
   };
 

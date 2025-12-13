@@ -98,79 +98,23 @@ export default async function handler(
       .limit(limitNum)
       .skip(skip);
     
-    // ✅ NUEVO: Calcular ganancia realizada acumulada para alertas con ventas parciales
+    // ✅ CORREGIDO: Calcular ganancia realizada acumulada para alertas con ventas parciales
+    // Siempre recalcular y guardar para asegurar que el cálculo esté actualizado
     for (const alert of alerts) {
       if (alert.liquidityData?.partialSales && alert.liquidityData.partialSales.length > 0) {
-        // Calcular ganancia realizada acumulada
+        // Calcular ganancia realizada acumulada con el nuevo método corregido
         alert.calculateTotalProfit();
-        // Guardar si hubo cambios
-        if (alert.isModified()) {
-          await alert.save();
-        }
+        // ✅ FORZAR guardado siempre para asegurar que se actualice en la BD
+        await alert.save();
       }
     }
     
     // Convertir a objetos planos después de calcular
     const alertsLean = alerts.map((alert: any) => alert.toObject());
 
-      // ✅ NUEVO: Actualizar precios en tiempo real para alertas activas
-    if (alertsLean.length > 0) {
-      console.log(`🔄 Actualizando precios para ${alertsLean.length} alertas antes de devolver datos...`);
-      
-      // ✅ VALIDACIÓN: Obtener hora actual para verificar si es después de las 17:30
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const isAfterMarketClose = currentHour > 17 || (currentHour === 17 && currentMinute >= 30);
-      
-      for (const alert of alertsLean) {
-        if (alert.status === 'ACTIVE' && alert.symbol) {
-          try {
-            // ✅ VALIDACIÓN: Para alertas de rango, solo actualizar después de las 17:30
-            const isRangeAlert = alert.tipoAlerta === 'rango' || (alert.entryPriceRange && alert.entryPriceRange.min && alert.entryPriceRange.max);
-            
-            if (isRangeAlert && !isAfterMarketClose) {
-              console.log(`⏰ Alerta de rango ${alert.symbol} - No actualizar hasta las 17:30 (hora actual: ${currentHour}:${currentMinute.toString().padStart(2, '0')})`);
-              continue; // Saltar actualización para alertas de rango antes de las 17:30
-            }
-            
-            // Obtener precio actual usando la API interna
-            const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/stock-price?symbol=${alert.symbol}`, {
-              headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-              }
-            });
-            
-            if (response.ok) {
-              const priceData = await response.json();
-              
-              if (priceData.price && !priceData.isSimulated) {
-                // Actualizar el precio en el objeto alert antes de formatear
-                alert.currentPrice = priceData.price;
-                
-                // ✅ NUEVO: Recalcular P&L con el nuevo precio actual
-                const entryPrice = alert.entryPriceRange?.min || alert.entryPrice;
-                if (entryPrice) {
-                  if (alert.action === 'BUY') {
-                    alert.profit = ((priceData.price - entryPrice) / entryPrice) * 100;
-                  } else { // SELL
-                    alert.profit = ((entryPrice - priceData.price) / entryPrice) * 100;
-                  }
-                  console.log(`✅ Precio y P&L actualizados para ${alert.symbol}: $${priceData.price} (P&L: ${alert.profit.toFixed(2)}%)`);
-                } else {
-                  console.log(`✅ Precio actualizado para ${alert.symbol}: $${priceData.price} (sin P&L - no hay precio de entrada)`);
-                }
-              } else {
-                console.log(`⚠️ Precio simulado o no disponible para ${alert.symbol}: $${priceData.price || 'N/A'}`);
-              }
-            }
-          } catch (error) {
-            console.error(`❌ Error actualizando precio para ${alert.symbol}:`, error);
-          }
-        }
-      }
-    }
+    // ✅ OPTIMIZADO: NO actualizar precios aquí - eso lo hace /api/alerts/update-prices-manual
+    // Esto elimina duplicación y reduce llamadas a /api/stock-price en ~50%
+    // Los precios se actualizan automáticamente cada 1-2 minutos desde el frontend
 
     // Contar total de alertas
     const total = await Alert.countDocuments(filter);

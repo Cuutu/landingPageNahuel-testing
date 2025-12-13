@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import AdminRouteGuard from '@/components/AdminRouteGuard';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
 import styles from '@/styles/AdminLiquidity.module.css';
 import Navbar from '@/components/Navbar';
@@ -72,7 +73,11 @@ async function fetchJSON<T>(url: string, options?: RequestInit): Promise<T> {
 
 interface SimpleAlert { id: string; symbol: string; status: string; tipo?: string; currentPrice?: string }
 
-const AdminLiquidityPage: React.FC = () => {
+interface AdminLiquidityPageProps {
+  user: any;
+}
+
+const AdminLiquidityPage: React.FC<AdminLiquidityPageProps> = ({ user }) => {
   const router = useRouter();
   const queryAlertId = (router.query.alertId as string) || '';
   const queryTipo = (router.query.tipo as string) || '';
@@ -405,14 +410,15 @@ const AdminLiquidityPage: React.FC = () => {
 
   if (loading) {
     return (
-      <AdminRouteGuard>
+      <>
+        <Navbar />
         <div className={styles.page}>Cargando...</div>
-      </AdminRouteGuard>
+      </>
     );
   }
 
   return (
-    <AdminRouteGuard>
+    <>
       <Navbar />
       <div className={styles.page}>
         <div className={styles.title}>Liquidez</div>
@@ -918,8 +924,38 @@ const AdminLiquidityPage: React.FC = () => {
 
         {error && <div className="text-red-400">{error}</div>}
       </div>
-    </AdminRouteGuard>
+    </>
   );
+};
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
 };
 
 export default AdminLiquidityPage; 

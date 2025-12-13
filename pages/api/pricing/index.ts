@@ -69,6 +69,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         });
       }
       
+      // ✅ Cache por 60 segundos en CDN
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
       return res.status(200).json({
         success: true,
         data: pricing
@@ -114,8 +116,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
         { upsert: true, new: true }
       );
-      
-      console.log('✅ Precios actualizados por:', session.user.email);
       
       return res.status(200).json({
         success: true,

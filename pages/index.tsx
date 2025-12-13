@@ -1,7 +1,10 @@
 import { GetServerSideProps } from 'next';
-import { getSession, signIn, useSession } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/googleAuth';
 import Head from 'next/head';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -228,7 +231,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
   // console.log('🎓 entrenamientos:', entrenamientos);
   
   const router = useRouter();
-  const { data: session } = useSession(); // Hook del cliente para detectar cambios en tiempo real
+  const { data: session, status, update } = useSession(); // Hook del cliente para detectar cambios en tiempo real
   const { pricing, loading: pricingLoading, formatPrice: uiFormatPrice } = usePricing();
   const resolvedPricing = pricing || initialPricing;
   const { isFeatureEnabled } = useSiteConfig();
@@ -241,22 +244,47 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
   const [currentDestacadoIndex, setCurrentDestacadoIndex] = useState(0);
   const [currentTestimonialGroupIndex, setCurrentTestimonialGroupIndex] = useState(0);
 
+  // ✅ CORREGIDO: Detectar cuando venimos del flujo de login y forzar recarga si es necesario
+  useEffect(() => {
+    // Detectar si acabamos de hacer login usando sessionStorage
+    const pendingLogin = sessionStorage.getItem('pending_login');
+    
+    if (pendingLogin) {
+      // Remover el flag inmediatamente
+      sessionStorage.removeItem('pending_login');
+      
+      // Si el status aún está loading o no hay sesión, esperar y recargar
+      if (status === 'loading' || status === 'unauthenticated') {
+        // Esperar un momento para que las cookies se establezcan
+        setTimeout(() => {
+          // Forzar recarga completa para obtener la sesión del servidor
+          router.replace(router.asPath);
+        }, 100);
+      }
+    }
+  }, [status, router]);
+
+  // ✅ Refrescar sesión cuando el status cambia a 'authenticated' pero no hay datos del usuario
+  useEffect(() => {
+    if (status === 'authenticated' && session && !session.user?.email) {
+      update().catch((error) => {
+        console.error('Error al refrescar sesión sin email:', error);
+      });
+    }
+  }, [status, session, update]);
+
   // Función para manejar el clic del botón "Empezá Ahora"
   const handleStartNowClick = () => {
-    // console.log('🔍 Debug handleStartNowClick:', {
-    //   session: !!session,
-    //   sessionUser: session?.user?.email,
-    //   sessionStatus: session ? 'authenticated' : 'not authenticated'
-    // });
-    
     if (session) {
       // Si el usuario está autenticado, redirigir a /alertas
-      // console.log('✅ Usuario autenticado, redirigiendo a /alertas');
       router.push('/alertas');
     } else {
       // Si no está autenticado, iniciar sesión con Google
-      // console.log('❌ Usuario no autenticado, iniciando sesión');
-      signIn('google');
+      // ✅ Guardar flag para detectar el retorno del login
+      sessionStorage.setItem('pending_login', 'true');
+      signIn('google', { 
+        callbackUrl: window.location.origin + window.location.pathname
+      });
     }
   };
 
@@ -301,7 +329,11 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
   const handleMercadoPagoCheckout = async (type: 'subscription' | 'training', service: string, amount: number, currency: string) => {
     if (!session) {
       toast.error('Debes iniciar sesión primero');
-      signIn('google');
+      // ✅ Guardar flag para detectar el retorno del login
+      sessionStorage.setItem('pending_login', 'true');
+      signIn('google', { 
+        callbackUrl: window.location.origin + window.location.pathname
+      });
       return;
     }
 
@@ -623,13 +655,13 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       <main className={styles.main}>
         {/* Hero Section */}
               <section className={styles.hero}>
-        {/* Video Background */}
+        {/* Video Background - Sin loop para mejor rendimiento */}
         <video
           className={styles.heroVideoBackground}
           autoPlay
           muted
-          loop
           playsInline
+          poster="/logos/hero-poster.jpg"
         >
           <source src="/logos/Home.mp4" type="video/mp4" />
         </video>
@@ -657,14 +689,14 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                 </div>
               </div>
 
-              {/* Video de Presentación con YouTube */}
+              {/* Video de Presentación con YouTube - sin loop */}
               <div className={styles.heroVideo}>
                 <YouTubePlayer
                   videoId={siteConfig.heroVideo.youtubeId}
                   title={siteConfig.heroVideo.title}
                   autoplay={siteConfig.heroVideo.autoplay}
                   muted={siteConfig.heroVideo.muted}
-                  loop={siteConfig.heroVideo.loop}
+                  loop={false}
                   className={styles.heroVideoPlayer}
                 />
               </div>
@@ -685,9 +717,11 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
             >
               <div className={styles.learningText}>
                 <div className={styles.learningLogo}>
-                  <img 
+                  <Image 
                     src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
                     alt="Mentoring" 
+                    width={200}
+                    height={60}
                     className={styles.learningLogoImage}
                   />
                 </div>
@@ -1053,7 +1087,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                   </motion.div>
                 </div>
 
-                {/* Sección de Nahuel Lozano - Solo imagen */}
+                {/* Sección de Nahuel Lozano - Testimonial completo */}
                 <motion.div
                   className={styles.nahuelSection}
                   initial={{ opacity: 0, y: 20 }}
@@ -1062,10 +1096,13 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                   viewport={{ once: true }}
                 >
                   <div className={styles.nahuelImageContainer}>
-                    <img 
+                    <Image 
                       src="/logos/nahuelsobremi.png" 
                       alt="Nahuel Lozano" 
+                      width={1000}
+                      height={1000}
                       className={styles.nahuelImage}
+                      priority={false}
                     />
                   </div>
                 </motion.div>
@@ -1420,7 +1457,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     
     // console.log('👤 Usuario es admin:', isAdmin);
     
-    const session = await getSession(context);
+    // ✅ CORREGIDO: Usar getServerSession en lugar de getSession para mejor sincronización después del login
+    const session = await getServerSession(context.req, context.res, authOptions);
     // console.log('✅ Sesión obtenida:', session ? 'Usuario autenticado' : 'Usuario no autenticado');
     
     // Configuración por defecto - siempre funcional
@@ -1534,42 +1572,45 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     let courseCards: CourseCard[] = [];
     let initialPricing = null as any;
 
-    // Intentar obtener datos reales solo si estamos en el servidor con URL válida
+    // ✅ OPTIMIZADO: Fetches en paralelo para mejorar TTFB
     if (process.env.NEXTAUTH_URL) {
       try {
-        // Obtener configuración del sitio
-        const siteConfigResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/site-config`);
-        if (siteConfigResponse.ok) {
-          const configData = await siteConfigResponse.json();
+        const baseUrl = process.env.NEXTAUTH_URL;
+        
+        // Ejecutar todos los fetches en paralelo
+        const [siteConfigRes, entrenamientosRes, courseCardsRes, pricingRes] = await Promise.all([
+          fetch(`${baseUrl}/api/site-config`).catch(() => null),
+          fetch(`${baseUrl}/api/entrenamientos`).catch(() => null),
+          fetch(`${baseUrl}/api/course-cards?destacados=true&activos=true`).catch(() => null),
+          fetch(`${baseUrl}/api/pricing`).catch(() => null),
+        ]);
+
+        // Procesar respuestas
+        if (siteConfigRes?.ok) {
+          const configData = await siteConfigRes.json();
           siteConfig = { ...defaultSiteConfig, ...configData };
         }
 
-        // Obtener entrenamientos activos
-        const entrenamientosResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/entrenamientos`);
-        if (entrenamientosResponse.ok) {
-          const entrenamientosData = await entrenamientosResponse.json();
+        if (entrenamientosRes?.ok) {
+          const entrenamientosData = await entrenamientosRes.json();
           if (Array.isArray(entrenamientosData) && entrenamientosData.length > 0) {
             entrenamientos = entrenamientosData.filter((e: Training) => e.activo);
           }
         }
 
-        // Obtener tarjetas de cursos personalizadas
-        const courseCardsResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/course-cards?destacados=true&activos=true`);
-        if (courseCardsResponse.ok) {
-          const courseCardsData = await courseCardsResponse.json();
+        if (courseCardsRes?.ok) {
+          const courseCardsData = await courseCardsRes.json();
           if (Array.isArray(courseCardsData)) {
             courseCards = courseCardsData;
           }
         }
 
-        // Obtener pricing para SSR como respaldo del hook
-        const pricingRes = await fetch(`${process.env.NEXTAUTH_URL}/api/pricing`);
-        if (pricingRes.ok) {
+        if (pricingRes?.ok) {
           const pricingData = await pricingRes.json();
           initialPricing = pricingData?.data || null;
         }
       } catch (apiError) {
-        // console.log('⚠️ Error al obtener datos de APIs, usando valores por defecto:', apiError);
+        // Silenciar errores, usar valores por defecto
       }
     }
 

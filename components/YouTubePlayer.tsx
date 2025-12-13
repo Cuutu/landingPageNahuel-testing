@@ -76,46 +76,30 @@ export default function YouTubePlayer({
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   };
 
-  // Establecer volumen usando la API de YouTube IFrame
+  // ✅ OPTIMIZADO: Lógica de volumen comentada porque videos siempre están muteados
+  // Esto evita crear 3 timeouts innecesarios por cada iframe
+  /*
   useEffect(() => {
     if (!iframeRef.current || isLoading || muted) return;
-
-    // Usar 25% como volumen por defecto si no se especifica
     const videoVolume = volume !== undefined ? volume : 25;
-
     const setVolume = () => {
       try {
         const iframe = iframeRef.current;
         if (!iframe || !iframe.contentWindow) return;
-
-        // La API de YouTube IFrame requiere que el video esté cargado
-        // Usamos postMessage para comunicarnos con el iframe
-        // El formato correcto es enviar un objeto JSON como string
         iframe.contentWindow.postMessage(
-          JSON.stringify({
-            event: 'command',
-            func: 'setVolume',
-            args: [videoVolume]
-          }),
+          JSON.stringify({ event: 'command', func: 'setVolume', args: [videoVolume] }),
           'https://www.youtube.com'
         );
-      } catch (error) {
-        console.error('Error estableciendo volumen:', error);
-      }
+      } catch (error) {}
     };
-
-    // Esperar a que el iframe esté completamente cargado
-    // Intentar múltiples veces para asegurar que funcione
     const timers: NodeJS.Timeout[] = [];
     [500, 1000, 2000].forEach((delay) => {
       const timer = setTimeout(setVolume, delay);
       timers.push(timer);
     });
-
-    return () => {
-      timers.forEach(timer => clearTimeout(timer));
-    };
+    return () => { timers.forEach(timer => clearTimeout(timer)); };
   }, [volume, isLoading, muted]);
+  */
 
   const handleLoad = () => {
     setIsLoading(false);

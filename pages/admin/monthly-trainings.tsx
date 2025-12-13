@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
+import { GetServerSideProps } from 'next';
+import { verifyAdminAccess } from '@/lib/adminAuth';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -16,7 +17,6 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import AdminRouteGuard from '../../components/AdminRouteGuard';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import styles from '../../styles/admin/MonthlyTrainings.module.css';
@@ -49,8 +49,11 @@ interface MonthlyTraining {
   createdBy: string;
 }
 
-export default function MonthlyTrainingsAdmin() {
-  const { data: session, status } = useSession();
+interface MonthlyTrainingsAdminProps {
+  user: any;
+}
+
+export default function MonthlyTrainingsAdmin({ user }: MonthlyTrainingsAdminProps) {
   const router = useRouter();
   
   const [trainings, setTrainings] = useState<MonthlyTraining[]>([]);
@@ -71,10 +74,8 @@ export default function MonthlyTrainingsAdmin() {
   });
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      loadTrainings();
-    }
-  }, [status, selectedYear]);
+    loadTrainings();
+  }, [selectedYear]);
 
   const loadTrainings = async () => {
     try {
@@ -244,7 +245,7 @@ export default function MonthlyTrainingsAdmin() {
   }
 
   return (
-    <AdminRouteGuard>
+    <>
       <Navbar />
       <div className={styles.container}>
         <Head>
@@ -571,6 +572,36 @@ export default function MonthlyTrainingsAdmin() {
         )}
       </div>
       <Footer />
-    </AdminRouteGuard>
+    </>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const verification = await verifyAdminAccess(context);
+    
+    if (!verification.isAdmin) {
+      return {
+        redirect: {
+          destination: verification.redirectTo || '/',
+          permanent: false,
+        },
+      };
+    }
+
+    return {
+      props: {
+        user: verification.session?.user || verification.user || null,
+      },
+    };
+  } catch (error) {
+    console.error('Error en getServerSideProps:', error);
+    
+    return {
+      redirect: {
+        destination: '/api/auth/signin',
+        permanent: false,
+      },
+    };
+  }
+};
