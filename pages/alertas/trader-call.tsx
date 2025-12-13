@@ -1432,7 +1432,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     loadAlerts();
   }, [activeTab]);
 
-  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 2 minutos
+  // ✅ OPTIMIZADO: Sistema de actualización automática de precios cada 5 minutos
   React.useEffect(() => {
     // Solo actualizar si hay alertas activas
     const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
@@ -1444,20 +1444,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       updatePrices(true);
     } else {
       const timeSinceLastUpdate = Date.now() - lastPriceUpdate.getTime();
-      const shouldUpdate = timeSinceLastUpdate >= 2 * 60 * 1000; // 2 minutos
+      const shouldUpdate = timeSinceLastUpdate >= 5 * 60 * 1000; // 5 minutos
       
       if (shouldUpdate) {
         updatePrices(true);
       }
     }
 
-    // ✅ OPTIMIZADO: Intervalo más eficiente (2 minutos en lugar de 30 segundos)
+    // ✅ OPTIMIZADO: Intervalo más eficiente (5 minutos para reducir carga del servidor)
     const interval = setInterval(() => {
       const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
       if (hasActiveAlerts) {
         updatePrices(true); // silent = true para no mostrar loading
       }
-    }, 2 * 60 * 1000); // 2 minutos
+    }, 5 * 60 * 1000); // 5 minutos
 
     return () => clearInterval(interval);
   }, [realAlerts, lastPriceUpdate, updatePrices]);

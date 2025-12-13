@@ -48,8 +48,9 @@ export default async function handler(
   const marketStatus = getMarketStatus();
   const isMarketOpen = marketStatus === 'OPEN';
   
-  // ✅ CACHÉ INTELIGENTE: 15-20 segundos si mercado abierto, 5 minutos si cerrado
-  const cacheTTL = isMarketOpen ? 18 * 1000 : 5 * 60 * 1000; // 18 segundos o 5 minutos
+  // ✅ CACHÉ INTELIGENTE: 2 minutos si mercado abierto, 10 minutos si cerrado
+  // Aumentado para reducir carga del servidor
+  const cacheTTL = isMarketOpen ? 2 * 60 * 1000 : 10 * 60 * 1000; // 2 minutos o 10 minutos
   
   // Verificar caché antes de hacer llamada externa
   const cached = priceCache.get(symbolUpper);
