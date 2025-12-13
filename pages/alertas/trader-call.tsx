@@ -787,6 +787,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   const [loadingAlerts, setLoadingAlerts] = useState(false);
   const [updatingPrices, setUpdatingPrices] = useState(false);
   const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
+  // ✅ NUEVO: Ref para evitar múltiples ejecuciones simultáneas de updatePrices
+  const isUpdatingPricesRef = useRef(false);
   const [informes, setInformes] = useState<any[]>([]);
   const [loadingInformes, setLoadingInformes] = useState(true);
   const [selectedReport, setSelectedReport] = useState<any>(null);
@@ -1097,7 +1099,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   };
 
   // ✅ MODIFICADO: Función principal para cargar alertas según la pestaña activa
-  const loadAlerts = async () => {
+  // ✅ MODIFICADO: Función principal para cargar alertas según la pestaña activa
+  const loadAlerts = useCallback(async () => {
     try {
       if (activeTab === 'vigentes') {
         await loadVigentesAlerts();
@@ -1108,14 +1111,20 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         // El gráfico necesita todas las alertas activas con liquidez, no solo las vigentes
         await loadSeguimientoAlerts();
       }
-      } catch (error) {
+    } catch (error) {
       // console.error('Error cargando alertas:', error);
       // Continuar sin alertas si hay error
     }
-  };
+  }, [activeTab]); // Solo depende de activeTab
 
-  // Función para actualizar precios en tiempo real
-  const updatePrices = async (silent: boolean = false) => {
+  // ✅ CORREGIDO: Función para actualizar precios en tiempo real - envuelta en useCallback
+  const updatePrices = useCallback(async (silent: boolean = false) => {
+    // ✅ Prevenir múltiples ejecuciones simultáneas
+    if (isUpdatingPricesRef.current) {
+      return;
+    }
+    
+    isUpdatingPricesRef.current = true;
     if (!silent) setUpdatingPrices(true);
     
     try {
@@ -1141,9 +1150,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     } catch (error) {
       // console.error('Error al actualizar precios:', error);
     } finally {
+      isUpdatingPricesRef.current = false;
       if (!silent) setUpdatingPrices(false);
     }
-  };
+  }, [loadAlerts]); // Solo depende de loadAlerts
 
   // Función para cargar informes desde la API con paginación
   const loadInformes = async (page: number = 1) => {
@@ -1454,13 +1464,13 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // ✅ OPTIMIZADO: Intervalo más eficiente (5 minutos para reducir carga del servidor)
     const interval = setInterval(() => {
       const hasActiveAlerts = realAlerts.some(alert => alert.status === 'ACTIVE');
-      if (hasActiveAlerts) {
+      if (hasActiveAlerts && !isUpdatingPricesRef.current) {
         updatePrices(true); // silent = true para no mostrar loading
       }
     }, 5 * 60 * 1000); // 5 minutos
 
     return () => clearInterval(interval);
-  }, [realAlerts, lastPriceUpdate, updatePrices]);
+  }, [realAlerts.length, lastPriceUpdate, updatePrices]); // ✅ CORREGIDO: Usar realAlerts.length en lugar de realAlerts para evitar re-ejecuciones
 
   // ✅ NUEVO: Cargar resumen completo de liquidez con los 5 conceptos
   const loadLiquidity = async () => {
