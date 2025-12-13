@@ -1182,7 +1182,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     if (!session?.user?.email) {
       return {
         redirect: {
-          destination: '/auth/signin',
+          destination: '/api/auth/signin',
           permanent: false,
         },
       };
@@ -1256,7 +1256,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           if (!fullUser) {
             return {
               redirect: {
-                destination: '/auth/signin',
+                destination: '/api/auth/signin',
                 permanent: false,
               },
             };

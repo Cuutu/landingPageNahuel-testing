@@ -21,7 +21,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    signIn: '/auth/signin',
+    // ✅ CORREGIDO: Usar el endpoint nativo de NextAuth para signin
+    // Esto evita problemas con la página personalizada que requería clic manual
+    // signIn: '/auth/signin', // ❌ Deshabilitado - usamos /api/auth/signin nativo
     error: '/auth/error',
     signOut: '/',
   },

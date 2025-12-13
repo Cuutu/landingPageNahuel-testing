@@ -153,7 +153,7 @@ export default function StudentTrainingDashboard() {
         <div className={styles.authRequired}>
           <h2>Acceso Requerido</h2>
           <p>Debes iniciar sesión para ver tus entrenamientos</p>
-          <Link href="/auth/signin" className={styles.loginButton}>
+          <Link href="/api/auth/signin" className={styles.loginButton}>
             Iniciar Sesión
           </Link>
         </div>
