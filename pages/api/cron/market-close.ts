@@ -98,9 +98,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         alertsToClose.push(...alertsWithRange);
       } else {
         console.log('ℹ️ No hay alertas que deban cerrarse en este momento');
+        
+        // ✅ NUEVO: Enviar mensaje de Telegram indicando que no hay operaciones
+        try {
+          const { sendMessageToChannel } = await import('@/lib/telegramBot');
+          
+          const noActivityMessage = `👋🏻 ¡Buenas a todos! ¿Cómo están? Hoy no tenemos activos para comprar ni para vender. Por lo que mantenemos la cartera tal cual como la tenemos hasta ahora.`;
+          
+          // Enviar a ambos canales (TraderCall y SmartMoney)
+          await sendMessageToChannel('TraderCall', noActivityMessage);
+          await sendMessageToChannel('SmartMoney', noActivityMessage);
+          
+          console.log('✅ Mensaje de sin actividad enviado a Telegram');
+        } catch (telegramError: any) {
+          console.error('❌ Error enviando mensaje de sin actividad a Telegram:', telegramError.message);
+        }
+        
         return res.status(200).json({ 
           success: true, 
-          message: 'No hay alertas que deban cerrarse ahora',
+          message: 'No hay alertas que deban cerrarse ahora - Mensaje de Telegram enviado',
           totalAlerts: activeAlerts.length,
           alertsToClose: 0,
           processedCount: 0,

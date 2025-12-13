@@ -67,7 +67,7 @@ import { htmlToText, textToHtml } from '../../lib/textUtils';
 import SPY500Indicator from '@/components/SPY500Indicator';
 import PortfolioTimeRange from '@/components/PortfolioTimeRange';
 import { usePricing } from '@/hooks/usePricing';
-import ScreenshotProtection from '@/components/ScreenshotProtection';
+import { useSecurityProtection } from '@/hooks/useSecurityProtection';
 import OperationsTable from '@/components/OperationsTable';
 import { toast } from 'react-hot-toast';
 import TrialUsedModal from '@/components/TrialUsedModal';
@@ -673,6 +673,9 @@ interface CommunityMessage {
 
 // Vista de suscriptor completa
 const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
+  // ✅ Protección contra copiar/pegar (sin bloquear screenshots)
+  useSecurityProtection();
+  
   const [activeTab, setActiveTab] = useState('dashboard');
   const [alerts, setAlerts] = useState<any[]>([]);
   const [communityMessages, setCommunityMessages] = useState<CommunityMessage[]>([]);
@@ -3122,16 +3125,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                         </span>
                       </strong>
                     </div>
-                    {/* ✅ NUEVO: Porcentaje de participación restante */}
+                    {/* Porcentaje de participación restante */}
                     <div className={styles.alertDetail}>
                       <span>Participación:</span>
                       <strong className={styles.participationPercentage}>
                         {alert.participationPercentage || 100}%
-                        {alert.participationPercentage && alert.participationPercentage < 100 && (
-                          <span className={styles.partialSaleIndicator} title="Venta parcial realizada">
-                            
-                          </span>
-                        )}
                       </strong>
                     </div>
                     {alert.hasSellRange && (
@@ -5424,9 +5422,7 @@ const TraderCallPage: React.FC<TraderCallPageProps> = ({
       
       <main className={styles.main}>
         {isSubscribed ? (
-          <ScreenshotProtection>
-            <SubscriberView faqs={faqs} />
-          </ScreenshotProtection>
+          <SubscriberView faqs={faqs} />
         ) : (
           <NonSubscriberView 
             metrics={metrics} 

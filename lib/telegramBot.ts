@@ -108,9 +108,9 @@ function formatAlertMessage(alert: IAlert, options?: {
       titleEmoji = '🚫';
     }
     
-    let message = `${titleEmoji} *${titleAction} ${alert.symbol}*\n\n`;
+    let message = `${titleEmoji} *${titleAction} ${alert.symbol}*\n`;
     
-    // ✅ CORREGIDO: Orden según solicitud - TIPO DE VENTA primero, luego PRECIO
+    // ✅ CORREGIDO: Orden según solicitud - TIPO DE VENTA primero (justo después del título), luego PRECIO
     // Para ventas con porcentaje, mostrar tipo de venta primero
     if (options?.soldPercentage) {
       // Determinar si es venta parcial o total
@@ -118,6 +118,7 @@ function formatAlertMessage(alert: IAlert, options?: {
         ? '🔴 Venta TOTAL' 
         : '🟡 Venta PARCIAL';
       
+      // ✅ CORREGIDO: Tipo de venta INMEDIATAMENTE después del título
       message += `${tipoVenta}\n\n`;
       
       // Luego mostrar precio
@@ -142,14 +143,33 @@ function formatAlertMessage(alert: IAlert, options?: {
       }
     } else if (action === 'SELL' && options?.price != null) {
       // Venta sin porcentaje específico (venta completa tradicional)
-      message += `💰 Precio de Venta: ${priceDisplay}\n`;
+      message += `\n💰 Precio de Venta: ${priceDisplay}\n`;
       // Mostrar precio de entrada si está disponible
       if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
         message += `📥 Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
       }
     } else {
       // Compra o alerta sin venta
-      message += `💰 Precio: ${priceDisplay}\n`;
+      message += `\n💰 Precio: ${priceDisplay}\n`;
+      
+      // ✅ CORREGIDO: Mostrar Take Profit y Stop Loss INMEDIATAMENTE después del precio para COMPRAS
+      if (action === 'BUY') {
+        // Convertir a número si es string
+        const takeProfitNum = typeof alert.takeProfit === 'string' ? parseFloat(alert.takeProfit) : alert.takeProfit;
+        const stopLossNum = typeof alert.stopLoss === 'string' ? parseFloat(alert.stopLoss) : alert.stopLoss;
+        
+        if (takeProfitNum != null && !isNaN(takeProfitNum) && takeProfitNum > 0) {
+          message += `🎯 Take Profit: $${takeProfitNum.toFixed(2)}\n`;
+        }
+        if (stopLossNum != null && !isNaN(stopLossNum) && stopLossNum > 0) {
+          message += `🛑 Stop Loss: $${stopLossNum.toFixed(2)}\n`;
+        }
+      }
+    }
+    
+    // ✅ Mostrar liquidez DESPUÉS del Take Profit y Stop Loss
+    if (options?.liquidityPercentage) {
+      message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;
     }
     
     // ✅ Mostrar profit/loss genérico solo si NO es una venta con porcentaje (ya se mostró arriba)
@@ -163,20 +183,6 @@ function formatAlertMessage(alert: IAlert, options?: {
         const profitEmoji = options.profitLoss >= 0 ? '💰' : '📉';
         message += `${profitEmoji} Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
       }
-    }
-    
-    // ✅ NUEVO: Mostrar Take Profit y Stop Loss solo en notificaciones de COMPRA
-    if (action === 'BUY') {
-      if (alert.takeProfit != null && !isNaN(alert.takeProfit) && alert.takeProfit > 0) {
-        message += `🎯 Take Profit: $${alert.takeProfit.toFixed(2)}\n`;
-      }
-      if (alert.stopLoss != null && !isNaN(alert.stopLoss) && alert.stopLoss > 0) {
-        message += `🛑 Stop Loss: $${alert.stopLoss.toFixed(2)}\n`;
-      }
-    }
-    
-    if (options?.liquidityPercentage) {
-      message += `💧 Liquidez: ${options.liquidityPercentage}%\n`;
     }
     
     if (alert.analysis && !options?.message) {
