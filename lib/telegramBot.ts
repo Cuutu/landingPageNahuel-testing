@@ -314,18 +314,11 @@ export async function sendAlertToTelegram(
 /**
  * Formatea el mensaje de un informe para Telegram (solo título y link)
  */
-function formatReportMessage(report: any): string {
+function formatReportMessage(report: any, reportUrl: string): string {
   // Mapear categoría a nombre del servicio
   const serviceType = report.category === 'smart-money' ? 'SmartMoney' : 
                       report.category === 'trader-call' ? 'TraderCall' : 
                       'General';
-  
-  // Obtener ID del informe
-  const reportId = report._id?.toString() || report.id?.toString();
-  
-  // Construir URL del informe usando NEXTAUTH_URL
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
-  const reportUrl = `${baseUrl}/reports/${reportId}`;
   
   // Construir mensaje simple con título y link
   let message = `📰 *Nuevo Informe ${serviceType}*\n\n`;
@@ -366,14 +359,31 @@ export async function sendReportToTelegram(report: any): Promise<boolean> {
       return false;
     }
 
-    // Formatear mensaje
-    const message = formatReportMessage(report);
+    // ✅ CORREGIDO: Obtener ID del informe de múltiples formas posibles
+    const reportId = report._id?.toString() || 
+                     report.id?.toString() || 
+                     report._id || 
+                     report.id;
+    
+    if (!reportId) {
+      console.error('❌ [TELEGRAM] No se pudo obtener el ID del informe:', {
+        has_id: !!report.id,
+        has__id: !!report._id,
+        report_keys: Object.keys(report)
+      });
+      return false;
+    }
 
-    // ✅ NUEVO: Crear botón inline para ir al informe
+    // ✅ CORREGIDO: Construir URL del informe correctamente
     const baseUrl = process.env.NEXTAUTH_URL || 'https://lozanonahuel.com';
-    const reportId = report._id?.toString() || report.id?.toString();
     const reportUrl = `${baseUrl}/reports/${reportId}`;
     
+    console.log(`🔗 [TELEGRAM] URL del informe construida: ${reportUrl} (ID: ${reportId})`);
+
+    // Formatear mensaje con el URL correcto
+    const message = formatReportMessage(report, reportUrl);
+    
+    // ✅ NUEVO: Crear botón inline para ir al informe
     const inlineKeyboard = [
       [
         {
