@@ -50,46 +50,81 @@ const checkCookiesEnabled = (): boolean => {
  * Redirige automáticamente a Google OAuth para evitar problemas con CSRF
  */
 export default function SignInPage({ providers, csrfToken, callbackUrl }: SignInProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Empezar en loading para auto-redirect
   const [error, setError] = useState<string | null>(null);
   const [cookieWarning, setCookieWarning] = useState<boolean>(false);
   const [isBrave, setIsBrave] = useState<boolean>(false);
+  const [showManualButton, setShowManualButton] = useState<boolean>(false);
   const hasAttemptedRef = React.useRef(false);
+  const autoRedirectAttemptedRef = React.useRef(false);
 
-  // ✅ MEJORADO: Detectar problemas de cookies y navegador Brave
+  // ✅ MEJORADO: Auto-redirect a Google OAuth si las cookies funcionan
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      // Detectar Brave
-      const brave = isBraveBrowser();
-      setIsBrave(brave);
+    if (typeof window === 'undefined') return;
+    if (autoRedirectAttemptedRef.current) return; // Solo intentar una vez
+    
+    // Detectar Brave
+    const brave = isBraveBrowser();
+    setIsBrave(brave);
+    
+    // Verificar cookies
+    const cookiesOk = checkCookiesEnabled();
+    
+    // Verificar errores en URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam) {
+      // Si hay error, mostrar botón manual
+      console.log('⚠️ [SIGNIN] Error detectado en URL:', errorParam);
+      autoRedirectAttemptedRef.current = true;
+      setIsLoading(false);
+      setShowManualButton(true);
       
-      // Verificar cookies
-      const cookiesOk = checkCookiesEnabled();
-      if (!cookiesOk || brave) {
-        // En Brave, siempre mostrar advertencia porque Shields puede bloquear cookies de terceros
+      if (errorParam === 'OAuthAccountNotLinked') {
+        setError('Esta cuenta de Google ya está vinculada a otro usuario.');
+      } else if (errorParam === 'OAuthCallback') {
+        setError('Error en la autenticación con Google. Intenta nuevamente.');
+      } else if (errorParam === 'Callback') {
+        setError('Error de autenticación. Si usás Brave u otro navegador con bloqueo de cookies, seguí las instrucciones abajo.');
         setCookieWarning(true);
+      } else {
+        setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
       }
-      
-      // Verificar errores en URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const errorParam = urlParams.get('error');
-      if (errorParam) {
-        console.log('⚠️ [SIGNIN] Error detectado en URL:', errorParam);
-        if (errorParam === 'OAuthAccountNotLinked') {
-          setError('Esta cuenta de Google ya está vinculada a otro usuario.');
-        } else if (errorParam === 'OAuthCallback') {
-          setError('Error en la autenticación con Google. Intenta nuevamente.');
-        } else if (errorParam === 'Callback') {
-          // Error común cuando las cookies están bloqueadas
-          setError('Error de autenticación. Si usás Brave u otro navegador con bloqueo de cookies, seguí las instrucciones abajo.');
-          setCookieWarning(true);
-        } else {
-          setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
-        }
-        setIsLoading(false);
-      }
+      return;
     }
-  }, []);
+    
+    // Si es Brave o cookies bloqueadas, mostrar advertencia y botón manual
+    if (!cookiesOk || brave) {
+      console.log('⚠️ [SIGNIN] Cookies bloqueadas o Brave detectado, mostrando botón manual');
+      setCookieWarning(true);
+      setIsLoading(false);
+      setShowManualButton(true);
+      autoRedirectAttemptedRef.current = true;
+      return;
+    }
+    
+    // ✅ AUTO-REDIRECT: Si las cookies funcionan y no hay errores, redirigir automáticamente
+    if (!hasAttemptedRef.current) {
+      console.log('🚀 [SIGNIN] Auto-redirect a Google OAuth...');
+      hasAttemptedRef.current = true;
+      autoRedirectAttemptedRef.current = true;
+      
+      // Pequeño delay para que el usuario vea la pantalla de carga
+      setTimeout(() => {
+        signIn('google', { 
+          callbackUrl: callbackUrl || '/',
+          redirect: true
+        }).catch((err) => {
+          console.error('❌ [SIGNIN] Error en auto-redirect:', err);
+          setError('Error al conectar con Google. Hacé clic en el botón para intentar nuevamente.');
+          setIsLoading(false);
+          setShowManualButton(true);
+          hasAttemptedRef.current = false;
+        });
+      }, 500);
+    }
+  }, [callbackUrl]);
 
   // Fallback manual por si falla la redirección automática
   const handleManualSignIn = () => {
@@ -136,11 +171,11 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
             Iniciar Sesión
           </h1>
 
-          {isLoading ? (
+          {isLoading && !showManualButton ? (
             <div className={styles.loadingContainer}>
               <div className={styles.spinner}></div>
               <p className={styles.loadingText}>
-                Conectando con Google...
+                Redirigiendo a Google...
               </p>
             </div>
           ) : (
@@ -150,31 +185,33 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
                   <p className={styles.errorText}>{error}</p>
                 </div>
               )}
-              <button 
-                onClick={handleManualSignIn}
-                className={styles.googleButton}
-                disabled={isLoading}
-              >
-                <svg className={styles.googleIcon} viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                  />
-                </svg>
-                Iniciar sesión con Google
-              </button>
+              {showManualButton && (
+                <button 
+                  onClick={handleManualSignIn}
+                  className={styles.googleButton}
+                  disabled={isLoading}
+                >
+                  <svg className={styles.googleIcon} viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                    />
+                  </svg>
+                  Iniciar sesión con Google
+                </button>
+              )}
             </div>
           )}
 

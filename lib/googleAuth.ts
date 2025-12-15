@@ -21,9 +21,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ✅ CORREGIDO: Usar el endpoint nativo de NextAuth para signin
-    // Esto evita problemas con la página personalizada que requería clic manual
-    // signIn: '/auth/signin', // ❌ Deshabilitado - usamos /api/auth/signin nativo
+    // ✅ HABILITADO: Usar página personalizada que maneja mejor cookies bloqueadas
+    // y muestra instrucciones claras para navegadores como Brave
+    signIn: '/auth/signin',
     error: '/auth/error',
     signOut: '/',
   },
