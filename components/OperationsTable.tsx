@@ -401,9 +401,25 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       return 'A confirmar';
     }
     
+    // ✅ CORREGIDO: Si NO tiene priceRange, NO puede estar "A confirmar"
+    // Solo las operaciones con rango pendiente de confirmar deben mostrar "A confirmar"
+    if (!hasValidPriceRange) {
+      // Si no tiene rango, continuar con la lógica normal de la alerta
+      // No retornar "A confirmar" por defecto
+    }
+    
     if (!operation.alert) {
-      // Si no hay información de la alerta, retornar "A confirmar" por defecto
-      return 'A confirmar';
+      // ✅ CORREGIDO: Si no hay alerta pero tiene precio fijo, no es "A confirmar"
+      // Solo retornar "A confirmar" si realmente hay algo que confirmar
+      if (hasValidPriceRange && operation.isPriceConfirmed !== true) {
+        return 'A confirmar';
+      }
+      // Si no hay alerta y no hay rango, usar lógica por defecto basada en el status
+      if (operation.status === 'COMPLETED') return 'Completado';
+      if (operation.status === 'CANCELLED') return 'Cancelado';
+      if (operation.status === 'PENDING') return 'Pendiente';
+      // Por defecto, si no hay información suficiente, mostrar "Ejecutada" en lugar de "A confirmar"
+      return 'Ejecutada';
     }
 
     const alert = operation.alert;
@@ -461,16 +477,20 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       }
     }
 
-    // 3. "A confirmar": Alertas vigentes (status === 'ACTIVE' && availableForPurchase === true)
-    // Estas son las alertas que aparecen en "Alertas vigentes"
-    // NOTA: Solo llegamos aquí si NO se cumplió la condición de "Ejecutada" anterior
-    // (es decir, son del día actual y NO tienen finalPriceSetAt)
-    if (alert.status === 'ACTIVE' && alert.availableForPurchase === true) {
+    // 3. "A confirmar": SOLO si tiene rango de precio pendiente de confirmar
+    // ✅ CORREGIDO: No mostrar "A confirmar" solo por ser alerta activa
+    // Solo mostrar "A confirmar" si realmente hay un priceRange sin confirmar
+    if (hasValidPriceRange && operation.isPriceConfirmed !== true) {
       return 'A confirmar';
     }
+    
+    // Si la alerta está activa pero NO tiene rango pendiente, es "Ejecutada"
+    if (alert.status === 'ACTIVE') {
+      return 'Ejecutada';
+    }
 
-    // Por defecto, si no cumple ninguna condición, es "A confirmar"
-    return 'A confirmar';
+    // Por defecto, si no cumple ninguna condición, es "Ejecutada" (no "A confirmar")
+    return 'Ejecutada';
   };
 
   // ✅ NUEVO: Función para obtener el color del estado
