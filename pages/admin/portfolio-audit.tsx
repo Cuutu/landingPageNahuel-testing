@@ -52,6 +52,7 @@ interface AlertDetail {
   realizedProfitLoss?: number;
   soldShares?: number;
   participationPercentage?: number;
+  liquidityPercentage?: number; // ✅ NUEVO: Porcentaje de liquidez asignado al crear
   calculatedPL?: number;
   calculatedPLPercentage?: number;
   priceSource: string;
@@ -363,9 +364,12 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               </div>
                             </td>
                             <td>
-                              {alert.shares !== undefined && alert.shares !== null && alert.shares > 0
-                                ? alert.shares.toFixed(4)
-                                : 'N/A'}
+                              {/* Solo mostrar shares si hay liquidez asignada */}
+                              {alert.status === 'CLOSED' && (alert.participationPercentage === 0 || alert.participationPercentage === undefined || alert.participationPercentage === null)
+                                ? 'N/A'
+                                : (alert.shares !== undefined && alert.shares !== null && alert.shares > 0
+                                    ? alert.shares.toFixed(4)
+                                    : 'N/A')}
                               {alert.soldShares && alert.soldShares > 0 && (
                                 <div className={styles.priceNote}>
                                   vendidas: {alert.soldShares.toFixed(4)}
@@ -375,8 +379,8 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                             <td>
                               {alert.status === 'CLOSED' 
                                 ? 'N/A'
-                                : (alert.participationPercentage !== undefined && alert.participationPercentage !== null && alert.participationPercentage > 0
-                                    ? `${alert.participationPercentage.toFixed(2)}%`
+                                : (alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null && alert.liquidityPercentage > 0
+                                    ? `${alert.liquidityPercentage.toFixed(2)}%`
                                     : 'N/A')}
                               {alert.status !== 'CLOSED' && alert.allocatedAmount && alert.allocatedAmount > 0 && (
                                 <div className={styles.priceNote}>

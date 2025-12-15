@@ -199,12 +199,12 @@ export default async function handler(
       // ✅ CORREGIDO: Obtener allocatedAmount de la distribución, o calcularlo desde participationPercentage
       let allocatedAmount = distribution?.allocatedAmount || 0;
       
+      // Obtener participationPercentage de múltiples fuentes
+      const participationPercentage = distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0;
+      
       // Si no hay allocatedAmount en la distribución pero hay participationPercentage y liquidez total, calcularlo
-      if (allocatedAmount === 0 && totalLiquidity > 0) {
-        const participationPercentage = distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0;
-        if (participationPercentage > 0) {
-          allocatedAmount = (totalLiquidity * participationPercentage) / 100;
-        }
+      if (allocatedAmount === 0 && totalLiquidity > 0 && participationPercentage > 0) {
+        allocatedAmount = (totalLiquidity * participationPercentage) / 100;
       }
       
       // ✅ CORREGIDO: Obtener shares de múltiples fuentes
@@ -215,18 +215,29 @@ export default async function handler(
       let shares = distribution?.shares || 0;
       
       // Si no hay shares en la distribución, buscar en liquidityData
-      if (shares === 0 && alert.liquidityData?.shares) {
+      if (shares === 0 && alert.liquidityData?.shares && alert.liquidityData.shares > 0) {
         shares = alert.liquidityData.shares;
       }
       
       // Si aún no hay shares, intentar con originalShares
-      if (shares === 0 && alert.liquidityData?.originalShares) {
+      if (shares === 0 && alert.liquidityData?.originalShares && alert.liquidityData.originalShares > 0) {
         shares = alert.liquidityData.originalShares;
       }
       
-      // Si aún no hay shares pero hay allocatedAmount y entryPrice, calcular
+      // ✅ MEJORADO: Si aún no hay shares pero hay allocatedAmount y entryPrice válidos, calcular
+      // Esto es especialmente importante para alertas activas con participación pero sin distribución completa
       if (shares === 0 && allocatedAmount > 0 && entryPrice > 0) {
         shares = allocatedAmount / entryPrice;
+      }
+      
+      // ✅ NUEVO: Si aún no hay shares pero hay participationPercentage y entryPrice, intentar calcular desde la liquidez total
+      // Esto cubre casos donde la alerta tiene participación pero no se ha creado la distribución aún
+      if (shares === 0 && participationPercentage > 0 && entryPrice > 0 && totalLiquidity > 0) {
+        const calculatedAllocatedAmount = (totalLiquidity * participationPercentage) / 100;
+        if (calculatedAllocatedAmount > 0) {
+          shares = calculatedAllocatedAmount / entryPrice;
+          allocatedAmount = calculatedAllocatedAmount; // Actualizar también allocatedAmount para consistencia
+        }
       }
       
       // Para alertas cerradas, si shares es 0 pero hay soldShares, usar soldShares como referencia
@@ -277,6 +288,7 @@ export default async function handler(
         realizedProfitLoss: distribution?.realizedProfitLoss || 0,
         soldShares: distribution?.soldShares || 0,
         participationPercentage: distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0,
+        liquidityPercentage: alert.liquidityPercentage || 0, // ✅ NUEVO: Porcentaje de liquidez asignado al crear
         calculatedPL,
         calculatedPLPercentage,
         priceSource: alert.currentPrice ? 'database' : 'calculated'
