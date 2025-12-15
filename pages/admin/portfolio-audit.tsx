@@ -530,6 +530,25 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
 }
 
 export const getServerSideProps = async (context: any) => {
-  return await verifyAdminAccess(context);
+  const result = await verifyAdminAccess(context);
+  
+  // Si hay redirección, retornar redirect
+  if (result.redirectTo) {
+    return {
+      redirect: {
+        destination: result.redirectTo,
+        permanent: false
+      }
+    };
+  }
+  
+  // Retornar props anidadas correctamente
+  return {
+    props: {
+      isAdmin: result.isAdmin,
+      user: result.user || null,
+      session: result.session || null
+    }
+  };
 };
 
