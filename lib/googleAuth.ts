@@ -26,9 +26,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ✅ Usar página personalizada que ejecuta signIn('google') del cliente
-    // Esto funciona en TODOS los navegadores (incluyendo Safari, Brave, etc.)
-    signIn: '/auth/signin',
+    // ✅ Usar página por defecto de NextAuth para signin
+    // La página por defecto tiene un formulario HTML que funciona en TODOS los navegadores
+    // signIn: '/auth/signin', // DESHABILITADO - causa loops en algunos navegadores
     error: '/auth/error',
     signOut: '/',
   },
