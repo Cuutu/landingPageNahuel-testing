@@ -7,6 +7,8 @@ export default function Document() {
         {/* ✅ OPTIMIZADO: Preconnect a Google Fonts para reducir latencia */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* ✅ OPTIMIZADO: Preconnect a DoubleClick para reducir latencia de anuncios */}
+        <link rel="preconnect" href="https://static.doubleclick.net" crossOrigin="anonymous" />
         
         {/* ✅ OPTIMIZADO: Cargar fuentes con font-display: swap para no bloquear renderización */}
         {/* Las fuentes se cargan de forma asíncrona y no bloquean el renderizado inicial */}

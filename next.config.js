@@ -8,7 +8,7 @@ const nextConfig = {
     formats: ['image/webp', 'image/avif'], // ✅ Optimización: Formato moderno
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // ✅ Tamaños optimizados
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // ✅ Tamaños de iconos optimizados
-    minimumCacheTTL: 60, // ✅ Cache mínimo de imágenes
+    minimumCacheTTL: 31536000, // ✅ Cache de 1 año para imágenes optimizadas
   },
   // Transpile react-hot-toast para solucionar problemas de ES modules
   transpilePackages: ['react-hot-toast'],
@@ -114,14 +114,14 @@ const nextConfig = {
           },
         ],
       },
-      // ✅ Archivos públicos (logos, imágenes, videos): Cache de 1 semana con revalidación
+      // ✅ Archivos públicos (logos, imágenes, videos): Cache de 1 año con revalidación
       {
         source: '/logos/:path*',
         headers: [
           ...securityHeaders,
           {
             key: 'Cache-Control',
-            value: 'public, max-age=604800, stale-while-revalidate=86400',
+            value: 'public, max-age=31536000, stale-while-revalidate=86400, immutable',
           },
         ],
       },
@@ -131,7 +131,7 @@ const nextConfig = {
           ...securityHeaders,
           {
             key: 'Cache-Control',
-            value: 'public, max-age=604800, stale-while-revalidate=86400',
+            value: 'public, max-age=31536000, stale-while-revalidate=86400, immutable',
           },
         ],
       },
