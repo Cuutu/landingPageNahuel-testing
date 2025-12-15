@@ -223,7 +223,7 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
                     <li>Abrí la configuración de tu navegador</li>
                     <li>Buscá la sección de &quot;Cookies&quot; o &quot;Privacidad&quot;</li>
                     <li>Agregá <strong>lozanonahuel.com</strong> a los sitios permitidos</li>
-                    <li>Recargá la página e intentá de nuevo</li>
+                    <li>Recargá la página e intentá de nuevo</li> 
                   </>
                 )}
               </ol>
