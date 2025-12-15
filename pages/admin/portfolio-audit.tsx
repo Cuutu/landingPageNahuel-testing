@@ -363,7 +363,9 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               </div>
                             </td>
                             <td>
-                              {alert.shares ? alert.shares.toFixed(4) : 'N/A'}
+                              {alert.shares !== undefined && alert.shares !== null && alert.shares > 0
+                                ? alert.shares.toFixed(4)
+                                : 'N/A'}
                               {alert.soldShares && alert.soldShares > 0 && (
                                 <div className={styles.priceNote}>
                                   vendidas: {alert.soldShares.toFixed(4)}
@@ -371,10 +373,12 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               )}
                             </td>
                             <td>
-                              {alert.participationPercentage !== undefined && alert.participationPercentage !== null
-                                ? `${alert.participationPercentage.toFixed(2)}%`
-                                : 'N/A'}
-                              {alert.allocatedAmount && (
+                              {alert.status === 'CLOSED' 
+                                ? 'N/A'
+                                : (alert.participationPercentage !== undefined && alert.participationPercentage !== null && alert.participationPercentage > 0
+                                    ? `${alert.participationPercentage.toFixed(2)}%`
+                                    : 'N/A')}
+                              {alert.status !== 'CLOSED' && alert.allocatedAmount && alert.allocatedAmount > 0 && (
                                 <div className={styles.priceNote}>
                                   {formatCurrency(alert.allocatedAmount)}
                                 </div>
@@ -392,6 +396,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                             </td>
                             <td>
                               <button
+                                type="button"
                                 className={`${styles.sourceButton} ${
                                   alert.priceSource === 'database' 
                                     ? styles.sourceDatabase 
@@ -400,7 +405,9 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 title={alert.priceSource === 'database' 
                                   ? 'Precio desde base de datos' 
                                   : 'Precio calculado'}
-                                onClick={() => {
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
                                   if (alert.priceSource === 'database') {
                                     toast.success('Precio obtenido desde la base de datos');
                                   } else {

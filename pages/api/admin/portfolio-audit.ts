@@ -191,7 +191,12 @@ export default async function handler(
       const entryPrice = distribution?.entryPrice || alert.entryPriceRange?.min || alert.entryPrice || 0;
       const currentPrice = alert.currentPrice || entryPrice;
       const allocatedAmount = distribution?.allocatedAmount || 0;
-      const shares = distribution?.shares || 0;
+      // ✅ CORREGIDO: Obtener shares de la distribución, incluso si la alerta está cerrada
+      // Si no hay distribución, calcular shares basado en allocatedAmount y entryPrice
+      let shares = distribution?.shares || 0;
+      if (shares === 0 && allocatedAmount > 0 && entryPrice > 0) {
+        shares = allocatedAmount / entryPrice;
+      }
       
       // Calcular P&L
       let calculatedPL = 0;
