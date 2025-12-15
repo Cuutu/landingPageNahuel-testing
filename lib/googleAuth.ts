@@ -26,9 +26,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ✅ Usar página por defecto de NextAuth para signin
-    // La página por defecto tiene un formulario HTML que funciona en TODOS los navegadores
-    // signIn: '/auth/signin', // DESHABILITADO - causa loops en algunos navegadores
+    // ✅ Usar página personalizada (ahora funciona porque arreglamos el CSP)
+    signIn: '/auth/signin',
     error: '/auth/error',
     signOut: '/',
   },

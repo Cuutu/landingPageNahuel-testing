@@ -1,8 +1,8 @@
 import { GetServerSideProps } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
-import { signIn } from 'next-auth/react';
-import { useState } from 'react';
+import { signIn, getCsrfToken } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 
 interface SignInProps {
@@ -12,8 +12,15 @@ interface SignInProps {
 
 export default function SignInPage({ callbackUrl, error }: SignInProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const safeCallback = callbackUrl?.includes('/auth/signin') ? '/' : (callbackUrl || '/');
+
+  // Pre-cargar CSRF token cuando la página se monta
+  // Esto asegura que el primer clic funcione
+  useEffect(() => {
+    getCsrfToken().then(() => setIsReady(true));
+  }, []);
 
   const handleGoogleSignIn = () => {
     setIsLoading(true);
