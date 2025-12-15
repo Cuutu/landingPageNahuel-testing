@@ -321,6 +321,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                         <th>Última Actualización</th>
                         <th>Cantidad (Shares)</th>
                         <th>% Liquidez Asignado</th>
+                        <th>% Participación</th>
                         <th>P&L %</th>
                         <th>Origen Precio</th>
                       </tr>
@@ -382,11 +383,16 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 : (alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null && alert.liquidityPercentage > 0
                                     ? `${alert.liquidityPercentage.toFixed(2)}%`
                                     : 'N/A')}
-                              {alert.status !== 'CLOSED' && alert.allocatedAmount && alert.allocatedAmount > 0 && (
+                              {alert.status !== 'CLOSED' && alert.allocatedAmount !== undefined && alert.allocatedAmount !== null && alert.allocatedAmount > 0 && (
                                 <div className={styles.priceNote}>
                                   {formatCurrency(alert.allocatedAmount)}
                                 </div>
                               )}
+                            </td>
+                            <td>
+                              {alert.participationPercentage !== undefined && alert.participationPercentage !== null && alert.participationPercentage > 0
+                                ? `${alert.participationPercentage.toFixed(2)}%`
+                                : 'N/A'}
                             </td>
                             <td>
                               <span className={
