@@ -318,9 +318,8 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                         <th>Precio Entrada</th>
                         <th>Precio Actual</th>
                         <th>Última Actualización</th>
-                        <th>Cantidad</th>
-                        <th>Monto Asignado</th>
-                        <th>P&L</th>
+                        <th>Cantidad (Shares)</th>
+                        <th>% Liquidez Asignado</th>
                         <th>P&L %</th>
                         <th>Origen Precio</th>
                       </tr>
@@ -372,24 +371,12 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               )}
                             </td>
                             <td>
-                              {alert.allocatedAmount ? formatCurrency(alert.allocatedAmount) : 'N/A'}
-                              {alert.participationPercentage && (
+                              {alert.participationPercentage !== undefined && alert.participationPercentage !== null
+                                ? `${alert.participationPercentage.toFixed(2)}%`
+                                : 'N/A'}
+                              {alert.allocatedAmount && (
                                 <div className={styles.priceNote}>
-                                  {alert.participationPercentage}% participación
-                                </div>
-                              )}
-                            </td>
-                            <td>
-                              <span className={
-                                (alert.calculatedPL || 0) >= 0 
-                                  ? styles.positiveValue 
-                                  : styles.negativeValue
-                              }>
-                                {formatCurrency(alert.calculatedPL || 0)}
-                              </span>
-                              {alert.realizedProfitLoss && alert.realizedProfitLoss > 0 && (
-                                <div className={styles.priceNote}>
-                                  realizado: {formatCurrency(alert.realizedProfitLoss)}
+                                  {formatCurrency(alert.allocatedAmount)}
                                 </div>
                               )}
                             </td>
@@ -404,14 +391,28 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               </span>
                             </td>
                             <td>
-                              <span className={
-                                alert.priceSource === 'database' 
-                                  ? styles.sourceDatabase 
-                                  : styles.sourceCalculated
-                              }>
+                              <button
+                                className={`${styles.sourceButton} ${
+                                  alert.priceSource === 'database' 
+                                    ? styles.sourceDatabase 
+                                    : styles.sourceCalculated
+                                }`}
+                                title={alert.priceSource === 'database' 
+                                  ? 'Precio desde base de datos' 
+                                  : 'Precio calculado'}
+                                onClick={() => {
+                                  if (alert.priceSource === 'database') {
+                                    toast.success('Precio obtenido desde la base de datos');
+                                  } else {
+                                    toast('Precio calculado (no disponible en BD)', {
+                                      icon: 'ℹ️'
+                                    });
+                                  }
+                                }}
+                              >
                                 <Database size={14} />
                                 {alert.priceSource === 'database' ? 'BD' : 'Calculado'}
-                              </span>
+                              </button>
                             </td>
                           </tr>
                         );

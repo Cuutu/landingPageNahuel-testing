@@ -234,7 +234,7 @@ export default async function handler(
         entryPriceFromDistribution: distribution?.entryPrice,
         realizedProfitLoss: distribution?.realizedProfitLoss || 0,
         soldShares: distribution?.soldShares || 0,
-        participationPercentage: alert.participationPercentage || alert.originalParticipationPercentage || 100,
+        participationPercentage: distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0,
         calculatedPL,
         calculatedPLPercentage,
         priceSource: alert.currentPrice ? 'database' : 'calculated'
