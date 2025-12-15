@@ -20,130 +20,54 @@ interface SignInProps {
 }
 
 /**
- * Detecta si el navegador es Brave
- */
-const isBraveBrowser = (): boolean => {
-  if (typeof window === 'undefined') return false;
-  return (navigator as any).brave !== undefined;
-};
-
-/**
- * Verifica si las cookies están habilitadas
- */
-const checkCookiesEnabled = (): boolean => {
-  if (typeof document === 'undefined') return true;
-  
-  try {
-    // Intentar crear una cookie de prueba
-    document.cookie = 'cookietest=1; SameSite=Lax';
-    const cookiesEnabled = document.cookie.indexOf('cookietest=') !== -1;
-    // Eliminar la cookie de prueba
-    document.cookie = 'cookietest=1; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
-    return cookiesEnabled;
-  } catch {
-    return false;
-  }
-};
-
-/**
  * Página de inicio de sesión personalizada
- * Redirige automáticamente a Google OAuth para evitar problemas con CSRF
+ * SIEMPRE redirige automáticamente a Google OAuth
  */
 export default function SignInPage({ providers, csrfToken, callbackUrl }: SignInProps) {
-  const [isLoading, setIsLoading] = useState(true); // Empezar en loading para auto-redirect
   const [error, setError] = useState<string | null>(null);
-  const [cookieWarning, setCookieWarning] = useState<boolean>(false);
-  const [isBrave, setIsBrave] = useState<boolean>(false);
-  const [showManualButton, setShowManualButton] = useState<boolean>(false);
   const hasAttemptedRef = React.useRef(false);
-  const autoRedirectAttemptedRef = React.useRef(false);
 
-  // ✅ MEJORADO: Auto-redirect a Google OAuth si las cookies funcionan
+  // ✅ SIEMPRE auto-redirect a Google OAuth
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (autoRedirectAttemptedRef.current) return; // Solo intentar una vez
-    
-    // Detectar Brave
-    const brave = isBraveBrowser();
-    setIsBrave(brave);
-    
-    // Verificar cookies
-    const cookiesOk = checkCookiesEnabled();
+    if (hasAttemptedRef.current) return; // Solo intentar una vez
     
     // Verificar errores en URL
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
     
     if (errorParam) {
-      // Si hay error, mostrar botón manual
       console.log('⚠️ [SIGNIN] Error detectado en URL:', errorParam);
-      autoRedirectAttemptedRef.current = true;
-      setIsLoading(false);
-      setShowManualButton(true);
+      hasAttemptedRef.current = true;
       
       if (errorParam === 'OAuthAccountNotLinked') {
         setError('Esta cuenta de Google ya está vinculada a otro usuario.');
-      } else if (errorParam === 'OAuthCallback') {
-        setError('Error en la autenticación con Google. Intenta nuevamente.');
-      } else if (errorParam === 'Callback') {
-        setError('Error de autenticación. Si usás Brave u otro navegador con bloqueo de cookies, seguí las instrucciones abajo.');
-        setCookieWarning(true);
+      } else if (errorParam === 'OAuthCallback' || errorParam === 'Callback') {
+        setError('Error en la autenticación. Intentando nuevamente...');
+        // Reintentar automáticamente después de un error
+        setTimeout(() => {
+          hasAttemptedRef.current = false;
+          window.location.reload();
+        }, 2000);
       } else {
-        setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
+        setError('Error al iniciar sesión. Redirigiendo...');
+        setTimeout(() => {
+          hasAttemptedRef.current = false;
+          window.location.reload();
+        }, 2000);
       }
       return;
     }
     
-    // Si es Brave o cookies bloqueadas, mostrar advertencia y botón manual
-    if (!cookiesOk || brave) {
-      console.log('⚠️ [SIGNIN] Cookies bloqueadas o Brave detectado, mostrando botón manual');
-      setCookieWarning(true);
-      setIsLoading(false);
-      setShowManualButton(true);
-      autoRedirectAttemptedRef.current = true;
-      return;
-    }
-    
-    // ✅ AUTO-REDIRECT: Si las cookies funcionan y no hay errores, redirigir automáticamente
-    if (!hasAttemptedRef.current) {
-      console.log('🚀 [SIGNIN] Auto-redirect a Google OAuth...');
-      hasAttemptedRef.current = true;
-      autoRedirectAttemptedRef.current = true;
-      
-      // Pequeño delay para que el usuario vea la pantalla de carga
-      setTimeout(() => {
-        signIn('google', { 
-          callbackUrl: callbackUrl || '/',
-          redirect: true
-        }).catch((err) => {
-          console.error('❌ [SIGNIN] Error en auto-redirect:', err);
-          setError('Error al conectar con Google. Hacé clic en el botón para intentar nuevamente.');
-          setIsLoading(false);
-          setShowManualButton(true);
-          hasAttemptedRef.current = false;
-        });
-      }, 500);
-    }
-  }, [callbackUrl]);
-
-  // Fallback manual por si falla la redirección automática
-  const handleManualSignIn = () => {
-    if (hasAttemptedRef.current && isLoading) return; // Evitar múltiples clicks
-    
-    setIsLoading(true);
-    setError(null);
+    // ✅ AUTO-REDIRECT INMEDIATO a Google OAuth
+    console.log('🚀 [SIGNIN] Auto-redirect a Google OAuth...');
     hasAttemptedRef.current = true;
     
     signIn('google', { 
       callbackUrl: callbackUrl || '/',
       redirect: true
-    }).catch((err) => {
-      console.error('Error en signin manual:', err);
-      setError('Error al conectar con Google. Por favor, intenta nuevamente.');
-      setIsLoading(false);
-      hasAttemptedRef.current = false; // Permitir reintento
     });
-  };
+  }, [callbackUrl]);
 
   return (
     <>
@@ -168,111 +92,27 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
           </div>
 
           <h1 className={styles.title}>
-            Iniciar Sesión
+            {error ? 'Error' : 'Iniciando sesión'}
           </h1>
 
-          {isLoading && !showManualButton ? (
-            <div className={styles.loadingContainer}>
-              <div className={styles.spinner}></div>
-              <p className={styles.loadingText}>
-                Redirigiendo a Google...
-              </p>
-            </div>
-          ) : (
-            <div className={styles.buttonContainer}>
-              {error && (
-                <div className={styles.errorContainer}>
-                  <p className={styles.errorText}>{error}</p>
-                </div>
-              )}
-              {showManualButton && (
-                <button 
-                  onClick={handleManualSignIn}
-                  className={styles.googleButton}
-                  disabled={isLoading}
-                >
-                  <svg className={styles.googleIcon} viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  Iniciar sesión con Google
-                </button>
-              )}
-            </div>
-          )}
+          <div className={styles.loadingContainer}>
+            {error ? (
+              <div className={styles.errorContainer}>
+                <p className={styles.errorText}>{error}</p>
+              </div>
+            ) : (
+              <>
+                <div className={styles.spinner}></div>
+                <p className={styles.loadingText}>
+                  Redirigiendo a Google...
+                </p>
+              </>
+            )}
+          </div>
 
           <p className={styles.securityNote}>
             🔒 Conexión segura con Google
           </p>
-
-          {/* Advertencia para navegadores con cookies bloqueadas */}
-          {cookieWarning && (
-            <motion.div
-              className={styles.cookieWarning}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className={styles.warningHeader}>
-                {isBrave ? (
-                  <>
-                    <span className={styles.braveIcon}>🦁</span>
-                    <strong>¿Usás Brave?</strong>
-                  </>
-                ) : (
-                  <>
-                    <span>🍪</span>
-                    <strong>Problema con cookies</strong>
-                  </>
-                )}
-              </div>
-              
-              <p className={styles.warningText}>
-                {isBrave 
-                  ? 'Brave Shields puede bloquear el inicio de sesión. Para solucionarlo:'
-                  : 'Las cookies están bloqueadas en tu navegador. Para iniciar sesión:'}
-              </p>
-              
-              <ol className={styles.warningSteps}>
-                {isBrave ? (
-                  <>
-                    <li>Hacé clic en el <strong>ícono del león 🦁</strong> en la barra de direcciones</li>
-                    <li>Cambiá <strong>&quot;Block cross-site cookies&quot;</strong> a <strong>&quot;Allow all cookies&quot;</strong></li>
-                    <li>O desactivá Shields temporalmente para este sitio</li>
-                    <li>Recargá la página e intentá de nuevo</li>
-                  </>
-                ) : (
-                  <>
-                    <li>Abrí la configuración de tu navegador</li>
-                    <li>Buscá la sección de &quot;Cookies&quot; o &quot;Privacidad&quot;</li>
-                    <li>Agregá <strong>lozanonahuel.com</strong> a los sitios permitidos</li>
-                    <li>Recargá la página e intentá de nuevo</li> 
-                  </>
-                )}
-              </ol>
-
-              <button 
-                onClick={() => window.location.reload()}
-                className={styles.reloadButton}
-              >
-                🔄 Recargar página
-              </button>
-            </motion.div>
-          )}
         </motion.div>
       </div>
     </>
@@ -331,4 +171,5 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
 };
+
 
