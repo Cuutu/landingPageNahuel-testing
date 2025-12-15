@@ -21,9 +21,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ✅ HABILITADO: Usar página personalizada que maneja mejor cookies bloqueadas
-    // y muestra instrucciones claras para navegadores como Brave
-    signIn: '/auth/signin',
+    // ❌ NO usar página personalizada - causa loops de redirección
+    // NextAuth maneja el signin internamente y redirige directo a Google
+    // signIn: '/auth/signin',
     error: '/auth/error',
     signOut: '/',
   },

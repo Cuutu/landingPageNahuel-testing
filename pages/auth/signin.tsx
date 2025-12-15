@@ -3,11 +3,10 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 
 /**
- * Página de inicio de sesión - REDIRECCIÓN INSTANTÁNEA DESDE EL SERVIDOR
- * No renderiza nada, redirige directamente a Google OAuth
+ * Página de inicio de sesión - REDIRECCIÓN AL SIGNIN NATIVO DE NEXTAUTH
+ * Preserva el callbackUrl para volver después del login
  */
 export default function SignInPage() {
-  // Esta página nunca se renderiza - siempre redirige desde el servidor
   return null;
 }
 
@@ -25,7 +24,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       // Si falla, usar el valor original
     }
     
-    // Evitar bucles - si el callbackUrl es la misma página de signin, usar '/'
+    // Evitar bucles
     if (callbackUrl.includes('/auth/signin') || callbackUrl.includes('/api/auth/signin')) {
       callbackUrl = '/';
     }
@@ -40,21 +39,15 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    // ✅ REDIRECCIÓN INSTANTÁNEA: Ir directo al endpoint de OAuth de NextAuth
-    // Esto evita cargar React y hace la redirección desde el servidor
-    const baseUrl = process.env.NEXTAUTH_URL || `https://${context.req.headers.host}`;
-    const googleSignInUrl = `${baseUrl}/api/auth/signin/google?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-    
+    // ✅ Redirigir al signin nativo de NextAuth (no causa loops)
     return {
       redirect: {
-        destination: googleSignInUrl,
+        destination: `/api/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`,
         permanent: false,
       },
     };
   } catch (error) {
     console.error('💥 [SIGNIN] Error:', error);
-    
-    // En caso de error, ir al signin nativo de NextAuth
     return {
       redirect: {
         destination: '/api/auth/signin',
