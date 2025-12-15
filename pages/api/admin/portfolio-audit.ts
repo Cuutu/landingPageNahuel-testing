@@ -161,6 +161,7 @@ export default async function handler(
     const adminUser = await User.findOne({ role: 'admin' });
     let liquidityDocs: any[] = [];
     let liquidityDistributions: any[] = [];
+    let totalLiquidity = 0;
 
     if (adminUser) {
       liquidityDocs = await Liquidity.find({ 
@@ -171,6 +172,10 @@ export default async function handler(
       liquidityDocs.forEach((doc: any) => {
         if (doc.distributions && Array.isArray(doc.distributions)) {
           liquidityDistributions.push(...doc.distributions);
+        }
+        // ✅ NUEVO: Obtener liquidez total para calcular allocatedAmount desde participationPercentage
+        if (doc.totalLiquidity && doc.totalLiquidity > totalLiquidity) {
+          totalLiquidity = doc.totalLiquidity;
         }
       });
     }
@@ -190,7 +195,17 @@ export default async function handler(
       
       const entryPrice = distribution?.entryPrice || alert.entryPriceRange?.min || alert.entryPrice || 0;
       const currentPrice = alert.currentPrice || entryPrice;
-      const allocatedAmount = distribution?.allocatedAmount || 0;
+      
+      // ✅ CORREGIDO: Obtener allocatedAmount de la distribución, o calcularlo desde participationPercentage
+      let allocatedAmount = distribution?.allocatedAmount || 0;
+      
+      // Si no hay allocatedAmount en la distribución pero hay participationPercentage y liquidez total, calcularlo
+      if (allocatedAmount === 0 && totalLiquidity > 0) {
+        const participationPercentage = distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0;
+        if (participationPercentage > 0) {
+          allocatedAmount = (totalLiquidity * participationPercentage) / 100;
+        }
+      }
       
       // ✅ CORREGIDO: Obtener shares de múltiples fuentes
       // 1. Primero intentar desde la distribución (fuente principal)

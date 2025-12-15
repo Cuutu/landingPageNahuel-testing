@@ -413,13 +413,30 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                   e.preventDefault();
                                   e.stopPropagation();
                                   console.log('🔘 Botón de origen precio clickeado:', alert.priceSource);
+                                  
+                                  // Verificar que toast esté disponible
+                                  if (typeof toast === 'undefined' || !toast) {
+                                    console.error('Toast no está disponible');
+                                    window.alert(alert.priceSource === 'database' 
+                                      ? 'Precio obtenido desde la base de datos' 
+                                      : 'Precio calculado (no disponible en BD)');
+                                    return;
+                                  }
+                                  
                                   try {
                                     if (alert.priceSource === 'database') {
-                                      toast.success('Precio obtenido desde la base de datos');
-                                    } else {
-                                      toast('Precio calculado (no disponible en BD)', {
-                                        icon: 'ℹ️'
+                                      const toastId = toast.success('Precio obtenido desde la base de datos', {
+                                        duration: 3000,
+                                        position: 'top-right'
                                       });
+                                      console.log('Toast success llamado, ID:', toastId);
+                                    } else {
+                                      const toastId = toast('Precio calculado (no disponible en BD)', {
+                                        icon: 'ℹ️',
+                                        duration: 3000,
+                                        position: 'top-right'
+                                      });
+                                      console.log('Toast info llamado, ID:', toastId);
                                     }
                                   } catch (error) {
                                     console.error('Error mostrando toast:', error);
