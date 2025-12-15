@@ -5,6 +5,10 @@ const nextConfig = {
   poweredByHeader: false, // 🔒 Deshabilitar el header X-Powered-By
   images: {
     domains: ['image.mux.com', 'lh3.googleusercontent.com'],
+    formats: ['image/webp', 'image/avif'], // ✅ Optimización: Formato moderno
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840], // ✅ Tamaños optimizados
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // ✅ Tamaños de iconos optimizados
+    minimumCacheTTL: 60, // ✅ Cache mínimo de imágenes
   },
   // Transpile react-hot-toast para solucionar problemas de ES modules
   transpilePackages: ['react-hot-toast'],

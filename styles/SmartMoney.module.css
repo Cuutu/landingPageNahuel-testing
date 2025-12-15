@@ -1011,6 +1011,99 @@
   .welcomeSubtitle {
     font-size: 1rem;
   }
+
+  /* ✅ OPTIMIZADO: Seguimiento de Alertas - Responsive móvil */
+  .seguimientoContent {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+
+  .seguimientoHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .sectionTitle {
+    font-size: 1.5rem;
+  }
+
+  .sectionDescription {
+    font-size: 0.9rem;
+  }
+
+  .chartControls {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .alertCard {
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .alertHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .alertSymbol {
+    font-size: 1.25rem;
+  }
+
+  .alertDetails {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .alertDetail {
+    width: 100%;
+  }
+
+  .alertDetail strong {
+    font-size: 1rem;
+    padding: 0.5rem;
+    min-height: auto;
+  }
+
+  /* ✅ OPTIMIZADO: Consultas/Comunidad - Mensajes más pequeños */
+  .comunidadContent {
+    padding: 1rem;
+    margin: 0.5rem;
+    height: auto;
+    min-height: 600px;
+    max-height: calc(100vh - 120px);
+  }
+
+  .chatMessage {
+    padding: 0.75rem;
+  }
+
+  .messageHeader {
+    margin-bottom: 0.5rem;
+  }
+
+  .messageContent {
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .userAvatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+
+  .userName {
+    font-size: 0.8rem;
+  }
+
+  .messageTime {
+    font-size: 0.7rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1034,6 +1127,30 @@
   
   .activityTime {
     min-width: auto;
+  }
+
+  /* ✅ OPTIMIZADO: Alertas más compactas en móviles pequeños */
+  .alertCard {
+    padding: 0.75rem;
+  }
+
+  .alertDetails {
+    padding: 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .alertDetail strong {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .comunidadContent {
+    padding: 0.75rem;
+    min-height: 500px;
+  }
+
+  .chatMessage {
+    padding: 0.5rem;
   }
 }
 

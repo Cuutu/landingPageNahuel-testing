@@ -45,6 +45,23 @@ const YouTubeAutoCarousel: React.FC<YouTubeAutoCarouselProps> = ({
     setCurrentVideo((prev) => (prev + 1) % videos.length);
   };
 
+  // ✅ OPTIMIZADO: Construir URL del video actual con parámetros optimizados
+  const buildVideoUrl = (videoId: string) => {
+    const params = new URLSearchParams({
+      rel: '0',
+      modestbranding: '1',
+      enablejsapi: '1',
+      origin: typeof window !== 'undefined' ? window.location.origin : ''
+    });
+    // ✅ No autoplay en móvil para mejor rendimiento
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    if (!isMobile) {
+      params.append('autoplay', '1');
+      params.append('mute', '1');
+    }
+    return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  };
+
   return (
     <div className={`${styles.youtubeAutoCarousel} ${className}`}>
       <button 
@@ -56,8 +73,10 @@ const YouTubeAutoCarousel: React.FC<YouTubeAutoCarouselProps> = ({
       </button>
       
       <div className={styles.youtubeVideoFrame}>
+        {/* ✅ OPTIMIZADO: Solo renderizar iframe del video activo */}
         <iframe
-          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          key={currentVideo} // ✅ Key force re-render cuando cambia el video
+          src={buildVideoUrl(videos[currentVideo].id)}
           title={videos[currentVideo].title}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

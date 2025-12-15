@@ -6,7 +6,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, TrendingUp, Users, Shield, Star, X, BookOpen, Clock, Award, ChevronLeft, Loader } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -186,13 +186,16 @@ const YouTubeAutoCarousel: React.FC = () => {
       </button>
       
       <div className={styles.youtubeVideoFrame}>
+        {/* ✅ OPTIMIZADO: Solo renderizar iframe del video activo con lazy loading */}
         <iframe
-          src={`https://www.youtube.com/embed/${videos[currentVideo].id}`}
+          key={currentVideo} // ✅ Key force re-render cuando cambia el video
+          src={`https://www.youtube.com/embed/${videos[currentVideo].id}?rel=0&modestbranding=1${typeof window !== 'undefined' && window.innerWidth > 768 ? '&autoplay=1&mute=1' : ''}`}
           title={videos[currentVideo].title}
           frameBorder="0"
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
           className={styles.youtubeVideoPlayer}
+          loading="lazy"
         />
       </div>
       
@@ -216,6 +219,112 @@ const YouTubeAutoCarousel: React.FC = () => {
           />
         ))}
       </div>
+    </div>
+  );
+};
+
+/**
+ * ✅ OPTIMIZADO: Componente de video de fondo con lazy loading
+ * Carga el video solo cuando está visible o cerca del viewport
+ */
+const LazyHeroVideo: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    // Detectar si es móvil
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
+    // En móvil, no cargar el video automáticamente para mejor rendimiento
+    if (isMobile) {
+      // En móvil, solo cargar cuando el usuario hace scroll cerca del hero
+      const handleScroll = () => {
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          // Cargar cuando el hero está visible
+          if (rect.top < window.innerHeight + 200 && rect.bottom > -200) {
+            setShouldLoad(true);
+            window.removeEventListener('scroll', handleScroll);
+          }
+        }
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll(); // Verificar inmediatamente
+      return () => window.removeEventListener('scroll', handleScroll);
+    }
+
+    // En desktop, usar IntersectionObserver para lazy loading
+    if (typeof window === 'undefined') return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoad(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: '200px' // Cargar 200px antes de entrar al viewport
+      }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isMobile]);
+
+  // En móvil, mostrar solo el poster para mejor rendimiento
+  if (isMobile && !shouldLoad) {
+    return (
+      <div 
+        ref={containerRef}
+        className={styles.heroVideoBackground}
+        style={{
+          backgroundImage: 'url(/logos/hero-poster.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
+    );
+  }
+
+  return (
+    <div ref={containerRef}>
+      {shouldLoad ? (
+        <video
+          ref={videoRef}
+          className={styles.heroVideoBackground}
+          autoPlay={!isMobile} // ✅ No autoplay en móvil
+          muted
+          playsInline
+          poster="/logos/hero-poster.jpg"
+          preload="metadata" // ✅ Solo precargar metadata, no el video completo
+          loop={false}
+        >
+          <source src="/logos/Home.mp4" type="video/mp4" />
+        </video>
+      ) : (
+        <div 
+          className={styles.heroVideoBackground}
+          style={{
+            backgroundImage: 'url(/logos/hero-poster.jpg)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -655,16 +764,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       <main className={styles.main}>
         {/* Hero Section */}
               <section className={styles.hero}>
-        {/* Video Background - Sin loop para mejor rendimiento */}
-        <video
-          className={styles.heroVideoBackground}
-          autoPlay
-          muted
-          playsInline
-          poster="/logos/hero-poster.jpg"
-        >
-          <source src="/logos/Home.mp4" type="video/mp4" />
-        </video>
+        {/* ✅ OPTIMIZADO: Video Background con lazy loading y optimizaciones móviles */}
+        <LazyHeroVideo />
         
         <div className="container">
           <motion.div
@@ -689,15 +790,17 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                 </div>
               </div>
 
-              {/* Video de Presentación con YouTube - sin loop */}
+              {/* ✅ OPTIMIZADO: Video de Presentación con YouTube - lazy loading activado */}
               <div className={styles.heroVideo}>
                 <YouTubePlayer
                   videoId={siteConfig.heroVideo.youtubeId}
                   title={siteConfig.heroVideo.title}
-                  autoplay={siteConfig.heroVideo.autoplay}
+                  autoplay={false} // ✅ Desactivado para mejor rendimiento inicial
                   muted={siteConfig.heroVideo.muted}
                   loop={false}
                   className={styles.heroVideoPlayer}
+                  lazyLoad={true}
+                  priority={false} // ✅ No es prioritario, se carga cuando está visible
                 />
               </div>
             </motion.div>
@@ -716,6 +819,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
               viewport={{ once: true }}
             >
               <div className={styles.learningText}>
+                {/* ✅ OPTIMIZADO: Logo con lazy loading */}
                 <div className={styles.learningLogo}>
                   <Image 
                     src="/logos/LOGOTIPO NARANJA SIN FONDO.png" 
@@ -723,6 +827,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                     width={200}
                     height={60}
                     className={styles.learningLogoImage}
+                    loading="lazy"
+                    priority={false}
                   />
                 </div>
                 <p className={styles.learningDescription}>
@@ -743,15 +849,17 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                 </div>
               </div>
 
-              {/* Video de Cursos */}
+              {/* ✅ OPTIMIZADO: Video de Cursos - lazy loading */}
               <div className={styles.learningVideo}>
                 <YouTubePlayer
                   videoId={siteConfig.learningVideo.youtubeId}
                   title={siteConfig.learningVideo.title}
-                  autoplay={siteConfig.learningVideo.autoplay}
+                  autoplay={false} // ✅ Desactivado para mejor rendimiento
                   muted={siteConfig.learningVideo.muted}
                   loop={siteConfig.learningVideo.loop}
                   className={styles.learningVideoPlayer}
+                  lazyLoad={true}
+                  priority={false}
                 />
               </div>
             </motion.div>
@@ -834,14 +942,17 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                         Recibí las mejores señales de compra y venta para potenciar tus inversiones en el mercado
                       </p>
                       
+                      {/* ✅ OPTIMIZADO: Video de servicio - lazy loading */}
                       <div className={styles.servicioVideo}>
                         <YouTubePlayer
                           videoId={siteConfig?.serviciosVideos?.alertas?.youtubeId || 'dQw4w9WgXcQ'}
                           title={siteConfig?.serviciosVideos?.alertas?.title || 'Video de Alertas'}
-                          autoplay={siteConfig?.serviciosVideos?.alertas?.autoplay || false}
+                          autoplay={false} // ✅ Desactivado para mejor rendimiento
                           muted={siteConfig?.serviciosVideos?.alertas?.muted || true}
                           loop={siteConfig?.serviciosVideos?.alertas?.loop || false}
                           className={styles.servicioVideoPlayer}
+                          lazyLoad={true}
+                          priority={false}
                         />
                       </div>
                       
@@ -968,6 +1079,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       alt="TradingView" 
                       width={156} 
                       height={52}
+                      loading="lazy"
                     />
                   </motion.a>
 
@@ -987,6 +1099,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       alt="BullMarket" 
                       width={156} 
                       height={52}
+                      loading="lazy"
                     />
                   </motion.a>
 
@@ -1006,6 +1119,7 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                       alt="DolarHoy.com" 
                       width={156} 
                       height={52}
+                      loading="lazy"
                     />
                   </motion.a>
 
@@ -1095,14 +1209,17 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
                   transition={{ duration: 0.6, delay: 0.4 }}
                   viewport={{ once: true }}
                 >
+                  {/* ✅ OPTIMIZADO: Imagen con lazy loading y tamaño optimizado */}
                   <div className={styles.nahuelImageContainer}>
                     <Image 
                       src="/logos/nahuelsobremi.png" 
                       alt="Nahuel Lozano" 
-                      width={1000}
-                      height={1000}
+                      width={800}
+                      height={800}
                       className={styles.nahuelImage}
                       priority={false}
+                      loading="lazy"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px"
                     />
                   </div>
                 </motion.div>

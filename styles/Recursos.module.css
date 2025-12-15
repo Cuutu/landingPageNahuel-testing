@@ -450,22 +450,23 @@
   margin-top: auto;
 }
 
-.cardButton {
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-  width: 100%;
-  justify-content: center;
-}
+  .cardButton {
+    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+    width: 100%;
+    justify-content: center;
+    font-size: 0.9rem;
+  }
 
 .cardButton:hover {
   transform: translateY(-2px);
@@ -595,6 +596,45 @@
     text-align: center;
   }
 
+  /* ✅ OPTIMIZADO: Botones más pequeños y mejor distribución en móvil */
+  .card {
+    min-height: 150px;
+    padding: 1rem;
+  }
+
+  .cardContent {
+    padding: 1.5rem 0.75rem 0.75rem 0.75rem;
+  }
+
+  .cardTitle {
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .cardButton {
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .cardsGridLarge {
+    gap: 1rem;
+  }
+
+  /* ✅ OPTIMIZADO: Biblioteca del Inversor - Responsive tablet/móvil */
+  .bibliotecaSection {
+    padding: 3rem 0;
+  }
+
+  .bibliotecaTitle {
+    font-size: 2.25rem;
+    padding: 0 1rem;
+  }
+
+  .bibliotecaDescription {
+    font-size: 1rem;
+    padding: 0 1.5rem;
+  }
+
   .discountTitle {
     font-size: 1.2rem;
   }
@@ -648,6 +688,30 @@
   .discountButton {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
+  }
+
+  /* ✅ OPTIMIZADO: Biblioteca del Inversor - Responsive móvil */
+  .bibliotecaSection {
+    padding: 2rem 0;
+  }
+
+  .bibliotecaTitle {
+    font-size: 1.75rem;
+  }
+
+  .bibliotecaDescription {
+    font-size: 0.95rem;
+    padding: 0 1rem;
+  }
+
+  .cardButton {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .cardsGridLarge {
+    gap: 0.75rem;
+    padding: 0 0.5rem;
   }
 } 
 
@@ -782,11 +846,64 @@
 }
 
 @media (max-width: 900px) {
-  .bibliotecaTitle { font-size: 2rem; }
-  .bibliotecaCards { gap: 1rem; }
-  .bibliotecaCard { width: 180px; height: 280px; }
-  .bibliotecaImg { height: 70%; }
-  .bibliotecaCardText { padding: 0.7rem 0.5rem; }
+  .bibliotecaTitle { 
+    font-size: 2rem;
+    padding: 0 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .bibliotecaSection {
+    padding: 2.5rem 0;
+  }
+
+  .bibliotecaCarousel {
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .carouselArrow {
+    font-size: 2rem;
+    padding: 0 0.5rem;
+  }
+
+  .bibliotecaCards { 
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    padding: 0 0.5rem;
+  }
+
+  .bibliotecaCards::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .bibliotecaCards::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .bibliotecaCards::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+  }
+
+  .bibliotecaCard { 
+    width: 180px; 
+    min-width: 180px;
+    height: 280px;
+    scroll-snap-align: center;
+  }
+  
+  .bibliotecaImg { 
+    height: 70%; 
+  }
+  
+  .bibliotecaCardText { 
+    padding: 0.7rem 0.5rem;
+    font-size: 0.85rem;
+  }
 } 
 
 .infoTradersSection {

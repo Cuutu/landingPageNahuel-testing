@@ -9,6 +9,7 @@ interface BackgroundVideoProps {
   muted?: boolean;
   loop?: boolean;
   showControls?: boolean;
+  lazyLoad?: boolean; // ✅ NUEVO: Lazy loading
 }
 
 const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
@@ -18,16 +19,58 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
   autoPlay = true,
   muted = true,
   loop = true,
-  showControls = false
+  showControls = false,
+  lazyLoad = true // ✅ Por defecto activado
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isMuted, setIsMuted] = useState(muted);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(!lazyLoad); // ✅ Cargar inmediatamente si no hay lazy loading
+  const [isMobile, setIsMobile] = useState(false);
+
+  // ✅ NUEVO: Detectar si es móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(typeof window !== 'undefined' && window.innerWidth <= 768);
+    };
+    if (typeof window !== 'undefined') {
+      checkMobile();
+      window.addEventListener('resize', checkMobile);
+      return () => window.removeEventListener('resize', checkMobile);
+    }
+  }, []);
+
+  // ✅ NUEVO: IntersectionObserver para lazy loading
+  useEffect(() => {
+    if (!lazyLoad || shouldLoad) return;
+    if (typeof window === 'undefined') return;
+    
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoad(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: '200px'
+      }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [lazyLoad, shouldLoad]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !shouldLoad) return; // ✅ Solo configurar si el video debe cargarse
 
     const handleLoadedData = () => setIsLoaded(true);
     const handlePlay = () => setIsPlaying(true);
@@ -37,8 +80,11 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
     video.addEventListener('play', handlePlay);
     video.addEventListener('pause', handlePause);
 
+    // ✅ OPTIMIZADO: En móvil, no autoplay para mejor rendimiento
+    const shouldAutoplay = autoPlay && !isMobile;
+    
     // Configurar reproducción automática
-    if (autoPlay) {
+    if (shouldAutoplay) {
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise.catch(error => {
@@ -53,7 +99,7 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
       video.removeEventListener('play', handlePlay);
       video.removeEventListener('pause', handlePause);
     };
-  }, [autoPlay]);
+  }, [autoPlay, shouldLoad, isMobile]);
 
   const togglePlayPause = () => {
     const video = videoRef.current;
@@ -74,16 +120,32 @@ const BackgroundVideo: React.FC<BackgroundVideoProps> = ({
     setIsMuted(!isMuted);
   };
 
+  // ✅ Mostrar solo poster si no se debe cargar aún (lazy loading)
+  if (!shouldLoad) {
+    return (
+      <div 
+        ref={containerRef}
+        className={`background-video-container ${className}`}
+        style={{
+          backgroundImage: posterSrc ? `url(${posterSrc})` : 'none',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      />
+    );
+  }
+
   return (
-    <div className={`background-video-container ${className}`}>
+    <div ref={containerRef} className={`background-video-container ${className}`}>
       <video
         ref={videoRef}
         className="background-video"
         poster={posterSrc}
-        autoPlay={autoPlay}
+        autoPlay={autoPlay && !isMobile} // ✅ No autoplay en móvil
         muted={muted}
         loop={loop}
         playsInline
+        preload="metadata" // ✅ Solo precargar metadata
         disablePictureInPicture
         disableRemotePlayback
       >

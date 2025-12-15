@@ -29,6 +29,32 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
+/* ✅ OPTIMIZADO: Responsive móvil para header fijo */
+@media (max-width: 768px) {
+  .header {
+    top: 60px;
+    padding: 1rem 0;
+  }
+
+  .header .container {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1rem;
+  }
+
+  .backButton {
+    width: 100%;
+    justify-content: center;
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+  }
+
+  .breadcrumb {
+    font-size: 0.8rem;
+    justify-content: center;
+  }
+}
+
 .header .container {
   display: flex;
   align-items: center;
@@ -963,8 +989,40 @@
     font-size: 0.9rem;
   }
   
+  /* ✅ OPTIMIZADO: Mejorar espacio de lectura en móvil */
+  .contentSection {
+    padding: 2rem 0 3rem;
+  }
+
+  .contentWrapper {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1rem;
+  }
+
+  .articleContent {
+    font-size: 1rem;
+    line-height: 1.7;
+  }
+
+  .currentArticle {
+    padding: 1.5rem;
+  }
+
+  .articleTitle {
+    font-size: 1.25rem;
+  }
+
+  .coverImage {
+    margin-top: 1.5rem;
+  }
+
+  .coverImg {
+    max-height: 300px;
+  }
+
   .mainContent {
-    padding: 2rem;
+    padding: 2rem 1rem;
   }
   
   .content {
@@ -1009,8 +1067,42 @@
     padding: 1rem 1.25rem;
   }
   
+  /* ✅ OPTIMIZADO: Más espacio para texto en móviles pequeños */
+  .contentSection {
+    padding: 1.5rem 0 2rem;
+  }
+
+  .contentWrapper {
+    padding: 0 0.75rem;
+  }
+
+  .currentArticle {
+    padding: 1rem;
+  }
+
+  .articleContent {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .articleContent p {
+    margin-bottom: 1rem;
+  }
+
+  .articleContent h1,
+  .articleContent h2,
+  .articleContent h3 {
+    font-size: 1.1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .coverImg {
+    max-height: 250px;
+  }
+
   .mainContent {
-    padding: 1.5rem;
+    padding: 1.5rem 0.75rem;
   }
   
   .sidebarCard {
@@ -1018,8 +1110,8 @@
   }
   
   .imageGallery {
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 0.75rem;
   }
   
   .galleryThumbnail {

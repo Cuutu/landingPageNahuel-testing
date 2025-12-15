@@ -91,18 +91,62 @@
 }
 
 @media (max-width: 768px) {
+  .youtubeAutoCarousel {
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+
+  .youtubeVideoFrame {
+    padding-bottom: 56.25%; /* Mantener 16:9 */
+    border-radius: 8px;
+  }
+
   .youtubeArrowLeft,
   .youtubeArrowRight {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.8);
   }
 
   .youtubeArrowLeft {
-    left: 10px;
+    left: 5px;
   }
 
   .youtubeArrowRight {
-    right: 10px;
+    right: 5px;
+  }
+
+  .youtubeIndicators {
+    bottom: -25px;
+  }
+
+  .youtubeIndicator {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .youtubeAutoCarousel {
+    padding: 0 0.5rem;
+  }
+
+  .youtubeVideoFrame {
+    border-radius: 6px;
+  }
+
+  .youtubeArrowLeft,
+  .youtubeArrowRight {
+    width: 28px;
+    height: 28px;
+  }
+
+  .youtubeArrowLeft {
+    left: 2px;
+  }
+
+  .youtubeArrowRight {
+    right: 2px;
   }
 }
 

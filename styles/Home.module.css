@@ -907,6 +907,7 @@
   background: var(--section-blue);
   padding: 120px 0;
   margin: 0;
+  position: relative;
 }
 
 .aboutSection::before {
@@ -982,6 +983,9 @@
   margin: 0;
   text-align: center;
   font-weight: 400;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
 }
 
 .nahuelSection {
@@ -3241,6 +3245,76 @@
   
   .testimonioUnificadoNombre {
     font-size: 1.125rem;
+  }
+
+  /* ✅ OPTIMIZADO: Sección Acerca de nosotros - Responsive móvil */
+  .aboutSection {
+    padding: 3rem 0;
+  }
+
+  .aboutMainTitle {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .aboutQuestions {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 0 1rem;
+  }
+
+  .aboutQuestion {
+    padding: 1.5rem 1rem;
+  }
+
+  .questionTitle {
+    font-size: 1.1rem;
+    padding: 10px 16px;
+    margin-bottom: 1rem;
+  }
+
+  .questionText {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    padding: 0;
+  }
+
+  .nahuelSection {
+    margin-top: 2rem;
+  }
+
+  .nahuelImageContainer {
+    padding: 1rem;
+  }
+
+  /* ✅ OPTIMIZADO: Sección YouTube - Responsive móvil */
+  .youtubeSection {
+    padding: 3rem 0;
+  }
+
+  .youtubeContent {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 0 1rem;
+  }
+
+  .youtubeText {
+    text-align: center;
+  }
+
+  .youtubeTitle {
+    font-size: 1.75rem;
+    line-height: 1.3;
+  }
+
+  .youtubeSubtitle {
+    font-size: 1rem;
+  }
+
+  .youtubeVideoContainer {
+    width: 100%;
+    max-width: 100%;
   }
   
   .testimonioUnificadoTexto {

@@ -13,10 +13,12 @@ interface YouTubePlayerProps {
   className?: string;
   fillContainer?: boolean; // Prop para indicar si debe llenar el contenedor padre
   volume?: number; // Volumen del video (0-100)
+  lazyLoad?: boolean; // ✅ NUEVO: Cargar solo cuando está en viewport
+  priority?: boolean; // ✅ NUEVO: Si es true, carga inmediatamente sin lazy loading
 }
 
 /**
- * Componente para reproducir videos de YouTube
+ * Componente para reproducir videos de YouTube con lazy loading optimizado
  * @param videoId - ID del video de YouTube
  * @param title - Título del video
  * @param autoplay - Reproducir automáticamente
@@ -26,6 +28,8 @@ interface YouTubePlayerProps {
  * @param width - Ancho del reproductor
  * @param height - Alto del reproductor
  * @param className - Clase CSS adicional
+ * @param lazyLoad - Cargar solo cuando está en viewport (por defecto: true)
+ * @param priority - Si es true, carga inmediatamente sin lazy loading
  */
 export default function YouTubePlayer({
   videoId,
@@ -38,11 +42,50 @@ export default function YouTubePlayer({
   height = '100%',
   className = '',
   fillContainer = false, // Por defecto usar el comportamiento estándar con padding-bottom
-  volume = 25 // Volumen por defecto 25%
+  volume = 25, // Volumen por defecto 25%
+  lazyLoad = true, // ✅ Por defecto lazy loading activado
+  priority = false // ✅ Por defecto no es prioritario
 }: YouTubePlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(!lazyLoad || priority); // ✅ Cargar inmediatamente si no hay lazy loading o es prioritario
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // ✅ NUEVO: IntersectionObserver para lazy loading
+  useEffect(() => {
+    // Si no hay lazy loading o ya se debe cargar, no hacer nada
+    if (!lazyLoad || shouldLoad || priority) return;
+
+    // Si estamos en servidor, no ejecutar
+    if (typeof window === 'undefined') return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Crear IntersectionObserver para detectar cuando el componente está en viewport
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          // Cuando el componente está visible o cerca (50% de margen)
+          if (entry.isIntersecting) {
+            setShouldLoad(true);
+            observer.disconnect(); // Desconectar después de cargar
+          }
+        });
+      },
+      {
+        // ✅ Cargar cuando está a 100px de entrar al viewport (mejor UX)
+        rootMargin: '100px'
+      }
+    );
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [lazyLoad, shouldLoad, priority]);
 
   // Construir la URL del video con parámetros
   const buildVideoUrl = () => {
@@ -56,9 +99,11 @@ export default function YouTubePlayer({
 
     // ✅ IMPORTANTE: Para que autoplay funcione, el video DEBE estar silenciado
     // Los navegadores modernos bloquean autoplay con sonido
-    const shouldMute = muted || autoplay; // Si autoplay está activo, forzar muted
+    // ✅ OPTIMIZADO: En móvil, desactivar autoplay para mejor rendimiento
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    const shouldAutoplay = autoplay && !isMobile; // No autoplay en móvil
     
-    if (autoplay) {
+    if (shouldAutoplay) {
       params.append('autoplay', '1');
       // Forzar muted si autoplay está activo (requisito de los navegadores)
       params.append('mute', '1');
@@ -123,8 +168,25 @@ export default function YouTubePlayer({
     );
   }
 
+  // ✅ Mostrar placeholder si no se debe cargar aún (lazy loading)
+  if (!shouldLoad) {
+    return (
+      <div 
+        ref={containerRef}
+        className={`${fillContainer ? styles.playerContainerInContainer : styles.playerContainer} ${className}`}
+        style={{ minHeight: '315px', backgroundColor: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      >
+        <div style={{ color: '#fff', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '10px' }}>▶️</div>
+          <p style={{ fontSize: '14px', opacity: 0.7 }}>Video se cargará pronto...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
+      ref={containerRef}
       className={`${fillContainer ? styles.playerContainerInContainer : styles.playerContainer} ${className}`}
     >
       {isLoading && (
@@ -144,6 +206,7 @@ export default function YouTubePlayer({
         onLoad={handleLoad}
         onError={handleError}
         className={styles.iframe}
+        loading="lazy"
         style={{
           display: isLoading ? 'none' : 'block'
         }}

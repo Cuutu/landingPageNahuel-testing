@@ -419,11 +419,38 @@
   
   .operationsTable {
     font-size: 0.85rem;
+    min-width: 600px; /* ✅ Ancho mínimo para evitar compresión excesiva */
   }
   
   .operationsTable th,
   .operationsTable td {
     padding: 0.75rem 0.5rem;
+    white-space: nowrap; /* ✅ Evitar que el texto se corte */
+  }
+
+  /* ✅ OPTIMIZADO: Scroll horizontal para tablas en móvil */
+  .tableWrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .tableWrapper::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .tableWrapper::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.5);
+    border-radius: 4px;
+  }
+
+  .tableWrapper::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
+  }
+
+  .tableWrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.7);
   }
   
   .summaryGrid {
