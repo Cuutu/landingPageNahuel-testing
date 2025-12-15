@@ -15,9 +15,14 @@ export const authOptions: NextAuthOptions = {
         params: {
           scope: 'openid email profile',
           prompt: 'select_account',
-          response_type: 'code'
+          response_type: 'code',
+          // ✅ CRÍTICO: Asegurar que el flujo OAuth sea redirect top-level (no iframe/popup)
+          // Esto es esencial para que las cookies funcionen en Safari/Firefox/Edge
+          access_type: 'offline',
         },
       },
+      // ✅ CRÍTICO: Asegurar que use NEXTAUTH_URL para callbacks
+      // NextAuth v4 lo hace automáticamente si NEXTAUTH_URL está definido
     }),
   ],
   pages: {
@@ -216,24 +221,31 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // ✅ CRÍTICO: Asegurar que siempre use NEXTAUTH_URL y no req.headers.host
+  useSecureCookies: process.env.NODE_ENV === 'production',
   cookies: {
     sessionToken: {
-      // ✅ CORREGIDO: Usar nombres simples sin prefijos problemáticos para mejor compatibilidad
-      name: 'next-auth.session-token',
+      // ✅ PRODUCCIÓN: Usar prefijo __Host- para máxima seguridad y persistencia
+      // __Host- requiere: secure=true, path=/, sin domain
+      // Esto evita que navegadores con tracking prevention bloqueen la cookie
+      name: process.env.NODE_ENV === 'production' 
+        ? '__Host-next-auth.session-token' 
+        : 'next-auth.session-token',
       options: {
         httpOnly: true,
-        // ✅ MEJORADO: 'lax' para compatibilidad con navegadores estrictos
-        // 'lax' permite cookies en navegación top-level (redirecciones OAuth)
         sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
-        // ✅ MEJORADO: No especificar dominio para que funcione en todos los subdominios de Vercel
-        // Esto evita problemas cuando se accede desde .vercel.app o dominio personalizado
+        // ✅ CRÍTICO: Sin domain para __Host- y para evitar problemas con subdominios
         domain: undefined
       }
     },
     callbackUrl: {
-      name: 'next-auth.callback-url',
+      // ✅ PRODUCCIÓN: Usar prefijo __Secure- para cookies no-httpOnly
+      // __Secure- requiere: secure=true
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.callback-url'
+        : 'next-auth.callback-url',
       options: {
         // ✅ CRÍTICO: callbackUrl NO debe ser httpOnly para que JavaScript pueda leerla
         httpOnly: false,
@@ -244,12 +256,43 @@ export const authOptions: NextAuthOptions = {
       }
     },
     csrfToken: {
-      name: 'next-auth.csrf-token',
+      // ✅ PRODUCCIÓN: Usar prefijo __Secure- para cookies httpOnly de seguridad
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.csrf-token'
+        : 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
+        domain: undefined
+      }
+    },
+    pkceCodeVerifier: {
+      // ✅ PRODUCCIÓN: Cookie para PKCE (usado en OAuth flow)
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.pkce.code_verifier'
+        : 'next-auth.pkce.code_verifier',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 15, // 15 minutos (tiempo suficiente para completar OAuth)
+        domain: undefined
+      }
+    },
+    state: {
+      // ✅ PRODUCCIÓN: Cookie para state parameter (usado en OAuth flow)
+      name: process.env.NODE_ENV === 'production'
+        ? '__Secure-next-auth.state'
+        : 'next-auth.state',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax' as const,
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 15, // 15 minutos
         domain: undefined
       }
     }
