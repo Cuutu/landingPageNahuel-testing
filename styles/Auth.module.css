@@ -379,6 +379,73 @@
   gap: 0.5rem;
 }
 
+/* ========================================
+   Cookie Warning Styles (Brave, etc.)
+   ======================================== */
+.cookieWarning {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 16px;
+  text-align: left;
+}
+
+.warningHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: #fbbf24;
+  font-size: 1.1rem;
+}
+
+.braveIcon {
+  font-size: 1.3rem;
+}
+
+.warningText {
+  color: #fcd34d;
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+  line-height: 1.5;
+}
+
+.warningSteps {
+  color: #e5e7eb;
+  font-size: 0.85rem;
+  margin: 0;
+  padding-left: 1.25rem;
+  line-height: 1.8;
+}
+
+.warningSteps li {
+  margin-bottom: 0.5rem;
+}
+
+.warningSteps strong {
+  color: #fbbf24;
+}
+
+.reloadButton {
+  margin-top: 1.25rem;
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 8px;
+  color: #fbbf24;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.reloadButton:hover {
+  background: rgba(251, 191, 36, 0.3);
+  transform: translateY(-1px);
+}
+
 /* Sign In Responsive */
 @media (max-width: 480px) {
   .authCard {
@@ -399,5 +466,14 @@
   .googleButton {
     padding: 12px 20px;
     font-size: 0.95rem;
+  }
+  
+  .cookieWarning {
+    padding: 1rem;
+    margin-top: 1.5rem;
+  }
+  
+  .warningSteps {
+    font-size: 0.8rem;
   }
 } 

@@ -20,18 +20,57 @@ interface SignInProps {
 }
 
 /**
+ * Detecta si el navegador es Brave
+ */
+const isBraveBrowser = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return (navigator as any).brave !== undefined;
+};
+
+/**
+ * Verifica si las cookies están habilitadas
+ */
+const checkCookiesEnabled = (): boolean => {
+  if (typeof document === 'undefined') return true;
+  
+  try {
+    // Intentar crear una cookie de prueba
+    document.cookie = 'cookietest=1; SameSite=Lax';
+    const cookiesEnabled = document.cookie.indexOf('cookietest=') !== -1;
+    // Eliminar la cookie de prueba
+    document.cookie = 'cookietest=1; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
+    return cookiesEnabled;
+  } catch {
+    return false;
+  }
+};
+
+/**
  * Página de inicio de sesión personalizada
  * Redirige automáticamente a Google OAuth para evitar problemas con CSRF
  */
 export default function SignInPage({ providers, csrfToken, callbackUrl }: SignInProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cookieWarning, setCookieWarning] = useState<boolean>(false);
+  const [isBrave, setIsBrave] = useState<boolean>(false);
   const hasAttemptedRef = React.useRef(false);
 
-  // ✅ CORREGIDO: NO hacer auto-signin - esperar clic del usuario para evitar bucles
+  // ✅ MEJORADO: Detectar problemas de cookies y navegador Brave
   useEffect(() => {
-    // Solo verificar si hay error en la URL
     if (typeof window !== 'undefined') {
+      // Detectar Brave
+      const brave = isBraveBrowser();
+      setIsBrave(brave);
+      
+      // Verificar cookies
+      const cookiesOk = checkCookiesEnabled();
+      if (!cookiesOk || brave) {
+        // En Brave, siempre mostrar advertencia porque Shields puede bloquear cookies de terceros
+        setCookieWarning(true);
+      }
+      
+      // Verificar errores en URL
       const urlParams = new URLSearchParams(window.location.search);
       const errorParam = urlParams.get('error');
       if (errorParam) {
@@ -40,6 +79,10 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
           setError('Esta cuenta de Google ya está vinculada a otro usuario.');
         } else if (errorParam === 'OAuthCallback') {
           setError('Error en la autenticación con Google. Intenta nuevamente.');
+        } else if (errorParam === 'Callback') {
+          // Error común cuando las cookies están bloqueadas
+          setError('Error de autenticación. Si usás Brave u otro navegador con bloqueo de cookies, seguí las instrucciones abajo.');
+          setCookieWarning(true);
         } else {
           setError('Error al iniciar sesión. Por favor, intenta nuevamente.');
         }
@@ -138,6 +181,61 @@ export default function SignInPage({ providers, csrfToken, callbackUrl }: SignIn
           <p className={styles.securityNote}>
             🔒 Conexión segura con Google
           </p>
+
+          {/* Advertencia para navegadores con cookies bloqueadas */}
+          {cookieWarning && (
+            <motion.div
+              className={styles.cookieWarning}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+            >
+              <div className={styles.warningHeader}>
+                {isBrave ? (
+                  <>
+                    <span className={styles.braveIcon}>🦁</span>
+                    <strong>¿Usás Brave?</strong>
+                  </>
+                ) : (
+                  <>
+                    <span>🍪</span>
+                    <strong>Problema con cookies</strong>
+                  </>
+                )}
+              </div>
+              
+              <p className={styles.warningText}>
+                {isBrave 
+                  ? 'Brave Shields puede bloquear el inicio de sesión. Para solucionarlo:'
+                  : 'Las cookies están bloqueadas en tu navegador. Para iniciar sesión:'}
+              </p>
+              
+              <ol className={styles.warningSteps}>
+                {isBrave ? (
+                  <>
+                    <li>Hacé clic en el <strong>ícono del león 🦁</strong> en la barra de direcciones</li>
+                    <li>Cambiá <strong>&quot;Block cross-site cookies&quot;</strong> a <strong>&quot;Allow all cookies&quot;</strong></li>
+                    <li>O desactivá Shields temporalmente para este sitio</li>
+                    <li>Recargá la página e intentá de nuevo</li>
+                  </>
+                ) : (
+                  <>
+                    <li>Abrí la configuración de tu navegador</li>
+                    <li>Buscá la sección de &quot;Cookies&quot; o &quot;Privacidad&quot;</li>
+                    <li>Agregá <strong>lozanonahuel.com</strong> a los sitios permitidos</li>
+                    <li>Recargá la página e intentá de nuevo</li>
+                  </>
+                )}
+              </ol>
+
+              <button 
+                onClick={() => window.location.reload()}
+                className={styles.reloadButton}
+              >
+                🔄 Recargar página
+              </button>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </>

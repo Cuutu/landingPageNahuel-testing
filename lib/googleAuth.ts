@@ -222,7 +222,9 @@ export const authOptions: NextAuthOptions = {
       name: 'next-auth.session-token',
       options: {
         httpOnly: true,
-        sameSite: 'lax',
+        // ✅ MEJORADO: 'lax' para compatibilidad con navegadores estrictos
+        // 'lax' permite cookies en navegación top-level (redirecciones OAuth)
+        sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         // ✅ MEJORADO: No especificar dominio para que funcione en todos los subdominios de Vercel
@@ -233,7 +235,9 @@ export const authOptions: NextAuthOptions = {
     callbackUrl: {
       name: 'next-auth.callback-url',
       options: {
-        sameSite: 'lax',
+        // ✅ CRÍTICO: callbackUrl NO debe ser httpOnly para que JavaScript pueda leerla
+        httpOnly: false,
+        sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         domain: undefined
@@ -243,7 +247,7 @@ export const authOptions: NextAuthOptions = {
       name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
-        sameSite: 'lax',
+        sameSite: 'lax' as const,
         path: '/',
         secure: process.env.NODE_ENV === 'production',
         domain: undefined
