@@ -18,9 +18,6 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
   const hasTriggeredRef = useRef(false);
 
   useEffect(() => {
-    // Si ya venimos de un error, no relanzar automáticamente para evitar loops
-    if (error) return;
-
     // Solo ejecutar una vez
     if (hasTriggeredRef.current) return;
     hasTriggeredRef.current = true;
@@ -31,7 +28,14 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
       ? '/'
       : rawCallback;
 
-    // Intento estándar; si algo falla, fallback inmediato
+    // Si hay error, redirigir inmediatamente a google-redirect (método más confiable)
+    if (error) {
+      const target = `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(safeCallback)}`;
+      window.location.replace(target);
+      return;
+    }
+
+    // Sin error: intentar método estándar de NextAuth
     signIn('google', { callbackUrl: safeCallback, redirect: true }).catch(() => {
       const target = `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(safeCallback)}`;
       window.location.replace(target);
@@ -133,8 +137,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    // Sin sesión y sin error: redirigir de inmediato a Google para evitar loops de cliente
-    if (!error) {
+    // Si hay error, también redirigir automáticamente (no mostrar pantalla de error)
+    // Esto evita que el usuario tenga que hacer clic en "Reintentar"
+    if (error) {
       return {
         redirect: {
           destination: `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(callbackUrl)}`,
@@ -143,11 +148,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    // Solo mostrar la página si llegamos con error
+    // Sin sesión y sin error: redirigir de inmediato a Google para evitar loops de cliente
     return {
-      props: {
-        callbackUrl,
-        error,
+      redirect: {
+        destination: `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+        permanent: false,
       },
     };
   } catch (error) {
