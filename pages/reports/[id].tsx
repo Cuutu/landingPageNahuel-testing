@@ -1258,9 +1258,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const session = await getSession(context);
     
     if (!session?.user?.email) {
+      // ✅ Incluir callbackUrl para redirigir de vuelta después del login
+      const callbackUrl = encodeURIComponent(context.resolvedUrl || `/reports/${context.params?.id}`);
       return {
         redirect: {
-          destination: '/api/auth/signin',
+          destination: `/auth/signin?callbackUrl=${callbackUrl}`,
           permanent: false,
         },
       };
@@ -1332,9 +1334,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           const fullUser = await User.findOne({ email: session.user.email });
           
           if (!fullUser) {
+            const callbackUrl = encodeURIComponent(context.resolvedUrl || `/reports/${context.params?.id}`);
             return {
               redirect: {
-                destination: '/api/auth/signin',
+                destination: `/auth/signin?callbackUrl=${callbackUrl}`,
                 permanent: false,
               },
             };

@@ -187,7 +187,7 @@ const NonSubscriberView: React.FC<{
 
   const handleTrial = async () => {
     if (!session) {
-      signIn('google');
+      signIn('google', { callbackUrl: window.location.href });
       return;
     }
 
@@ -229,7 +229,7 @@ const NonSubscriberView: React.FC<{
 
   const handleSubscribe = async () => {
     if (!session) {
-      signIn('google');
+      signIn('google', { callbackUrl: window.location.href });
       return;
     }
 
