@@ -1,7 +1,6 @@
 /* ===== REPORT VIEW - DISEÑO MODERNO Y PROFESIONAL ===== */
 
-/* Importar fuentes modernas */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap');
+/* ✅ OPTIMIZADO: Fuentes movidas a _document.tsx para no bloquear renderización */
 
 /* ===== LAYOUT PRINCIPAL ===== */
 .main {

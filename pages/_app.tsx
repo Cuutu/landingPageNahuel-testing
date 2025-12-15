@@ -28,10 +28,7 @@ export default function App({
         <link rel="icon" type="image/png" href="/logos/logo-nahuel.png" />
         <link rel="apple-touch-icon" href="/logos/logo-nahuel.png" />
         <meta name="theme-color" content="#3b82f6" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* ✅ OPTIMIZADO: Solo pesos necesarios (400, 500, 600, 700) */}
-        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        {/* ✅ OPTIMIZADO: Fuentes movidas a _document.tsx para no bloquear renderización */}
         {/* Meta tags adicionales para protección */}
         <meta name="robots" content="noindex, nofollow" />
         <meta httpEquiv="X-Frame-Options" content="DENY" />

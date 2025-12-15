@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+/* ✅ OPTIMIZADO: Fuentes movidas a _document.tsx para no bloquear renderización */
 
 * {
   box-sizing: border-box;
