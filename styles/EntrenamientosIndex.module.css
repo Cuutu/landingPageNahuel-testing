@@ -1177,8 +1177,13 @@
     font-size: 1.1rem;
   }
   
+  .youtubeCarousel {
+    width: 100%;
+    max-width: 100%;
+  }
+  
   .youtubeAutoCarousel {
-    height: 250px;
+    height: 300px;
   }
   
   .youtubeArrowLeft {

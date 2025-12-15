@@ -7547,6 +7547,15 @@
     font-size: 1rem;
   }
   
+  .youtubeVideoContainer {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .youtubeVideoPlayer {
+    height: 300px;
+  }
+  
   .finalCtaCard {
     padding: 2rem;
   }

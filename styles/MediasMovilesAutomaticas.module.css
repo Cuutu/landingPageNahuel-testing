@@ -426,6 +426,10 @@
   .youtubeDescription {
     font-size: 1.1rem;
   }
+  .youtubeCarousel {
+    width: 100%;
+    max-width: 100%;
+  }
   .youtubeArrowLeft {
     left: 10px;
   }

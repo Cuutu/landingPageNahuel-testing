@@ -1206,8 +1206,13 @@
     font-size: 1.1rem;
   }
   
+  .youtubeVideoContainer {
+    width: 100%;
+    max-width: 100%;
+  }
+  
   .youtubeVideoPlayer {
-    height: 250px;
+    height: 300px;
   }
   
   .youtubeArrowLeft {
@@ -1220,8 +1225,13 @@
 }
 
 @media (max-width: 480px) {
+  .youtubeVideoContainer {
+    width: 100%;
+    max-width: 100%;
+  }
+  
   .youtubeVideoPlayer {
-    height: 200px;
+    height: 300px;
   }
   
   .youtubeArrowLeft,

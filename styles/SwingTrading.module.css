@@ -2037,6 +2037,16 @@
     font-size: 1.1rem;
   }
   
+  .youtubeVideoContainer {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .youtubeVideoPlayer {
+    height: 300px;
+    aspect-ratio: auto;
+  }
+  
   .videoPlayer {
     max-width: 100%;
   }
