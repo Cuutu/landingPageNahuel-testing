@@ -97,6 +97,7 @@ export interface IAlert extends Document {
   // ✅ NUEVO: Sistema de porcentaje de participación
   participationPercentage: number; // Porcentaje de participación actual (100% = posición completa)
   originalParticipationPercentage: number; // Porcentaje original al crear la alerta
+  liquidityPercentage: number; // ✅ NUEVO: Porcentaje de liquidez asignado al crear la alerta
   
   // ✅ NUEVO: Campos para operaciones históricas (posiciones existentes)
   esOperacionHistorica: boolean; // Si es una operación importada/preexistente
@@ -377,6 +378,13 @@ const AlertSchema: Schema = new Schema({
     type: Number,
     required: true,
     default: 100,
+    min: 0,
+    max: 100
+  },
+  // ✅ NUEVO: Porcentaje de liquidez asignado al crear la alerta
+  liquidityPercentage: {
+    type: Number,
+    default: 0,
     min: 0,
     max: 100
   },

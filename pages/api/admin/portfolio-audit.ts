@@ -287,8 +287,16 @@ export default async function handler(
         entryPriceFromDistribution: distribution?.entryPrice,
         realizedProfitLoss: distribution?.realizedProfitLoss || 0,
         soldShares: distribution?.soldShares || 0,
-        participationPercentage: distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0,
-        liquidityPercentage: alert.liquidityPercentage || 0, // ✅ NUEVO: Porcentaje de liquidez asignado al crear
+        // ✅ CORREGIDO: Si la alerta está cerrada, la participación debería ser 0
+        participationPercentage: alert.status === 'CLOSED' 
+          ? 0 
+          : (distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0),
+        // ✅ CORREGIDO: Obtener liquidityPercentage de la alerta
+        // Si no existe, calcular desde la distribución: (allocatedAmount / totalLiquidity) * 100
+        liquidityPercentage: alert.liquidityPercentage || 
+          (distribution?.allocatedAmount && totalLiquidity > 0 
+            ? (distribution.allocatedAmount / totalLiquidity) * 100 
+            : 0),
         calculatedPL,
         calculatedPLPercentage,
         priceSource: alert.currentPrice ? 'database' : 'calculated'

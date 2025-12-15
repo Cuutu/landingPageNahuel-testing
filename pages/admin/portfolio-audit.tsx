@@ -390,9 +390,12 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               )}
                             </td>
                             <td>
-                              {alert.participationPercentage !== undefined && alert.participationPercentage !== null && alert.participationPercentage > 0
-                                ? `${alert.participationPercentage.toFixed(2)}%`
-                                : 'N/A'}
+                              {/* Alertas cerradas tienen 0% de participación */}
+                              {alert.status === 'CLOSED' 
+                                ? '0%'
+                                : (alert.participationPercentage !== undefined && alert.participationPercentage !== null && alert.participationPercentage > 0
+                                    ? `${alert.participationPercentage.toFixed(2)}%`
+                                    : 'N/A')}
                             </td>
                             <td>
                               <span className={
