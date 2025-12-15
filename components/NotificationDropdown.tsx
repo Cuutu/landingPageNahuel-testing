@@ -37,6 +37,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   const [markingAsRead, setMarkingAsRead] = useState<string | null>(null);
   const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
   const [deletingRead, setDeletingRead] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Obtener notificaciones
@@ -243,6 +244,17 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
     }
   };
 
+  // Detectar si es móvil
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Cargar notificaciones cuando se abre el dropdown
   useEffect(() => {
     if (isOpen) {
@@ -287,15 +299,36 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
   if (!isOpen) return null;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        ref={dropdownRef}
-        className={styles.dropdown}
-        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-      >
+    <>
+      {/* Overlay para móvil */}
+      {isMobile && (
+        <motion.div
+          className={styles.overlay}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+        />
+      )}
+      <AnimatePresence>
+        <motion.div
+          ref={dropdownRef}
+          className={styles.dropdown}
+          initial={isMobile 
+            ? { opacity: 0, x: '100%' }
+            : { opacity: 0, y: -10, scale: 0.95 }
+          }
+          animate={isMobile
+            ? { opacity: 1, x: 0 }
+            : { opacity: 1, y: 0, scale: 1 }
+          }
+          exit={isMobile
+            ? { opacity: 0, x: '100%' }
+            : { opacity: 0, y: -10, scale: 0.95 }
+          }
+          transition={{ duration: 0.3, ease: isMobile ? 'easeInOut' : 'easeOut' }}
+        >
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerLeft}>
@@ -456,6 +489,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOpen, onC
         </div>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 };
 

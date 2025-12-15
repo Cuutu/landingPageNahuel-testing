@@ -59,8 +59,7 @@ const PortfolioMetricsSchema = new Schema({
     type: String,
     required: true,
     enum: ['TraderCall', 'SmartMoney'],
-    unique: true, // Solo un documento por pool
-    index: true
+    unique: true // Solo un documento por pool (unique ya crea el índice automáticamente)
   },
   
   // Valores de cartera
@@ -158,8 +157,8 @@ const PortfolioMetricsSchema = new Schema({
   timestamps: true
 });
 
-// Índice único por pool para búsquedas rápidas
-PortfolioMetricsSchema.index({ pool: 1 }, { unique: true });
+// ✅ NOTA: El índice único en 'pool' ya se crea automáticamente con unique: true en la definición del campo
+// No es necesario agregar schema.index() adicional para evitar índices duplicados
 
 export default mongoose.models.PortfolioMetrics || mongoose.model<IPortfolioMetrics>('PortfolioMetrics', PortfolioMetricsSchema);
 

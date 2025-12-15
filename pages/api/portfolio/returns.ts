@@ -62,11 +62,12 @@ export default async function handler(
     let metrics = await PortfolioMetrics.findOne({ pool: poolType });
     
     // Si las métricas son muy antiguas (> 2 minutos), recalcular como fallback
-    const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : Infinity;
-    const shouldRecalculate = !metrics || metricsAge > 2;
+    const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : null;
+    const shouldRecalculate = !metrics || (metricsAge !== null && metricsAge > 2);
 
     if (shouldRecalculate) {
-      console.log(`⚠️ [Portfolio Returns] Métricas de ${poolType} son antiguas (${metricsAge.toFixed(1)} min) o no existen, calculando...`);
+      const ageMessage = metricsAge !== null ? `${metricsAge.toFixed(1)} min` : 'no existen';
+      console.log(`⚠️ [Portfolio Returns] Métricas de ${poolType} son antiguas (${ageMessage}), calculando...`);
       
       // Calcular valor actual de la cartera (fallback)
       const currentValue = await calculateCurrentPortfolioValue(poolType);
@@ -188,6 +189,14 @@ export default async function handler(
     }
 
     // ✅ OPTIMIZADO: Usar métricas pre-calculadas (mucho más rápido)
+    // En este punto, metrics existe y metricsAge no es null (porque shouldRecalculate es false)
+    if (!metrics || metricsAge === null) {
+      return res.status(500).json({
+        success: false,
+        error: 'Error inesperado: métricas no disponibles'
+      });
+    }
+    
     console.log(`✅ [Portfolio Returns] Usando métricas pre-calculadas de ${poolType} (actualizadas hace ${metricsAge.toFixed(1)} min)`);
     
     return res.status(200).json({

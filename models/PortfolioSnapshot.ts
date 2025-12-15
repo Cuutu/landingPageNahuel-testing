@@ -19,8 +19,8 @@ const PortfolioSnapshotSchema = new Schema({
   pool: {
     type: String,
     required: true,
-    enum: ['TraderCall', 'SmartMoney'],
-    index: true
+    enum: ['TraderCall', 'SmartMoney']
+    // ✅ NOTA: El índice en 'pool' se crea automáticamente con el índice compuesto { pool: 1, snapshotDate: -1 }
   },
   valorTotalCartera: {
     type: Number,
