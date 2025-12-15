@@ -21,9 +21,9 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ❌ NO usar página personalizada - causa loops de redirección
-    // NextAuth maneja el signin internamente y redirige directo a Google
-    // signIn: '/auth/signin',
+    // ✅ Usar página personalizada que ejecuta signIn('google') del cliente
+    // Esto funciona en TODOS los navegadores (incluyendo Safari, Brave, etc.)
+    signIn: '/auth/signin',
     error: '/auth/error',
     signOut: '/',
   },

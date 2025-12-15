@@ -1258,11 +1258,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     const session = await getSession(context);
     
     if (!session?.user?.email) {
-      // ✅ Redirigir al signin nativo de NextAuth con callbackUrl
+      // ✅ Redirigir a la página de signin personalizada con callbackUrl
       const callbackUrl = encodeURIComponent(context.resolvedUrl || `/reports/${context.params?.id}`);
       return {
         redirect: {
-          destination: `/api/auth/signin?callbackUrl=${callbackUrl}`,
+          destination: `/auth/signin?callbackUrl=${callbackUrl}`,
           permanent: false,
         },
       };
