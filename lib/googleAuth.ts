@@ -26,8 +26,8 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   pages: {
-    // ✅ Usar página personalizada (ahora funciona porque arreglamos el CSP)
-    signIn: '/auth/signin',
+    // ✅ Usar página por defecto de NextAuth - NO TOCAR
+    // signIn: '/auth/signin', // CAUSA LOOPS - NO HABILITAR
     error: '/auth/error',
     signOut: '/',
   },
