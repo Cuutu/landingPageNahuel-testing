@@ -31,22 +31,11 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
       ? '/'
       : rawCallback;
 
-    // 1) Intento estándar de NextAuth (maneja CSRF y state)
+    // Intento estándar; si algo falla, fallback inmediato
     signIn('google', { callbackUrl: safeCallback, redirect: true }).catch(() => {
-      // Fallback inmediato si falla la promesa
       const target = `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(safeCallback)}`;
-      window.location.href = target;
+      window.location.replace(target);
     });
-
-    // 2) Fallback defensivo por si algún navegador bloquea la redirección del paso 1
-    const fallbackTimer = setTimeout(() => {
-      const target = `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(safeCallback)}`;
-      if (window.location.pathname.includes('/auth/signin')) {
-        window.location.replace(target);
-      }
-    }, 1200);
-
-    return () => clearTimeout(fallbackTimer);
   }, [callbackUrl, error]);
 
   const handleRetry = () => {
@@ -144,7 +133,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       };
     }
 
-    // Pasar callbackUrl al componente
+    // Sin sesión y sin error: redirigir de inmediato a Google para evitar loops de cliente
+    if (!error) {
+      return {
+        redirect: {
+          destination: `/api/auth/google-redirect?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          permanent: false,
+        },
+      };
+    }
+
+    // Solo mostrar la página si llegamos con error
     return {
       props: {
         callbackUrl,
