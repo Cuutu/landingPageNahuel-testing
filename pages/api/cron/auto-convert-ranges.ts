@@ -62,6 +62,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }).populate('alertId');
 
     console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange`);
+    
+    // ✅ DEBUG: Mostrar detalles de las operaciones encontradas
+    if (pendingOperations.length > 0) {
+      console.log(`🔍 CRON: Detalles de operaciones pendientes:`, pendingOperations.map(op => ({
+        _id: op._id,
+        ticker: op.ticker,
+        priceRange: op.priceRange,
+        isPriceConfirmed: op.isPriceConfirmed,
+        alertId: op.alertId ? (op.alertId as any)._id : 'NO ALERTA',
+        alertSymbol: op.alertId ? (op.alertId as any).symbol : 'NO ALERTA',
+        alertCurrentPrice: op.alertId ? (op.alertId as any).currentPrice : null,
+        alertFinalPrice: op.alertId ? (op.alertId as any).finalPrice : null,
+        alertStatus: op.alertId ? (op.alertId as any).status : 'NO ALERTA'
+      })));
+    } else {
+      // ✅ DEBUG: Verificar si hay operaciones con priceRange pero que ya están confirmadas
+      const allOperationsWithRange = await Operation.find({
+        priceRange: { $exists: true, $ne: null },
+        operationType: 'COMPRA'
+      }).select('ticker priceRange isPriceConfirmed alertId');
+      
+      console.log(`🔍 CRON: Total de operaciones con priceRange: ${allOperationsWithRange.length}`);
+      if (allOperationsWithRange.length > 0) {
+        console.log(`🔍 CRON: Estado de operaciones con priceRange:`, allOperationsWithRange.map(op => ({
+          ticker: op.ticker,
+          isPriceConfirmed: op.isPriceConfirmed,
+          hasPriceRange: !!op.priceRange
+        })));
+      }
+      
+      // ✅ DEBUG: Verificar si hay operaciones sin priceRange pero que deberían tenerlo
+      const operationsWithoutRange = await Operation.find({
+        operationType: 'COMPRA',
+        isPriceConfirmed: { $ne: true }
+      }).limit(5).select('ticker priceRange isPriceConfirmed alertId');
+      
+      console.log(`🔍 CRON: Primeras 5 operaciones sin confirmar (muestra):`, operationsWithoutRange.map(op => ({
+        ticker: op.ticker,
+        hasPriceRange: !!op.priceRange,
+        isPriceConfirmed: op.isPriceConfirmed
+      })));
+    }
 
     // Buscar alertas activas con rangos de precio (entrada o venta)
     const alertsWithRange = await Alert.find({
