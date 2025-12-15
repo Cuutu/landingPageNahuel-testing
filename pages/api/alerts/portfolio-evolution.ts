@@ -9,6 +9,7 @@ import User from '@/models/User';
 import Alert from '@/models/Alert';
 import Liquidity from '@/models/Liquidity';
 import PortfolioSnapshot from '@/models/PortfolioSnapshot';
+import PortfolioMetrics from '@/models/PortfolioMetrics';
 import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
 
 interface SP500DataPoint {
@@ -110,12 +111,30 @@ export default async function handler(
     // ✅ CORREGIDO: SIEMPRE filtrar alertas por tipo para evitar mezclar servicios
     alertQuery.tipo = poolType;
 
-    // ✅ CORREGIDO: Usar calculateCurrentPortfolioValue para obtener valorTotalCartera actual
-    // Esto mantiene consistencia con /api/portfolio/returns y otros endpoints
-    const currentPortfolioValue = await calculateCurrentPortfolioValue(poolType);
-    const valorTotalCarteraActual = currentPortfolioValue.valorTotalCartera;
-    const initialLiquidity = currentPortfolioValue.liquidezInicial;
-    const totalProfitLoss = currentPortfolioValue.totalProfitLoss;
+    // ✅ OPTIMIZADO: Intentar obtener métricas pre-calculadas primero
+    let metrics = await PortfolioMetrics.findOne({ pool: poolType });
+    const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : Infinity;
+    const shouldRecalculate = !metrics || metricsAge > 2;
+
+    let currentPortfolioValue;
+    let valorTotalCarteraActual: number;
+    let initialLiquidity: number;
+    let totalProfitLoss: number;
+
+    if (shouldRecalculate || !metrics) {
+      console.log(`⚠️ [PORTFOLIO] Métricas de ${poolType} son antiguas (${metricsAge.toFixed(1)} min) o no existen, calculando...`);
+      // Calcular como fallback
+      currentPortfolioValue = await calculateCurrentPortfolioValue(poolType);
+      valorTotalCarteraActual = currentPortfolioValue.valorTotalCartera;
+      initialLiquidity = currentPortfolioValue.liquidezInicial;
+      totalProfitLoss = currentPortfolioValue.totalProfitLoss;
+    } else {
+      console.log(`✅ [PORTFOLIO] Usando métricas pre-calculadas de ${poolType} (actualizadas hace ${metricsAge.toFixed(1)} min)`);
+      // Usar métricas pre-calculadas
+      valorTotalCarteraActual = metrics.valorTotalCartera;
+      initialLiquidity = metrics.liquidezInicial;
+      totalProfitLoss = metrics.totalProfitLoss;
+    }
 
     console.log(`📊 [PORTFOLIO] Pool: ${poolType}, valorTotalCartera: $${valorTotalCarteraActual.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
@@ -492,8 +511,11 @@ export default async function handler(
       console.log(`📊 [WIN RATE] Trades ganadores: ${winningTrades.length}`);
     }
     
-    // ✅ CORREGIDO: Calcular profit total usando valorTotalCartera (método oficial)
-    const totalProfit = valorTotalCarteraActual - initialLiquidity;
+    // ✅ OPTIMIZADO: Usar totalProfit de métricas pre-calculadas cuando esté disponible
+    // Pero mantener cálculo de winRate complejo porque incluye ventas parciales
+    const totalProfit = (metrics && metricsAge <= 2) 
+      ? metrics.totalProfit 
+      : valorTotalCarteraActual - initialLiquidity;
     
     // Calcular rendimientos relativos al S&P 500
     const sp500Return = sp500Data.length > 0 && sp500Data[0].value > 0 ? 

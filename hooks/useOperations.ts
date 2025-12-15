@@ -41,6 +41,18 @@ interface Operation {
     descartadaAt?: string | Date;
     date?: string | Date;
     createdAt?: string | Date;
+    chartImage?: {
+      public_id: string;
+      secure_url: string;
+      url: string;
+    };
+    analysis?: string;
+    images?: Array<{
+      public_id: string;
+      secure_url: string;
+      url: string;
+      caption?: string;
+    }>;
   } | null;
 }
 

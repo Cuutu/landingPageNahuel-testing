@@ -53,7 +53,7 @@ export default async function handler(
       .sort({ date: -1 })
       .limit(parseInt(limit as string))
       .skip(parseInt(skip as string))
-      .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt');
+      .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images');
     console.log(`📊 [OPERATIONS LIST] Encontradas ${operations.length} operaciones para system: ${system}`);
     if (operations.length > 0) {
       console.log(`🔍 [OPERATIONS LIST] Primera operación:`, {
@@ -79,14 +79,17 @@ export default async function handler(
             finalPriceSetAt: op.alertId.finalPriceSetAt,
             descartadaAt: op.alertId.descartadaAt,
             date: op.alertId.date,
-            createdAt: op.alertId.createdAt
+            createdAt: op.alertId.createdAt,
+            chartImage: op.alertId.chartImage,
+            analysis: op.alertId.analysis,
+            images: op.alertId.images
           };
         } 
         // Si alertId es un string (ObjectId), intentar buscar la alerta manualmente
         else if (op.alertId) {
           try {
             const alertIdString = typeof op.alertId === 'string' ? op.alertId : op.alertId.toString();
-            const alert = await Alert.findById(alertIdString).select('status availableForPurchase finalPriceSetAt descartadaAt date createdAt');
+            const alert = await Alert.findById(alertIdString).select('status availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images');
             
             if (alert) {
               alertData = {
@@ -95,7 +98,10 @@ export default async function handler(
                 finalPriceSetAt: alert.finalPriceSetAt,
                 descartadaAt: alert.descartadaAt,
                 date: alert.date,
-                createdAt: alert.createdAt
+                createdAt: alert.createdAt,
+                chartImage: alert.chartImage,
+                analysis: alert.analysis,
+                images: alert.images
               };
             } else {
               console.warn(`⚠️ Alerta no encontrada para operación ${op._id}, alertId: ${alertIdString}`);

@@ -16,7 +16,8 @@ import {
   X,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Eye
 } from 'lucide-react';
 import styles from '@/styles/OperationsTable.module.css';
 
@@ -63,6 +64,10 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   // ✅ NUEVO: Estado para editar operaciones
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingOperation, setEditingOperation] = useState<any>(null);
+  
+  // ✅ NUEVO: Estado para modal de ver alerta
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<any>(null);
   const [editPriceType, setEditPriceType] = useState<'specific' | 'range'>('specific');
   const [editFormData, setEditFormData] = useState({
     ticker: '',
@@ -649,7 +654,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               <th>% Cartera</th>
               <th>Estado</th>
               <th>Fecha</th>
-              {userRole === 'admin' && <th>Acciones</th>}
+              <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -743,28 +748,65 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     <td>
                       {formatDate(operation.date)}
                     </td>
-                    {userRole === 'admin' && (
-                      <td>
-                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                    <td>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                        {/* ✅ NUEVO: Botón "Ver alerta" - visible para todos si hay alerta */}
+                        {operation.alertId && operation.alert && (
                           <button
-                            onClick={() => handleEditOperation(operation)}
+                            onClick={() => {
+                              setSelectedAlert(operation.alert);
+                              setShowAlertModal(true);
+                            }}
                             className={styles.actionButton}
-                            title="Editar operación"
-                            style={{ color: '#3b82f6' }}
+                            title="Ver alerta"
+                            style={{ 
+                              color: '#10b981',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: '1px solid #10b981',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#10b981';
+                              e.currentTarget.style.color = 'white';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                              e.currentTarget.style.color = '#10b981';
+                            }}
                           >
-                            <Edit className="w-4 h-4" />
+                            <Eye className="w-4 h-4" />
+                            <span style={{ fontSize: '0.875rem' }}>Ver alerta</span>
                           </button>
-                          <button
-                            onClick={() => handleDeleteOperation(operation._id)}
-                            className={styles.actionButton}
-                            title="Eliminar operación"
-                            style={{ color: '#ef4444' }}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
+                        )}
+                        {/* Botones de admin */}
+                        {userRole === 'admin' && (
+                          <>
+                            <button
+                              onClick={() => handleEditOperation(operation)}
+                              className={styles.actionButton}
+                              title="Editar operación"
+                              style={{ color: '#3b82f6' }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteOperation(operation._id)}
+                              className={styles.actionButton}
+                              title="Eliminar operación"
+                              style={{ color: '#ef4444' }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 );
               })
@@ -1691,6 +1733,213 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                   Guardar Cambios
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ✅ NUEVO: Modal para ver alerta */}
+      {showAlertModal && selectedAlert && (
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowAlertModal(false);
+              setSelectedAlert(null);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem',
+            backdropFilter: 'blur(4px)'
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              width: '100%',
+              maxWidth: '900px',
+              maxHeight: '90vh',
+              overflow: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              padding: '24px',
+              borderBottom: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'white',
+              zIndex: 10
+            }}>
+              <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>
+                📊 Detalles de la Alerta
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAlertModal(false);
+                  setSelectedAlert(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#6b7280',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                  e.currentTarget.style.color = '#1f2937';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#6b7280';
+                }}
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding: '24px' }}>
+              {/* Gráfico */}
+              {selectedAlert.chartImage && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ 
+                    margin: '0 0 16px 0', 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    📈 Gráfico de TradingView
+                  </h3>
+                  <div style={{
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f9fafb'
+                  }}>
+                    <img 
+                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url} 
+                      alt="Gráfico de la alerta"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Fundamento Técnico */}
+              {selectedAlert.analysis && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ 
+                    margin: '0 0 16px 0', 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    📝 Fundamento Técnico
+                  </h3>
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    lineHeight: '1.75',
+                    color: '#374151',
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '0.9375rem'
+                  }}>
+                    {selectedAlert.analysis}
+                  </div>
+                </div>
+              )}
+
+              {/* Imágenes adicionales */}
+              {selectedAlert.images && selectedAlert.images.length > 0 && (
+                <div>
+                  <h3 style={{ 
+                    margin: '0 0 16px 0', 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    📸 Imágenes Adicionales ({selectedAlert.images.length})
+                  </h3>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    {selectedAlert.images.map((image: any, index: number) => (
+                      <div 
+                        key={image.public_id || index}
+                        style={{
+                          borderRadius: '12px',
+                          overflow: 'hidden',
+                          border: '1px solid #e5e7eb',
+                          backgroundColor: '#f9fafb'
+                        }}
+                      >
+                        <img 
+                          src={image.secure_url || image.url} 
+                          alt={image.caption || `Imagen ${index + 1}`}
+                          style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block'
+                          }}
+                        />
+                        {image.caption && (
+                          <div style={{
+                            padding: '8px 12px',
+                            fontSize: '0.875rem',
+                            color: '#6b7280',
+                            borderTop: '1px solid #e5e7eb'
+                          }}>
+                            {image.caption}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mensaje si no hay información */}
+              {!selectedAlert.chartImage && !selectedAlert.analysis && (!selectedAlert.images || selectedAlert.images.length === 0) && (
+                <div style={{
+                  padding: '32px',
+                  textAlign: 'center',
+                  color: '#6b7280'
+                }}>
+                  <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: '#9ca3af' }} />
+                  <p style={{ margin: 0, fontSize: '1rem' }}>
+                    No hay información adicional disponible para esta alerta.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

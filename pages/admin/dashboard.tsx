@@ -212,6 +212,17 @@ const useDashboardSections = () => {
       ]
     },
     {
+      id: 'portfolio-audit',
+      title: 'Auditoría de Portfolio',
+      description: 'Desglose completo de todos los números del dashboard con su origen, cálculos paso a paso y detalles de cada alerta (ticker, cantidad, precio, horario, monto). Control total de los datos del portfolio.',
+      icon: <BarChart3 size={32} />,
+      color: 'from-blue-500 to-cyan-500',
+      links: [
+        { label: 'Auditoría Completa', href: '/admin/portfolio-audit', icon: <BarChart3 size={16} /> },
+        { label: 'Alertas y Liquidez', href: '/admin/alertas-liquidez', icon: <DollarSign size={16} /> }
+      ]
+    },
+    {
       id: 'indicators',
       title: 'Usuarios de Indicadores',
       description: 'Gestiona usuarios que compraron el servicio de indicadores. Envía notificaciones de alta y verifica datos de TradingView.',

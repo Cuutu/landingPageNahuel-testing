@@ -135,8 +135,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             continue;
           }
 
-          // Obtener el precio actual de la alerta o usar el precio de cierre
-          const currentPrice = alert.finalPrice || alert.currentPrice;
+          // ✅ CORREGIDO: Obtener precio REAL del mercado (no el guardado en la alerta)
+          let currentPrice = await getMarketClosePrice(alert.symbol);
+          
+          // Fallback al precio de la alerta solo si no se puede obtener precio real
+          if (!currentPrice || currentPrice <= 0) {
+            currentPrice = alert.finalPrice || alert.currentPrice;
+            console.warn(`⚠️ CRON: No se pudo obtener precio real del mercado para ${alert.symbol}, usando precio de la alerta: $${currentPrice}`);
+          } else {
+            console.log(`✅ CRON: Precio real obtenido del mercado para ${alert.symbol}: $${currentPrice}`);
+          }
           
           if (!currentPrice || currentPrice <= 0) {
             console.warn(`⚠️ CRON: Alerta ${alert.symbol || 'N/A'} no tiene precio válido (${currentPrice}), saltando operación ${operation.ticker}...`);
@@ -145,11 +153,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
           // Verificar si el precio está dentro del rango
           const priceRange = operation.priceRange;
+          const operationType = operation.operationType;
+          
           if (priceRange && priceRange.min && priceRange.max) {
             const isInRange = currentPrice >= priceRange.min && currentPrice <= priceRange.max;
             
             if (isInRange) {
-              const operationType = operation.operationType;
               console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} - Precio $${currentPrice} está dentro del rango $${priceRange.min}-$${priceRange.max}, confirmando...`);
               
               // ✅ CORREGIDO: Confirmar la operación según su tipo
@@ -164,7 +173,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               confirmedOperationsCount++;
               console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} confirmada exitosamente`);
             } else {
-              console.log(`⚠️ CRON: Operación ${operation.operationType} ${operation.ticker} - Precio $${currentPrice} está FUERA del rango $${priceRange.min}-$${priceRange.max} - NO se confirma`);
+              // ✅ NUEVO: Si el precio está FUERA del rango, desestimar la operación
+              const motivo = currentPrice < priceRange.min 
+                ? `Precio $${currentPrice} < mínimo $${priceRange.min}`
+                : `Precio $${currentPrice} > máximo $${priceRange.max}`;
+              
+              console.log(`❌ CRON: Operación ${operationType} ${operation.ticker} - ${motivo} - DESCARTANDO operación`);
+              
+              if (operationType === 'VENTA') {
+                // ✅ NUEVO: Para VENTA fuera de rango, eliminar la operación y limpiar partialSale
+                await discardSaleOperation(operation, alert, motivo);
+              } else {
+                // Para COMPRA fuera de rango, solo loguear (ya se maneja en otra parte del código)
+                console.log(`⚠️ CRON: Operación COMPRA fuera de rango - No se confirma`);
+              }
             }
           } else {
             console.warn(`⚠️ CRON: Operación ${operation.ticker} no tiene priceRange válido, saltando...`);
@@ -1060,6 +1082,109 @@ export async function updateOperationPriceOnConfirmation(alertId: any, finalPric
     
   } catch (error) {
     console.error(`⚠️ Error actualizando precio de operación para alerta ${alertId}:`, error);
+  }
+}
+
+/**
+ * ✅ NUEVO: Obtener precio de cierre del mercado desde Google Finance
+ * Reutiliza la misma lógica que market-close.ts
+ */
+async function getMarketClosePrice(symbol: string): Promise<number | null> {
+  try {
+    // ✅ Usar la API interna de Google Finance del proyecto
+    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/market-data/google-finance?symbol=${symbol}`);
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.price && data.price > 0) {
+        console.log(`✅ Precio obtenido desde API interna para ${symbol}: $${data.price}`);
+        return data.price;
+      }
+    }
+    
+    // ✅ FALLBACK: Usar Google Finance directo
+    const googleFinanceUrl = `https://www.google.com/finance/quote/${symbol}`;
+    const response2 = await fetch(googleFinanceUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    if (response2.ok) {
+      const html = await response2.text();
+      
+      // Buscar precio actual
+      const priceMatch = html.match(/"price":\s*"([^"]+)"/);
+      if (priceMatch) {
+        const price = parseFloat(priceMatch[1].replace(/,/g, ''));
+        if (!isNaN(price) && price > 0) {
+          console.log(`✅ Precio obtenido desde Google Finance para ${symbol}: $${price}`);
+          return price;
+        }
+      }
+    }
+    
+    console.log(`⚠️ No se pudo obtener precio real para ${symbol}`);
+    return null;
+
+  } catch (error: any) {
+    console.error(`❌ Error obteniendo precio para ${symbol}:`, error.message);
+    return null;
+  }
+}
+
+/**
+ * ✅ NUEVO: Desestima una operación de VENTA cuando el precio está fuera del rango
+ * Elimina la operación y limpia el partialSale de la alerta
+ */
+async function discardSaleOperation(operation: any, alert: any, motivo: string) {
+  try {
+    const Operation = (await import('@/models/Operation')).default;
+    const Alert = (await import('@/models/Alert')).default;
+    
+    console.log(`🗑️ CRON: Desestimando venta de ${operation.ticker} - ${motivo}`);
+    
+    // 1. Eliminar la operación de venta
+    const deleteResult = await Operation.deleteOne({ _id: operation._id });
+    console.log(`✅ CRON: Operación de venta eliminada: ${deleteResult.deletedCount} documento(s)`);
+    
+    // 2. Limpiar el partialSale de la alerta
+    const liquidityData = alert.liquidityData || {};
+    const partialSales = liquidityData.partialSales || [];
+    
+    // Buscar el partialSale que corresponde a esta operación
+    // Se identifica por el priceRange y el porcentaje
+    const saleToRemove = partialSales.find((sale: any) => 
+      sale.executed === false && 
+      sale.priceRange && 
+      sale.priceRange.min === operation.priceRange?.min &&
+      sale.priceRange.max === operation.priceRange?.max
+    );
+    
+    if (saleToRemove) {
+      const updatedPartialSales = partialSales.filter(
+        (sale: any) => sale._id.toString() !== saleToRemove._id.toString()
+      );
+      
+      await Alert.updateOne(
+        { _id: alert._id },
+        {
+          $set: {
+            'liquidityData.partialSales': updatedPartialSales
+          }
+        }
+      );
+      
+      console.log(`✅ CRON: Venta parcial eliminada de la alerta ${alert.symbol}`);
+      console.log(`   Ventas parciales restantes: ${updatedPartialSales.length}`);
+    } else {
+      console.warn(`⚠️ CRON: No se encontró partialSale para eliminar en la alerta ${alert.symbol}`);
+    }
+    
+    console.log(`✅ CRON: Venta de ${operation.ticker} desestimada completamente`);
+    
+  } catch (error) {
+    console.error(`❌ CRON: Error desestimando venta de ${operation.ticker}:`, error);
   }
 }
 

@@ -833,6 +833,45 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 </button>
               </div>
             </div>
+            
+            {/* ✅ NUEVO: Botón de cerrar visible en móviles */}
+            <button 
+              onClick={closeImageModal}
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                padding: '12px 24px',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                zIndex: 1000,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                minWidth: '120px',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#dc2626';
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ef4444';
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+              }}
+              aria-label="Cerrar imagen"
+            >
+              <span>✕</span>
+              <span>Cerrar</span>
+            </button>
               </div>
             </div>
           )}
@@ -999,6 +1038,45 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
                 </button>
               </div>
             </div>
+            
+            {/* ✅ NUEVO: Botón de cerrar visible en móviles */}
+            <button 
+              onClick={closeStickyModal}
+              style={{
+                position: 'absolute',
+                bottom: '20px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                padding: '12px 24px',
+                backgroundColor: '#ef4444',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                zIndex: 1000,
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+                minWidth: '120px',
+                justifyContent: 'center'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#dc2626';
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#ef4444';
+                e.currentTarget.style.transform = 'translateX(-50%) scale(1)';
+              }}
+              aria-label="Cerrar imagen"
+            >
+              <span>✕</span>
+              <span>Cerrar</span>
+            </button>
           </div>
         </div>
       )}

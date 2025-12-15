@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import PortfolioSnapshot from '@/models/PortfolioSnapshot';
+import PortfolioMetrics from '@/models/PortfolioMetrics';
 import { calculateCurrentPortfolioValue, calculateReturnPercentage } from '@/lib/portfolioCalculator';
 
 interface PortfolioReturnsResponse {
@@ -57,172 +58,143 @@ export default async function handler(
 
     const poolType = pool as 'TraderCall' | 'SmartMoney';
 
-    // Calcular valor actual de la cartera (tiempo real)
-    const currentValue = await calculateCurrentPortfolioValue(poolType);
-    const valorActualCartera = currentValue.valorTotalCartera;
+    // ✅ OPTIMIZADO: Intentar obtener métricas pre-calculadas primero
+    let metrics = await PortfolioMetrics.findOne({ pool: poolType });
+    
+    // Si las métricas son muy antiguas (> 2 minutos), recalcular como fallback
+    const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : Infinity;
+    const shouldRecalculate = !metrics || metricsAge > 2;
 
-    // Obtener snapshots históricos para diferentes períodos
-    const now = new Date();
-    const periods = {
-      '1d': 1,
-      '7d': 7,
-      '15d': 15,
-      '30d': 30,
-      '180d': 180,
-      '365d': 365
-    };
+    if (shouldRecalculate) {
+      console.log(`⚠️ [Portfolio Returns] Métricas de ${poolType} son antiguas (${metricsAge.toFixed(1)} min) o no existen, calculando...`);
+      
+      // Calcular valor actual de la cartera (fallback)
+      const currentValue = await calculateCurrentPortfolioValue(poolType);
+      const valorActualCartera = currentValue.valorTotalCartera;
 
-    const returns: Record<string, number | null> = {};
-    const historicalValues: Record<string, number | null> = {};
+      // Obtener snapshots históricos para diferentes períodos
+      const now = new Date();
+      const periods = {
+        '1d': 1,
+        '7d': 7,
+        '15d': 15,
+        '30d': 30,
+        '180d': 180,
+        '365d': 365
+      };
 
-    // ✅ ESCALABLE: Obtener el snapshot más antiguo y más reciente para calcular días disponibles
-    const [oldestSnapshot, newestSnapshot] = await Promise.all([
-      PortfolioSnapshot.findOne({
-        pool: poolType
-      }).sort({ snapshotDate: 1 }),
-      PortfolioSnapshot.findOne({
-        pool: poolType
-      }).sort({ snapshotDate: -1 })
-    ]);
+      const returns: Record<string, number | null> = {};
+      const historicalValues: Record<string, number | null> = {};
 
-    // Calcular cuántos días han pasado desde el snapshot más antiguo hasta ahora
-    const oldestSnapshotDate = oldestSnapshot ? new Date(oldestSnapshot.snapshotDate) : null;
-    const daysSinceOldest = oldestSnapshotDate 
-      ? Math.floor((now.getTime() - oldestSnapshotDate.getTime()) / (1000 * 60 * 60 * 24))
-      : 0;
+      // ✅ ESCALABLE: Obtener el snapshot más antiguo y más reciente para calcular días disponibles
+      const [oldestSnapshot, newestSnapshot] = await Promise.all([
+        PortfolioSnapshot.findOne({
+          pool: poolType
+        }).sort({ snapshotDate: 1 }),
+        PortfolioSnapshot.findOne({
+          pool: poolType
+        }).sort({ snapshotDate: -1 })
+      ]);
 
-    // Calcular cuántos días de datos históricos tenemos (entre el más antiguo y el más reciente)
-    let availableDays = 0;
-    if (oldestSnapshot && newestSnapshot) {
-      const oldestDate = new Date(oldestSnapshot.snapshotDate);
-      const newestDate = new Date(newestSnapshot.snapshotDate);
-      availableDays = Math.floor((newestDate.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24));
-    }
+      // Calcular cuántos días han pasado desde el snapshot más antiguo hasta ahora
+      const oldestSnapshotDate = oldestSnapshot ? new Date(oldestSnapshot.snapshotDate) : null;
+      const daysSinceOldest = oldestSnapshotDate 
+        ? Math.floor((now.getTime() - oldestSnapshotDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
 
-    console.log(`📊 [Portfolio Returns] Datos históricos para ${poolType}:`, {
-      valorActualCartera: valorActualCartera,
-      liquidezInicial: currentValue.liquidezInicial,
-      totalProfitLoss: currentValue.totalProfitLoss,
-      oldestDate: oldestSnapshotDate,
-      newestDate: newestSnapshot ? new Date(newestSnapshot.snapshotDate) : null,
-      availableDays,
-      daysSinceOldest,
-      oldestValorTotalCartera: oldestSnapshot?.valorTotalCartera,
-      newestValorTotalCartera: newestSnapshot?.valorTotalCartera
-    });
-
-    for (const [periodKey, days] of Object.entries(periods)) {
-      try {
-        // ✅ CORREGIDO: Si el período solicitado es mayor a los días desde el snapshot más antiguo, usar el snapshot más antiguo
-        // Esto asegura que siempre usemos el máximo período disponible cuando se solicita un período más largo
-        if (days > daysSinceOldest && oldestSnapshot) {
-          // El período solicitado excede los días disponibles desde el snapshot más antiguo
-          // Calcular rendimiento como diferencia de P&L%
-          const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
-          const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
-          const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
-          
-          returns[periodKey] = Number(returnPercentage.toFixed(2));
-          historicalValues[periodKey] = oldestSnapshot.valorTotalCartera;
-          
-          console.log(`⚠️ [Portfolio Returns] ${periodKey}: Período (${days}d) > días disponibles (${daysSinceOldest}d). Usando snapshot más antiguo`, {
-            currentProfitLossPercent,
-            historicalProfitLossPercent,
-            returnPercentage
-          });
-        } else {
-          // ✅ Hay suficientes datos históricos, buscar snapshot exacto para el período
-          const targetDate = new Date(now);
-          targetDate.setDate(targetDate.getDate() - days);
-          targetDate.setHours(16, 30, 0, 0); // Normalizar a las 16:30
-
-          // Buscar el snapshot más cercano a la fecha objetivo
-          // Buscar en un rango de ±1 día para encontrar el snapshot más cercano
-          const startDate = new Date(targetDate);
-          startDate.setDate(startDate.getDate() - 1);
-          
-          const endDate = new Date(targetDate);
-          endDate.setDate(endDate.getDate() + 1);
-
-          // ✅ CORREGIDO: Ordenar por snapshotDate ascendente para obtener el snapshot
-          // más antiguo en el rango, que es más cercano al período real que queremos medir
-          // Antes usaba -1 (más reciente) lo cual causaba que para 7d usara el snapshot de 6d
-          const snapshot = await PortfolioSnapshot.findOne({
-            pool: poolType,
-            snapshotDate: {
-              $gte: startDate,
-              $lte: endDate
-            }
-          }).sort({ snapshotDate: 1 }); // Obtener el más antiguo en el rango
-
-          if (snapshot) {
-            // ✅ CORREGIDO: Calcular rendimiento del período como la diferencia en porcentaje de P&L
-            // Fórmula: (P&L% actual) - (P&L% del snapshot)
-            // Esto es más robusto que comparar valorTotalCartera cuando los valores base cambian
-            const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
-            const historicalProfitLossPercent = snapshot.totalProfitLossPercentage || 0;
-            const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
-            
-            returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = snapshot.valorTotalCartera;
-            
-            console.log(`✅ [Portfolio Returns] ${periodKey}: Usando snapshot del ${snapshot.snapshotDate.toISOString().split('T')[0]}`, {
-              currentProfitLossPercent,
-              historicalProfitLossPercent,
-              returnPercentage
-            });
-          } else if (days === 1 && newestSnapshot) {
-            // ✅ CASO ESPECIAL: Para 1 día, si no hay snapshot de ayer (fin de semana), usar el último snapshot disponible
-            // Esto maneja el caso cuando el mercado está cerrado (fines de semana)
-            const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
-            const historicalProfitLossPercent = newestSnapshot.totalProfitLossPercentage || 0;
-            const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
-            
-            returns[periodKey] = Number(returnPercentage.toFixed(2));
-            historicalValues[periodKey] = newestSnapshot.valorTotalCartera;
-            
-            const newestDate = new Date(newestSnapshot.snapshotDate);
-            const daysSinceNewest = Math.floor((now.getTime() - newestDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: Usando último snapshot disponible del ${newestDate.toISOString().split('T')[0]} (${daysSinceNewest} días atrás)`, {
-              currentProfitLossPercent,
-              historicalProfitLossPercent,
-              returnPercentage
-            });
-          } else if (oldestSnapshot) {
-            // Fallback: no encontramos snapshot exacto pero hay datos históricos, usar el más antiguo
+      for (const [periodKey, days] of Object.entries(periods)) {
+        try {
+          if (days > daysSinceOldest && oldestSnapshot) {
             const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
             const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
             const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
             
             returns[periodKey] = Number(returnPercentage.toFixed(2));
             historicalValues[periodKey] = oldestSnapshot.valorTotalCartera;
-            
-            console.log(`⚠️ [Portfolio Returns] ${periodKey}: Usando snapshot más antiguo (${daysSinceOldest} días atrás)`, {
-              currentProfitLossPercent,
-              historicalProfitLossPercent,
-              returnPercentage
-            });
           } else {
-            // ❌ No hay ningún snapshot disponible
-            returns[periodKey] = null;
-            historicalValues[periodKey] = null;
+            const targetDate = new Date(now);
+            targetDate.setDate(targetDate.getDate() - days);
+            targetDate.setHours(16, 30, 0, 0);
+
+            const startDate = new Date(targetDate);
+            startDate.setDate(startDate.getDate() - 1);
             
-            console.log(`❌ [Portfolio Returns] ${periodKey}: No hay snapshots disponibles`);
+            const endDate = new Date(targetDate);
+            endDate.setDate(endDate.getDate() + 1);
+
+            const snapshot = await PortfolioSnapshot.findOne({
+              pool: poolType,
+              snapshotDate: {
+                $gte: startDate,
+                $lte: endDate
+              }
+            }).sort({ snapshotDate: 1 });
+
+            if (snapshot) {
+              const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+              const historicalProfitLossPercent = snapshot.totalProfitLossPercentage || 0;
+              const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
+              
+              returns[periodKey] = Number(returnPercentage.toFixed(2));
+              historicalValues[periodKey] = snapshot.valorTotalCartera;
+            } else if (days === 1 && newestSnapshot) {
+              const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+              const historicalProfitLossPercent = newestSnapshot.totalProfitLossPercentage || 0;
+              const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
+              
+              returns[periodKey] = Number(returnPercentage.toFixed(2));
+              historicalValues[periodKey] = newestSnapshot.valorTotalCartera;
+            } else if (oldestSnapshot) {
+              const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+              const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
+              const returnPercentage = currentProfitLossPercent - historicalProfitLossPercent;
+              
+              returns[periodKey] = Number(returnPercentage.toFixed(2));
+              historicalValues[periodKey] = oldestSnapshot.valorTotalCartera;
+            } else {
+              returns[periodKey] = null;
+              historicalValues[periodKey] = null;
+            }
+          }
+        } catch (error) {
+          console.error(`Error calculando rendimiento para ${periodKey}:`, error);
+          returns[periodKey] = null;
+          historicalValues[periodKey] = null;
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          valorActualCartera,
+          returns: returns as {
+            '1d': number | null;
+            '7d': number | null;
+            '15d': number | null;
+            '30d': number | null;
+            '180d': number | null;
+            '365d': number | null;
+          },
+          historicalValues: historicalValues as {
+            '1d': number | null;
+            '7d': number | null;
+            '15d': number | null;
+            '30d': number | null;
+            '180d': number | null;
+            '365d': number | null;
           }
         }
-      } catch (error) {
-        console.error(`Error calculando rendimiento para ${periodKey}:`, error);
-        returns[periodKey] = null;
-        historicalValues[periodKey] = null;
-      }
+      });
     }
 
+    // ✅ OPTIMIZADO: Usar métricas pre-calculadas (mucho más rápido)
+    console.log(`✅ [Portfolio Returns] Usando métricas pre-calculadas de ${poolType} (actualizadas hace ${metricsAge.toFixed(1)} min)`);
+    
     return res.status(200).json({
       success: true,
       data: {
-        valorActualCartera,
-        returns: returns as {
+        valorActualCartera: metrics.valorTotalCartera,
+        returns: metrics.returns as {
           '1d': number | null;
           '7d': number | null;
           '15d': number | null;
@@ -230,7 +202,7 @@ export default async function handler(
           '180d': number | null;
           '365d': number | null;
         },
-        historicalValues: historicalValues as {
+        historicalValues: metrics.historicalValues as {
           '1d': number | null;
           '7d': number | null;
           '15d': number | null;
