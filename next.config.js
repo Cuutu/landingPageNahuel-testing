@@ -69,7 +69,7 @@ const nextConfig = {
           "media-src 'self' https://*.mux.com blob:",
           "object-src 'none'",
           "base-uri 'self'",
-          "form-action 'self'",
+          "form-action 'self' https://accounts.google.com https://lozanonahuel.com",
           "frame-ancestors 'self'",
           "upgrade-insecure-requests"
         ].join('; ')
