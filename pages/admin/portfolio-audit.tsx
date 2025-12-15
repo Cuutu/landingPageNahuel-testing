@@ -350,9 +350,9 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                             </td>
                             <td>
                               {formatCurrency(alert.currentPrice)}
-                              {alert.finalPrice && alert.finalPrice !== alert.currentPrice && (
+                              {alert.status === 'CLOSED' && alert.finalPrice && alert.finalPrice !== alert.currentPrice && (
                                 <div className={styles.priceNote}>
-                                  final: {formatCurrency(alert.finalPrice)}
+                                  Precio de cierre: {formatCurrency(alert.finalPrice)}
                                 </div>
                               )}
                             </td>
