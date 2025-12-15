@@ -160,6 +160,67 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               alert.desestimacionMotivo = reason;
               alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
               
+              // ✅ NUEVO: Crear operación CANCELLED para que aparezca en la tabla de operaciones
+              try {
+                const Operation = (await import('@/models/Operation')).default;
+                const User = (await import('@/models/User')).default;
+                
+                const adminUser = await User.findOne({ role: 'admin' });
+                if (adminUser) {
+                  const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+                  
+                  // Verificar si ya existe una operación para esta alerta
+                  const existingOperation = await Operation.findOne({ 
+                    alertId: alert._id,
+                    operationType: 'COMPRA'
+                  });
+                  
+                  if (existingOperation) {
+                    await Operation.updateOne(
+                      { _id: existingOperation._id },
+                      {
+                        $set: {
+                          status: 'CANCELLED',
+                          isPriceConfirmed: true,
+                          notes: `❌ COMPRA DESESTIMADA AL CIERRE: ${reason} | Precio de cierre: $${closePrice.toFixed(2)}`
+                        }
+                      }
+                    );
+                    console.log(`✅ ${alert.symbol}: Operación existente marcada como CANCELLED al cierre`);
+                  } else {
+                    // Crear nueva operación CANCELLED
+                    const entryRangeMin = alert.entryPriceRange?.min || alert.precioMinimo || 0;
+                    const entryRangeMax = alert.entryPriceRange?.max || alert.precioMaximo || 0;
+                    
+                    const cancelledOperation = new Operation({
+                      ticker: alert.symbol.toUpperCase(),
+                      operationType: 'COMPRA',
+                      quantity: 0,
+                      price: closePrice,
+                      amount: 0,
+                      date: new Date(),
+                      balance: 0,
+                      alertId: alert._id,
+                      alertSymbol: alert.symbol.toUpperCase(),
+                      system: pool,
+                      createdBy: adminUser._id,
+                      portfolioPercentage: alert.participationPercentage || 0,
+                      priceRange: entryRangeMin > 0 && entryRangeMax > 0 ? { min: entryRangeMin, max: entryRangeMax } : undefined,
+                      isPriceConfirmed: true,
+                      status: 'CANCELLED',
+                      executedBy: 'CRON',
+                      executionMethod: 'AUTOMATIC',
+                      notes: `❌ COMPRA DESESTIMADA AL CIERRE: ${reason} | Precio de cierre: $${closePrice.toFixed(2)}`
+                    });
+                    
+                    await cancelledOperation.save();
+                    console.log(`✅ ${alert.symbol}: Nueva operación CANCELLED creada al cierre`);
+                  }
+                }
+              } catch (operationError) {
+                console.error(`⚠️ Error creando operación cancelada para ${alert.symbol}:`, operationError);
+              }
+              
               // Enviar notificación de alerta desestimada
               try {
                 const { createAlertNotification } = await import('@/lib/notificationUtils');

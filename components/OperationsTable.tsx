@@ -378,14 +378,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   };
 
   // ✅ NUEVO: Función para determinar el estado de la operación
-  const getOperationStatus = (operation: any): 'Ejecutada' | 'Rechazada' | 'A confirmar' | 'Completado' | 'Cancelado' | 'Pendiente' => {
+  const getOperationStatus = (operation: any): 'Ejecutada' | 'Rechazada' | 'A confirmar' | 'Completado' | 'Cancelado' | 'Pendiente' | 'Desestimada' => {
     // ✅ PRIORIDAD 1: Si la operación tiene un status manual, usarlo
     if (operation.status) {
       switch (operation.status) {
         case 'COMPLETED':
           return 'Completado';
         case 'CANCELLED':
-          return 'Cancelado';
+          // ✅ MODIFICADO: Mostrar "Desestimada" para operaciones canceladas
+          // Esto indica que la alerta fue descartada por estar fuera de rango
+          return 'Desestimada';
         case 'PENDING':
           return 'Pendiente';
         case 'ACTIVE':
@@ -499,14 +501,15 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   };
 
   // ✅ NUEVO: Función para obtener el color del estado
-  const getStatusColor = (status: 'Ejecutada' | 'Rechazada' | 'A confirmar' | 'Completado' | 'Cancelado' | 'Pendiente') => {
+  const getStatusColor = (status: 'Ejecutada' | 'Rechazada' | 'A confirmar' | 'Completado' | 'Cancelado' | 'Pendiente' | 'Desestimada') => {
     switch (status) {
       case 'Ejecutada':
       case 'Completado':
         return { color: '#10B981', bgColor: '#D1FAE5' }; // Verde
       case 'Rechazada':
       case 'Cancelado':
-        return { color: '#EF4444', bgColor: '#FEE2E2' }; // Rojo
+      case 'Desestimada':
+        return { color: '#EF4444', bgColor: '#FEE2E2' }; // Rojo - Operaciones desestimadas/canceladas
       case 'A confirmar':
       case 'Pendiente':
         return { color: '#F59E0B', bgColor: '#FEF3C7' }; // Amarillo/Naranja

@@ -353,6 +353,69 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             }
           );
 
+          // ✅ NUEVO: Crear operación de COMPRA con status CANCELLED para que aparezca en la tabla
+          // Esto permite que los usuarios vean las alertas que fueron desestimadas
+          if (adminUser) {
+            try {
+              const OperationModule = await import('@/models/Operation');
+              const Operation = OperationModule.default;
+              
+              const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+              
+              // Verificar si ya existe una operación para esta alerta (puede haber sido creada antes)
+              const existingOperation = await Operation.findOne({ 
+                alertId: alert._id,
+                operationType: 'COMPRA'
+              });
+              
+              if (existingOperation) {
+                // Si ya existe, solo marcarla como CANCELLED
+                await Operation.updateOne(
+                  { _id: existingOperation._id },
+                  {
+                    $set: {
+                      status: 'CANCELLED',
+                      isPriceConfirmed: true,
+                      notes: `❌ COMPRA DESESTIMADA: ${motivo} | Rango original: $${entryRangeMin.toFixed(2)} - $${entryRangeMax.toFixed(2)} | Precio al cierre: $${closePrice.toFixed(2)}`
+                    }
+                  }
+                );
+                console.log(`✅ ${alert.symbol}: Operación de compra existente marcada como CANCELLED`);
+              } else {
+                // Si no existe, crear una nueva operación CANCELLED
+                const cancelledOperation = new Operation({
+                  ticker: alert.symbol.toUpperCase(),
+                  operationType: 'COMPRA',
+                  quantity: 0, // Sin cantidad porque no se ejecutó
+                  price: closePrice,
+                  amount: 0,
+                  date: new Date(),
+                  balance: 0,
+                  alertId: alert._id,
+                  alertSymbol: alert.symbol.toUpperCase(),
+                  system: pool,
+                  createdBy: adminUser._id,
+                  portfolioPercentage: alert.participationPercentage || 0,
+                  priceRange: {
+                    min: entryRangeMin,
+                    max: entryRangeMax
+                  },
+                  isPriceConfirmed: true, // Ya está procesada
+                  status: 'CANCELLED',
+                  executedBy: 'CRON',
+                  executionMethod: 'AUTOMATIC',
+                  notes: `❌ COMPRA DESESTIMADA: ${motivo} | Rango original: $${entryRangeMin.toFixed(2)} - $${entryRangeMax.toFixed(2)} | Precio al cierre: $${closePrice.toFixed(2)}`
+                });
+                
+                await cancelledOperation.save();
+                console.log(`✅ ${alert.symbol}: Nueva operación de compra CANCELLED creada para registro`);
+              }
+            } catch (operationError) {
+              console.error(`⚠️ Error creando/actualizando operación cancelada para ${alert.symbol}:`, operationError);
+              // No fallar el proceso si hay error en la operación
+            }
+          }
+
           conversionDetails.push({
             symbol: alert.symbol,
             type: 'discarded',
@@ -1134,8 +1197,8 @@ async function getMarketClosePrice(symbol: string): Promise<number | null> {
 }
 
 /**
- * ✅ NUEVO: Desestima una operación de VENTA cuando el precio está fuera del rango
- * Elimina la operación y limpia el partialSale de la alerta
+ * ✅ MODIFICADO: Desestima una operación de VENTA cuando el precio está fuera del rango
+ * En lugar de eliminar la operación, la marca como CANCELLED para que aparezca en la tabla
  */
 async function discardSaleOperation(operation: any, alert: any, motivo: string) {
   try {
@@ -1144,44 +1207,77 @@ async function discardSaleOperation(operation: any, alert: any, motivo: string) 
     
     console.log(`🗑️ CRON: Desestimando venta de ${operation.ticker} - ${motivo}`);
     
-    // 1. Eliminar la operación de venta
-    const deleteResult = await Operation.deleteOne({ _id: operation._id });
-    console.log(`✅ CRON: Operación de venta eliminada: ${deleteResult.deletedCount} documento(s)`);
+    // 1. ✅ MODIFICADO: Marcar la operación como CANCELLED en lugar de eliminarla
+    // Esto permite que la operación desestimada aparezca en la tabla de operaciones
+    const updateResult = await Operation.updateOne(
+      { _id: operation._id },
+      {
+        $set: {
+          status: 'CANCELLED',
+          isPriceConfirmed: true, // Marcar como procesada
+          notes: `❌ VENTA DESESTIMADA: ${motivo} | Rango original: $${operation.priceRange?.min?.toFixed(2) || 'N/A'} - $${operation.priceRange?.max?.toFixed(2) || 'N/A'}`
+        }
+      }
+    );
+    console.log(`✅ CRON: Operación de venta marcada como CANCELLED: ${updateResult.modifiedCount} documento(s)`);
     
-    // 2. Limpiar el partialSale de la alerta
+    // 2. Limpiar el partialSale de la alerta (marcar como no ejecutado/cancelado)
     const liquidityData = alert.liquidityData || {};
     const partialSales = liquidityData.partialSales || [];
     
     // Buscar el partialSale que corresponde a esta operación
     // Se identifica por el priceRange y el porcentaje
-    const saleToRemove = partialSales.find((sale: any) => 
+    const saleToUpdate = partialSales.find((sale: any) => 
       sale.executed === false && 
       sale.priceRange && 
       sale.priceRange.min === operation.priceRange?.min &&
       sale.priceRange.max === operation.priceRange?.max
     );
     
-    if (saleToRemove) {
-      const updatedPartialSales = partialSales.filter(
-        (sale: any) => sale._id.toString() !== saleToRemove._id.toString()
-      );
+    if (saleToUpdate) {
+      // ✅ MODIFICADO: Marcar como cancelada en lugar de eliminar
+      const updatedPartialSales = partialSales.map((sale: any) => {
+        if (sale._id.toString() === saleToUpdate._id.toString()) {
+          return {
+            ...sale,
+            executed: false,
+            cancelled: true,
+            cancelledAt: new Date(),
+            cancelReason: motivo
+          };
+        }
+        return sale;
+      });
       
       await Alert.updateOne(
         { _id: alert._id },
         {
           $set: {
             'liquidityData.partialSales': updatedPartialSales
+          },
+          $unset: {
+            sellRangeMin: 1,
+            sellRangeMax: 1
           }
         }
       );
       
-      console.log(`✅ CRON: Venta parcial eliminada de la alerta ${alert.symbol}`);
-      console.log(`   Ventas parciales restantes: ${updatedPartialSales.length}`);
+      console.log(`✅ CRON: Venta parcial marcada como cancelada en la alerta ${alert.symbol}`);
     } else {
-      console.warn(`⚠️ CRON: No se encontró partialSale para eliminar en la alerta ${alert.symbol}`);
+      console.warn(`⚠️ CRON: No se encontró partialSale para marcar como cancelada en la alerta ${alert.symbol}`);
+      // ✅ NUEVO: Limpiar los rangos de venta de la alerta aunque no encontremos el partialSale
+      await Alert.updateOne(
+        { _id: alert._id },
+        {
+          $unset: {
+            sellRangeMin: 1,
+            sellRangeMax: 1
+          }
+        }
+      );
     }
     
-    console.log(`✅ CRON: Venta de ${operation.ticker} desestimada completamente`);
+    console.log(`✅ CRON: Venta de ${operation.ticker} desestimada y visible en operaciones`);
     
   } catch (error) {
     console.error(`❌ CRON: Error desestimando venta de ${operation.ticker}:`, error);

@@ -60,7 +60,7 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
             marginBottom: '1.5rem',
             fontSize: '0.95rem'
           }}>
-            Ingresá con tu cuenta de Google para continuar
+            Ingresá con tu cuenta de Google para continuar 
           </p>
 
           {error && (
