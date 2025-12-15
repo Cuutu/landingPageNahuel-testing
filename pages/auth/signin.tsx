@@ -21,13 +21,13 @@ export default function SignInPage({ callbackUrl, error, csrfToken: initialCsrfT
   const formRef = useRef<HTMLFormElement>(null);
 
   // Pre-cargar CSRF token cuando la página se monta
+  // SIEMPRE obtener del cliente para asegurar que coincida con las cookies
   useEffect(() => {
-    if (!csrfToken) {
-      getCsrfToken().then((token) => {
-        if (token) setCsrfToken(token);
-      });
-    }
-  }, [csrfToken]);
+    // Obtener token fresco del cliente (más confiable en móvil)
+    getCsrfToken().then((token) => {
+      if (token) setCsrfToken(token);
+    });
+  }, []);
 
   const safeCallback = callbackUrl?.includes('/auth/signin') ? '/' : (callbackUrl || '/');
 
