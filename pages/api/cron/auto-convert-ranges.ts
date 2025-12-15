@@ -254,7 +254,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           });
           
           // ✅ NUEVO: Actualizar el precio de la operación de COMPRA existente con el precio final confirmado
-          await updateOperationPriceOnConfirmation(alert._id, closePrice);
+          try {
+            console.log(`🔄 ${alert.symbol}: Llamando a updateOperationPriceOnConfirmation con alertId=${alert._id}, precio=${closePrice}`);
+            await updateOperationPriceOnConfirmation(alert._id, closePrice);
+            console.log(`✅ ${alert.symbol}: updateOperationPriceOnConfirmation completado exitosamente`);
+          } catch (operationUpdateError) {
+            console.error(`❌ ${alert.symbol}: Error en updateOperationPriceOnConfirmation:`, operationUpdateError);
+            // No fallar el proceso completo si hay error actualizando la operación
+          }
         }
         
         // Procesar rango de venta si existe
@@ -836,44 +843,56 @@ export async function updateOperationPriceOnConfirmation(alertId: any, finalPric
   try {
     const Operation = (await import('@/models/Operation')).default;
     const Liquidity = (await import('@/models/Liquidity')).default;
+    const mongoose = (await import('mongoose')).default;
+    
+    // ✅ CRÍTICO: Convertir alertId a ObjectId si es string
+    const alertObjectId = mongoose.Types.ObjectId.isValid(alertId) 
+      ? new mongoose.Types.ObjectId(alertId) 
+      : alertId;
     
     // Buscar la operación de COMPRA asociada a esta alerta
     const operation = await Operation.findOne({
-      alertId: alertId,
+      alertId: alertObjectId,
       operationType: 'COMPRA'
     });
     
     if (!operation) {
-      console.log(`⚠️ No se encontró operación de COMPRA para alerta ${alertId}`);
+      console.log(`⚠️ No se encontró operación de COMPRA para alerta ${alertId} (ObjectId: ${alertObjectId})`);
       return;
     }
     
     const oldPrice = operation.price;
     
-    // Actualizar el precio y recalcular el monto
-    operation.price = finalPrice;
-    operation.amount = operation.quantity * finalPrice;
-    
-    // ✅ NUEVO: Marcar el precio como confirmado y limpiar el rango
-    operation.isPriceConfirmed = true;
-    operation.priceRange = undefined;
-    
-    // Actualizar también el precio de entrada en liquidityData si existe
-    if (operation.liquidityData) {
-      operation.liquidityData.entryPrice = finalPrice;
-      // Recalcular allocatedAmount basado en shares y nuevo precio
-      if (operation.liquidityData.shares) {
-        operation.liquidityData.allocatedAmount = operation.liquidityData.shares * finalPrice;
+    // ✅ CRÍTICO: Usar updateOne con $unset para eliminar priceRange correctamente de MongoDB
+    // Esto asegura que el campo se elimine completamente de la base de datos
+    const updateResult = await Operation.updateOne(
+      { _id: operation._id },
+      {
+        $set: {
+          price: finalPrice,
+          amount: operation.quantity * finalPrice,
+          isPriceConfirmed: true,
+          // Actualizar también el precio de entrada en liquidityData si existe
+          ...(operation.liquidityData ? {
+            'liquidityData.entryPrice': finalPrice,
+            ...(operation.liquidityData.shares ? {
+              'liquidityData.allocatedAmount': operation.liquidityData.shares * finalPrice
+            } : {})
+          } : {}),
+          notes: `${operation.notes || ''} | Precio confirmado: $${finalPrice.toFixed(2)} (anterior: $${oldPrice.toFixed(2)})`.trim()
+        },
+        $unset: {
+          priceRange: "" // ✅ Eliminar el campo priceRange completamente
+        }
       }
+    );
+    
+    if (updateResult.modifiedCount === 0) {
+      console.warn(`⚠️ No se pudo actualizar la operación ${operation._id} para alerta ${alertId}`);
+      return;
     }
     
-    // Agregar nota de actualización
-    const existingNotes = operation.notes || '';
-    operation.notes = `${existingNotes} | Precio confirmado: $${finalPrice.toFixed(2)} (anterior: $${oldPrice.toFixed(2)})`;
-    
-    await operation.save();
-    
-    console.log(`✅ Operación actualizada: ${operation.ticker} - Precio: $${oldPrice.toFixed(2)} → $${finalPrice.toFixed(2)}`);
+    console.log(`✅ Operación actualizada: ${operation.ticker} - Precio: $${oldPrice.toFixed(2)} → $${finalPrice.toFixed(2)} - isPriceConfirmed: true, priceRange eliminado`);
     
     // ✅ NUEVO: También actualizar la distribución de liquidez para mantener consistencia
     try {

@@ -1039,6 +1039,23 @@
   z-index: 1;
 }
 
+/* ✅ OPTIMIZADO: Estadísticas en columna para tablets y móviles */
+@media (max-width: 1024px) {
+  .statsContent {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    padding: 0 1.5rem;
+  }
+
+  .statNumber {
+    font-size: 3rem;
+  }
+
+  .statLabel {
+    font-size: 1rem;
+  }
+}
+
 .statItem {
   text-align: center;
 }
@@ -3318,32 +3335,85 @@
     width: 100%;
     max-width: 100%;
   }
+
+  /* ✅ OPTIMIZADO: Estadísticas en COLUMNA para móvil - FORZAR DISPLAY EN COLUMNA */
+  .statsSection {
+    padding: 3rem 0;
+  }
+
+  .statsContent {
+    display: flex !important; /* ✅ Cambiar a flex para mejor control */
+    flex-direction: column !important; /* ✅ Forzar columna vertical */
+    grid-template-columns: none !important; /* ✅ Desactivar grid completamente */
+    gap: 2.5rem;
+    padding: 0 1.5rem;
+    align-items: center;
+  }
+
+  .statItem {
+    padding: 1.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .statNumber {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    line-height: 1;
+    display: block;
+  }
+
+  .statLabel {
+    font-size: 1.1rem;
+    line-height: 1.4;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    padding: 0;
+    max-width: 100%;
+    display: block;
+    text-align: center;
+  }
   
   .testimonioUnificadoTexto {
     font-size: 0.875rem;
   }
 
-  /* ✅ OPTIMIZADO: Estadísticas para móviles pequeños (480px) */
+  /* ✅ OPTIMIZADO: Estadísticas para móviles pequeños (480px) - COLUMNA ÚNICA */
   .statsSection {
     padding: 2.5rem 0;
   }
 
   .statsContent {
-    gap: 1.5rem;
-    padding: 0 0.75rem;
+    display: flex !important; /* ✅ Flexbox para mejor control */
+    flex-direction: column !important; /* ✅ Columna vertical */
+    grid-template-columns: 1fr !important; /* ✅ Backup */
+    gap: 2rem;
+    padding: 0 1rem;
+    align-items: center;
   }
 
   .statItem {
-    padding: 1.25rem 0.75rem;
+    padding: 1.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+    text-align: center;
   }
 
   .statNumber {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+    display: block;
   }
 
   .statLabel {
-    font-size: 0.95rem;
-    line-height: 1.2;
+    font-size: 1rem;
+    line-height: 1.3;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    display: block;
+    text-align: center;
+    width: 100%;
   }
 } 
