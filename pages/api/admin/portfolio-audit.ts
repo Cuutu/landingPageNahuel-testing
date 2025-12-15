@@ -191,11 +191,33 @@ export default async function handler(
       const entryPrice = distribution?.entryPrice || alert.entryPriceRange?.min || alert.entryPrice || 0;
       const currentPrice = alert.currentPrice || entryPrice;
       const allocatedAmount = distribution?.allocatedAmount || 0;
-      // ✅ CORREGIDO: Obtener shares de la distribución, incluso si la alerta está cerrada
-      // Si no hay distribución, calcular shares basado en allocatedAmount y entryPrice
+      
+      // ✅ CORREGIDO: Obtener shares de múltiples fuentes
+      // 1. Primero intentar desde la distribución (fuente principal)
+      // 2. Luego desde alert.liquidityData (si existe)
+      // 3. Luego calcular desde allocatedAmount y entryPrice
+      // 4. Para alertas cerradas, usar soldShares si shares es 0 (indica que se vendieron todas)
       let shares = distribution?.shares || 0;
+      
+      // Si no hay shares en la distribución, buscar en liquidityData
+      if (shares === 0 && alert.liquidityData?.shares) {
+        shares = alert.liquidityData.shares;
+      }
+      
+      // Si aún no hay shares, intentar con originalShares
+      if (shares === 0 && alert.liquidityData?.originalShares) {
+        shares = alert.liquidityData.originalShares;
+      }
+      
+      // Si aún no hay shares pero hay allocatedAmount y entryPrice, calcular
       if (shares === 0 && allocatedAmount > 0 && entryPrice > 0) {
         shares = allocatedAmount / entryPrice;
+      }
+      
+      // Para alertas cerradas, si shares es 0 pero hay soldShares, usar soldShares como referencia
+      // (indica que se vendieron todas las acciones)
+      if (alert.status === 'CLOSED' && shares === 0 && distribution?.soldShares && distribution.soldShares > 0) {
+        shares = distribution.soldShares;
       }
       
       // Calcular P&L

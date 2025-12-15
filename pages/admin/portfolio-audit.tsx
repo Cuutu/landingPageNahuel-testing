@@ -405,16 +405,31 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 title={alert.priceSource === 'database' 
                                   ? 'Precio desde base de datos' 
                                   : 'Precio calculado'}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
                                 onClick={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
-                                  if (alert.priceSource === 'database') {
-                                    toast.success('Precio obtenido desde la base de datos');
-                                  } else {
-                                    toast('Precio calculado (no disponible en BD)', {
-                                      icon: 'ℹ️'
-                                    });
+                                  console.log('🔘 Botón de origen precio clickeado:', alert.priceSource);
+                                  try {
+                                    if (alert.priceSource === 'database') {
+                                      toast.success('Precio obtenido desde la base de datos');
+                                    } else {
+                                      toast('Precio calculado (no disponible en BD)', {
+                                        icon: 'ℹ️'
+                                      });
+                                    }
+                                  } catch (error) {
+                                    console.error('Error mostrando toast:', error);
+                                    window.alert(alert.priceSource === 'database' 
+                                      ? 'Precio obtenido desde la base de datos' 
+                                      : 'Precio calculado (no disponible en BD)');
                                   }
+                                }}
+                                onTouchStart={(e) => {
+                                  e.stopPropagation();
                                 }}
                               >
                                 <Database size={14} />
