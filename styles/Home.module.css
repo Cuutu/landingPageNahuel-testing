@@ -1052,13 +1052,15 @@
   letter-spacing: -0.02em;
 }
 
-.statLabel {
-  font-size: 1.1rem;
-  font-weight: 400;
-  color: var(--text-secondary);
-  line-height: 1.4;
-  margin: 0;
-}
+  .statLabel {
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    margin: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
 
 /* === SECCIÓN 10: CTA INVESTMENT - AZUL MARINO OSCURO === */
   .ctaInvestmentSection {
@@ -3319,5 +3321,29 @@
   
   .testimonioUnificadoTexto {
     font-size: 0.875rem;
+  }
+
+  /* ✅ OPTIMIZADO: Estadísticas para móviles pequeños (480px) */
+  .statsSection {
+    padding: 2.5rem 0;
+  }
+
+  .statsContent {
+    gap: 1.5rem;
+    padding: 0 0.75rem;
+  }
+
+  .statItem {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .statNumber {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .statLabel {
+    font-size: 0.95rem;
+    line-height: 1.2;
   }
 } 
