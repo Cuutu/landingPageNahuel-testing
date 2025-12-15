@@ -196,54 +196,37 @@ export default async function handler(
       const entryPrice = distribution?.entryPrice || alert.entryPriceRange?.min || alert.entryPrice || 0;
       const currentPrice = alert.currentPrice || entryPrice;
       
-      // ✅ CORREGIDO: Obtener allocatedAmount de la distribución, o calcularlo desde participationPercentage
+      // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Obtener allocatedAmount directamente de la distribución si existe
+      // Esta es la misma lógica que usa la página /admin/alertas-liquidez
       let allocatedAmount = distribution?.allocatedAmount || 0;
       
       // Obtener participationPercentage de múltiples fuentes
       const participationPercentage = distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0;
       
-      // Si no hay allocatedAmount en la distribución pero hay participationPercentage y liquidez total, calcularlo
-      if (allocatedAmount === 0 && totalLiquidity > 0 && participationPercentage > 0) {
-        allocatedAmount = (totalLiquidity * participationPercentage) / 100;
-      }
-      
-      // ✅ CORREGIDO: Obtener shares de múltiples fuentes
-      // 1. Primero intentar desde la distribución (fuente principal)
-      // 2. Luego desde alert.liquidityData (si existe)
-      // 3. Luego calcular desde allocatedAmount y entryPrice
-      // 4. Para alertas cerradas, usar soldShares si shares es 0 (indica que se vendieron todas)
-      let shares = distribution?.shares || 0;
-      
-      // Si no hay shares en la distribución, buscar en liquidityData
-      if (shares === 0 && alert.liquidityData?.shares && alert.liquidityData.shares > 0) {
-        shares = alert.liquidityData.shares;
-      }
-      
-      // Si aún no hay shares, intentar con originalShares
-      if (shares === 0 && alert.liquidityData?.originalShares && alert.liquidityData.originalShares > 0) {
-        shares = alert.liquidityData.originalShares;
-      }
-      
-      // ✅ MEJORADO: Si aún no hay shares pero hay allocatedAmount y entryPrice válidos, calcular
-      // Esto es especialmente importante para alertas activas con participación pero sin distribución completa
-      if (shares === 0 && allocatedAmount > 0 && entryPrice > 0) {
-        shares = allocatedAmount / entryPrice;
-      }
-      
-      // ✅ NUEVO: Si aún no hay shares pero hay participationPercentage y entryPrice, intentar calcular desde la liquidez total
-      // Esto cubre casos donde la alerta tiene participación pero no se ha creado la distribución aún
-      if (shares === 0 && participationPercentage > 0 && entryPrice > 0 && totalLiquidity > 0) {
-        const calculatedAllocatedAmount = (totalLiquidity * participationPercentage) / 100;
-        if (calculatedAllocatedAmount > 0) {
-          shares = calculatedAllocatedAmount / entryPrice;
-          allocatedAmount = calculatedAllocatedAmount; // Actualizar también allocatedAmount para consistencia
+      // Si no hay allocatedAmount en la distribución pero hay liquidityPercentage y liquidez total, calcularlo
+      // Esto es para alertas que tienen liquidityPercentage pero aún no tienen distribución creada
+      if (allocatedAmount === 0 && totalLiquidity > 0) {
+        const liquidityPercentage = alert.liquidityPercentage || 0;
+        if (liquidityPercentage > 0) {
+          // Calcular desde liquidityPercentage (misma fórmula que usa Liquidity.addDistribution)
+          allocatedAmount = (totalLiquidity * liquidityPercentage) / 100;
+        } else if (participationPercentage > 0) {
+          // Fallback: calcular desde participationPercentage si no hay liquidityPercentage
+          allocatedAmount = (totalLiquidity * participationPercentage) / 100;
         }
       }
       
-      // Para alertas cerradas, si shares es 0 pero hay soldShares, usar soldShares como referencia
-      // (indica que se vendieron todas las acciones)
-      if (alert.status === 'CLOSED' && shares === 0 && distribution?.soldShares && distribution.soldShares > 0) {
-        shares = distribution.soldShares;
+      // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Usar directamente shares de la distribución si existe
+      // Esta es la misma lógica que usa la página /admin/alertas-liquidez
+      let shares = 0;
+      
+      if (distribution && distribution.shares !== undefined && distribution.shares !== null) {
+        // Si hay distribución, usar directamente los shares de la distribución (fuente de verdad)
+        shares = distribution.shares;
+      } else if (allocatedAmount > 0 && entryPrice > 0) {
+        // Si no hay distribución pero hay allocatedAmount y entryPrice, calcular igual que en el modelo Liquidity
+        // Fórmula: shares = allocatedAmount / entryPrice (misma que usa Liquidity.addDistribution)
+        shares = allocatedAmount / entryPrice;
       }
       
       // Calcular P&L
