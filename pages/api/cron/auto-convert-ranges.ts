@@ -54,20 +54,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log('🔄 CRON: Iniciando conversión automática de alertas de rango...');
 
     // ✅ NUEVO: Buscar también operaciones pendientes con priceRange que necesitan confirmación
+    // ✅ CORREGIDO: Buscar tanto COMPRA como VENTA
     const Operation = (await import('@/models/Operation')).default;
     const pendingOperations = await Operation.find({
       priceRange: { $exists: true, $ne: null },
-      isPriceConfirmed: { $ne: true },
-      operationType: 'COMPRA'
+      isPriceConfirmed: { $ne: true }
+      // ✅ CORREGIDO: Eliminado filtro operationType: 'COMPRA' para incluir también VENTA
     }).populate('alertId');
 
-    console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange`);
+    console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange (COMPRA y VENTA)`);
     
     // ✅ DEBUG: Mostrar detalles de las operaciones encontradas
     if (pendingOperations.length > 0) {
       console.log(`🔍 CRON: Detalles de operaciones pendientes:`, pendingOperations.map(op => ({
         _id: op._id,
         ticker: op.ticker,
+        operationType: op.operationType, // ✅ NUEVO: Mostrar tipo de operación
         priceRange: op.priceRange,
         isPriceConfirmed: op.isPriceConfirmed,
         alertId: op.alertId ? (op.alertId as any)._id : 'NO ALERTA',
@@ -79,14 +81,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     } else {
       // ✅ DEBUG: Verificar si hay operaciones con priceRange pero que ya están confirmadas
       const allOperationsWithRange = await Operation.find({
-        priceRange: { $exists: true, $ne: null },
-        operationType: 'COMPRA'
-      }).select('ticker priceRange isPriceConfirmed alertId');
+        priceRange: { $exists: true, $ne: null }
+        // ✅ CORREGIDO: Eliminado filtro operationType para incluir COMPRA y VENTA
+      }).select('ticker operationType priceRange isPriceConfirmed alertId');
       
       console.log(`🔍 CRON: Total de operaciones con priceRange: ${allOperationsWithRange.length}`);
       if (allOperationsWithRange.length > 0) {
         console.log(`🔍 CRON: Estado de operaciones con priceRange:`, allOperationsWithRange.map(op => ({
           ticker: op.ticker,
+          operationType: op.operationType,
           isPriceConfirmed: op.isPriceConfirmed,
           hasPriceRange: !!op.priceRange
         })));
@@ -94,12 +97,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       
       // ✅ DEBUG: Verificar si hay operaciones sin priceRange pero que deberían tenerlo
       const operationsWithoutRange = await Operation.find({
-        operationType: 'COMPRA',
         isPriceConfirmed: { $ne: true }
-      }).limit(5).select('ticker priceRange isPriceConfirmed alertId');
+        // ✅ CORREGIDO: Eliminado filtro operationType para incluir COMPRA y VENTA
+      }).limit(5).select('ticker operationType priceRange isPriceConfirmed alertId');
       
       console.log(`🔍 CRON: Primeras 5 operaciones sin confirmar (muestra):`, operationsWithoutRange.map(op => ({
         ticker: op.ticker,
+        operationType: op.operationType,
         hasPriceRange: !!op.priceRange,
         isPriceConfirmed: op.isPriceConfirmed
       })));
@@ -117,7 +121,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     console.log(`📊 CRON: Encontradas ${alertsWithRange.length} alertas con rangos para convertir`);
 
-    // ✅ NUEVO: Procesar operaciones pendientes primero
+    // ✅ NUEVO: Procesar operaciones pendientes primero (COMPRA y VENTA)
     let confirmedOperationsCount = 0;
     if (pendingOperations.length > 0) {
       console.log(`🔄 CRON: Procesando ${pendingOperations.length} operaciones pendientes con priceRange...`);
@@ -145,15 +149,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             const isInRange = currentPrice >= priceRange.min && currentPrice <= priceRange.max;
             
             if (isInRange) {
-              console.log(`✅ CRON: Operación ${operation.ticker} - Precio $${currentPrice} está dentro del rango $${priceRange.min}-$${priceRange.max}, confirmando...`);
+              const operationType = operation.operationType;
+              console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} - Precio $${currentPrice} está dentro del rango $${priceRange.min}-$${priceRange.max}, confirmando...`);
               
-              // Confirmar la operación usando el alertId de la operación
-              await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
+              // ✅ CORREGIDO: Confirmar la operación según su tipo
+              if (operationType === 'COMPRA') {
+                // Para COMPRA: usar la función existente
+                await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
+              } else if (operationType === 'VENTA') {
+                // ✅ NUEVO: Para VENTA: confirmar directamente la operación
+                await updateSaleOperationPrice(operation._id, currentPrice);
+              }
               
               confirmedOperationsCount++;
-              console.log(`✅ CRON: Operación ${operation.ticker} confirmada exitosamente`);
+              console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} confirmada exitosamente`);
             } else {
-              console.log(`⚠️ CRON: Operación ${operation.ticker} - Precio $${currentPrice} está FUERA del rango $${priceRange.min}-$${priceRange.max} - NO se confirma`);
+              console.log(`⚠️ CRON: Operación ${operation.operationType} ${operation.ticker} - Precio $${currentPrice} está FUERA del rango $${priceRange.min}-$${priceRange.max} - NO se confirma`);
             }
           } else {
             console.warn(`⚠️ CRON: Operación ${operation.ticker} no tiene priceRange válido, saltando...`);
@@ -1049,6 +1060,58 @@ export async function updateOperationPriceOnConfirmation(alertId: any, finalPric
     
   } catch (error) {
     console.error(`⚠️ Error actualizando precio de operación para alerta ${alertId}:`, error);
+  }
+}
+
+/**
+ * ✅ NUEVO: Actualiza el precio de una operación de VENTA cuando se confirma
+ * Esta función confirma el precio final de una venta que tenía un rango de precio
+ */
+async function updateSaleOperationPrice(operationId: any, finalPrice: number) {
+  try {
+    const Operation = (await import('@/models/Operation')).default;
+    
+    // Buscar la operación de VENTA por su ID
+    const operation = await Operation.findById(operationId);
+    
+    if (!operation) {
+      console.log(`⚠️ No se encontró operación de VENTA con ID ${operationId}`);
+      return;
+    }
+    
+    if (operation.operationType !== 'VENTA') {
+      console.log(`⚠️ La operación ${operationId} no es de tipo VENTA, es ${operation.operationType}`);
+      return;
+    }
+    
+    const oldPrice = operation.price;
+    const priceRange = operation.priceRange;
+    
+    // ✅ Actualizar la operación de venta con el precio confirmado
+    const updateResult = await Operation.updateOne(
+      { _id: operationId },
+      {
+        $set: {
+          price: finalPrice,
+          amount: Math.abs(operation.quantity) * finalPrice,
+          isPriceConfirmed: true,
+          notes: `${operation.notes || ''} | Precio de venta confirmado: $${finalPrice.toFixed(2)} (rango original: $${priceRange?.min?.toFixed(2) || 'N/A'} - $${priceRange?.max?.toFixed(2) || 'N/A'})`.trim()
+        },
+        $unset: {
+          priceRange: "" // ✅ Eliminar el campo priceRange completamente
+        }
+      }
+    );
+    
+    if (updateResult.modifiedCount === 0) {
+      console.warn(`⚠️ No se pudo actualizar la operación de VENTA ${operationId}`);
+      return;
+    }
+    
+    console.log(`✅ Operación de VENTA actualizada: ${operation.ticker} - Precio: $${oldPrice?.toFixed(2) || 'N/A'} → $${finalPrice.toFixed(2)} - isPriceConfirmed: true, priceRange eliminado`);
+    
+  } catch (error) {
+    console.error(`⚠️ Error actualizando precio de operación de VENTA ${operationId}:`, error);
   }
 }
 
