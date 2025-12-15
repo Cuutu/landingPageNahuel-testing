@@ -53,6 +53,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     await dbConnect();
     console.log('🔄 CRON: Iniciando conversión automática de alertas de rango...');
 
+    // ✅ NUEVO: Buscar también operaciones pendientes con priceRange que necesitan confirmación
+    const Operation = (await import('@/models/Operation')).default;
+    const pendingOperations = await Operation.find({
+      priceRange: { $exists: true, $ne: null },
+      isPriceConfirmed: { $ne: true },
+      operationType: 'COMPRA'
+    }).populate('alertId');
+
+    console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange`);
+
     // Buscar alertas activas con rangos de precio (entrada o venta)
     const alertsWithRange = await Alert.find({
       status: 'ACTIVE',
@@ -64,6 +74,57 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     });
 
     console.log(`📊 CRON: Encontradas ${alertsWithRange.length} alertas con rangos para convertir`);
+
+    // ✅ NUEVO: Procesar operaciones pendientes primero
+    let confirmedOperationsCount = 0;
+    if (pendingOperations.length > 0) {
+      console.log(`🔄 CRON: Procesando ${pendingOperations.length} operaciones pendientes con priceRange...`);
+      
+      for (const operation of pendingOperations) {
+        try {
+          const alert = operation.alertId as any;
+          
+          if (!alert) {
+            console.warn(`⚠️ CRON: Operación ${operation._id} (${operation.ticker}) no tiene alerta asociada, saltando...`);
+            continue;
+          }
+
+          // Obtener el precio actual de la alerta o usar el precio de cierre
+          const currentPrice = alert.finalPrice || alert.currentPrice;
+          
+          if (!currentPrice || currentPrice <= 0) {
+            console.warn(`⚠️ CRON: Alerta ${alert.symbol || 'N/A'} no tiene precio válido (${currentPrice}), saltando operación ${operation.ticker}...`);
+            continue;
+          }
+
+          // Verificar si el precio está dentro del rango
+          const priceRange = operation.priceRange;
+          if (priceRange && priceRange.min && priceRange.max) {
+            const isInRange = currentPrice >= priceRange.min && currentPrice <= priceRange.max;
+            
+            if (isInRange) {
+              console.log(`✅ CRON: Operación ${operation.ticker} - Precio $${currentPrice} está dentro del rango $${priceRange.min}-$${priceRange.max}, confirmando...`);
+              
+              // Confirmar la operación usando el alertId de la operación
+              await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
+              
+              confirmedOperationsCount++;
+              console.log(`✅ CRON: Operación ${operation.ticker} confirmada exitosamente`);
+            } else {
+              console.log(`⚠️ CRON: Operación ${operation.ticker} - Precio $${currentPrice} está FUERA del rango $${priceRange.min}-$${priceRange.max} - NO se confirma`);
+            }
+          } else {
+            console.warn(`⚠️ CRON: Operación ${operation.ticker} no tiene priceRange válido, saltando...`);
+          }
+        } catch (opError) {
+          console.error(`❌ CRON: Error procesando operación ${operation._id}:`, opError);
+        }
+      }
+      
+      if (confirmedOperationsCount > 0) {
+        console.log(`✅ CRON: ${confirmedOperationsCount} operaciones confirmadas exitosamente`);
+      }
+    }
     
     if (alertsWithRange.length > 0) {
       console.log(`🔍 CRON: Alertas encontradas:`, alertsWithRange.map(alert => ({
@@ -79,8 +140,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       })));
     }
 
+    // ✅ MODIFICADO: Si no hay alertas con rangos pero hay operaciones pendientes procesadas, retornar éxito
     if (alertsWithRange.length === 0) {
-      console.log(`⚠️ CRON: No hay alertas de rango para convertir`);
+      if (confirmedOperationsCount > 0) {
+        console.log(`✅ CRON: No hay alertas con rangos, pero se confirmaron ${confirmedOperationsCount} operaciones pendientes`);
+        return res.status(200).json({
+          success: true,
+          message: `OK - ${confirmedOperationsCount} operaciones confirmadas`,
+          processed: confirmedOperationsCount
+        });
+      }
+      
+      console.log(`⚠️ CRON: No hay alertas de rango para convertir ni operaciones pendientes`);
       
       // ✅ NUEVO: Si no hay alertas, enviar notificación de "sin operaciones"
       try {
