@@ -703,22 +703,26 @@
   .container {
     padding: 0 1rem;
   }
+  
+  /* Sección YouTube - Mobile */
   .youtubeSection {
     padding: 3rem 0;
   }
 
   .youtubeContent {
-    grid-template-columns: 1fr;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 2rem;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
   }
 
   .youtubeText {
     text-align: center;
+    order: 1;
   }
 
   .youtubeTitle {
-    font-size: 1.75rem;
+    font-size: 2rem;
     line-height: 1.3;
   }
 
@@ -729,16 +733,44 @@
   .youtubeVideoContainer {
     width: 100%;
     max-width: 100%;
+    order: 2;
+    margin-top: 1rem;
   }
 
   .youtubeAutoCarousel {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    position: relative;
+    padding: 0 2rem;
   }
 
   .youtubeVideoFrame {
-    flex: none;
+    flex: 1;
     width: 100%;
+    min-width: 0;
+  }
+
+  .youtubeVideoPlayer {
+    height: 200px;
+  }
+
+  .youtubeArrowLeft,
+  .youtubeArrowRight {
+    width: 36px;
+    height: 36px;
+    position: absolute;
+  }
+
+  .youtubeArrowLeft {
+    left: -5px;
+  }
+
+  .youtubeArrowRight {
+    right: -5px;
+  }
+
+  .youtubeIndicators {
+    bottom: -35px;
   }
 }
 
@@ -875,20 +907,42 @@
     font-size: 0.8rem;
     min-width: 30px;
   }
-  .youtubeTitle { font-size: 1.75rem; }
-  .youtubeDescription { font-size: 1rem; }
+  .youtubeTitle { font-size: 1.5rem; }
+  .youtubeSubtitle { font-size: 0.9rem; }
   .youtubeContent {
     padding: 0 1rem;
+    gap: 1.5rem;
   }
-  .youtubeCarousel {
-    width: 100%;
-    max-width: 100%;
-    padding: 0;
-  }
+  
   .youtubeAutoCarousel { 
-    height: 300px;
-    max-width: 100%;
-    width: 100%;
+    padding: 0 2.5rem;
+  }
+  
+  .youtubeVideoPlayer {
+    height: 180px;
+  }
+
+  .youtubeArrowLeft,
+  .youtubeArrowRight {
+    width: 32px;
+    height: 32px;
+  }
+
+  .youtubeArrowLeft {
+    left: 0;
+  }
+
+  .youtubeArrowRight {
+    right: 0;
+  }
+
+  .youtubeIndicators {
+    bottom: -30px;
+  }
+
+  .youtubeIndicator {
+    width: 10px;
+    height: 10px;
   }
 }
 
