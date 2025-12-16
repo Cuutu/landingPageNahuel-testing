@@ -1586,7 +1586,7 @@ export async function enviarResumenOperaciones(acciones: AccionResumen[]): Promi
             weekday: 'long',
             day: 'numeric', 
             month: 'long', 
-            year: 'numeric' 
+            year: 'numeric'  
           });
           
           const htmlEmail = `
