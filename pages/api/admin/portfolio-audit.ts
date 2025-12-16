@@ -306,8 +306,8 @@ export default async function handler(
         createdAt: alert.createdAt,
         updatedAt: alert.updatedAt,
         currentPriceUpdatedAt: alert.currentPriceUpdatedAt || alert.updatedAt,
-        allocatedAmount,
-        shares,
+        allocatedAmount: allocatedAmount || 0,
+        shares: shares || 0,
         entryPriceFromDistribution: distribution?.entryPrice,
         realizedProfitLoss: distribution?.realizedProfitLoss || 0,
         soldShares: distribution?.soldShares || 0,
@@ -315,12 +315,15 @@ export default async function handler(
         participationPercentage: alert.status === 'CLOSED' 
           ? 0 
           : (distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0),
-        // ✅ CORREGIDO: Obtener liquidityPercentage de la alerta
-        // Si no existe, calcular desde la distribución: (allocatedAmount / totalLiquidity) * 100
-        liquidityPercentage: alert.liquidityPercentage || 
-          (distribution?.allocatedAmount && totalLiquidity > 0 
-            ? (distribution.allocatedAmount / totalLiquidity) * 100 
-            : 0),
+        // ✅ MEJORADO: Obtener liquidityPercentage de la alerta o calcularlo
+        // Prioridad: 1) alert.liquidityPercentage, 2) calcular desde distribución, 3) calcular desde allocatedAmount
+        liquidityPercentage: alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null
+          ? alert.liquidityPercentage
+          : (distribution?.allocatedAmount && totalLiquidity > 0 
+              ? (distribution.allocatedAmount / totalLiquidity) * 100 
+              : (allocatedAmount > 0 && totalLiquidity > 0
+                  ? (allocatedAmount / totalLiquidity) * 100
+                  : 0)),
         calculatedPL,
         calculatedPLPercentage,
         priceSource: alert.currentPrice ? 'database' : 'calculated',

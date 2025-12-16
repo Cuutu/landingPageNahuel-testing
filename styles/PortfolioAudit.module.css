@@ -567,11 +567,16 @@
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
+  min-width: 120px;
 }
 
 .viewSalesButton:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.viewSalesButton:active {
+  transform: translateY(0);
 }
 
 /* ✅ NUEVO: Estilos para el modal */

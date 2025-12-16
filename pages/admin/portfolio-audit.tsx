@@ -389,16 +389,14 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               </div>
                             </td>
                             <td>
-                              {/* ✅ MEJORADO: Formato entero + 2 decimales para shares */}
-                              {alert.status === 'CLOSED' && (alert.participationPercentage === 0 || alert.participationPercentage === undefined || alert.participationPercentage === null)
-                                ? 'N/A'
-                                : (alert.shares !== undefined && alert.shares !== null && alert.shares > 0
-                                    ? (() => {
-                                        const integerPart = Math.floor(alert.shares);
-                                        const decimalPart = ((alert.shares % 1) * 100).toFixed(0).padStart(2, '0');
-                                        return `${integerPart}.${decimalPart}`;
-                                      })()
-                                    : 'N/A')}
+                              {/* ✅ MEJORADO: Mostrar shares si existen, incluso si es 0 o la alerta está cerrada */}
+                              {alert.shares !== undefined && alert.shares !== null && alert.shares > 0
+                                ? (() => {
+                                    const integerPart = Math.floor(alert.shares);
+                                    const decimalPart = ((alert.shares % 1) * 100).toFixed(0).padStart(2, '0');
+                                    return `${integerPart}.${decimalPart}`;
+                                  })()
+                                : 'N/A'}
                               {alert.soldShares && alert.soldShares > 0 && (
                                 <div className={styles.priceNote}>
                                   vendidas: {(() => {
@@ -410,17 +408,18 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               )}
                             </td>
                             <td>
-                              {/* ✅ NUEVO: Columna dedicada para liquidez asignada */}
-                              {alert.allocatedAmount !== undefined && alert.allocatedAmount !== null && alert.allocatedAmount > 0
-                                ? formatCurrency(alert.allocatedAmount)
+                              {/* ✅ MEJORADO: Mostrar liquidez asignada si existe, incluso si es 0 */}
+                              {alert.allocatedAmount !== undefined && alert.allocatedAmount !== null
+                                ? (alert.allocatedAmount > 0 
+                                    ? formatCurrency(alert.allocatedAmount)
+                                    : '$0.00')
                                 : 'N/A'}
                             </td>
                             <td>
-                              {alert.status === 'CLOSED' 
-                                ? 'N/A'
-                                : (alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null && alert.liquidityPercentage > 0
-                                    ? `${alert.liquidityPercentage.toFixed(2)}%`
-                                    : 'N/A')}
+                              {/* ✅ MEJORADO: Mostrar % liquidez si existe, incluso si es 0 */}
+                              {alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null
+                                ? `${alert.liquidityPercentage.toFixed(2)}%`
+                                : 'N/A'}
                             </td>
                             <td>
                               {/* Alertas cerradas tienen 0% de participación */}
@@ -511,7 +510,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                   Ver {alert.partialSales.length === 1 ? 'venta parcial' : 'ventas parciales'}
                                 </button>
                               ) : (
-                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem' }}>Sin ventas</span>
+                                <span style={{ color: '#718096', fontSize: '0.875rem' }}>Sin ventas</span>
                               )}
                             </td>
                           </tr>
