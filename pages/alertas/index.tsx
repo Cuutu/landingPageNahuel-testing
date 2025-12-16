@@ -432,26 +432,27 @@ const AlertasPage: React.FC<AlertasPageProps> = ({
           </div>
         </section>
 
-        {/* Sección YouTube Community - clonada de Entrenamientos */}
+        {/* YouTube Community Section */}
         <section className={styles.youtubeSection}>
-          <div className={styles.container}>
-            <motion.div 
+          <div className="container">
+            <motion.div
               className={styles.youtubeContent}
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
             >
               <div className={styles.youtubeText}>
                 <h2 className={styles.youtubeTitle}>
-                  ¡Sumate a nuestra comunidad en YouTube!
+                  ¡Sumate a nuestra comunidad<br />
+                  en YouTube!
                 </h2>
-                <p className={styles.youtubeDescription}>
+                <p className={styles.youtubeSubtitle}>
                   No te pierdas nuestros últimos videos
                 </p>
               </div>
 
-              <div className={styles.youtubeCarousel}>
+              <div className={styles.youtubeVideoContainer}>
                 <YouTubeAutoCarousel />
               </div>
             </motion.div>
