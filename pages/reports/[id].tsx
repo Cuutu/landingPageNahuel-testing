@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/googleAuth';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import Navbar from '@/components/Navbar';
@@ -1255,9 +1256,33 @@ const ReportView: React.FC<ReportViewProps> = ({ report, currentUser, userRole }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {
-    const session = await getSession(context);
+    // ✅ PROTECCIÓN CONTRA LOOPS: Verificar si hay múltiples redirecciones seguidas
+    const referer = context.req.headers.referer || '';
+    const isFromSignIn = referer.includes('/auth/signin') || referer.includes('/api/auth/callback');
+    
+    // ✅ CORREGIDO: Usar getServerSession en lugar de getSession para leer cookies correctamente en servidor
+    let session = await getServerSession(context.req, context.res, authOptions);
+    
+    // ✅ MEJORADO: Si no hay sesión pero venimos del callback, esperar un poco y reintentar
+    // Esto ayuda cuando las cookies aún no se han propagado completamente
+    if (!session?.user?.email && isFromSignIn) {
+      // Esperar 100ms y reintentar (solo una vez)
+      await new Promise(resolve => setTimeout(resolve, 100));
+      session = await getServerSession(context.req, context.res, authOptions);
+    }
     
     if (!session?.user?.email) {
+      // ✅ PROTECCIÓN: Si ya venimos de signin y no hay sesión, evitar loop
+      if (isFromSignIn) {
+        console.error('⚠️ [REPORT] Loop detectado: sesión no disponible después del callback');
+        return {
+          redirect: {
+            destination: '/',
+            permanent: false,
+          },
+        };
+      }
+      
       // ✅ Redirigir a la página de signin personalizada con callbackUrl
       const callbackUrl = encodeURIComponent(context.resolvedUrl || `/reports/${context.params?.id}`);
       return {
@@ -1334,10 +1359,11 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
           const fullUser = await User.findOne({ email: session.user.email });
           
           if (!fullUser) {
+            // ✅ CORREGIDO: Usar /auth/signin en lugar de /api/auth/signin
             const callbackUrl = encodeURIComponent(context.resolvedUrl || `/reports/${context.params?.id}`);
             return {
               redirect: {
-                destination: `/api/auth/signin?callbackUrl=${callbackUrl}`,
+                destination: `/auth/signin?callbackUrl=${callbackUrl}`,
                 permanent: false,
               },
             };

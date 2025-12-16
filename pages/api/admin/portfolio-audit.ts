@@ -177,25 +177,56 @@ export default async function handler(
     const closedAlerts = allAlerts.filter((a: any) => a.status === 'CLOSED');
 
     // 4. Obtener distribuciones de liquidez
-    const adminUser = await User.findOne({ role: 'admin' });
+    // ✅ CORREGIDO: Usar la misma lógica que /admin/alertas-liquidez
+    // Buscar TODAS las distribuciones del pool sin filtrar por createdBy
+    // Esto asegura que obtengamos todas las distribuciones activas
     let liquidityDocs: any[] = [];
     let liquidityDistributions: any[] = [];
     let totalLiquidity = 0;
+    let initialLiquidity = 0;
 
-    if (adminUser) {
-      liquidityDocs = await Liquidity.find({ 
-        createdBy: adminUser._id, 
-        pool: poolType 
-      }).lean();
+    // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Buscar todos los documentos de liquidez del pool
+    liquidityDocs = await Liquidity.find({ 
+      pool: poolType 
+    })
+    .select({
+      initialLiquidity: 1,
+      totalLiquidity: 1,
+      availableLiquidity: 1,
+      distributedLiquidity: 1,
+      distributions: 1,
+      updatedAt: 1,
+      createdAt: 1
+    })
+    .lean();
+    
+    // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Encontrar el documento principal (el que tiene distributions)
+    const docsWithDistributions = liquidityDocs.filter(doc => 
+      doc.distributions && doc.distributions.length > 0
+    );
+    
+    // Usar el documento principal (con distributions) o el primero disponible
+    const mainDoc = docsWithDistributions.length > 0 
+      ? docsWithDistributions.sort((a, b) => 
+          new Date(b.updatedAt || b.createdAt || 0).getTime() - new Date(a.updatedAt || a.createdAt || 0).getTime()
+        )[0]
+      : liquidityDocs[0];
+
+    if (mainDoc) {
+      // Obtener todas las distribuciones del documento principal
+      if (mainDoc.distributions && Array.isArray(mainDoc.distributions)) {
+        liquidityDistributions.push(...mainDoc.distributions);
+      }
       
-      liquidityDocs.forEach((doc: any) => {
-        if (doc.distributions && Array.isArray(doc.distributions)) {
-          liquidityDistributions.push(...doc.distributions);
-        }
-        // ✅ NUEVO: Obtener liquidez total para calcular allocatedAmount desde participationPercentage
-        if (doc.totalLiquidity && doc.totalLiquidity > totalLiquidity) {
-          totalLiquidity = doc.totalLiquidity;
-        }
+      // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Obtener liquidez inicial y total del documento principal
+      initialLiquidity = mainDoc.initialLiquidity || 0;
+      totalLiquidity = mainDoc.totalLiquidity || mainDoc.initialLiquidity || 0;
+      
+      console.log(`📊 [PORTFOLIO-AUDIT] Usando documento principal de liquidez:`, {
+        docId: mainDoc._id,
+        initialLiquidity,
+        totalLiquidity,
+        distributionsCount: liquidityDistributions.length
       });
     }
 
