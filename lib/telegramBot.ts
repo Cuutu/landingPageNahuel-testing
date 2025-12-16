@@ -230,6 +230,158 @@ function formatAlertMessage(alert: IAlert, options?: {
 }
 
 /**
+ * ✅ NUEVO: Genera las notas de una operación usando el mismo formato que Telegram
+ * Esta función genera texto plano (sin Markdown) para usar en las notas de la operación
+ */
+export function formatOperationNotes(alert: IAlert, options?: {
+  message?: string;
+  priceRange?: { min: number; max: number };
+  price?: number;
+  action?: 'BUY' | 'SELL';
+  liquidityPercentage?: number;
+  soldPercentage?: number;
+  profitPercentage?: number;
+  profitLoss?: number;
+  isExecutedSale?: boolean;
+  isCompleteSale?: boolean;
+}): string {
+  try {
+    // Usar la misma lógica que formatAlertMessage pero sin Markdown
+    const action = options?.action || alert.action;
+    const actionText = action === 'BUY' ? 'COMPRA' : 'VENTA';
+    
+    // Determinar precio a mostrar (misma lógica que formatAlertMessage)
+    let priceDisplay = 'N/A';
+    if (options?.price != null && !isNaN(options.price)) {
+      priceDisplay = `$${options.price.toFixed(2)}`;
+    } else if (options?.priceRange && options.priceRange.min != null && options.priceRange.max != null) {
+      priceDisplay = `$${options.priceRange.min.toFixed(2)} - $${options.priceRange.max.toFixed(2)}`;
+    } else if (alert.entryPriceRange?.min != null && alert.entryPriceRange?.max != null) {
+      priceDisplay = `$${alert.entryPriceRange.min.toFixed(2)} - $${alert.entryPriceRange.max.toFixed(2)}`;
+    } else if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+      priceDisplay = `$${alert.entryPrice.toFixed(2)}`;
+    } else if (alert.currentPrice != null && !isNaN(alert.currentPrice)) {
+      priceDisplay = `$${alert.currentPrice.toFixed(2)}`;
+    }
+
+    // Construir mensaje (sin emojis de Markdown, solo texto)
+    let titleAction = actionText;
+    
+    if (options?.message) {
+      const messageLower = options.message.toLowerCase();
+      if (messageLower.includes('alerta desestimada') || messageLower.includes('desestimada')) {
+        titleAction = 'DESESTIMADA';
+      } else if (messageLower.includes('cierre de mercado') || messageLower.includes('cierre')) {
+        titleAction = 'CIERRE';
+      } else if (messageLower.includes('venta ejecutada') || messageLower.includes('venta parcial') || messageLower.includes('venta programada') || (messageLower.includes('venta') && !messageLower.includes('compra'))) {
+        titleAction = 'VENTA';
+      }
+    }
+    
+    if (alert.status === 'DESESTIMADA') {
+      titleAction = 'DESESTIMADA';
+    }
+    
+    let notes = `${titleAction} ${alert.symbol}\n`;
+    
+    // Para ventas con porcentaje
+    if (options?.soldPercentage) {
+      const tipoVenta = options.isCompleteSale || options.soldPercentage >= 100 
+        ? 'Venta TOTAL' 
+        : 'Venta PARCIAL';
+      
+      notes += `${tipoVenta}\n\n`;
+      notes += `Precio: ${priceDisplay}\n`;
+      
+      const textoVenta = options.isExecutedSale 
+        ? 'Porcentaje vendido' 
+        : 'Porcentaje a vender';
+      
+      notes += `${textoVenta}: ${options.soldPercentage}%\n`;
+      
+      if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
+        const profitSign = options.profitPercentage >= 0 ? '+' : '';
+        const textoRendimiento = options.isExecutedSale 
+          ? 'Rendimiento' 
+          : 'Rendimiento aproximado';
+        notes += `${textoRendimiento}: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
+      }
+    } else if (action === 'SELL' && options?.price != null) {
+      notes += `\nPrecio de Venta: ${priceDisplay}\n`;
+      if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+        notes += `Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
+      }
+    } else {
+      notes += `\nPrecio: ${priceDisplay}\n`;
+      
+      if (action === 'BUY') {
+        const takeProfitNum = typeof alert.takeProfit === 'string' ? parseFloat(alert.takeProfit) : alert.takeProfit;
+        const stopLossNum = typeof alert.stopLoss === 'string' ? parseFloat(alert.stopLoss) : alert.stopLoss;
+        
+        if (takeProfitNum != null && !isNaN(takeProfitNum) && takeProfitNum > 0) {
+          notes += `Take Profit: $${takeProfitNum.toFixed(2)}\n`;
+        }
+        if (stopLossNum != null && !isNaN(stopLossNum) && stopLossNum > 0) {
+          notes += `Stop Loss: $${stopLossNum.toFixed(2)}\n`;
+        }
+      }
+    }
+    
+    if (options?.liquidityPercentage) {
+      notes += `Liquidez: ${options.liquidityPercentage}%\n`;
+    }
+    
+    if (!options?.soldPercentage) {
+      if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
+        const profitSign = options.profitPercentage >= 0 ? '+' : '';
+        notes += `Profit/Loss: ${profitSign}${options.profitPercentage.toFixed(2)}%\n`;
+      } else if (options?.profitLoss != null && !isNaN(options.profitLoss)) {
+        const profitSign = options.profitLoss >= 0 ? '+' : '';
+        notes += `Profit/Loss: ${profitSign}$${options.profitLoss.toFixed(2)}\n`;
+      }
+    }
+    
+    if (alert.analysis && !options?.message) {
+      const analysisPreview = alert.analysis.length > 200 
+        ? alert.analysis.substring(0, 200) + '...' 
+        : alert.analysis;
+      notes += `\nAnálisis:\n${analysisPreview}\n`;
+    }
+    
+    if (options?.message) {
+      notes += `\n${options.message}\n`;
+    }
+    
+    if (alert.status === 'DESESTIMADA' && (alert as any).desestimacionMotivo) {
+      notes += `\nMotivo: ${(alert as any).desestimacionMotivo}\n`;
+    }
+    
+    // Fecha
+    const fechaActual = new Date();
+    const zonaHoraria = getGlobalTimezone();
+    
+    const fechaFormateada = fechaActual.toLocaleString('es-AR', { 
+      timeZone: zonaHoraria,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    
+    notes += `\n${fechaFormateada}`;
+    
+    return notes;
+  } catch (error: any) {
+    console.error('❌ [OPERATION NOTES] Error formateando notas:', error);
+    const fallbackAction = options?.action || alert.action;
+    return `${fallbackAction} ${alert.symbol}\n\n` +
+           `Precio: ${options?.price || alert.entryPrice || alert.currentPrice || 'N/A'}\n` +
+           (options?.message ? `\n${options.message}\n` : '');
+  }
+}
+
+/**
  * Envía una alerta a Telegram
  */
 export async function sendAlertToTelegram(

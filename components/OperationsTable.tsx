@@ -258,9 +258,12 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         updateData.isPriceConfirmed = true;
       }
 
-      // Agregar imagen si existe
+      // Manejar imagen: si hay imagen nueva, actualizarla; si había imagen y ahora no hay, eliminarla
       if (editImage) {
         updateData.image = editImage;
+      } else if (editingOperation.image && !editImage) {
+        // Si había una imagen antes y ahora no hay, eliminar la imagen
+        updateData.image = null;
       }
 
       // ✅ Actualizar la operación (incluye el estado)
@@ -1478,27 +1481,70 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px'
+            padding: '16px',
+            overflow: 'auto'
           }}
         >
           <div style={{
             backgroundColor: 'white',
             borderRadius: '12px',
             width: '100%',
-            maxWidth: '500px',
+            maxWidth: '600px',
+            maxHeight: '95vh',
             padding: '24px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '20px',
+              flexShrink: 0,
+              position: 'sticky',
+              top: 0,
+              backgroundColor: 'white',
+              zIndex: 10,
+              paddingBottom: '12px',
+              borderBottom: '1px solid #e5e7eb'
+            }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1f2937', margin: 0 }}>
                 Editar Operación
               </h2>
-              <button onClick={() => setShowEditModal(false)} style={{ cursor: 'pointer', background: 'none', border: 'none', color: '#6b7280' }}>
+              <button 
+                onClick={() => setShowEditModal(false)} 
+                style={{ 
+                  cursor: 'pointer', 
+                  background: 'none', 
+                  border: 'none', 
+                  color: '#6b7280',
+                  padding: '4px',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
                 <X size={24} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ 
+              display: 'flex', 
+              flexDirection: 'column', 
+              gap: '16px',
+              flex: 1,
+              minHeight: 0
+            }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '4px' }}>
                   Ticker
@@ -1731,14 +1777,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     marginBottom: '12px',
                     borderRadius: '8px',
                     overflow: 'hidden',
-                    border: '1px solid #d1d5db'
+                    border: '1px solid #d1d5db',
+                    maxHeight: '250px',
+                    overflowY: 'auto'
                   }}>
                     <img 
                       src={editImage.secure_url || editImage.url} 
                       alt="Imagen de la operación"
                       style={{
                         width: '100%',
-                        maxHeight: '300px',
+                        maxHeight: '250px',
                         objectFit: 'contain',
                         display: 'block'
                       }}
@@ -1773,25 +1821,37 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     </button>
                   </div>
                 ) : null}
-                <ImageUploader
-                  onImageUploaded={(image) => {
-                    setEditImage(image);
-                    setUploadingImage(false);
-                  }}
-                  onUploadStart={() => setUploadingImage(true)}
-                  onUploadComplete={() => setUploadingImage(false)}
-                  onError={(error) => {
-                    alert(`Error al subir imagen: ${error}`);
-                    setUploadingImage(false);
-                  }}
-                  maxFiles={1}
-                  multiple={false}
-                  buttonText={editImage ? 'Cambiar Imagen' : 'Subir Imagen'}
-                  className=""
-                />
+                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                  <ImageUploader
+                    onImageUploaded={(image) => {
+                      setEditImage(image);
+                      setUploadingImage(false);
+                    }}
+                    onUploadStart={() => setUploadingImage(true)}
+                    onUploadComplete={() => setUploadingImage(false)}
+                    onError={(error) => {
+                      alert(`Error al subir imagen: ${error}`);
+                      setUploadingImage(false);
+                    }}
+                    maxFiles={1}
+                    multiple={false}
+                    buttonText={editImage ? 'Cambiar Imagen' : 'Subir Imagen'}
+                    className=""
+                  />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+              <div style={{ 
+                display: 'flex', 
+                gap: '12px', 
+                marginTop: '8px',
+                flexShrink: 0,
+                position: 'sticky',
+                bottom: 0,
+                backgroundColor: 'white',
+                paddingTop: '16px',
+                borderTop: '1px solid #e5e7eb'
+              }}>
                 <button
                   onClick={() => setShowEditModal(false)}
                   style={{

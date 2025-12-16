@@ -4,7 +4,9 @@ import { authOptions } from "@/lib/googleAuth";
 import dbConnect from "@/lib/mongodb";
 import Operation from "@/models/Operation";
 import User from "@/models/User";
+import Alert from "@/models/Alert";
 import { validateOriginMiddleware } from "@/lib/securityValidation";
+import { formatOperationNotes } from "@/lib/telegramBot";
 
 interface CloudinaryImage {
   public_id: string;
@@ -93,7 +95,7 @@ export default async function handler(
     }
 
     // Buscar la operación
-    const operation = await Operation.findById(operationId);
+    const operation = await Operation.findById(operationId).populate('alertId');
     if (!operation) {
       return res.status(404).json({ success: false, error: "Operación no encontrada" });
     }
@@ -118,7 +120,33 @@ export default async function handler(
     }
     if (price !== undefined) updateData.price = price;
     if (date !== undefined) updateData.date = new Date(date);
-    if (notes !== undefined) updateData.notes = notes;
+    
+    // ✅ NUEVO: Si hay alerta asociada y no se proporcionaron notas personalizadas, regenerar automáticamente
+    if (notes !== undefined) {
+      updateData.notes = notes;
+    } else if (operation.alertId && typeof operation.alertId === 'object') {
+      // Si hay alerta y no se están actualizando las notas manualmente, regenerarlas
+      const alert = operation.alertId as any;
+      try {
+        const finalPrice = price !== undefined ? price : operation.price;
+        const finalPriceRange = priceRange !== undefined ? priceRange : operation.priceRange;
+        const finalOperationType = operationType !== undefined ? operationType : operation.operationType;
+        const finalPartialSalePercentage = operation.partialSalePercentage;
+        
+        updateData.notes = formatOperationNotes(alert, {
+          price: finalPrice,
+          priceRange: finalPriceRange,
+          action: finalOperationType === 'COMPRA' ? 'BUY' : 'SELL',
+          liquidityPercentage: operation.portfolioPercentage,
+          soldPercentage: finalPartialSalePercentage,
+          isExecutedSale: false,
+          isCompleteSale: finalPartialSalePercentage ? (finalPartialSalePercentage >= 100) : false
+        });
+      } catch (error) {
+        console.error('❌ Error regenerando notas automáticas:', error);
+        // Si falla, mantener las notas existentes
+      }
+    }
     if (status !== undefined) {
       if (!['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING'].includes(status)) {
         return res.status(400).json({
@@ -129,10 +157,15 @@ export default async function handler(
       updateData.status = status;
     }
     if (image !== undefined) {
-      // Si image es null, eliminar la imagen; si es un objeto, actualizarla
-      if (image === null) {
-        updateData.image = null;
-      } else {
+      // Si image es null o undefined, eliminar la imagen; si es un objeto válido, actualizarla
+      if (image === null || image === undefined) {
+        // Usar $unset para eliminar el campo completamente
+        if (!updateData.$unset) {
+          updateData.$unset = {};
+        }
+        updateData.$unset.image = '';
+      } else if (image && typeof image === 'object' && image.public_id && image.secure_url) {
+        // Solo actualizar si es un objeto válido de Cloudinary
         updateData.image = image;
       }
     }
@@ -154,10 +187,31 @@ export default async function handler(
       updateData.amount = finalQuantity * finalPrice;
     }
 
+    // Separar $unset del resto de campos
+    const setData: any = {};
+    const unsetData: any = {};
+    
+    Object.keys(updateData).forEach(key => {
+      if (key === '$unset') {
+        Object.assign(unsetData, updateData[key]);
+      } else {
+        setData[key] = updateData[key];
+      }
+    });
+
+    // Construir el objeto de actualización
+    const updateQuery: any = {};
+    if (Object.keys(setData).length > 0) {
+      updateQuery.$set = setData;
+    }
+    if (Object.keys(unsetData).length > 0) {
+      updateQuery.$unset = unsetData;
+    }
+
     // Actualizar la operación
     const updatedOperation = await Operation.findByIdAndUpdate(
       operationId,
-      { $set: updateData },
+      updateQuery,
       { new: true, runValidators: true }
     );
 
@@ -165,7 +219,9 @@ export default async function handler(
       operationId,
       ticker: updatedOperation.ticker,
       status: updatedOperation.status,
-      updatedFields: Object.keys(updateData)
+      updatedFields: Object.keys(updateData),
+      hasImage: !!updatedOperation.image,
+      imagePublicId: updatedOperation.image?.public_id || 'N/A'
     });
 
     return res.status(200).json({

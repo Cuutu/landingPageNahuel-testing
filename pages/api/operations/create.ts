@@ -6,6 +6,7 @@ import Operation from "@/models/Operation";
 import User from "@/models/User";
 import Alert from "@/models/Alert";
 import { validateOriginMiddleware } from "@/lib/securityValidation";
+import { formatOperationNotes } from "@/lib/telegramBot";
 
 interface CreateOperationRequest {
   alertId?: string; // ✅ NUEVO: Opcional para operaciones manuales
@@ -192,6 +193,28 @@ export default async function handler(
       calculatedAmount = finalQuantity * price;
     }
 
+    // ✅ NUEVO: Generar notas automáticamente usando el mismo formato que Telegram
+    let operationNotes = notes;
+    if (!operationNotes && alert) {
+      // Si hay alerta y no hay notas personalizadas, generar automáticamente
+      try {
+        operationNotes = formatOperationNotes(alert, {
+          price: price,
+          priceRange: priceRange,
+          action: operationType === 'COMPRA' ? 'BUY' : 'SELL',
+          liquidityPercentage: portfolioPercentage,
+          soldPercentage: partialSalePercentage,
+          isExecutedSale: false, // Se puede ajustar según el contexto
+          isCompleteSale: partialSalePercentage ? (partialSalePercentage >= 100) : false
+        });
+      } catch (error) {
+        console.error('❌ Error generando notas automáticas:', error);
+        operationNotes = notes || (isManual ? 'Operación manual registrada' : '');
+      }
+    } else if (!operationNotes) {
+      operationNotes = isManual ? 'Operación manual registrada' : '';
+    }
+
     // ✅ MEJORADO: Crear la operación como registro (sin manejar balance/liquidez)
     const operation = new Operation({
       ticker: ticker,
@@ -214,7 +237,7 @@ export default async function handler(
       liquidityData,
       executedBy: session.user.email, // ✅ Mantener quién ejecutó la operación
       executionMethod: isManual ? 'MANUAL' : 'ADMIN',
-      notes: notes || (isManual ? 'Operación manual registrada' : '')
+      notes: operationNotes
     });
 
     await operation.save();
