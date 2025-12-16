@@ -25,10 +25,10 @@ async function dbConnect() {
     const opts = {
       bufferCommands: false,
       maxPoolSize: 10,
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 30000,
-      connectTimeoutMS: 30000,
-      maxIdleTimeMS: 30000,
+      serverSelectionTimeoutMS: 10000, // ✅ OPTIMIZADO: 10s en vez de 30s - falla rápido si BD no responde
+      socketTimeoutMS: 10000, // ✅ OPTIMIZADO: 10s en vez de 30s - operaciones fallan rápido
+      connectTimeoutMS: 10000, // ✅ OPTIMIZADO: 10s en vez de 30s - conexión falla rápido
+      maxIdleTimeMS: 30000, // Mantener conexiones abiertas por 30s
       heartbeatFrequencyMS: 10000,
       retryWrites: true,
       retryReads: true,

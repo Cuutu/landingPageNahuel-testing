@@ -214,7 +214,7 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
-    updateAge: 0, // ✅ CRÍTICO: Actualizar en cada request para asegurar datos frescos de BD
+    updateAge: 300, // ✅ OPTIMIZADO: Actualizar cada 5 minutos (300s) en vez de cada request - mejora performance significativamente
   },
   jwt: {
     maxAge: 30 * 24 * 60 * 60, // 30 días
