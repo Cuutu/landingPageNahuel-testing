@@ -3336,6 +3336,16 @@
     max-width: 100%;
   }
 
+  .youtubeAutoCarousel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .youtubeVideoFrame {
+    flex: none;
+    width: 100%;
+  }
+
   /* ✅ OPTIMIZADO: Estadísticas en COLUMNA para móvil - FORZAR DISPLAY EN COLUMNA */
   .statsSection {
     padding: 3rem 0;
