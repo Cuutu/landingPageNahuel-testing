@@ -61,16 +61,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const resumenAcciones: AccionResumen[] = [];
     const pendingResumenAcciones: AccionResumen[] = [];
 
-    // ✅ NUEVO: Buscar también operaciones pendientes con priceRange que necesitan confirmación
-    // ✅ CORREGIDO: Buscar tanto COMPRA como VENTA
+    // ✅ Operaciones pendientes con priceRange que necesitan confirmación
+    // ⚠️ Importante: NO procesar VENTAS acá, porque genera duplicados:
+    // - 1) se confirma la operación pendiente
+    // - 2) luego se ejecuta la venta y registerSaleOperation crea otra si no encuentra la pendiente
+    // Las VENTAS se resuelven en el bloque de sellRange (ejecutar o descartar) para que sea 1 sola operación.
     const Operation = (await import('@/models/Operation')).default;
     const pendingOperations = await Operation.find({
+      operationType: 'COMPRA',
       priceRange: { $exists: true, $ne: null },
       isPriceConfirmed: { $ne: true }
-      // ✅ CORREGIDO: Eliminado filtro operationType: 'COMPRA' para incluir también VENTA
     }).populate('alertId');
 
-    console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange (COMPRA y VENTA)`);
+    console.log(`📊 CRON: Encontradas ${pendingOperations.length} operaciones pendientes con priceRange (COMPRA)`);
     
     // ✅ DEBUG: Mostrar detalles de las operaciones encontradas
     if (pendingOperations.length > 0) {
@@ -147,8 +150,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           let currentPrice = await getMarketClosePrice(alert.symbol);
           
           // Fallback al precio de la alerta solo si no se puede obtener precio real
+          // ✅ CORREGIDO: priorizar currentPrice (16:30) y NO finalPrice (puede ser de otro cron/otro momento)
           if (!currentPrice || currentPrice <= 0) {
-            currentPrice = alert.finalPrice || alert.currentPrice;
+            currentPrice = alert.currentPrice || alert.finalPrice;
             console.warn(`⚠️ CRON: No se pudo obtener precio real del mercado para ${alert.symbol}, usando precio de la alerta: $${currentPrice}`);
           } else {
             console.log(`✅ CRON: Precio real obtenido del mercado para ${alert.symbol}: $${currentPrice}`);
@@ -169,35 +173,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             if (isInRange) {
               console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} - Precio $${currentPrice} está dentro del rango $${priceRange.min}-$${priceRange.max}, confirmando...`);
               
-              // ✅ CORREGIDO: Confirmar la operación según su tipo
-              if (operationType === 'COMPRA') {
-                // Para COMPRA: usar la función existente
-                await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
-                // Solo usar estas acciones si NO hay alertas con rango luego (para no duplicar)
-                pendingResumenAcciones.push({
-                  symbol: alert.symbol,
-                  tipo: 'COMPRA_CONFIRMADA',
-                  precio: currentPrice,
-                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
-                  alertId: alert._id.toString(),
-                  detalles: {
-                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
-                  },
-                });
-              } else if (operationType === 'VENTA') {
-                // ✅ NUEVO: Para VENTA: confirmar directamente la operación
-                await updateSaleOperationPrice(operation._id, currentPrice);
-                pendingResumenAcciones.push({
-                  symbol: alert.symbol,
-                  tipo: 'VENTA_EJECUTADA',
-                  precio: currentPrice,
-                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
-                  alertId: alert._id.toString(),
-                  detalles: {
-                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
-                  },
-                });
-              }
+              // ✅ Confirmar COMPRA: usar la función existente
+              await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
+              // Solo usar estas acciones si NO hay alertas con rango luego (para no duplicar)
+              pendingResumenAcciones.push({
+                symbol: alert.symbol,
+                tipo: 'COMPRA_CONFIRMADA',
+                precio: currentPrice,
+                alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                alertId: alert._id.toString(),
+                detalles: {
+                  rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                },
+              });
               
               confirmedOperationsCount++;
               console.log(`✅ CRON: Operación ${operationType} ${operation.ticker} confirmada exitosamente`);
@@ -209,35 +197,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               
               console.log(`❌ CRON: Operación ${operationType} ${operation.ticker} - ${motivo} - DESCARTANDO operación`);
               
-              if (operationType === 'VENTA') {
-                // ✅ NUEVO: Para VENTA fuera de rango, eliminar la operación y limpiar partialSale
-                await discardSaleOperation(operation, alert, motivo);
-                pendingResumenAcciones.push({
-                  symbol: alert.symbol,
-                  tipo: 'VENTA_DESCARTADA',
-                  precio: currentPrice,
-                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
-                  alertId: alert._id.toString(),
-                  detalles: {
-                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
-                    motivo,
-                  },
-                });
-              } else {
-                // Para COMPRA fuera de rango, solo loguear (ya se maneja en otra parte del código)
-                console.log(`⚠️ CRON: Operación COMPRA fuera de rango - No se confirma`);
-                pendingResumenAcciones.push({
-                  symbol: alert.symbol,
-                  tipo: 'COMPRA_DESCARTADA',
-                  precio: currentPrice,
-                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
-                  alertId: alert._id.toString(),
-                  detalles: {
-                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
-                    motivo,
-                  },
-                });
-              }
+              // Para COMPRA fuera de rango, solo loguear (ya se maneja en otra parte del código)
+              console.log(`⚠️ CRON: Operación COMPRA fuera de rango - No se confirma`);
+              pendingResumenAcciones.push({
+                symbol: alert.symbol,
+                tipo: 'COMPRA_DESCARTADA',
+                precio: currentPrice,
+                alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                alertId: alert._id.toString(),
+                detalles: {
+                  rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                  motivo,
+                },
+              });
             }
           } else {
             console.warn(`⚠️ CRON: Operación ${operation.ticker} no tiene priceRange válido, saltando...`);
@@ -323,9 +295,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           participationPercentage: alert.participationPercentage
         });
 
-        // ✅ CRÍTICO: Usar el precio de cierre de la alerta (precio del momento de ejecución del cronjob)
-        // Este precio se usará para registrar las operaciones de venta
-        const closePrice = alert.currentPrice;
+        // ✅ Precio de referencia para 16:30:
+        // 1) intentar precio real de mercado (API interna / Google Finance)
+        // 2) fallback a alert.currentPrice
+        // ⚠️ NO usar alert.finalPrice acá (puede pertenecer a otro proceso/otro momento)
+        const marketPrice = await getMarketClosePrice(alert.symbol);
+        const closePrice = (marketPrice && marketPrice > 0) ? marketPrice : alert.currentPrice;
         
         if (!closePrice || closePrice <= 0) {
           console.warn(`⚠️ ${alert.symbol}: Precio de cierre inválido (${closePrice}), saltando...`);
@@ -672,6 +647,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             );
             
             console.log(`🗑️ ${alert.symbol}: Venta descartada - Posición sigue ACTIVA sin venta programada`);
+
+            // ✅ CORREGIDO: Cancelar la operación de VENTA pendiente (A confirmar) para evitar:
+            // - que quede colgada
+            // - que muestre un precio viejo que no corresponde al evaluado
+            try {
+              const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+              await cancelPendingSaleOperationForAlert(alert._id, pool, closePrice, motivo);
+            } catch (opCancelError) {
+              console.error(`⚠️ ${alert.symbol}: Error cancelando operación de VENTA pendiente:`, opCancelError);
+            }
             
             // ✅ MODIFICADO: Acumular en resumen en lugar de enviar notificación individual
             resumenAcciones.push({
@@ -1331,6 +1316,55 @@ async function discardSaleOperation(operation: any, alert: any, motivo: string) 
   } catch (error) {
     console.error(`❌ CRON: Error desestimando venta de ${operation.ticker}:`, error);
   }
+}
+
+/**
+ * ✅ NUEVO: Cancela la operación de VENTA pendiente (A confirmar) de una alerta.
+ * Motivo principal: evitar operaciones "colgadas" y precios viejos en UI cuando la venta se DESCARTA.
+ */
+async function cancelPendingSaleOperationForAlert(
+  alertId: any,
+  pool: 'TraderCall' | 'SmartMoney',
+  evaluatedPrice: number,
+  motivo: string
+): Promise<void> {
+  const Operation = (await import('@/models/Operation')).default;
+
+  const pendingOperation = await Operation.findOne({
+    alertId,
+    operationType: 'VENTA',
+    system: pool,
+    $or: [{ priceRange: { $exists: true, $ne: null } }, { isPriceConfirmed: { $ne: true } }],
+  }).sort({ date: -1 });
+
+  if (!pendingOperation) {
+    console.log(`⚠️ [CANCEL PENDING SALE] No se encontró operación pendiente para alertId=${alertId} (${pool})`);
+    return;
+  }
+
+  const oldPrice = pendingOperation.price;
+  const range = pendingOperation.priceRange;
+
+  await Operation.updateOne(
+    { _id: pendingOperation._id },
+    {
+      $set: {
+        status: 'CANCELLED',
+        isPriceConfirmed: true,
+        price: evaluatedPrice,
+        // Nota: amount/quantity no representan ejecución real, pero mostramos el precio evaluado para auditoría/UI.
+        amount: Math.abs(pendingOperation.quantity || 0) * evaluatedPrice,
+        notes: `❌ VENTA DESCARTADA: ${motivo} | Precio evaluado: $${evaluatedPrice.toFixed(2)} (anterior: $${(oldPrice ?? 0).toFixed(2)}) | Rango original: $${range?.min?.toFixed(2) || 'N/A'} - $${range?.max?.toFixed(2) || 'N/A'}`.trim(),
+      },
+      $unset: {
+        priceRange: '',
+      },
+    }
+  );
+
+  console.log(
+    `✅ [CANCEL PENDING SALE] Operación ${pendingOperation._id} cancelada - Precio: $${(oldPrice ?? 0).toFixed(2)} → $${evaluatedPrice.toFixed(2)}`
+  );
 }
 
 /**
