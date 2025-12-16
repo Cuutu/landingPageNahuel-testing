@@ -391,8 +391,11 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       // Si no está autenticado, iniciar sesión con Google directamente
       // ✅ Guardar flag para detectar el retorno del login
       sessionStorage.setItem('pending_login', 'true');
-      const callbackUrl = encodeURIComponent(window.location.origin + window.location.pathname);
-      window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrl}`;
+      // ✅ Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
+      signIn('google', { 
+        callbackUrl: window.location.origin + window.location.pathname,
+        redirect: true // NextAuth redirigirá automáticamente
+      });
     }
   };
 

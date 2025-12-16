@@ -1,7 +1,8 @@
 import { GetServerSideProps } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { signIn } from 'next-auth/react';
 import Head from 'next/head';
 
 interface SignInProps {
@@ -10,20 +11,33 @@ interface SignInProps {
 }
 
 export default function SignInPage({ callbackUrl, error }: SignInProps) {
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const safeCallback = callbackUrl?.includes('/auth/signin') ? '/' : (callbackUrl || '/');
 
-  // Redirigir automáticamente a Google cuando la página se monta
+  // Redirigir automáticamente a Google usando signIn() de NextAuth
+  // Esto garantiza que NextAuth genere el state y la cookie correctamente
   useEffect(() => {
-    const redirectToGoogle = () => {
-      const callbackUrlParam = encodeURIComponent(safeCallback);
-      window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrlParam}`;
+    if (isRedirecting) return;
+
+    const redirectToGoogle = async () => {
+      setIsRedirecting(true);
+      try {
+        // Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
+        await signIn('google', { 
+          callbackUrl: safeCallback,
+          redirect: true // NextAuth redirigirá automáticamente
+        });
+      } catch (error) {
+        console.error('❌ [SIGNIN] Error al redirigir a Google:', error);
+        setIsRedirecting(false);
+      }
     };
 
-    // Pequeño delay para evitar redirecciones muy rápidas que puedan causar problemas
+    // Pequeño delay para asegurar que el componente esté montado
     const timer = setTimeout(redirectToGoogle, 100);
     
     return () => clearTimeout(timer);
-  }, [safeCallback]);
+  }, [safeCallback, isRedirecting]);
 
   return (
     <>

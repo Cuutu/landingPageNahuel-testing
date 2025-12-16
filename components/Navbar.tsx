@@ -165,10 +165,16 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
     setShowNotifications(false);
   };
 
-  const handleLogin = () => {
-    // ✅ Redirigir directamente a Google OAuth sin página intermedia
-    const callbackUrl = encodeURIComponent(window.location.href);
-    window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrl}`;
+  const handleLogin = async () => {
+    // ✅ Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
+    try {
+      await signIn('google', { 
+        callbackUrl: window.location.href,
+        redirect: true // NextAuth redirigirá automáticamente
+      });
+    } catch (error) {
+      console.error('❌ [NAVBAR] Error al iniciar sesión:', error);
+    }
   };
 
   const handleLogout = async () => {
