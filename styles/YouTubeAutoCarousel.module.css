@@ -93,7 +93,9 @@
 @media (max-width: 768px) {
   .youtubeAutoCarousel {
     max-width: 100%;
-    padding: 0 1rem;
+    width: 100%;
+    padding: 0;
+    margin: 0;
   }
 
   .youtubeVideoFrame {
@@ -128,7 +130,10 @@
 
 @media (max-width: 480px) {
   .youtubeAutoCarousel {
-    padding: 0 0.5rem;
+    max-width: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
   }
 
   .youtubeVideoFrame {
