@@ -152,13 +152,11 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
   const formatDate = (date: Date | string) => {
     if (!date) return 'N/A';
     const d = typeof date === 'string' ? new Date(date) : date;
+    // ✅ CAMBIADO: Solo mostrar fecha, sin hora, para ahorrar espacio
     return new Intl.DateTimeFormat('es-AR', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
+      day: '2-digit'
     }).format(d);
   };
 
@@ -384,7 +382,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                             </td>
                             <td>
                               <div className={styles.dateCell}>
-                                <Clock size={14} />
+                                <Clock size={12} />
                                 {formatDate(alert.currentPriceUpdatedAt || alert.updatedAt)}
                               </div>
                             </td>

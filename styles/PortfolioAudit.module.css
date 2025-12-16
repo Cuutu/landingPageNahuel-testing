@@ -354,70 +354,70 @@
 /* ✅ NUEVO: Ajustar ancho de columnas específicas para que quepan todas */
 .alertsTable th:nth-child(1),
 .alertsTable td:nth-child(1) {
-  min-width: 100px; /* Ticker */
-  max-width: 120px;
+  min-width: 90px; /* Ticker */
+  max-width: 110px;
 }
 
 .alertsTable th:nth-child(2),
 .alertsTable td:nth-child(2) {
-  min-width: 80px; /* Estado */
-  max-width: 100px;
+  min-width: 70px; /* Estado */
+  max-width: 90px;
 }
 
 .alertsTable th:nth-child(3),
 .alertsTable td:nth-child(3),
 .alertsTable th:nth-child(4),
 .alertsTable td:nth-child(4) {
-  min-width: 100px; /* Precios */
-  max-width: 120px;
+  min-width: 90px; /* Precios */
+  max-width: 110px;
 }
 
 .alertsTable th:nth-child(5),
 .alertsTable td:nth-child(5) {
-  min-width: 140px; /* Última Actualización */
-  max-width: 160px;
+  min-width: 90px; /* Última Actualización (solo fecha) */
+  max-width: 110px;
 }
 
 .alertsTable th:nth-child(6),
 .alertsTable td:nth-child(6) {
-  min-width: 110px; /* Cantidad (Shares) */
-  max-width: 130px;
+  min-width: 95px; /* Cantidad (Shares) */
+  max-width: 115px;
 }
 
 .alertsTable th:nth-child(7),
 .alertsTable td:nth-child(7) {
-  min-width: 120px; /* Liquidez Asignada */
-  max-width: 140px;
+  min-width: 110px; /* Liquidez Asignada */
+  max-width: 130px;
 }
 
 .alertsTable th:nth-child(8),
 .alertsTable td:nth-child(8) {
-  min-width: 110px; /* % Liquidez Vendido */
-  max-width: 130px;
+  min-width: 100px; /* % Liquidez Vendido */
+  max-width: 120px;
 }
 
 .alertsTable th:nth-child(9),
 .alertsTable td:nth-child(9) {
-  min-width: 100px; /* % Participación */
-  max-width: 120px;
+  min-width: 90px; /* % Participación */
+  max-width: 110px;
 }
 
 .alertsTable th:nth-child(10),
 .alertsTable td:nth-child(10) {
-  min-width: 80px; /* P&L % */
-  max-width: 100px;
+  min-width: 70px; /* P&L % */
+  max-width: 90px;
 }
 
 .alertsTable th:nth-child(11),
 .alertsTable td:nth-child(11) {
-  min-width: 100px; /* Origen Precio */
-  max-width: 120px;
+  min-width: 90px; /* Origen Precio */
+  max-width: 110px;
 }
 
 .alertsTable th:nth-child(12),
 .alertsTable td:nth-child(12) {
-  min-width: 120px; /* Acciones */
-  max-width: 150px;
+  min-width: 100px; /* Acciones */
+  max-width: 120px;
 }
 
 .alertsTable {
@@ -431,22 +431,22 @@
 }
 
 .alertsTable th {
-  padding: 0.75rem 0.5rem;
+  padding: 0.6rem 0.4rem;
   text-align: left;
   font-weight: 600;
   color: #4a5568;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
 }
 
 .alertsTable td {
-  padding: 0.75rem 0.5rem;
+  padding: 0.6rem 0.4rem;
   border-bottom: 1px solid #f7fafc;
   color: #2d3748;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .alertsTable tbody tr:hover {
@@ -511,9 +511,15 @@
 .dateCell {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
+  gap: 0.3rem;
+  font-size: 0.75rem;
   white-space: nowrap;
+}
+
+.dateCell svg {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
 }
 
 .positiveValue {
