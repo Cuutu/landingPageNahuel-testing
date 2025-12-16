@@ -555,6 +555,219 @@
   background: #f7fafc;
 }
 
+/* ✅ NUEVO: Estilos para botón de ver ventas parciales */
+.viewSalesButton {
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.viewSalesButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+/* ✅ NUEVO: Estilos para el modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modalContent {
+  background: white;
+  border-radius: 16px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 2px solid #e2e8f0;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px 16px 0 0;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.modalCloseButton {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+}
+
+.modalCloseButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
+}
+
+.modalBody {
+  padding: 2rem;
+}
+
+/* ✅ NUEVO: Estilos para resumen de alerta */
+.alertSummary {
+  background: #f7fafc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid #e2e8f0;
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.summaryRow:last-child {
+  border-bottom: none;
+}
+
+.summaryLabel {
+  font-size: 0.95rem;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.summaryValue {
+  font-size: 1.1rem;
+  color: #1a202c;
+  font-weight: 700;
+}
+
+/* ✅ NUEVO: Estilos para tabla de ventas parciales */
+.partialSalesTable {
+  margin-top: 1.5rem;
+}
+
+.partialSalesTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1a202c;
+  margin: 0 0 1rem 0;
+}
+
+.salesTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+}
+
+.salesTable thead {
+  background: #f7fafc;
+}
+
+.salesTable th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #4a5568;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.salesTable td {
+  padding: 1rem;
+  border-bottom: 1px solid #f7fafc;
+  color: #2d3748;
+  font-size: 0.9rem;
+}
+
+.salesTable tbody tr:hover {
+  background: #f7fafc;
+}
+
+.completeSaleBadge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #c6f6d5;
+  color: #22543d;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.noSalesMessage {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: #718096;
+}
+
+.noSalesMessage svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.noSalesMessage p {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
@@ -581,6 +794,32 @@
 
   .alertsTable th,
   .alertsTable td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .modalContent {
+    max-width: 100%;
+    max-height: 95vh;
+  }
+
+  .modalHeader {
+    padding: 1rem 1.5rem;
+  }
+
+  .modalTitle {
+    font-size: 1.25rem;
+  }
+
+  .modalBody {
+    padding: 1.5rem;
+  }
+
+  .salesTable {
+    font-size: 0.8rem;
+  }
+
+  .salesTable th,
+  .salesTable td {
     padding: 0.75rem 0.5rem;
   }
 }

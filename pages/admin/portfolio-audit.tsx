@@ -20,7 +20,8 @@ import {
   BarChart3,
   Info,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -29,6 +30,23 @@ import toast from 'react-hot-toast';
 
 interface AdminPortfolioAuditProps {
   user: any;
+}
+
+interface PartialSale {
+  date: Date | string;
+  executedAt?: Date | string;
+  percentage: number;
+  sharesToSell: number;
+  sellPrice: number;
+  liquidityReleased: number;
+  realizedProfit: number;
+  executedBy?: string;
+  priceRange?: {
+    min: number;
+    max: number;
+  };
+  isCompleteSale: boolean;
+  executed: boolean;
 }
 
 interface AlertDetail {
@@ -56,6 +74,8 @@ interface AlertDetail {
   calculatedPL?: number;
   calculatedPLPercentage?: number;
   priceSource: string;
+  // ✅ NUEVO: Ventas parciales
+  partialSales?: PartialSale[];
 }
 
 interface DashboardBreakdown {
@@ -77,6 +97,8 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
   const [expandedMetrics, setExpandedMetrics] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  // ✅ NUEVO: Estado para el modal de ventas parciales
+  const [selectedAlertForSales, setSelectedAlertForSales] = useState<AlertDetail | null>(null);
 
   useEffect(() => {
     fetchAuditData();
@@ -320,10 +342,12 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                         <th>Precio Actual</th>
                         <th>Última Actualización</th>
                         <th>Cantidad (Shares)</th>
-                        <th>% Liquidez Asignado</th>
+                        <th>Liquidez Asignada</th>
+                        <th>% Liquidez</th>
                         <th>% Participación</th>
                         <th>P&L %</th>
                         <th>Origen Precio</th>
+                        <th>Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -365,17 +389,31 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                               </div>
                             </td>
                             <td>
-                              {/* Solo mostrar shares si hay liquidez asignada */}
+                              {/* ✅ MEJORADO: Formato entero + 2 decimales para shares */}
                               {alert.status === 'CLOSED' && (alert.participationPercentage === 0 || alert.participationPercentage === undefined || alert.participationPercentage === null)
                                 ? 'N/A'
                                 : (alert.shares !== undefined && alert.shares !== null && alert.shares > 0
-                                    ? alert.shares.toFixed(4)
+                                    ? (() => {
+                                        const integerPart = Math.floor(alert.shares);
+                                        const decimalPart = ((alert.shares % 1) * 100).toFixed(0).padStart(2, '0');
+                                        return `${integerPart}.${decimalPart}`;
+                                      })()
                                     : 'N/A')}
                               {alert.soldShares && alert.soldShares > 0 && (
                                 <div className={styles.priceNote}>
-                                  vendidas: {alert.soldShares.toFixed(4)}
+                                  vendidas: {(() => {
+                                    const integerPart = Math.floor(alert.soldShares);
+                                    const decimalPart = ((alert.soldShares % 1) * 100).toFixed(0).padStart(2, '0');
+                                    return `${integerPart}.${decimalPart}`;
+                                  })()}
                                 </div>
                               )}
+                            </td>
+                            <td>
+                              {/* ✅ NUEVO: Columna dedicada para liquidez asignada */}
+                              {alert.allocatedAmount !== undefined && alert.allocatedAmount !== null && alert.allocatedAmount > 0
+                                ? formatCurrency(alert.allocatedAmount)
+                                : 'N/A'}
                             </td>
                             <td>
                               {alert.status === 'CLOSED' 
@@ -383,11 +421,6 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 : (alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null && alert.liquidityPercentage > 0
                                     ? `${alert.liquidityPercentage.toFixed(2)}%`
                                     : 'N/A')}
-                              {alert.status !== 'CLOSED' && alert.allocatedAmount !== undefined && alert.allocatedAmount !== null && alert.allocatedAmount > 0 && (
-                                <div className={styles.priceNote}>
-                                  {formatCurrency(alert.allocatedAmount)}
-                                </div>
-                              )}
                             </td>
                             <td>
                               {/* Alertas cerradas tienen 0% de participación */}
@@ -465,6 +498,21 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 <Database size={14} />
                                 {alert.priceSource === 'database' ? 'BD' : 'Calculado'}
                               </button>
+                            </td>
+                            <td>
+                              {/* ✅ NUEVO: Botón para ver ventas parciales */}
+                              {alert.partialSales && alert.partialSales.length > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedAlertForSales(alert)}
+                                  className={styles.viewSalesButton}
+                                  title="Ver ventas parciales"
+                                >
+                                  Ver {alert.partialSales.length === 1 ? 'venta parcial' : 'ventas parciales'}
+                                </button>
+                              ) : (
+                                <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.875rem' }}>Sin ventas</span>
+                              )}
                             </td>
                           </tr>
                         );
@@ -576,6 +624,151 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
           )}
         </div>
       </main>
+      
+      {/* ✅ NUEVO: Modal de ventas parciales */}
+      {selectedAlertForSales && (
+        <div className={styles.modalOverlay} onClick={() => setSelectedAlertForSales(null)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                Ventas Parciales - {selectedAlertForSales.ticker || selectedAlertForSales.symbol}
+              </h2>
+              <button
+                className={styles.modalCloseButton}
+                onClick={() => setSelectedAlertForSales(null)}
+                aria-label="Cerrar"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className={styles.modalBody}>
+              {/* Información general de la alerta */}
+              <div className={styles.alertSummary}>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Liquidez Asignada:</span>
+                  <span className={styles.summaryValue}>
+                    {selectedAlertForSales.allocatedAmount 
+                      ? formatCurrency(selectedAlertForSales.allocatedAmount)
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Shares Totales:</span>
+                  <span className={styles.summaryValue}>
+                    {selectedAlertForSales.shares 
+                      ? (() => {
+                          const integerPart = Math.floor(selectedAlertForSales.shares);
+                          const decimalPart = ((selectedAlertForSales.shares % 1) * 100).toFixed(0).padStart(2, '0');
+                          return `${integerPart}.${decimalPart}`;
+                        })()
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Precio de Entrada:</span>
+                  <span className={styles.summaryValue}>
+                    {formatCurrency(selectedAlertForSales.entryPrice)}
+                  </span>
+                </div>
+                <div className={styles.summaryRow}>
+                  <span className={styles.summaryLabel}>Ganancia Realizada Total:</span>
+                  <span className={`${styles.summaryValue} ${
+                    (selectedAlertForSales.realizedProfitLoss || 0) >= 0 
+                      ? styles.positiveValue 
+                      : styles.negativeValue
+                  }`}>
+                    {formatCurrency(selectedAlertForSales.realizedProfitLoss || 0)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tabla de ventas parciales */}
+              {selectedAlertForSales.partialSales && selectedAlertForSales.partialSales.length > 0 ? (
+                <div className={styles.partialSalesTable}>
+                  <h3 className={styles.partialSalesTitle}>
+                    Historial de Ventas Parciales ({selectedAlertForSales.partialSales.length})
+                  </h3>
+                  <table className={styles.salesTable}>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>% Vendido</th>
+                        <th>Shares Vendidas</th>
+                        <th>Precio de Venta</th>
+                        <th>Liquidez Liberada</th>
+                        <th>Ganancia Realizada</th>
+                        <th>Ejecutado Por</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedAlertForSales.partialSales
+                        .sort((a, b) => {
+                          const dateA = new Date(a.executedAt || a.date).getTime();
+                          const dateB = new Date(b.executedAt || b.date).getTime();
+                          return dateB - dateA; // Más reciente primero
+                        })
+                        .map((sale, index) => {
+                          const saleDate = sale.executedAt || sale.date;
+                          return (
+                            <tr key={index}>
+                              <td>
+                                <div className={styles.dateCell}>
+                                  <Clock size={14} />
+                                  {formatDate(saleDate)}
+                                </div>
+                              </td>
+                              <td>
+                                <strong>{sale.percentage.toFixed(2)}%</strong>
+                                {sale.isCompleteSale && (
+                                  <div className={styles.completeSaleBadge}>Venta Completa</div>
+                                )}
+                              </td>
+                              <td>
+                                {sale.sharesToSell > 0
+                                  ? (() => {
+                                      const integerPart = Math.floor(sale.sharesToSell);
+                                      const decimalPart = ((sale.sharesToSell % 1) * 100).toFixed(0).padStart(2, '0');
+                                      return `${integerPart}.${decimalPart}`;
+                                    })()
+                                  : 'N/A'}
+                              </td>
+                              <td>
+                                {formatCurrency(sale.sellPrice)}
+                                {sale.priceRange && (
+                                  <div className={styles.priceNote}>
+                                    Rango: {formatCurrency(sale.priceRange.min)} - {formatCurrency(sale.priceRange.max)}
+                                  </div>
+                                )}
+                              </td>
+                              <td>{formatCurrency(sale.liquidityReleased)}</td>
+                              <td className={
+                                sale.realizedProfit >= 0 
+                                  ? styles.positiveValue 
+                                  : styles.negativeValue
+                              }>
+                                {sale.realizedProfit >= 0 ? '+' : ''}
+                                {formatCurrency(sale.realizedProfit)}
+                              </td>
+                              <td>
+                                {sale.executedBy || 'N/A'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className={styles.noSalesMessage}>
+                  <Info size={24} />
+                  <p>No hay ventas parciales registradas para esta alerta.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <Footer />
     </>

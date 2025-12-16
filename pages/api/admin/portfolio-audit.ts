@@ -8,6 +8,23 @@ import Liquidity from '@/models/Liquidity';
 import PortfolioMetrics from '@/models/PortfolioMetrics';
 import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
 
+interface PartialSale {
+  date: Date;
+  executedAt?: Date;
+  percentage: number;
+  sharesToSell: number;
+  sellPrice: number;
+  liquidityReleased: number;
+  realizedProfit: number;
+  executedBy?: string;
+  priceRange?: {
+    min: number;
+    max: number;
+  };
+  isCompleteSale: boolean;
+  executed: boolean;
+}
+
 interface AlertDetail {
   alertId: string;
   symbol: string;
@@ -34,6 +51,8 @@ interface AlertDetail {
   calculatedPL?: number;
   calculatedPLPercentage?: number;
   priceSource: string; // 'database' | 'calculated'
+  // ✅ NUEVO: Ventas parciales
+  partialSales?: PartialSale[];
 }
 
 interface LiquidityDetail {
@@ -250,6 +269,28 @@ export default async function handler(
         }
       }
 
+      // ✅ NUEVO: Obtener ventas parciales de liquidityData.partialSales
+      const partialSales: PartialSale[] = [];
+      if (alert.liquidityData?.partialSales && Array.isArray(alert.liquidityData.partialSales)) {
+        const executedSales = alert.liquidityData.partialSales.filter(
+          (sale: any) => sale.executed === true && !sale.discarded
+        );
+        
+        partialSales.push(...executedSales.map((sale: any) => ({
+          date: sale.date || sale.executedAt || new Date(),
+          executedAt: sale.executedAt || sale.date || new Date(),
+          percentage: sale.percentage || 0,
+          sharesToSell: sale.sharesToSell || 0,
+          sellPrice: sale.sellPrice || 0,
+          liquidityReleased: sale.liquidityReleased || 0,
+          realizedProfit: sale.realizedProfit || 0,
+          executedBy: sale.executedBy || '',
+          priceRange: sale.priceRange || undefined,
+          isCompleteSale: sale.isCompleteSale || false,
+          executed: sale.executed || true
+        })));
+      }
+
       return {
         alertId,
         symbol: alert.symbol || '',
@@ -282,7 +323,9 @@ export default async function handler(
             : 0),
         calculatedPL,
         calculatedPLPercentage,
-        priceSource: alert.currentPrice ? 'database' : 'calculated'
+        priceSource: alert.currentPrice ? 'database' : 'calculated',
+        // ✅ NUEVO: Ventas parciales
+        partialSales: partialSales.length > 0 ? partialSales : undefined
       };
     });
 
