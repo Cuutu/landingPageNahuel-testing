@@ -41,8 +41,8 @@ interface AlertDetail {
   updatedAt: Date;
   currentPriceUpdatedAt?: Date;
   // Datos de liquidez
-  allocatedAmount?: number;
-  shares?: number;
+  allocatedAmount?: number | null; // null si no hay distribución (especialmente para alertas cerradas)
+  shares?: number | null; // null si no hay distribución
   entryPriceFromDistribution?: number;
   realizedProfitLoss?: number;
   soldShares?: number;
@@ -246,37 +246,26 @@ export default async function handler(
       const entryPrice = distribution?.entryPrice || alert.entryPriceRange?.min || alert.entryPrice || 0;
       const currentPrice = alert.currentPrice || entryPrice;
       
-      // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Obtener allocatedAmount directamente de la distribución si existe
-      // Esta es la misma lógica que usa la página /admin/alertas-liquidez
-      let allocatedAmount = distribution?.allocatedAmount || 0;
+      // ✅ CORREGIDO: Obtener allocatedAmount SOLO de la distribución si existe
+      // NO calcular desde porcentajes porque puede mostrar valores incorrectos para alertas cerradas
+      // Si no hay distribución, allocatedAmount debe ser 0 o null (se mostrará N/A en el frontend)
+      let allocatedAmount: number | null = distribution?.allocatedAmount || null;
+      
+      // Si la alerta está cerrada y no tiene distribución, allocatedAmount debe ser null (N/A)
+      if (alert.status === 'CLOSED' && !distribution) {
+        allocatedAmount = null;
+      }
       
       // Obtener participationPercentage de múltiples fuentes
       const participationPercentage = distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0;
       
-      // Si no hay allocatedAmount en la distribución pero hay liquidityPercentage y liquidez total, calcularlo
-      // Esto es para alertas que tienen liquidityPercentage pero aún no tienen distribución creada
-      if (allocatedAmount === 0 && totalLiquidity > 0) {
-        const liquidityPercentage = alert.liquidityPercentage || 0;
-        if (liquidityPercentage > 0) {
-          // Calcular desde liquidityPercentage (misma fórmula que usa Liquidity.addDistribution)
-          allocatedAmount = (totalLiquidity * liquidityPercentage) / 100;
-        } else if (participationPercentage > 0) {
-          // Fallback: calcular desde participationPercentage si no hay liquidityPercentage
-          allocatedAmount = (totalLiquidity * participationPercentage) / 100;
-        }
-      }
-      
-      // ✅ REPLICADO DE ALERTAS-LIQUIDEZ: Usar directamente shares de la distribución si existe
-      // Esta es la misma lógica que usa la página /admin/alertas-liquidez
-      let shares = 0;
+      // ✅ CORREGIDO: Usar directamente shares de la distribución si existe
+      // NO calcular desde allocatedAmount porque puede mostrar valores incorrectos
+      let shares: number | null = null;
       
       if (distribution && distribution.shares !== undefined && distribution.shares !== null) {
         // Si hay distribución, usar directamente los shares de la distribución (fuente de verdad)
         shares = distribution.shares;
-      } else if (allocatedAmount > 0 && entryPrice > 0) {
-        // Si no hay distribución pero hay allocatedAmount y entryPrice, calcular igual que en el modelo Liquidity
-        // Fórmula: shares = allocatedAmount / entryPrice (misma que usa Liquidity.addDistribution)
-        shares = allocatedAmount / entryPrice;
       }
       
       // Calcular P&L
@@ -288,14 +277,14 @@ export default async function handler(
           ? ((currentPrice - entryPrice) / entryPrice) * 100
           : ((entryPrice - currentPrice) / entryPrice) * 100;
         
-        if (allocatedAmount > 0) {
+        if (allocatedAmount && allocatedAmount > 0) {
           calculatedPL = (calculatedPLPercentage / 100) * allocatedAmount;
         }
       } else if (alert.status === 'CLOSED') {
         calculatedPLPercentage = alert.profit || 0;
         if (distribution?.realizedProfitLoss) {
           calculatedPL = distribution.realizedProfitLoss;
-        } else if (allocatedAmount > 0) {
+        } else if (allocatedAmount && allocatedAmount > 0) {
           calculatedPL = (calculatedPLPercentage / 100) * allocatedAmount;
         }
       }
@@ -337,8 +326,8 @@ export default async function handler(
         createdAt: alert.createdAt,
         updatedAt: alert.updatedAt,
         currentPriceUpdatedAt: alert.currentPriceUpdatedAt || alert.updatedAt,
-        allocatedAmount: allocatedAmount || 0,
-        shares: shares || 0,
+        allocatedAmount: allocatedAmount ?? undefined,
+        shares: shares ?? undefined,
         entryPriceFromDistribution: distribution?.entryPrice,
         realizedProfitLoss: distribution?.realizedProfitLoss || 0,
         soldShares: distribution?.soldShares || 0,
@@ -346,15 +335,19 @@ export default async function handler(
         participationPercentage: alert.status === 'CLOSED' 
           ? 0 
           : (distribution?.percentage || alert.participationPercentage || alert.originalParticipationPercentage || 0),
-        // ✅ MEJORADO: Obtener liquidityPercentage de la alerta o calcularlo
-        // Prioridad: 1) alert.liquidityPercentage, 2) calcular desde distribución, 3) calcular desde allocatedAmount
-        liquidityPercentage: alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null
-          ? alert.liquidityPercentage
-          : (distribution?.allocatedAmount && totalLiquidity > 0 
-              ? (distribution.allocatedAmount / totalLiquidity) * 100 
-              : (allocatedAmount > 0 && totalLiquidity > 0
-                  ? (allocatedAmount / totalLiquidity) * 100
-                  : 0)),
+        // ✅ CAMBIADO: Calcular "% LIQUIDEZ VENDIDO" en lugar de "% LIQUIDEZ"
+        // Fórmula: (soldShares / (shares + soldShares)) * 100
+        // Si está cerrada y no tiene distribución, mostrar 100% (todo vendido)
+        liquidityPercentage: alert.status === 'CLOSED' && !distribution
+          ? 100 // Si está cerrada sin distribución, todo fue vendido
+          : (distribution && distribution.shares !== undefined && distribution.soldShares !== undefined
+              ? (() => {
+                  const totalShares = distribution.shares + (distribution.soldShares || 0);
+                  return totalShares > 0 
+                    ? ((distribution.soldShares || 0) / totalShares) * 100 
+                    : 0;
+                })()
+              : 0),
         calculatedPL,
         calculatedPLPercentage,
         priceSource: alert.currentPrice ? 'database' : 'calculated',

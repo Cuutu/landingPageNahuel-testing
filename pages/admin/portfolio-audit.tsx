@@ -64,8 +64,8 @@ interface AlertDetail {
   createdAt: Date;
   updatedAt: Date;
   currentPriceUpdatedAt?: Date;
-  allocatedAmount?: number;
-  shares?: number;
+  allocatedAmount?: number | null; // null si no hay distribución (especialmente para alertas cerradas)
+  shares?: number | null; // null si no hay distribución
   entryPriceFromDistribution?: number;
   realizedProfitLoss?: number;
   soldShares?: number;
@@ -343,7 +343,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                         <th>Última Actualización</th>
                         <th>Cantidad (Shares)</th>
                         <th>Liquidez Asignada</th>
-                        <th>% Liquidez</th>
+                        <th>% Liquidez Vendido</th>
                         <th>% Participación</th>
                         <th>P&L %</th>
                         <th>Origen Precio</th>
@@ -416,7 +416,7 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                                 : 'N/A'}
                             </td>
                             <td>
-                              {/* ✅ MEJORADO: Mostrar % liquidez si existe, incluso si es 0 */}
+                              {/* ✅ CAMBIADO: Mostrar % liquidez vendido (porcentaje de shares vendidas) */}
                               {alert.liquidityPercentage !== undefined && alert.liquidityPercentage !== null
                                 ? `${alert.liquidityPercentage.toFixed(2)}%`
                                 : 'N/A'}
