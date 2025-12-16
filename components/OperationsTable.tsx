@@ -19,6 +19,7 @@ import {
   MoreVertical,
   Eye
 } from 'lucide-react';
+import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import styles from '@/styles/OperationsTable.module.css';
 
 interface OperationsTableProps {
@@ -68,6 +69,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   // ✅ NUEVO: Estado para modal de ver alerta
   const [showAlertModal, setShowAlertModal] = useState(false);
   const [selectedAlert, setSelectedAlert] = useState<any>(null);
+  const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [editPriceType, setEditPriceType] = useState<'specific' | 'range'>('specific');
   const [editFormData, setEditFormData] = useState({
     ticker: '',
@@ -80,6 +82,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     notes: '',
     status: 'ACTIVE' as 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'
   });
+  const [editImage, setEditImage] = useState<CloudinaryImage | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'COMPRA' | 'VENTA'>('ALL');
@@ -203,6 +207,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       notes: operation.notes || '',
       status: operation.status || 'ACTIVE'
     });
+    
+    // Cargar imagen si existe
+    if (operation.image) {
+      setEditImage(operation.image);
+    } else {
+      setEditImage(null);
+    }
+    
     setShowEditModal(true);
   };
 
@@ -244,6 +256,11 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
         updateData.price = parseFloat(editFormData.price);
         updateData.priceRange = null;
         updateData.isPriceConfirmed = true;
+      }
+
+      // Agregar imagen si existe
+      if (editImage) {
+        updateData.image = editImage;
       }
 
       // ✅ Actualizar la operación (incluye el estado)
@@ -758,6 +775,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                           <button
                             onClick={() => {
                               setSelectedAlert(operation.alert);
+                              setSelectedOperation(operation);
                               setShowAlertModal(true);
                             }}
                             className={styles.actionButton}
@@ -1702,6 +1720,77 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 />
               </div>
 
+              {/* ✅ NUEVO: Campo para subir imagen */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>
+                  Imagen (opcional)
+                </label>
+                {editImage ? (
+                  <div style={{ 
+                    position: 'relative', 
+                    marginBottom: '12px',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: '1px solid #d1d5db'
+                  }}>
+                    <img 
+                      src={editImage.secure_url || editImage.url} 
+                      alt="Imagen de la operación"
+                      style={{
+                        width: '100%',
+                        maxHeight: '300px',
+                        objectFit: 'contain',
+                        display: 'block'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditImage(null)}
+                      style={{
+                        position: 'absolute',
+                        top: '8px',
+                        right: '8px',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(0, 0, 0, 0.7)';
+                      }}
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                ) : null}
+                <ImageUploader
+                  onImageUploaded={(image) => {
+                    setEditImage(image);
+                    setUploadingImage(false);
+                  }}
+                  onUploadStart={() => setUploadingImage(true)}
+                  onUploadComplete={() => setUploadingImage(false)}
+                  onError={(error) => {
+                    alert(`Error al subir imagen: ${error}`);
+                    setUploadingImage(false);
+                  }}
+                  maxFiles={1}
+                  multiple={false}
+                  buttonText={editImage ? 'Cambiar Imagen' : 'Subir Imagen'}
+                  className=""
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <button
                   onClick={() => setShowEditModal(false)}
@@ -1721,19 +1810,21 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 </button>
                 <button
                   onClick={handleSaveEdit}
+                  disabled={uploadingImage}
                   style={{
                     flex: 1,
                     padding: '10px',
-                    backgroundColor: '#3b82f6',
+                    backgroundColor: uploadingImage ? '#9ca3af' : '#3b82f6',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
                     fontSize: '1rem',
                     fontWeight: '600',
-                    cursor: 'pointer'
+                    cursor: uploadingImage ? 'not-allowed' : 'pointer',
+                    transition: 'background-color 0.2s'
                   }}
                 >
-                  Guardar Cambios
+                  {uploadingImage ? 'Subiendo imagen...' : 'Guardar Cambios'}
                 </button>
               </div>
             </div>
@@ -1748,6 +1839,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             if (e.target === e.currentTarget) {
               setShowAlertModal(false);
               setSelectedAlert(null);
+              setSelectedOperation(null);
             }
           }}
           style={{
@@ -1795,6 +1887,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 onClick={() => {
                   setShowAlertModal(false);
                   setSelectedAlert(null);
+                  setSelectedOperation(null);
                 }}
                 style={{
                   background: 'none',
@@ -1823,6 +1916,64 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
             {/* Content */}
             <div style={{ padding: '24px' }}>
+              {/* ✅ NUEVO: Imagen de la operación (si existe) */}
+              {selectedOperation?.image && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ 
+                    margin: '0 0 16px 0', 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    📸 Imagen de la Operación
+                  </h3>
+                  <div style={{
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f9fafb'
+                  }}>
+                    <img 
+                      src={selectedOperation.image.secure_url || selectedOperation.image.url} 
+                      alt="Imagen de la operación"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        maxHeight: '500px',
+                        objectFit: 'contain'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* ✅ NUEVO: Notas de la operación (si existen) */}
+              {selectedOperation?.notes && (
+                <div style={{ marginBottom: '24px' }}>
+                  <h3 style={{ 
+                    margin: '0 0 16px 0', 
+                    fontSize: '1.125rem', 
+                    fontWeight: '600', 
+                    color: '#374151' 
+                  }}>
+                    📝 Notas de la Operación
+                  </h3>
+                  <div style={{
+                    padding: '16px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    lineHeight: '1.75',
+                    color: '#374151',
+                    whiteSpace: 'pre-wrap',
+                    fontSize: '0.9375rem'
+                  }}>
+                    {selectedOperation.notes}
+                  </div>
+                </div>
+              )}
+
               {/* Gráfico */}
               {selectedAlert.chartImage && (
                 <div style={{ marginBottom: '24px' }}>
@@ -1931,7 +2082,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               )}
 
               {/* Mensaje si no hay información */}
-              {!selectedAlert.chartImage && !selectedAlert.analysis && (!selectedAlert.images || selectedAlert.images.length === 0) && (
+              {!selectedOperation?.image && !selectedOperation?.notes && !selectedAlert.chartImage && !selectedAlert.analysis && (!selectedAlert.images || selectedAlert.images.length === 0) && (
                 <div style={{
                   padding: '32px',
                   textAlign: 'center',

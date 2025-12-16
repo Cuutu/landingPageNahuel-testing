@@ -6,6 +6,18 @@ import Operation from "@/models/Operation";
 import User from "@/models/User";
 import { validateOriginMiddleware } from "@/lib/securityValidation";
 
+interface CloudinaryImage {
+  public_id: string;
+  url: string;
+  secure_url: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  bytes?: number;
+  caption?: string;
+  order?: number;
+}
+
 interface UpdateOperationRequest {
   operationId: string;
   ticker?: string;
@@ -15,6 +27,9 @@ interface UpdateOperationRequest {
   date?: string;
   notes?: string;
   status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING';
+  image?: CloudinaryImage | null;
+  priceRange?: { min: number; max: number } | null;
+  isPriceConfirmed?: boolean;
 }
 
 interface UpdateOperationResponse {
@@ -63,7 +78,10 @@ export default async function handler(
       price,
       date,
       notes,
-      status
+      status,
+      image,
+      priceRange,
+      isPriceConfirmed
     }: UpdateOperationRequest = req.body;
 
     // Validaciones
@@ -110,6 +128,24 @@ export default async function handler(
       }
       updateData.status = status;
     }
+    if (image !== undefined) {
+      // Si image es null, eliminar la imagen; si es un objeto, actualizarla
+      if (image === null) {
+        updateData.image = null;
+      } else {
+        updateData.image = image;
+      }
+    }
+    if (priceRange !== undefined) {
+      if (priceRange === null) {
+        updateData.priceRange = null;
+      } else {
+        updateData.priceRange = priceRange;
+      }
+    }
+    if (isPriceConfirmed !== undefined) {
+      updateData.isPriceConfirmed = isPriceConfirmed;
+    }
 
     // Recalcular amount si se actualizó quantity o price
     if (quantity !== undefined || price !== undefined) {
@@ -148,6 +184,7 @@ export default async function handler(
         system: updatedOperation.system,
         status: updatedOperation.status,
         notes: updatedOperation.notes,
+        image: updatedOperation.image,
         updatedAt: updatedOperation.updatedAt
       }
     });

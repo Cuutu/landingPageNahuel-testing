@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 
+interface CloudinaryImage {
+  public_id: string;
+  url: string;
+  secure_url: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  bytes?: number;
+  caption?: string;
+  order?: number;
+}
+
 interface Operation {
   _id: string;
   ticker: string;
@@ -31,6 +43,7 @@ interface Operation {
   executionMethod?: 'MANUAL' | 'AUTOMATIC' | 'ADMIN';
   notes?: string;
   status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'; // ✅ NUEVO: Estado de la operación
+  image?: CloudinaryImage; // ✅ NUEVO: Imagen de la operación
   createdAt: string;
   updatedAt?: string; // ✅ NUEVO: Fecha de última actualización
   // ✅ NUEVO: Información de la alerta para determinar el estado
@@ -110,6 +123,9 @@ interface UpdateOperationData {
   date?: string;
   notes?: string;
   status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING';
+  image?: CloudinaryImage | null;
+  priceRange?: { min: number; max: number } | null;
+  isPriceConfirmed?: boolean;
 }
 
 export const useOperations = (): UseOperationsReturn => {

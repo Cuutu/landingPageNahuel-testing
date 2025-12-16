@@ -1,5 +1,18 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+// Esquema para imágenes de Cloudinary (igual que en Alert)
+export interface CloudinaryImage {
+  public_id: string;
+  url: string;
+  secure_url: string;
+  width: number;
+  height: number;
+  format: string;
+  bytes: number;
+  caption?: string;
+  order?: number;
+}
+
 export interface IOperation extends Document {
   _id: string;
   // Información básica de la operación
@@ -51,7 +64,35 @@ export interface IOperation extends Document {
   
   // ✅ NUEVO: Estado de la operación
   status?: 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'PENDING'; // Estado de la operación
+  
+  // ✅ NUEVO: Imagen de la operación (para mostrar en "Ver Alerta")
+  image?: CloudinaryImage;
 }
+
+// Esquema para imágenes de Cloudinary
+const CloudinaryImageSchema = new Schema({
+  public_id: {
+    type: String,
+    required: true
+  },
+  url: {
+    type: String,
+    required: true
+  },
+  secure_url: {
+    type: String,
+    required: true
+  },
+  width: Number,
+  height: Number,
+  format: String,
+  bytes: Number,
+  caption: String,
+  order: {
+    type: Number,
+    default: 0
+  }
+}, { _id: false });
 
 const OperationSchema: Schema = new Schema({
   // Información básica
@@ -173,7 +214,10 @@ const OperationSchema: Schema = new Schema({
     type: String,
     enum: ['ACTIVE', 'COMPLETED', 'CANCELLED', 'PENDING'],
     default: 'ACTIVE'
-  }
+  },
+  
+  // ✅ NUEVO: Imagen de la operación (para mostrar en "Ver Alerta")
+  image: CloudinaryImageSchema
 }, { 
   timestamps: true 
 });
