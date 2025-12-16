@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Alert from '@/models/Alert';
 import User from '@/models/User';
+import CronNotificationJob from '@/models/CronNotificationJob';
 
 interface AutoConvertCronResponse {
   success: boolean;
@@ -52,6 +53,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   try {
     await dbConnect();
     console.log('🔄 CRON: Iniciando conversión automática de alertas de rango...');
+
+    // Run id para trazabilidad (se guarda en el job)
+    const runId = `${new Date().toISOString()}_${Math.random().toString(16).slice(2)}`;
+
+    // ✅ Acumuladores para notificación consolidada (se envían vía jobs en Mongo)
+    const resumenAcciones: AccionResumen[] = [];
+    const pendingResumenAcciones: AccionResumen[] = [];
 
     // ✅ NUEVO: Buscar también operaciones pendientes con priceRange que necesitan confirmación
     // ✅ CORREGIDO: Buscar tanto COMPRA como VENTA
@@ -165,9 +173,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               if (operationType === 'COMPRA') {
                 // Para COMPRA: usar la función existente
                 await updateOperationPriceOnConfirmation(operation.alertId, currentPrice);
+                // Solo usar estas acciones si NO hay alertas con rango luego (para no duplicar)
+                pendingResumenAcciones.push({
+                  symbol: alert.symbol,
+                  tipo: 'COMPRA_CONFIRMADA',
+                  precio: currentPrice,
+                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                  alertId: alert._id.toString(),
+                  detalles: {
+                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                  },
+                });
               } else if (operationType === 'VENTA') {
                 // ✅ NUEVO: Para VENTA: confirmar directamente la operación
                 await updateSaleOperationPrice(operation._id, currentPrice);
+                pendingResumenAcciones.push({
+                  symbol: alert.symbol,
+                  tipo: 'VENTA_EJECUTADA',
+                  precio: currentPrice,
+                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                  alertId: alert._id.toString(),
+                  detalles: {
+                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                  },
+                });
               }
               
               confirmedOperationsCount++;
@@ -183,9 +212,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
               if (operationType === 'VENTA') {
                 // ✅ NUEVO: Para VENTA fuera de rango, eliminar la operación y limpiar partialSale
                 await discardSaleOperation(operation, alert, motivo);
+                pendingResumenAcciones.push({
+                  symbol: alert.symbol,
+                  tipo: 'VENTA_DESCARTADA',
+                  precio: currentPrice,
+                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                  alertId: alert._id.toString(),
+                  detalles: {
+                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                    motivo,
+                  },
+                });
               } else {
                 // Para COMPRA fuera de rango, solo loguear (ya se maneja en otra parte del código)
                 console.log(`⚠️ CRON: Operación COMPRA fuera de rango - No se confirma`);
+                pendingResumenAcciones.push({
+                  symbol: alert.symbol,
+                  tipo: 'COMPRA_DESCARTADA',
+                  precio: currentPrice,
+                  alertaTipo: alert.tipo as 'SmartMoney' | 'TraderCall',
+                  alertId: alert._id.toString(),
+                  detalles: {
+                    rangoOriginal: { min: priceRange.min, max: priceRange.max },
+                    motivo,
+                  },
+                });
               }
             }
           } else {
@@ -219,29 +270,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     if (alertsWithRange.length === 0) {
       if (confirmedOperationsCount > 0) {
         console.log(`✅ CRON: No hay alertas con rangos, pero se confirmaron ${confirmedOperationsCount} operaciones pendientes`);
-        return res.status(200).json({
-          success: true,
-          message: `OK - ${confirmedOperationsCount} operaciones confirmadas`,
-          processed: confirmedOperationsCount
-        });
+      } else {
+        console.log(`⚠️ CRON: No hay alertas de rango para convertir ni operaciones pendientes`);
       }
-      
-      console.log(`⚠️ CRON: No hay alertas de rango para convertir ni operaciones pendientes`);
-      
-      // ✅ NUEVO: Si no hay alertas, enviar notificación de "sin operaciones"
+
+      // ✅ ROBUSTO: Encolar envío en Mongo (serverless-safe)
+      const accionesParaJob = pendingResumenAcciones;
+      const sendNoOperations = accionesParaJob.length === 0;
       try {
-        console.log(`📧 CRON: No hay alertas - Enviando notificación de "sin operaciones"...`);
-        await enviarNotificacionSinOperaciones();
-        console.log(`✅ CRON: Notificación de "sin operaciones" enviada correctamente`);
-      } catch (err) {
-        console.error('❌ CRON: Error enviando notificación de "sin operaciones":', err);
-        // No fallar el cron si falla el envío de emails
+        const job = await CronNotificationJob.create({
+          type: 'AUTO_CONVERT_RANGES_SUMMARY',
+          status: 'PENDING',
+          payload: {
+            acciones: accionesParaJob,
+            sendNoOperations,
+            source: 'auto-convert-ranges',
+            runId,
+          },
+          nextAttemptAt: new Date(),
+        });
+
+        console.log(`📥 CRON: Job creado para notificaciones: ${job._id.toString()} (acciones=${accionesParaJob.length}, noOps=${sendNoOperations})`);
+      } catch (jobError) {
+        console.error('❌ CRON: Error creando job de notificaciones:', jobError);
       }
-      
+
       return res.status(200).json({
         success: true,
-        message: 'OK - No hay alertas para convertir',
-        processed: 0
+        message: confirmedOperationsCount > 0 ? `OK - ${confirmedOperationsCount} operaciones confirmadas` : 'OK - No hay alertas para convertir',
+        processed: confirmedOperationsCount,
       });
     }
 
@@ -254,9 +311,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
     const conversionDetails = [];
-    
-    // ✅ NUEVO: Acumulador de acciones para email de resumen consolidado
-    const resumenAcciones: AccionResumen[] = [];
 
     for (const alert of alertsWithRange) {
       try {
@@ -682,38 +736,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     console.log(`🎉 CRON: Conversión automática completada: ${conversionDetails.length} alertas procesadas`);
     console.log(`📧 CRON: ${resumenAcciones.length} acciones para notificar en resumen consolidado`);
 
-    // ✅ OPTIMIZADO: Responder HTTP ANTES de enviar emails para evitar timeout
-    // Los emails se envían en background después de responder
-    const responseMessage = isCronJobOrg 
-      ? 'OK'
-      : `OK - ${conversionDetails.length} alertas convertidas`;
-    
-    res.status(200).json({
-      success: true,
-      message: responseMessage,
-      processed: conversionDetails.length
-    });
+    // ✅ ROBUSTO (serverless-safe): Encolar envío de notificaciones en Mongo
+    const sendNoOperations = resumenAcciones.length === 0;
+    let jobId: string | undefined = undefined;
+    try {
+      const job = await CronNotificationJob.create({
+        type: 'AUTO_CONVERT_RANGES_SUMMARY',
+        status: 'PENDING',
+        payload: {
+          acciones: resumenAcciones,
+          sendNoOperations,
+          source: 'auto-convert-ranges',
+          runId,
+        },
+        nextAttemptAt: new Date(),
+      });
+      jobId = job._id.toString();
+      console.log(`📥 CRON: Job creado para notificaciones: ${jobId} (acciones=${resumenAcciones.length}, noOps=${sendNoOperations})`);
+    } catch (jobError) {
+      console.error('❌ CRON: Error creando job de notificaciones:', jobError);
+    }
 
-    // ✅ OPTIMIZADO: Enviar emails en background (sin await para no bloquear)
-    // Esto permite que el cronjob responda rápido y evite timeout
-    (async () => {
-      try {
-        if (resumenAcciones.length > 0) {
-          // Hay alertas procesadas → enviar resumen (incluye compras/ventas descartadas)
-          console.log(`📧 CRON: Enviando resumen de operaciones en background (incluye descartadas)...`);
-          await enviarResumenOperaciones(resumenAcciones);
-          console.log(`✅ CRON: Resumen de operaciones enviado correctamente`);
-        } else {
-          // No hay alertas procesadas → enviar mensaje de "sin operaciones"
-          console.log(`📧 CRON: No hay alertas procesadas - Enviando notificación de "sin operaciones" en background...`);
-          await enviarNotificacionSinOperaciones();
-          console.log(`✅ CRON: Notificación de "sin operaciones" enviada correctamente`);
-        }
-      } catch (err) {
-        console.error('❌ CRON: Error enviando notificaciones en background:', err);
-        // No fallar el cron si falla el envío de emails
-      }
-    })();
+    const responseMessage = isCronJobOrg ? 'OK' : `OK - ${conversionDetails.length} alertas convertidas`;
+    return res.status(200).json({
+      success: true,
+      message: jobId ? `${responseMessage} (jobId=${jobId})` : responseMessage,
+      processed: conversionDetails.length,
+    });
 
   } catch (error) {
     console.error('❌ CRON: Error en conversión automática:', error);
@@ -1457,7 +1506,7 @@ async function sendEmailsInParallel(
  * ✅ OPTIMIZADO: Envía un email de resumen consolidado con todas las operaciones del cron
  * Esta función reemplaza el envío de múltiples emails individuales por UN solo email de resumen
  */
-async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void> {
+export async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void> {
   try {
     console.log(`📧 [RESUMEN] Iniciando envío de resumen con ${acciones.length} acciones...`);
     
@@ -1483,10 +1532,16 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
     const usersCache = await getSubscribedUsersCache();
     console.log(`👥 [RESUMEN] Usuarios cacheados - SmartMoney: ${usersCache.SmartMoney.length}, TraderCall: ${usersCache.TraderCall.length}`);
     
-    // ✅ CORREGIDO: Procesar cada tipo de alerta por separado
-    // SIEMPRE procesar ambos servicios (SmartMoney y TraderCall)
-    // Si un servicio no tiene acciones, enviar mensaje de "sin operaciones"
-    for (const [tipoAlerta, accionesTipo] of Object.entries(accionesPorTipo)) {
+    // ✅ CORREGIDO: SIEMPRE procesar ambos servicios (SmartMoney y TraderCall)
+    // Iterar sobre ambos servicios garantizados, no solo sobre los que tienen acciones
+    const servicios = ['SmartMoney', 'TraderCall'];
+    
+    for (const tipoAlerta of servicios) {
+      console.log(`🔄 [RESUMEN] Procesando servicio: ${tipoAlerta}`);
+      
+      // Obtener acciones para este servicio (puede ser array vacío)
+      const accionesTipo = accionesPorTipo[tipoAlerta] || [];
+      
       // ✅ OPTIMIZADO: Usar usuarios del cache en lugar de buscar de nuevo
       const subscribedUsers = usersCache[tipoAlerta] || [];
       
@@ -1494,6 +1549,7 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
       const validUsers = subscribedUsers;
       
       console.log(`👥 [RESUMEN] ${validUsers.length} usuarios válidos para ${tipoAlerta}`);
+      console.log(`📊 [RESUMEN] ${accionesTipo.length} acciones para ${tipoAlerta}`);
       
       if (validUsers.length === 0) {
         console.log(`⚠️ [RESUMEN] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
@@ -1515,7 +1571,7 @@ async function enviarResumenOperaciones(acciones: AccionResumen[]): Promise<void
         continue;
       }
       
-      // ✅ NUEVO: Si NO hay acciones para este servicio, enviar mensaje de "sin operaciones"
+      // ✅ CORREGIDO: Si NO hay acciones para este servicio, enviar mensaje de "sin operaciones"
       if (accionesTipo.length === 0) {
         console.log(`📧 [RESUMEN] No hay acciones para ${tipoAlerta} - Enviando mensaje de "sin operaciones"...`);
         try {
@@ -1783,7 +1839,7 @@ function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]):
 /**
  * ✅ OPTIMIZADO: Envía notificación cuando no hay compras ni ventas
  */
-async function enviarNotificacionSinOperaciones(): Promise<void> {
+export async function enviarNotificacionSinOperaciones(): Promise<void> {
   try {
     console.log(`📧 [SIN OPERACIONES] Iniciando envío de notificación...`);
     
