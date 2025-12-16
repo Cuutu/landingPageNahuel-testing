@@ -351,37 +351,37 @@
   table-layout: auto;
 }
 
-/* ✅ NUEVO: Ajustar ancho de columnas específicas para que quepan todas */
+/* ✅ MEJORADO: Ajustar ancho de columnas con mejor espaciado */
 .alertsTable th:nth-child(1),
 .alertsTable td:nth-child(1) {
-  min-width: 90px; /* Ticker */
-  max-width: 110px;
+  min-width: 95px; /* Ticker */
+  max-width: 115px;
 }
 
 .alertsTable th:nth-child(2),
 .alertsTable td:nth-child(2) {
-  min-width: 70px; /* Estado */
-  max-width: 90px;
+  min-width: 75px; /* Estado */
+  max-width: 95px;
 }
 
 .alertsTable th:nth-child(3),
 .alertsTable td:nth-child(3),
 .alertsTable th:nth-child(4),
 .alertsTable td:nth-child(4) {
-  min-width: 90px; /* Precios */
-  max-width: 110px;
+  min-width: 95px; /* Precios */
+  max-width: 115px;
 }
 
 .alertsTable th:nth-child(5),
 .alertsTable td:nth-child(5) {
-  min-width: 90px; /* Última Actualización (solo fecha) */
-  max-width: 110px;
+  min-width: 95px; /* Última Actualización (solo fecha) */
+  max-width: 115px;
 }
 
 .alertsTable th:nth-child(6),
 .alertsTable td:nth-child(6) {
-  min-width: 95px; /* Cantidad (Shares) */
-  max-width: 115px;
+  min-width: 85px; /* Cantidad */
+  max-width: 105px;
 }
 
 .alertsTable th:nth-child(7),
@@ -392,26 +392,26 @@
 
 .alertsTable th:nth-child(8),
 .alertsTable td:nth-child(8) {
-  min-width: 100px; /* % Liquidez Vendido */
-  max-width: 120px;
+  min-width: 105px; /* % Liquidez Vendido */
+  max-width: 125px;
 }
 
 .alertsTable th:nth-child(9),
 .alertsTable td:nth-child(9) {
-  min-width: 90px; /* % Participación */
-  max-width: 110px;
+  min-width: 95px; /* % Participación */
+  max-width: 115px;
 }
 
 .alertsTable th:nth-child(10),
 .alertsTable td:nth-child(10) {
-  min-width: 70px; /* P&L % */
-  max-width: 90px;
+  min-width: 75px; /* P&L % */
+  max-width: 95px;
 }
 
 .alertsTable th:nth-child(11),
 .alertsTable td:nth-child(11) {
-  min-width: 90px; /* Origen Precio */
-  max-width: 110px;
+  min-width: 85px; /* Origen */
+  max-width: 105px;
 }
 
 .alertsTable th:nth-child(12),
@@ -428,25 +428,31 @@
 
 .alertsTable thead {
   background: #f7fafc;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .alertsTable th {
-  padding: 0.6rem 0.4rem;
+  padding: 0.75rem 0.6rem;
   text-align: left;
   font-weight: 600;
-  color: #4a5568;
-  font-size: 0.75rem;
+  color: #2d3748;
+  font-size: 0.8rem;
   text-transform: uppercase;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.3px;
   border-bottom: 2px solid #e2e8f0;
   white-space: nowrap;
+  line-height: 1.3;
+  background: #f7fafc;
 }
 
 .alertsTable td {
-  padding: 0.6rem 0.4rem;
+  padding: 0.7rem 0.6rem;
   border-bottom: 1px solid #f7fafc;
   color: #2d3748;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 .alertsTable tbody tr:hover {

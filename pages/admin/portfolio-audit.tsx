@@ -338,13 +338,13 @@ export default function AdminPortfolioAuditPage({ user }: AdminPortfolioAuditPro
                         <th>Estado</th>
                         <th>Precio Entrada</th>
                         <th>Precio Actual</th>
-                        <th>Última Actualización</th>
-                        <th>Cantidad (Shares)</th>
-                        <th>Liquidez Asignada</th>
-                        <th>% Liquidez Vendido</th>
-                        <th>% Participación</th>
+                        <th>Última Actual.</th>
+                        <th>Cantidad</th>
+                        <th>Liquidez Asig.</th>
+                        <th>% Liq. Vendido</th>
+                        <th>% Particip.</th>
                         <th>P&L %</th>
-                        <th>Origen Precio</th>
+                        <th>Origen</th>
                         <th>Acciones</th>
                       </tr>
                     </thead>
