@@ -74,6 +74,17 @@ export default function SessionMonitor() {
 
   // Monitorear cambios en el estado de la sesión
   useEffect(() => {
+    // ✅ MEJORADO: No intentar refrescar si estamos en proceso de logout
+    // Verificar si hay una cookie de logout en proceso
+    const isLoggingOut = typeof window !== 'undefined' && 
+      (document.cookie.includes('next-auth.session-token') === false || 
+       sessionStorage.getItem('logout_in_progress') === 'true');
+    
+    if (isLoggingOut) {
+      // Si estamos haciendo logout, no intentar refrescar
+      return;
+    }
+    
     if (status === 'unauthenticated' && router.pathname !== '/auth/signin' && !router.pathname.startsWith('/api/auth')) {
       // Si la sesión se perdió inesperadamente, intentar refrescar una vez
       const attemptRefresh = async () => {

@@ -171,9 +171,55 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
     window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrl}`;
   };
 
-  const handleLogout = () => {
-    // Usar redirección directa a la API de signout - más confiable en móvil
-    window.location.href = '/api/auth/signout?callbackUrl=/';
+  const handleLogout = async () => {
+    try {
+      // ✅ MEJORADO: Marcar que estamos haciendo logout para evitar que SessionMonitor interfiera
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('logout_in_progress', 'true');
+        
+        // Limpiar datos de la sesión
+        localStorage.removeItem('pending_login');
+        localStorage.removeItem('lastLoginUpdate');
+        
+        // Limpiar cookies de NextAuth manualmente (fallback para navegadores problemáticos)
+        // Esto es especialmente importante para Brave, Edge, Safari
+        const cookiesToClear = [
+          'next-auth.session-token',
+          '__Secure-next-auth.session-token',
+          '__Host-next-auth.session-token',
+          'next-auth.csrf-token',
+          '__Host-next-auth.csrf-token',
+          'next-auth.callback-url',
+          '__Secure-next-auth.callback-url'
+        ];
+        
+        cookiesToClear.forEach(cookieName => {
+          // Borrar cookie para todos los paths y dominios posibles
+          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${window.location.hostname}`;
+          if (window.location.hostname !== 'localhost') {
+            document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=.${window.location.hostname}`;
+          }
+        });
+      }
+      
+      // ✅ MEJORADO: Usar signOut() de NextAuth en vez de window.location.href
+      // Esto es más confiable y limpia las cookies correctamente en todos los navegadores
+      await signOut({ 
+        callbackUrl: '/',
+        redirect: true 
+      });
+    } catch (error) {
+      console.error('❌ [LOGOUT] Error durante el logout:', error);
+      // Fallback: limpiar sessionStorage y redirección manual si falla signOut
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('logout_in_progress');
+        sessionStorage.clear();
+        localStorage.removeItem('pending_login');
+        localStorage.removeItem('lastLoginUpdate');
+      }
+      window.location.href = '/';
+    }
   };
 
   // Verificación defensiva para asegurar que session.user existe

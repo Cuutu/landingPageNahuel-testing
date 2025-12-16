@@ -230,9 +230,20 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async signOut({ session, token }) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('👋 [EVENT] SignOut:', session?.user?.email || token?.email);
+      const isDev = process.env.NODE_ENV === 'development';
+      const userEmail = session?.user?.email || token?.email;
+      
+      if (isDev) {
+        console.log('👋 [EVENT] SignOut:', userEmail);
       }
+      
+      // ✅ MEJORADO: Limpieza adicional durante el logout
+      // Aunque NextAuth limpia las cookies automáticamente, podemos hacer limpieza adicional aquí si es necesario
+      // Por ejemplo, invalidar tokens en BD, limpiar sesiones activas, etc.
+      // Por ahora solo logueamos, pero el hook está listo para agregar más lógica si se necesita
+      
+      // Nota: No hacemos limpieza de BD aquí porque el usuario puede volver a loguearse
+      // Si necesitás invalidar tokens o hacer limpieza en BD, agregalo aquí
     },
     async session({ session, token }) {
       // Evento necesario para mantener sesión sincronizada
