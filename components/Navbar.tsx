@@ -166,7 +166,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
   };
 
   const handleLogin = () => {
-    signIn('google');
+    // ✅ Redirigir directamente a Google OAuth sin página intermedia
+    const callbackUrl = encodeURIComponent(window.location.href);
+    window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrl}`;
   };
 
   const handleLogout = () => {

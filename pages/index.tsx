@@ -388,12 +388,11 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       // Si el usuario está autenticado, redirigir a /alertas
       router.push('/alertas');
     } else {
-      // Si no está autenticado, iniciar sesión con Google
+      // Si no está autenticado, iniciar sesión con Google directamente
       // ✅ Guardar flag para detectar el retorno del login
       sessionStorage.setItem('pending_login', 'true');
-      signIn('google', { 
-        callbackUrl: window.location.origin + window.location.pathname
-      });
+      const callbackUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+      window.location.href = `/api/auth/google-direct?callbackUrl=${callbackUrl}`;
     }
   };
 
