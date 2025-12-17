@@ -18,7 +18,7 @@ const ApiCacheSchema = new Schema<IApiCache>(
     key: { type: String, required: true, unique: true, index: true },
     keyParts: { type: Schema.Types.Mixed, default: {} },
     payload: { type: Schema.Types.Mixed, required: true },
-    expiresAt: { type: Date, required: true, index: true },
+    expiresAt: { type: Date, required: true }, // El índice se define abajo con TTL
   },
   { timestamps: true }
 );
