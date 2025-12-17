@@ -141,7 +141,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         }),
-        fetch(`/api/portfolio/returns?pool=${serviceType}`, {
+        fetch(`/api/portfolio/returns?pool=${serviceType}&days=${days}`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         })

@@ -79,20 +79,38 @@ export default async function handler(
     return res.status(405).json({ error: 'Método no permitido.' });
   }
 
-  // ✅ Cache Mongo 60s (muy pesado: Yahoo + múltiples queries)
+  // ✅ Cache Mongo dinámico según período (muy pesado: Yahoo + múltiples queries)
   try {
+    const { days = '30', tipo } = req.query;
+    const daysNum = parseInt(days as string);
+    
+    // TTL más largo para períodos largos (menos cambios, más costoso calcular)
+    let ttlSeconds = 60; // Default: 7 y 15 días
+    let cacheControl = 's-maxage=60, stale-while-revalidate=120';
+    
+    if (daysNum >= 365) {
+      // 1 año: 30 minutos
+      ttlSeconds = 1800;
+      cacheControl = 's-maxage=1800, stale-while-revalidate=3600';
+    } else if (daysNum >= 180) {
+      // 6 meses: 15 minutos
+      ttlSeconds = 900;
+      cacheControl = 's-maxage=900, stale-while-revalidate=1800';
+    } else if (daysNum >= 30) {
+      // 30 días: 5 minutos
+      ttlSeconds = 300;
+      cacheControl = 's-maxage=300, stale-while-revalidate=600';
+    }
+    
     await respondWithMongoCache(
       req,
       res,
-      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      { ttlSeconds, scope: 'public', cacheControl },
       async () => {
         try {
           await dbConnect();
 
           // ✅ CAMBIO: No verificar autenticación - datos globales para todos los usuarios
-
-          const { days = '30', tipo } = req.query;
-          const daysNum = parseInt(days as string);
 
           const endDate = new Date();
           const startDate = new Date(endDate.getTime() - daysNum * 24 * 60 * 60 * 1000);

@@ -46,14 +46,40 @@ export default async function handler(
   }
 
   try {
+    // ✅ TTL dinámico igual que portfolio-evolution para mantener consistencia
+    const { pool, days } = req.query;
+    const daysNum = days ? parseInt(days as string) : null;
+    
+    // Mismo TTL que portfolio-evolution según período
+    let ttlSeconds = 60; // Default: 7 y 15 días
+    let cacheControl = 's-maxage=60, stale-while-revalidate=120';
+    
+    if (daysNum !== null) {
+      if (daysNum >= 365) {
+        // 1 año: 30 minutos
+        ttlSeconds = 1800;
+        cacheControl = 's-maxage=1800, stale-while-revalidate=3600';
+      } else if (daysNum >= 180) {
+        // 6 meses: 15 minutos
+        ttlSeconds = 900;
+        cacheControl = 's-maxage=900, stale-while-revalidate=1800';
+      } else if (daysNum >= 30) {
+        // 30 días: 5 minutos
+        ttlSeconds = 300;
+        cacheControl = 's-maxage=300, stale-while-revalidate=600';
+      }
+    } else {
+      // Si no se pasa days, usar TTL largo por defecto (incluye períodos largos)
+      ttlSeconds = 1800;
+      cacheControl = 's-maxage=1800, stale-while-revalidate=3600';
+    }
+    
     await respondWithMongoCache(
       req,
       res,
-      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      { ttlSeconds, scope: 'public', cacheControl },
       async () => {
         await dbConnect();
-
-        const { pool } = req.query;
 
         if (!pool || (pool !== 'TraderCall' && pool !== 'SmartMoney')) {
           return {
