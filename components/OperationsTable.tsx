@@ -269,9 +269,19 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       // ✅ Actualizar la operación (incluye el estado)
       const result = await updateOperation(editingOperation._id, updateData);
       
-      alert('✅ Operación actualizada exitosamente');
-      setShowEditModal(false);
-      await fetchOperations(system);
+      if (result) {
+        // ✅ Actualizar la operación en el estado local para reflejar los cambios inmediatamente
+        setOperations(prev => prev.map(op => 
+          op._id === editingOperation._id ? { ...op, ...result } : op
+        ));
+        
+        alert('✅ Operación actualizada exitosamente');
+        setShowEditModal(false);
+        setEditImage(null);
+        await fetchOperations(system);
+      } else {
+        throw new Error('No se pudo actualizar la operación');
+      }
     } catch (error) {
       console.error('Error updating operation:', error);
       alert('❌ Error al actualizar operación');
@@ -2035,7 +2045,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               )}
 
               {/* Gráfico */}
-              {selectedAlert.chartImage && (
+              {selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url) && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ 
                     margin: '0 0 16px 0', 
@@ -2052,12 +2062,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     backgroundColor: '#f9fafb'
                   }}>
                     <img 
-                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url} 
+                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || ''} 
                       alt="Gráfico de la alerta"
                       style={{
                         width: '100%',
                         height: 'auto',
                         display: 'block'
+                      }}
+                      onError={(e) => {
+                        console.error('Error cargando imagen del gráfico:', selectedAlert.chartImage);
+                        (e.target as HTMLImageElement).style.display = 'none';
                       }}
                     />
                   </div>
@@ -2091,7 +2105,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               )}
 
               {/* Imágenes adicionales */}
-              {selectedAlert.images && selectedAlert.images.length > 0 && (
+              {selectedAlert.images && Array.isArray(selectedAlert.images) && selectedAlert.images.length > 0 && (
                 <div>
                   <h3 style={{ 
                     margin: '0 0 16px 0', 
@@ -2106,7 +2120,9 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                     gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
                     gap: '16px'
                   }}>
-                    {selectedAlert.images.map((image: any, index: number) => (
+                    {selectedAlert.images
+                      .filter((image: any) => image && (image.secure_url || image.url))
+                      .map((image: any, index: number) => (
                       <div 
                         key={image.public_id || index}
                         style={{
@@ -2117,12 +2133,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                         }}
                       >
                         <img 
-                          src={image.secure_url || image.url} 
+                          src={image.secure_url || image.url || ''} 
                           alt={image.caption || `Imagen ${index + 1}`}
                           style={{
                             width: '100%',
                             height: 'auto',
                             display: 'block'
+                          }}
+                          onError={(e) => {
+                            console.error('Error cargando imagen adicional:', image);
+                            (e.target as HTMLImageElement).style.display = 'none';
                           }}
                         />
                         {image.caption && (
