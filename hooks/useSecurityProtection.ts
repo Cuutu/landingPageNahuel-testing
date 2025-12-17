@@ -1,20 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 
 /**
- * ✅ CONSOLIDADO: Hook para protecciones de seguridad
+ * ✅ OPTIMIZADO: Hook para protecciones de seguridad
  * Responsabilidades:
- * - CSS user-select: Aplica user-select: none solo a contenido (no navegación)
+ * - CSS user-select: Aplica clase .no-select solo a contenedores de contenido específicos
  * - dragstart: Previene arrastrar elementos
  * - Protección de imágenes: Protege imágenes pero permite Links
  * 
  * NOTA: 
  * - contextmenu y keydown (copiar/pegar) son manejados por GlobalSecurityProtection
- * - selectstart fue REMOVIDO para evitar interferir con navegación de Next.js
- * - En su lugar, usamos CSS user-select: none aplicado directamente a elementos de contenido
+ * - Usa clases CSS en lugar de estilos inline para no interferir con navegación
+ * - Pausa MutationObserver durante navegación de Next.js
  */
 export const useSecurityProtection = () => {
   const router = useRouter();
+  const isNavigatingRef = useRef(false);
+  const observerRef = useRef<MutationObserver | null>(null);
 
   useEffect(() => {
     // ✅ SOLO activar en páginas con información valiosa (smart-money y trader-call)
@@ -39,7 +41,7 @@ export const useSecurityProtection = () => {
     const isNavigationElement = (element: HTMLElement): boolean => {
       let currentElement: HTMLElement | null = element;
 
-      // Verificar el elemento actual y hasta 7 niveles hacia arriba (aumentado de 5)
+      // Verificar el elemento actual y hasta 7 niveles hacia arriba
       for (let i = 0; i < 7 && currentElement; i++) {
         const tagName = currentElement.tagName.toLowerCase();
         const className = typeof currentElement.className === 'string' 
@@ -50,19 +52,22 @@ export const useSecurityProtection = () => {
         const onClick = currentElement.getAttribute('onclick') || 
                        (currentElement as any).onclick;
 
-        // ✅ 1. Detectar Links de Next.js (tienen href y están dentro de contenedores de navegación)
+        // ✅ 1. Detectar Links de Next.js (tienen href)
         if (tagName === 'a' && href) {
-          // Cualquier <a> con href es navegación
           return true;
         }
 
         // ✅ 1.5. Detectar elementos con cursor pointer (indica que son clickeables)
-        const computedStyle = window.getComputedStyle(currentElement);
-        if (computedStyle.cursor === 'pointer' || computedStyle.cursor === 'grab') {
-          return true;
+        try {
+          const computedStyle = window.getComputedStyle(currentElement);
+          if (computedStyle.cursor === 'pointer' || computedStyle.cursor === 'grab') {
+            return true;
+          }
+        } catch (e) {
+          // Ignorar errores de computedStyle
         }
 
-        // ✅ 1.6. Verificar si tiene event listeners de click (elemento interactivo)
+        // ✅ 1.6. Verificar si tiene event listeners de click
         const hasClickHandler = (currentElement as any).onclick !== null ||
                                 currentElement.getAttribute('onclick') !== null ||
                                 currentElement.hasAttribute('data-clickable');
@@ -121,11 +126,6 @@ export const useSecurityProtection = () => {
       return false;
     };
 
-    /**
-     * ✅ REMOVIDO: preventContextMenu y preventKeyCombinations
-     * Ahora son manejados por GlobalSecurityProtection para evitar duplicación
-     */
-
     const preventDrag = (e: DragEvent) => {
       // Permitir drag en elementos de navegación
       const target = e.target as HTMLElement;
@@ -138,109 +138,89 @@ export const useSecurityProtection = () => {
     };
 
     /**
-     * ✅ OPCIÓN 1 + 2: Aplicar user-select: none con CSS solo a elementos de contenido
-     * En lugar de prevenir selectstart (que interfiere con navegación), aplicamos CSS directamente
+     * ✅ OPTIMIZADO: Aplicar clase CSS .no-select solo a contenedores específicos
+     * En lugar de aplicar estilos inline a todos los elementos, usamos clases CSS
+     * y solo las aplicamos a contenedores de contenido conocidos
      */
     const applyUserSelectProtection = () => {
-      // Seleccionar todos los elementos del body excepto navegación y formularios
-      const allElements = document.querySelectorAll('*');
-      
-      allElements.forEach((element) => {
-        const el = element as HTMLElement;
-        
-        // Saltar si es elemento de navegación
-        if (isNavigationElement(el)) {
-          return;
+      // Si estamos navegando, no aplicar protección
+      if (isNavigatingRef.current) {
+        return;
+      }
+
+      // ✅ Aplicar solo a contenedores específicos de contenido
+      // Usar selectores que funcionen con CSS Modules (clases como "TraderCall_subscriberView__abc123")
+      const contentContainers = [
+        '[class*="subscriberView"]',
+        '[class*="nonSubscriberView"]',
+        '[class*="mainContent"]',
+        // También buscar por ID o data-attributes si existen
+        '[id*="subscriber"]',
+        '[id*="content"]',
+      ];
+
+      contentContainers.forEach((selector) => {
+        try {
+          const containers = document.querySelectorAll(selector);
+          containers.forEach((container) => {
+            const el = container as HTMLElement;
+            
+            // Verificar que no sea elemento de navegación
+            if (!isNavigationElement(el) && !el.classList.contains('no-select')) {
+              el.classList.add('no-select');
+            }
+          });
+        } catch (e) {
+          // Ignorar errores de querySelector
         }
-        
-        // Saltar si es formulario
-        if (el.tagName === 'INPUT' ||
-            el.tagName === 'TEXTAREA' ||
-            el.contentEditable === 'true' ||
-            el.isContentEditable) {
-          return;
-        }
-        
-        // Saltar si ya tiene user-select definido
-        if (el.style.userSelect || (el.style as any).webkitUserSelect) {
-          return;
-        }
-        
-        // Aplicar user-select: none solo a contenido
-        el.style.userSelect = 'none';
-        (el.style as any).webkitUserSelect = 'none';
-        (el.style as any).mozUserSelect = 'none';
-        (el.style as any).msUserSelect = 'none';
       });
-    };
-
-    const preventSelect = (e: Event) => {
-      // Verificar si el usuario está interactuando con un campo de formulario
-      const target = e.target as HTMLElement;
-
-      // Permitir selección en inputs, textareas, contenteditable
-      if (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.contentEditable === 'true' ||
-          target.isContentEditable) {
-        return;
-      }
-
-      // Permitir interacciones con elementos de navegación
-      if (isNavigationElement(target)) {
-        return;
-      }
-
-      e.preventDefault();
-      return false;
     };
 
     // ✅ CONSOLIDADO: Solo manejar dragstart y protección de imágenes
     // contextmenu y keydown son manejados por GlobalSecurityProtection
-    // selectstart fue REMOVIDO - usamos CSS user-select en su lugar
     document.addEventListener('dragstart', preventDrag);
     
-    // Aplicar protección CSS inicial
-    applyUserSelectProtection();
+    // Aplicar protección CSS inicial (con delay para asegurar que el DOM esté listo)
+    setTimeout(() => {
+      applyUserSelectProtection();
+    }, 100);
 
     /**
      * ✅ MEJORADO: Proteger imágenes pero NO bloquear si están dentro de Links
-     * Esto permite que los Links con imágenes funcionen correctamente
      */
     const protectImages = () => {
+      if (isNavigatingRef.current) {
+        return;
+      }
+
       const images = document.querySelectorAll('img');
       images.forEach(img => {
-        // ✅ Verificar si la imagen está dentro de un Link o elemento de navegación
         const isInLink = img.closest('a') !== null || 
                         img.closest('button') !== null ||
                         isNavigationElement(img as HTMLElement);
         
-        // Si está en un Link, solo proteger contra drag, pero permitir clics
-        // (contextmenu es manejado por GlobalSecurityProtection)
         if (isInLink) {
           img.addEventListener('dragstart', preventDrag);
-          img.style.userSelect = 'none';
-          (img.style as any).webkitUserSelect = 'none';
-          (img.style as any).mozUserSelect = 'none';
-          (img.style as any).msUserSelect = 'none';
           // ✅ NO aplicar pointer-events: none si está en un Link
         } else {
-          // Si NO está en un Link, aplicar protección completa
           img.addEventListener('dragstart', preventDrag);
-          img.style.userSelect = 'none';
-          (img.style as any).webkitUserSelect = 'none';
-          (img.style as any).mozUserSelect = 'none';
-          (img.style as any).msUserSelect = 'none';
           img.style.pointerEvents = 'none';
         }
       });
     };
 
     // Proteger imágenes iniciales
-    protectImages();
+    setTimeout(() => {
+      protectImages();
+    }, 100);
 
-    // Observar cambios en el DOM para proteger nuevas imágenes y aplicar user-select
+    // ✅ OPTIMIZADO: MutationObserver más inteligente - pausa durante navegación
     const observer = new MutationObserver((mutations) => {
+      // Si estamos navegando, no procesar mutaciones
+      if (isNavigatingRef.current) {
+        return;
+      }
+
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((node) => {
@@ -250,68 +230,45 @@ export const useSecurityProtection = () => {
               // Proteger nuevas imágenes
               const images = element.querySelectorAll('img');
               images.forEach(img => {
-                // ✅ Verificar si la imagen está dentro de un Link
                 const isInLink = img.closest('a') !== null || 
                                 img.closest('button') !== null ||
                                 isNavigationElement(img as HTMLElement);
                 
-                // (contextmenu es manejado por GlobalSecurityProtection)
                 if (isInLink) {
                   img.addEventListener('dragstart', preventDrag);
-                  img.style.userSelect = 'none';
-                  (img.style as any).webkitUserSelect = 'none';
-                  (img.style as any).mozUserSelect = 'none';
-                  (img.style as any).msUserSelect = 'none';
-                  // ✅ NO aplicar pointer-events: none
                 } else {
                   img.addEventListener('dragstart', preventDrag);
-                  img.style.userSelect = 'none';
-                  (img.style as any).webkitUserSelect = 'none';
-                  (img.style as any).mozUserSelect = 'none';
-                  (img.style as any).msUserSelect = 'none';
                   img.style.pointerEvents = 'none';
                 }
               });
               
-              // ✅ Aplicar user-select a nuevos elementos de contenido (solo si no son navegación)
-              const newElements = element.querySelectorAll('*');
-              newElements.forEach((el) => {
-                const htmlEl = el as HTMLElement;
-                if (!isNavigationElement(htmlEl) &&
-                    htmlEl.tagName !== 'INPUT' &&
-                    htmlEl.tagName !== 'TEXTAREA' &&
-                    htmlEl.contentEditable !== 'true' &&
-                    !htmlEl.isContentEditable &&
-                    !htmlEl.style.userSelect &&
-                    !(htmlEl.style as any).webkitUserSelect) {
-                  htmlEl.style.userSelect = 'none';
-                  (htmlEl.style as any).webkitUserSelect = 'none';
-                  (htmlEl.style as any).mozUserSelect = 'none';
-                  (htmlEl.style as any).msUserSelect = 'none';
+              // ✅ Aplicar clase .no-select solo a contenedores de contenido
+              const contentContainers = [
+                '.subscriberView',
+                '.nonSubscriberView',
+                '.mainContent',
+              ];
+              
+              contentContainers.forEach((selector) => {
+                try {
+                  const containers = element.querySelectorAll(selector);
+                  containers.forEach((container) => {
+                    const el = container as HTMLElement;
+                    if (!isNavigationElement(el) && !el.classList.contains('no-select')) {
+                      el.classList.add('no-select');
+                    }
+                  });
+                } catch (e) {
+                  // Ignorar errores
                 }
               });
-              
-              // También aplicar al elemento mismo si no es navegación
-              if (element.nodeType === Node.ELEMENT_NODE) {
-                const htmlElement = element as HTMLElement;
-                if (!isNavigationElement(htmlElement) &&
-                    htmlElement.tagName !== 'INPUT' &&
-                    htmlElement.tagName !== 'TEXTAREA' &&
-                    htmlElement.contentEditable !== 'true' &&
-                    !htmlElement.isContentEditable &&
-                    !htmlElement.style.userSelect &&
-                    !(htmlElement.style as any).webkitUserSelect) {
-                  htmlElement.style.userSelect = 'none';
-                  (htmlElement.style as any).webkitUserSelect = 'none';
-                  (htmlElement.style as any).mozUserSelect = 'none';
-                  (htmlElement.style as any).msUserSelect = 'none';
-                }
-              }
             }
           });
         }
       });
     });
+
+    observerRef.current = observer;
 
     // Observar cambios en el body
     observer.observe(document.body, {
@@ -319,15 +276,45 @@ export const useSecurityProtection = () => {
       subtree: true
     });
 
-    // Limpiar event listeners al desmontar solo si se aplicaron
+    // ✅ DETECTAR NAVEGACIÓN: Pausar observer durante navegación de Next.js
+    const handleRouteChangeStart = () => {
+      isNavigatingRef.current = true;
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+
+    const handleRouteChangeComplete = () => {
+      isNavigatingRef.current = false;
+      // Reconectar observer después de la navegación
+      if (observerRef.current) {
+        observerRef.current.observe(document.body, {
+          childList: true,
+          subtree: true
+        });
+      }
+      // Re-aplicar protección después de la navegación
+      setTimeout(() => {
+        applyUserSelectProtection();
+        protectImages();
+      }, 200);
+    };
+
+    router.events.on('routeChangeStart', handleRouteChangeStart);
+    router.events.on('routeChangeComplete', handleRouteChangeComplete);
+
+    // Limpiar event listeners al desmontar
     return () => {
       if (isProtectedPage) {
         document.removeEventListener('dragstart', preventDrag);
-        // ✅ selectstart ya no se usa - removido para evitar interferir con navegación
-        observer.disconnect();
+        router.events.off('routeChangeStart', handleRouteChangeStart);
+        router.events.off('routeChangeComplete', handleRouteChangeComplete);
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+        }
       }
     };
-  }, [router.pathname]);
+  }, [router.pathname, router.events]);
 };
 
 /**
@@ -357,4 +344,4 @@ export const useElementProtection = (elementRef: React.RefObject<HTMLElement>) =
       element.removeEventListener('dragstart', preventDrag);
     };
   }, [elementRef]);
-}; 
+};

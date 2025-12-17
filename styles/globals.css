@@ -18,17 +18,31 @@ body {
   color: #FFFFFF;
   background: #000000;
   line-height: 1.6;
-  /* Prevenir selección de texto globalmente (se permite en formularios) */
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+  /* ✅ REMOVIDO: user-select global - ahora se aplica solo a contenido específico */
   /* Prevenir arrastrar elementos */
   -webkit-user-drag: none;
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
   user-drag: none;
+}
+
+/* ✅ Clase CSS para prevenir selección solo en contenido protegido */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Permitir selección en formularios incluso dentro de .no-select */
+.no-select input,
+.no-select textarea,
+.no-select [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
 }
 
 a {
