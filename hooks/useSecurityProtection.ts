@@ -4,12 +4,14 @@ import { useRouter } from 'next/router';
 /**
  * ✅ CONSOLIDADO: Hook para protecciones de seguridad
  * Responsabilidades:
- * - selectstart: Previene selección de texto (mejorado para no bloquear navegación)
+ * - CSS user-select: Aplica user-select: none solo a contenido (no navegación)
  * - dragstart: Previene arrastrar elementos
  * - Protección de imágenes: Protege imágenes pero permite Links
  * 
- * NOTA: contextmenu y keydown (copiar/pegar) son manejados por GlobalSecurityProtection
- * para evitar duplicación de listeners.
+ * NOTA: 
+ * - contextmenu y keydown (copiar/pegar) son manejados por GlobalSecurityProtection
+ * - selectstart fue REMOVIDO para evitar interferir con navegación de Next.js
+ * - En su lugar, usamos CSS user-select: none aplicado directamente a elementos de contenido
  */
 export const useSecurityProtection = () => {
   const router = useRouter();
@@ -51,6 +53,21 @@ export const useSecurityProtection = () => {
         // ✅ 1. Detectar Links de Next.js (tienen href y están dentro de contenedores de navegación)
         if (tagName === 'a' && href) {
           // Cualquier <a> con href es navegación
+          return true;
+        }
+
+        // ✅ 1.5. Detectar elementos con cursor pointer (indica que son clickeables)
+        const computedStyle = window.getComputedStyle(currentElement);
+        if (computedStyle.cursor === 'pointer' || computedStyle.cursor === 'grab') {
+          return true;
+        }
+
+        // ✅ 1.6. Verificar si tiene event listeners de click (elemento interactivo)
+        const hasClickHandler = (currentElement as any).onclick !== null ||
+                                currentElement.getAttribute('onclick') !== null ||
+                                currentElement.hasAttribute('data-clickable');
+        
+        if (hasClickHandler) {
           return true;
         }
 
@@ -120,6 +137,43 @@ export const useSecurityProtection = () => {
       return false;
     };
 
+    /**
+     * ✅ OPCIÓN 1 + 2: Aplicar user-select: none con CSS solo a elementos de contenido
+     * En lugar de prevenir selectstart (que interfiere con navegación), aplicamos CSS directamente
+     */
+    const applyUserSelectProtection = () => {
+      // Seleccionar todos los elementos del body excepto navegación y formularios
+      const allElements = document.querySelectorAll('*');
+      
+      allElements.forEach((element) => {
+        const el = element as HTMLElement;
+        
+        // Saltar si es elemento de navegación
+        if (isNavigationElement(el)) {
+          return;
+        }
+        
+        // Saltar si es formulario
+        if (el.tagName === 'INPUT' ||
+            el.tagName === 'TEXTAREA' ||
+            el.contentEditable === 'true' ||
+            el.isContentEditable) {
+          return;
+        }
+        
+        // Saltar si ya tiene user-select definido
+        if (el.style.userSelect || (el.style as any).webkitUserSelect) {
+          return;
+        }
+        
+        // Aplicar user-select: none solo a contenido
+        el.style.userSelect = 'none';
+        (el.style as any).webkitUserSelect = 'none';
+        (el.style as any).mozUserSelect = 'none';
+        (el.style as any).msUserSelect = 'none';
+      });
+    };
+
     const preventSelect = (e: Event) => {
       // Verificar si el usuario está interactuando con un campo de formulario
       const target = e.target as HTMLElement;
@@ -141,10 +195,13 @@ export const useSecurityProtection = () => {
       return false;
     };
 
-    // ✅ CONSOLIDADO: Solo manejar selectstart, dragstart y protección de imágenes
+    // ✅ CONSOLIDADO: Solo manejar dragstart y protección de imágenes
     // contextmenu y keydown son manejados por GlobalSecurityProtection
+    // selectstart fue REMOVIDO - usamos CSS user-select en su lugar
     document.addEventListener('dragstart', preventDrag);
-    document.addEventListener('selectstart', preventSelect);
+    
+    // Aplicar protección CSS inicial
+    applyUserSelectProtection();
 
     /**
      * ✅ MEJORADO: Proteger imágenes pero NO bloquear si están dentro de Links
@@ -182,13 +239,15 @@ export const useSecurityProtection = () => {
     // Proteger imágenes iniciales
     protectImages();
 
-    // Observar cambios en el DOM para proteger nuevas imágenes
+    // Observar cambios en el DOM para proteger nuevas imágenes y aplicar user-select
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList') {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               const element = node as Element;
+              
+              // Proteger nuevas imágenes
               const images = element.querySelectorAll('img');
               images.forEach(img => {
                 // ✅ Verificar si la imagen está dentro de un Link
@@ -213,6 +272,41 @@ export const useSecurityProtection = () => {
                   img.style.pointerEvents = 'none';
                 }
               });
+              
+              // ✅ Aplicar user-select a nuevos elementos de contenido (solo si no son navegación)
+              const newElements = element.querySelectorAll('*');
+              newElements.forEach((el) => {
+                const htmlEl = el as HTMLElement;
+                if (!isNavigationElement(htmlEl) &&
+                    htmlEl.tagName !== 'INPUT' &&
+                    htmlEl.tagName !== 'TEXTAREA' &&
+                    htmlEl.contentEditable !== 'true' &&
+                    !htmlEl.isContentEditable &&
+                    !htmlEl.style.userSelect &&
+                    !(htmlEl.style as any).webkitUserSelect) {
+                  htmlEl.style.userSelect = 'none';
+                  (htmlEl.style as any).webkitUserSelect = 'none';
+                  (htmlEl.style as any).mozUserSelect = 'none';
+                  (htmlEl.style as any).msUserSelect = 'none';
+                }
+              });
+              
+              // También aplicar al elemento mismo si no es navegación
+              if (element.nodeType === Node.ELEMENT_NODE) {
+                const htmlElement = element as HTMLElement;
+                if (!isNavigationElement(htmlElement) &&
+                    htmlElement.tagName !== 'INPUT' &&
+                    htmlElement.tagName !== 'TEXTAREA' &&
+                    htmlElement.contentEditable !== 'true' &&
+                    !htmlElement.isContentEditable &&
+                    !htmlElement.style.userSelect &&
+                    !(htmlElement.style as any).webkitUserSelect) {
+                  htmlElement.style.userSelect = 'none';
+                  (htmlElement.style as any).webkitUserSelect = 'none';
+                  (htmlElement.style as any).mozUserSelect = 'none';
+                  (htmlElement.style as any).msUserSelect = 'none';
+                }
+              }
             }
           });
         }
@@ -229,7 +323,7 @@ export const useSecurityProtection = () => {
     return () => {
       if (isProtectedPage) {
         document.removeEventListener('dragstart', preventDrag);
-        document.removeEventListener('selectstart', preventSelect);
+        // ✅ selectstart ya no se usa - removido para evitar interferir con navegación
         observer.disconnect();
       }
     };
