@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 
 /**
  * ✅ OPTIMIZADO: Protección ligera - Solo bloquea click derecho y copiar/pegar
- * Se activa solo en páginas con contenido sensible:
+ * Se activa SOLO en páginas con contenido sensible:
  * - /alertas/trader-call
  * - /alertas/smart-money
  */
@@ -11,7 +11,7 @@ const GlobalSecurityProtection: React.FC = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Solo activar en páginas con contenido sensible
+    // ✅ SOLO activar en páginas con información valiosa
     const protectedPaths = [
       '/alertas/trader-call', 
       '/alertas/smart-money',
@@ -25,21 +25,45 @@ const GlobalSecurityProtection: React.FC = () => {
       return;
     }
 
+    /**
+     * ✅ MEJORADO: Detectar elementos de navegación para permitir click derecho en ellos
+     */
+    const isNavigationElement = (element: HTMLElement): boolean => {
+      let current: HTMLElement | null = element;
+      for (let i = 0; i < 5 && current; i++) {
+        const tagName = current.tagName.toLowerCase();
+        const className = typeof current.className === 'string' ? current.className : '';
+        const href = current.getAttribute('href');
+        
+        if (tagName === 'a' && href) return true;
+        if (tagName === 'nav' || tagName === 'button') return true;
+        if (className.includes('nav') || className.includes('menu') || className.includes('link')) return true;
+        
+        current = current.parentElement;
+      }
+      return false;
+    };
+
     // ============================================
     // 1. BLOQUEAR CLICK DERECHO
     // ============================================
     const preventContextMenu = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+      
+      // Permitir en formularios
       const isFormElement = 
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true' ||
-        target.isContentEditable;
+        target.contentEditable;
+      
+      if (isFormElement) return;
+      
+      // ✅ Permitir en elementos de navegación
+      if (isNavigationElement(target)) return;
 
-      if (!isFormElement) {
-        e.preventDefault();
-        return false;
-      }
+      e.preventDefault();
+      return false;
     };
 
     // ============================================
@@ -53,7 +77,7 @@ const GlobalSecurityProtection: React.FC = () => {
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.contentEditable === 'true' ||
-        target.isContentEditable;
+        target.contentEditable;
 
       if (isFormElement) {
         return; // Permitir copiar/pegar en formularios
@@ -88,4 +112,3 @@ const GlobalSecurityProtection: React.FC = () => {
 };
 
 export default GlobalSecurityProtection;
-

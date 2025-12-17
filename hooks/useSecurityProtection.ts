@@ -13,44 +13,87 @@ export const useSecurityProtection = () => {
   const router = useRouter();
 
   useEffect(() => {
-    // Verificar si estamos en una página administrativa
-    const isAdminPage = router.pathname.startsWith('/admin');
+    // ✅ SOLO activar en páginas con información valiosa (smart-money y trader-call)
+    const protectedPaths = [
+      '/alertas/trader-call',
+      '/alertas/smart-money',
+    ];
     
-    // Si es página administrativa, no aplicar protecciones
-    if (isAdminPage) {
-      // console.log('🔓 Página administrativa detectada - Protecciones de seguridad desactivadas');
+    const isProtectedPage = protectedPaths.some(path => 
+      router.pathname === path || router.pathname.startsWith(path + '/')
+    );
+    
+    // Si NO es página protegida o es admin, no aplicar protecciones
+    if (!isProtectedPage || router.pathname.startsWith('/admin')) {
       return;
     }
 
+    /**
+     * ✅ MEJORADO: Detección robusta de elementos de navegación
+     * Incluye detección de Links de Next.js y elementos interactivos
+     */
     const isNavigationElement = (element: HTMLElement): boolean => {
-      // Verificar si el elemento o sus padres son parte de la navegación
-      const navSelectors = [
-        'nav', '.navbar', '.nav', '.dropdown', '.menu',
-        '[class*="nav"]', '[class*="menu"]', '[class*="dropdown"]',
-        'button', 'a', '[role="button"]', '[role="menu"]', '[role="menuitem"]'
-      ];
-
       let currentElement: HTMLElement | null = element;
 
-      // Verificar el elemento actual y hasta 5 niveles hacia arriba
-      for (let i = 0; i < 5 && currentElement; i++) {
+      // Verificar el elemento actual y hasta 7 niveles hacia arriba (aumentado de 5)
+      for (let i = 0; i < 7 && currentElement; i++) {
         const tagName = currentElement.tagName.toLowerCase();
-        const className = currentElement.className || '';
+        const className = typeof currentElement.className === 'string' 
+          ? currentElement.className 
+          : '';
         const role = currentElement.getAttribute('role') || '';
+        const href = currentElement.getAttribute('href');
+        const onClick = currentElement.getAttribute('onclick') || 
+                       (currentElement as any).onclick;
 
-        // Verificar si es un elemento de navegación
+        // ✅ 1. Detectar Links de Next.js (tienen href y están dentro de contenedores de navegación)
+        if (tagName === 'a' && href) {
+          // Cualquier <a> con href es navegación
+          return true;
+        }
+
+        // ✅ 2. Detectar elementos dentro de <nav> o con clases de navegación
         if (tagName === 'nav' ||
-            tagName === 'button' ||
-            tagName === 'a' ||
-            role === 'button' ||
-            role === 'menu' ||
-            role === 'menuitem' ||
             className.includes('nav') ||
+            className.includes('navbar') ||
             className.includes('menu') ||
             className.includes('dropdown') ||
+            className.includes('link') ||
+            className.includes('button') ||
             className.includes('chevron') ||
-            className.includes('user')) {
+            className.includes('user') ||
+            className.includes('footer')) {
           return true;
+        }
+
+        // ✅ 3. Detectar botones y elementos interactivos
+        if (tagName === 'button' ||
+            role === 'button' ||
+            role === 'link' ||
+            role === 'menu' ||
+            role === 'menuitem' ||
+            role === 'navigation' ||
+            onClick) {
+          return true;
+        }
+
+        // ✅ 4. Detectar elementos con data-attributes de navegación
+        if (currentElement.hasAttribute('data-navigation') ||
+            currentElement.hasAttribute('data-link') ||
+            currentElement.hasAttribute('data-router-link')) {
+          return true;
+        }
+
+        // ✅ 5. Verificar si está dentro de un contenedor con clase de navegación
+        const parent = currentElement.parentElement;
+        if (parent) {
+          const parentClass = typeof parent.className === 'string' ? parent.className : '';
+          if (parentClass.includes('nav') || 
+              parentClass.includes('menu') || 
+              parentClass.includes('dropdown') ||
+              parent.tagName === 'NAV') {
+            return true;
+          }
         }
 
         currentElement = currentElement.parentElement;
@@ -138,17 +181,37 @@ export const useSecurityProtection = () => {
     document.addEventListener('selectstart', preventSelect);
     // ✅ REMOVIDO: document.addEventListener('mousedown', preventSelect) - causaba problemas de navegación
 
-    // Proteger todas las imágenes existentes
+    /**
+     * ✅ MEJORADO: Proteger imágenes pero NO bloquear si están dentro de Links
+     * Esto permite que los Links con imágenes funcionen correctamente
+     */
     const protectImages = () => {
       const images = document.querySelectorAll('img');
       images.forEach(img => {
-        img.addEventListener('contextmenu', preventContextMenu);
-        img.addEventListener('dragstart', preventDrag);
-        img.style.userSelect = 'none';
-        (img.style as any).webkitUserSelect = 'none';
-        (img.style as any).mozUserSelect = 'none';
-        (img.style as any).msUserSelect = 'none';
-        img.style.pointerEvents = 'none';
+        // ✅ Verificar si la imagen está dentro de un Link o elemento de navegación
+        const isInLink = img.closest('a') !== null || 
+                        img.closest('button') !== null ||
+                        isNavigationElement(img as HTMLElement);
+        
+        // Si está en un Link, solo proteger contra click derecho y drag, pero permitir clics
+        if (isInLink) {
+          img.addEventListener('contextmenu', preventContextMenu);
+          img.addEventListener('dragstart', preventDrag);
+          img.style.userSelect = 'none';
+          (img.style as any).webkitUserSelect = 'none';
+          (img.style as any).mozUserSelect = 'none';
+          (img.style as any).msUserSelect = 'none';
+          // ✅ NO aplicar pointer-events: none si está en un Link
+        } else {
+          // Si NO está en un Link, aplicar protección completa
+          img.addEventListener('contextmenu', preventContextMenu);
+          img.addEventListener('dragstart', preventDrag);
+          img.style.userSelect = 'none';
+          (img.style as any).webkitUserSelect = 'none';
+          (img.style as any).mozUserSelect = 'none';
+          (img.style as any).msUserSelect = 'none';
+          img.style.pointerEvents = 'none';
+        }
       });
     };
 
@@ -164,13 +227,28 @@ export const useSecurityProtection = () => {
               const element = node as Element;
               const images = element.querySelectorAll('img');
               images.forEach(img => {
-                img.addEventListener('contextmenu', preventContextMenu);
-                img.addEventListener('dragstart', preventDrag);
-                img.style.userSelect = 'none';
-                (img.style as any).webkitUserSelect = 'none';
-                (img.style as any).mozUserSelect = 'none';
-                (img.style as any).msUserSelect = 'none';
-                img.style.pointerEvents = 'none';
+                // ✅ Verificar si la imagen está dentro de un Link
+                const isInLink = img.closest('a') !== null || 
+                                img.closest('button') !== null ||
+                                isNavigationElement(img as HTMLElement);
+                
+                if (isInLink) {
+                  img.addEventListener('contextmenu', preventContextMenu);
+                  img.addEventListener('dragstart', preventDrag);
+                  img.style.userSelect = 'none';
+                  (img.style as any).webkitUserSelect = 'none';
+                  (img.style as any).mozUserSelect = 'none';
+                  (img.style as any).msUserSelect = 'none';
+                  // ✅ NO aplicar pointer-events: none
+                } else {
+                  img.addEventListener('contextmenu', preventContextMenu);
+                  img.addEventListener('dragstart', preventDrag);
+                  img.style.userSelect = 'none';
+                  (img.style as any).webkitUserSelect = 'none';
+                  (img.style as any).mozUserSelect = 'none';
+                  (img.style as any).msUserSelect = 'none';
+                  img.style.pointerEvents = 'none';
+                }
               });
             }
           });
@@ -186,7 +264,7 @@ export const useSecurityProtection = () => {
 
     // Limpiar event listeners al desmontar solo si se aplicaron
     return () => {
-      if (!isAdminPage) {
+      if (isProtectedPage) {
         document.removeEventListener('contextmenu', preventContextMenu);
         document.removeEventListener('keydown', preventKeyCombinations);
         document.removeEventListener('dragstart', preventDrag);
@@ -194,7 +272,7 @@ export const useSecurityProtection = () => {
         observer.disconnect();
       }
     };
-  }, []);
+  }, [router.pathname]);
 };
 
 /**
