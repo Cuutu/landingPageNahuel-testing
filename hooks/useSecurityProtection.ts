@@ -2,12 +2,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 /**
- * Hook personalizado para aplicar protecciones de seguridad
- * - Deshabilita click derecho
- * - Previene combinaciones de teclas no deseadas
- * - Protege imágenes contra descarga
- * - Previene arrastrar elementos
- * - Desactiva protecciones en páginas administrativas
+ * ✅ CONSOLIDADO: Hook para protecciones de seguridad
+ * Responsabilidades:
+ * - selectstart: Previene selección de texto (mejorado para no bloquear navegación)
+ * - dragstart: Previene arrastrar elementos
+ * - Protección de imágenes: Protege imágenes pero permite Links
+ * 
+ * NOTA: contextmenu y keydown (copiar/pegar) son manejados por GlobalSecurityProtection
+ * para evitar duplicación de listeners.
  */
 export const useSecurityProtection = () => {
   const router = useRouter();
@@ -102,44 +104,10 @@ export const useSecurityProtection = () => {
       return false;
     };
 
-    const preventContextMenu = (e: MouseEvent) => {
-      // Permitir menú contextual en elementos de navegación
-      const target = e.target as HTMLElement;
-      if (isNavigationElement(target)) {
-        return;
-      }
-
-      e.preventDefault();
-      return false;
-    };
-
-    const preventKeyCombinations = (e: KeyboardEvent) => {
-      // Verificar si el usuario está escribiendo en un campo de formulario
-      const target = e.target as HTMLElement;
-
-      // Permitir escritura normal en inputs, textareas, contenteditable
-      if (target.tagName === 'INPUT' ||
-          target.tagName === 'TEXTAREA' ||
-          target.contentEditable === 'true' ||
-          target.isContentEditable) {
-        return;
-      }
-
-      // Prevenir combinaciones de teclas que podrían usarse para descargar o inspeccionar
-      if (
-        (e.ctrlKey && e.key === 's') || // Ctrl+S (guardar)
-        (e.ctrlKey && e.key === 'p') || // Ctrl+P (imprimir)
-        e.key === 'F12' || // F12 (dev tools)
-        (e.ctrlKey && e.key === 'u') || // Ctrl+U (ver código fuente)
-        (e.ctrlKey && e.shiftKey && e.key === 'I') || // Ctrl+Shift+I (dev tools)
-        (e.ctrlKey && e.shiftKey && e.key === 'C') || // Ctrl+Shift+C (inspector)
-        (e.ctrlKey && e.key === 'F5') || // Ctrl+F5 (recargar)
-        (e.ctrlKey && e.key === 'r') // Ctrl+R (recargar)
-      ) {
-        e.preventDefault();
-        return false;
-      }
-    };
+    /**
+     * ✅ REMOVIDO: preventContextMenu y preventKeyCombinations
+     * Ahora son manejados por GlobalSecurityProtection para evitar duplicación
+     */
 
     const preventDrag = (e: DragEvent) => {
       // Permitir drag en elementos de navegación
@@ -173,13 +141,10 @@ export const useSecurityProtection = () => {
       return false;
     };
 
-    // ✅ OPTIMIZADO: Aplicar protecciones globales de forma menos intrusiva
-    // Removido 'mousedown' que bloqueaba clics de navegación
-    document.addEventListener('contextmenu', preventContextMenu);
-    document.addEventListener('keydown', preventKeyCombinations);
+    // ✅ CONSOLIDADO: Solo manejar selectstart, dragstart y protección de imágenes
+    // contextmenu y keydown son manejados por GlobalSecurityProtection
     document.addEventListener('dragstart', preventDrag);
     document.addEventListener('selectstart', preventSelect);
-    // ✅ REMOVIDO: document.addEventListener('mousedown', preventSelect) - causaba problemas de navegación
 
     /**
      * ✅ MEJORADO: Proteger imágenes pero NO bloquear si están dentro de Links
@@ -193,9 +158,9 @@ export const useSecurityProtection = () => {
                         img.closest('button') !== null ||
                         isNavigationElement(img as HTMLElement);
         
-        // Si está en un Link, solo proteger contra click derecho y drag, pero permitir clics
+        // Si está en un Link, solo proteger contra drag, pero permitir clics
+        // (contextmenu es manejado por GlobalSecurityProtection)
         if (isInLink) {
-          img.addEventListener('contextmenu', preventContextMenu);
           img.addEventListener('dragstart', preventDrag);
           img.style.userSelect = 'none';
           (img.style as any).webkitUserSelect = 'none';
@@ -204,7 +169,6 @@ export const useSecurityProtection = () => {
           // ✅ NO aplicar pointer-events: none si está en un Link
         } else {
           // Si NO está en un Link, aplicar protección completa
-          img.addEventListener('contextmenu', preventContextMenu);
           img.addEventListener('dragstart', preventDrag);
           img.style.userSelect = 'none';
           (img.style as any).webkitUserSelect = 'none';
@@ -232,8 +196,8 @@ export const useSecurityProtection = () => {
                                 img.closest('button') !== null ||
                                 isNavigationElement(img as HTMLElement);
                 
+                // (contextmenu es manejado por GlobalSecurityProtection)
                 if (isInLink) {
-                  img.addEventListener('contextmenu', preventContextMenu);
                   img.addEventListener('dragstart', preventDrag);
                   img.style.userSelect = 'none';
                   (img.style as any).webkitUserSelect = 'none';
@@ -241,7 +205,6 @@ export const useSecurityProtection = () => {
                   (img.style as any).msUserSelect = 'none';
                   // ✅ NO aplicar pointer-events: none
                 } else {
-                  img.addEventListener('contextmenu', preventContextMenu);
                   img.addEventListener('dragstart', preventDrag);
                   img.style.userSelect = 'none';
                   (img.style as any).webkitUserSelect = 'none';
@@ -265,8 +228,6 @@ export const useSecurityProtection = () => {
     // Limpiar event listeners al desmontar solo si se aplicaron
     return () => {
       if (isProtectedPage) {
-        document.removeEventListener('contextmenu', preventContextMenu);
-        document.removeEventListener('keydown', preventKeyCombinations);
         document.removeEventListener('dragstart', preventDrag);
         document.removeEventListener('selectstart', preventSelect);
         observer.disconnect();
