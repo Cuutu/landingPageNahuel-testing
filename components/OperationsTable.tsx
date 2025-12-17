@@ -2245,52 +2245,82 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
             {/* Content */}
             <div style={{ padding: '24px' }}>
-              {/* ✅ Imagen principal (igual que Telegram: foto primero con caption debajo) */}
-              {selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url) ? (
-                <div style={{ marginBottom: '24px' }}>
-                  <div style={{
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    border: '1px solid #e5e7eb',
-                    backgroundColor: '#f9fafb',
-                    marginBottom: '16px'
-                  }}>
-                    <img 
-                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || ''} 
-                      alt="Gráfico de la alerta"
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block'
-                      }}
-                      onError={(e) => {
-                        console.error('Error cargando imagen del gráfico:', selectedAlert.chartImage);
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                  {/* ✅ Información formateada igual que Telegram (como caption de la imagen) */}
-                  <div style={{
-                    padding: '20px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb'
-                  }}>
-                    {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
-                  </div>
-                </div>
-              ) : (
-                /* Si no hay imagen, mostrar solo la información */
-                <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f9fafb',
-                  borderRadius: '12px',
-                  border: '1px solid #e5e7eb',
-                  marginBottom: '24px'
-                }}>
-                  {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
-                </div>
-              )}
+              {/* ✅ NUEVO: Siempre buscar emailImageUrl en ventas parciales ejecutadas */}
+              {(() => {
+                let imageUrl: string | null = null;
+                
+                // Buscar emailImageUrl en ventas parciales ejecutadas (siempre priorizar este)
+                if (selectedAlert.liquidityData?.partialSales) {
+                  // Buscar la venta parcial más reciente que tenga emailImageUrl y esté ejecutada
+                  const executedSales = selectedAlert.liquidityData.partialSales
+                    .filter((sale: any) => sale.executed === true && sale.emailImageUrl)
+                    .sort((a: any, b: any) => {
+                      const dateA = new Date(a.executedAt || a.date || 0).getTime();
+                      const dateB = new Date(b.executedAt || b.date || 0).getTime();
+                      return dateB - dateA; // Más reciente primero
+                    });
+                  
+                  if (executedSales.length > 0 && executedSales[0].emailImageUrl) {
+                    imageUrl = executedSales[0].emailImageUrl;
+                  }
+                }
+                
+                // Si no hay emailImageUrl en ventas parciales, usar chartImage como fallback
+                if (!imageUrl && selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url)) {
+                  imageUrl = selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || null;
+                }
+                
+                // Si hay imagen, mostrarla
+                if (imageUrl) {
+                  return (
+                    <div style={{ marginBottom: '24px' }}>
+                      <div style={{
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        border: '1px solid #e5e7eb',
+                        backgroundColor: '#f9fafb',
+                        marginBottom: '16px'
+                      }}>
+                        <img 
+                          src={imageUrl} 
+                          alt="Gráfico de la alerta"
+                          style={{
+                            width: '100%',
+                            height: 'auto',
+                            display: 'block'
+                          }}
+                          onError={(e) => {
+                            console.error('Error cargando imagen del gráfico:', imageUrl);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                      {/* ✅ Información formateada igual que Telegram (como caption de la imagen) */}
+                      <div style={{
+                        padding: '20px',
+                        backgroundColor: '#f9fafb',
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb'
+                      }}>
+                        {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
+                      </div>
+                    </div>
+                  );
+                } else {
+                  // Si no hay imagen, mostrar solo la información
+                  return (
+                    <div style={{
+                      padding: '20px',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      marginBottom: '24px'
+                    }}>
+                      {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
+                    </div>
+                  );
+                }
+              })()}
 
               {/* ✅ Imagen de la operación (si existe, adicional) */}
               {selectedOperation?.image && (

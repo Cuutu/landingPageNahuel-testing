@@ -66,6 +66,14 @@ interface Operation {
       url: string;
       caption?: string;
     }>;
+    liquidityData?: {
+      partialSales?: Array<{
+        emailImageUrl?: string | null;
+        executed?: boolean;
+        executedAt?: string | Date;
+        date?: string | Date;
+      }>;
+    };
   } | null;
 }
 

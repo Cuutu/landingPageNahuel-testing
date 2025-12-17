@@ -53,7 +53,7 @@ export default async function handler(
       .sort({ date: -1 })
       .limit(parseInt(limit as string))
       .skip(parseInt(skip as string))
-      .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss');
+      .populate('alertId', 'symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss liquidityData');
     console.log(`📊 [OPERATIONS LIST] Encontradas ${operations.length} operaciones para system: ${system}`);
     if (operations.length > 0) {
       console.log(`🔍 [OPERATIONS LIST] Primera operación:`, {
@@ -90,14 +90,15 @@ export default async function handler(
             entryPriceRange: op.alertId.entryPriceRange,
             currentPrice: op.alertId.currentPrice,
             takeProfit: op.alertId.takeProfit,
-            stopLoss: op.alertId.stopLoss
+            stopLoss: op.alertId.stopLoss,
+            liquidityData: op.alertId.liquidityData
           };
         } 
         // Si alertId es un string (ObjectId), intentar buscar la alerta manualmente
         else if (op.alertId) {
           try {
             const alertIdString = typeof op.alertId === 'string' ? op.alertId : op.alertId.toString();
-            const alert = await Alert.findById(alertIdString).select('symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss');
+            const alert = await Alert.findById(alertIdString).select('symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss liquidityData');
             
             if (alert) {
               alertData = {
@@ -117,7 +118,8 @@ export default async function handler(
                 entryPriceRange: alert.entryPriceRange,
                 currentPrice: alert.currentPrice,
                 takeProfit: alert.takeProfit,
-                stopLoss: alert.stopLoss
+                stopLoss: alert.stopLoss,
+                liquidityData: alert.liquidityData
               };
             } else {
               console.warn(`⚠️ Alerta no encontrada para operación ${op._id}, alertId: ${alertIdString}`);
