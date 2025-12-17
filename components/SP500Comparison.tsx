@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, BarChart3, AlertCircle, Loader2, Activity } from 'lucide-react';
 import { useSP500Performance, SP500Data, ServicePerformanceData } from '@/hooks/useSP500Performance';
 import styles from './SP500Comparison.module.css';
@@ -6,6 +6,8 @@ import styles from './SP500Comparison.module.css';
 interface SP500ComparisonProps {
   className?: string;
   serviceType?: 'TraderCall' | 'SmartMoney';
+  selectedPeriod?: string; // ✅ NUEVO: Recibir período desde el componente padre
+  onPeriodChange?: (period: string) => void; // ✅ NUEVO: Callback para sincronizar período
 }
 
 // Constantes para mejor mantenibilidad - Alineados con PortfolioTimeRange
@@ -23,13 +25,33 @@ const PERFORMANCE_COLORS = {
   negative: '#EF4444'
 } as const;
 
-const SP500Comparison: React.FC<SP500ComparisonProps> = ({ className = '', serviceType = 'TraderCall' }) => {
-  const [selectedPeriod, setSelectedPeriod] = useState('30d');
+const SP500Comparison: React.FC<SP500ComparisonProps> = ({ 
+  className = '', 
+  serviceType = 'TraderCall',
+  selectedPeriod: externalPeriod,
+  onPeriodChange
+}) => {
+  // ✅ NUEVO: Usar período externo si está disponible, sino usar estado interno
+  const [internalPeriod, setInternalPeriod] = useState('30d');
+  const selectedPeriod = externalPeriod || internalPeriod;
   const { sp500Data, serviceData, loading, error, refreshData } = useSP500Performance(selectedPeriod, serviceType);
 
   const handlePeriodChange = (period: string) => {
-    setSelectedPeriod(period);
+    if (onPeriodChange) {
+      // Si hay callback, usarlo para sincronizar con el componente padre
+      onPeriodChange(period);
+    } else {
+      // Si no hay callback, usar estado interno
+      setInternalPeriod(period);
+    }
   };
+  
+  // ✅ NUEVO: Sincronizar período interno cuando cambia el externo
+  useEffect(() => {
+    if (externalPeriod) {
+      setInternalPeriod(externalPeriod);
+    }
+  }, [externalPeriod]);
 
   const handleRefresh = () => {
     refreshData(selectedPeriod);

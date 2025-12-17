@@ -270,10 +270,8 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       const result = await updateOperation(editingOperation._id, updateData);
       
       if (result) {
-        // ✅ Actualizar la operación en el estado local para reflejar los cambios inmediatamente
-        setOperations(prev => prev.map(op => 
-          op._id === editingOperation._id ? { ...op, ...result } : op
-        ));
+        // ✅ Actualizar las operaciones refrescando desde el servidor
+        await refreshOperations();
         
         alert('✅ Operación actualizada exitosamente');
         setShowEditModal(false);

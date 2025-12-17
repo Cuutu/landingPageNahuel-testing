@@ -538,10 +538,57 @@ export default async function handler(
     const sp500Return = sp500Data.length > 0 && sp500Data[0].value > 0 ? 
       ((sp500Data[sp500Data.length - 1].value - sp500Data[0].value) / sp500Data[0].value) * 100 : 0;
     
-    // ✅ CORREGIDO: Calcular rendimiento porcentual usando valorTotalCartera (método oficial)
-    const portfolioReturn = initialLiquidity > 0 
-      ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
-      : 0;
+    // ✅ CORREGIDO: Calcular rendimiento del período seleccionado usando snapshots históricos
+    // (igual que /api/portfolio/returns para mantener consistencia)
+    let portfolioReturn = 0;
+    
+    try {
+      // Obtener el snapshot histórico para el período seleccionado
+      const now = new Date();
+      const targetDate = new Date(now);
+      targetDate.setDate(targetDate.getDate() - daysNum);
+      targetDate.setHours(16, 30, 0, 0);
+      
+      const startDate = new Date(targetDate);
+      startDate.setDate(startDate.getDate() - 1);
+      
+      const endDate = new Date(targetDate);
+      endDate.setDate(endDate.getDate() + 1);
+      
+      const historicalSnapshot = await PortfolioSnapshot.findOne({
+        pool: poolType,
+        snapshotDate: { $gte: startDate, $lte: endDate },
+      }).sort({ snapshotDate: 1 });
+      
+      if (historicalSnapshot) {
+        // Calcular rendimiento comparando valor actual con valor histórico
+        // Usar el mismo método que /api/portfolio/returns
+        const currentValue = await calculateCurrentPortfolioValue(poolType);
+        const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+        const historicalProfitLossPercent = historicalSnapshot.totalProfitLossPercentage || 0;
+        portfolioReturn = currentProfitLossPercent - historicalProfitLossPercent;
+      } else {
+        // Fallback: usar el snapshot más antiguo disponible
+        const oldestSnapshot = await PortfolioSnapshot.findOne({ pool: poolType }).sort({ snapshotDate: 1 });
+        if (oldestSnapshot) {
+          const currentValue = await calculateCurrentPortfolioValue(poolType);
+          const currentProfitLossPercent = currentValue.totalProfitLossPercentage || 0;
+          const historicalProfitLossPercent = oldestSnapshot.totalProfitLossPercentage || 0;
+          portfolioReturn = currentProfitLossPercent - historicalProfitLossPercent;
+        } else {
+          // Si no hay snapshots, calcular desde liquidez inicial (fallback)
+          portfolioReturn = initialLiquidity > 0 
+            ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
+            : 0;
+        }
+      }
+    } catch (error) {
+      console.error('Error calculando rendimiento del período:', error);
+      // Fallback: calcular desde liquidez inicial
+      portfolioReturn = initialLiquidity > 0 
+        ? ((valorTotalCarteraActual - initialLiquidity) / initialLiquidity) * 100 
+        : 0;
+    }
     
     if (isDev) {
       console.log(`📊 [PORTFOLIO] Rendimiento del Portfolio: ${portfolioReturn.toFixed(2)}%`);

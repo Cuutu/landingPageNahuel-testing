@@ -2798,7 +2798,25 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         </div>
 
         {/* Comparación con SP500 - MOVIDO AL INICIO */}
-        <SP500Comparison serviceType="TraderCall" />
+        <SP500Comparison 
+          serviceType="TraderCall" 
+          selectedPeriod={portfolioRange === '1a' ? '1y' : portfolioRange}
+          onPeriodChange={(period) => {
+            // Mapear período de SP500Comparison a PortfolioTimeRange
+            const mappedRange = period === '1y' ? '1a' : period;
+            // Mapear días según el período
+            const periodToDays: Record<string, number> = {
+              '1d': 1,
+              '7d': 7,
+              '15d': 15,
+              '30d': 30,
+              '6m': 180,
+              '1y': 365
+            };
+            const days = periodToDays[period] || 30;
+            handlePortfolioRangeChange(mappedRange, days);
+          }}
+        />
 
         {/* Métricas principales - OCULTADO */}
         {/* <div className={styles.modernMetricsGrid}>
