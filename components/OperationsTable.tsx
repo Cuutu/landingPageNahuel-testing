@@ -22,6 +22,267 @@ import {
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import styles from '@/styles/OperationsTable.module.css';
 
+// ✅ Helper para formatear fecha en la misma zona horaria que Telegram
+function formatDateForDisplay(date: Date | string): string {
+  const fecha = typeof date === 'string' ? new Date(date) : date;
+  // Usar la misma lógica que Telegram: zona horaria de variable de entorno o default
+  const zonaHoraria = 'America/Argentina/Buenos_Aires'; // Mismo default que getGlobalTimezone()
+  
+  return fecha.toLocaleString('es-AR', { 
+    timeZone: zonaHoraria,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// ✅ Helper para renderizar información de alerta igual que Telegram
+function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactNode {
+  if (!alert) return null;
+
+  // Determinar acción (de la operación si existe, sino de la alerta)
+  const action = operation?.operationType === 'COMPRA' ? 'BUY' : 
+                 operation?.operationType === 'VENTA' ? 'SELL' : 
+                 alert.action;
+  const actionEmoji = action === 'BUY' ? '🟢' : '🔴';
+  const actionText = action === 'BUY' ? 'COMPRA' : 'VENTA';
+
+  // Determinar precio a mostrar (misma lógica que Telegram)
+  // ✅ PRIORIDAD: Si hay price en operation (venta/cierre), usar ese primero
+  let priceDisplay = 'N/A';
+  let priceValue: number | null = null;
+  
+  if (operation?.price != null && !isNaN(operation.price)) {
+    priceValue = operation.price;
+    priceDisplay = `$${operation.price.toFixed(2)}`;
+  } else if (operation?.priceRange?.min != null && operation?.priceRange?.max != null) {
+    priceDisplay = `$${operation.priceRange.min.toFixed(2)} - $${operation.priceRange.max.toFixed(2)}`;
+  } else if (alert.entryPriceRange?.min != null && alert.entryPriceRange?.max != null) {
+    priceValue = alert.entryPriceRange.min;
+    priceDisplay = `$${alert.entryPriceRange.min.toFixed(2)} - $${alert.entryPriceRange.max.toFixed(2)}`;
+  } else if (alert.entryPrice != null && !isNaN(alert.entryPrice)) {
+    priceValue = alert.entryPrice;
+    priceDisplay = `$${alert.entryPrice.toFixed(2)}`;
+  } else if (alert.currentPrice != null && !isNaN(alert.currentPrice)) {
+    priceValue = alert.currentPrice;
+    priceDisplay = `$${alert.currentPrice.toFixed(2)}`;
+  }
+
+  // Determinar título
+  let titleAction = actionText;
+  let titleEmoji = actionEmoji;
+  
+  if (alert.status === 'DESESTIMADA') {
+    titleAction = 'DESESTIMADA';
+    titleEmoji = '🚫';
+  }
+
+  // Detectar si es venta con porcentaje
+  const soldPercentage = operation?.partialSalePercentage;
+  const isCompleteSale = operation?.partialSalePercentage ? (operation.partialSalePercentage >= 99.9) : false;
+  const isExecutedSale = false; // Por defecto, podría determinarse según el contexto
+
+  // Calcular profitPercentage si es posible
+  let profitPercentage: number | null = null;
+  
+  // Para ventas, usar el precio de la operación y el precio de entrada de la alerta
+  if (action === 'SELL' && operation?.price != null && (alert.entryPrice || alert.entryPriceRange)) {
+    const entryPrice = alert.entryPriceRange?.min || alert.entryPrice;
+    if (entryPrice != null && entryPrice > 0) {
+      profitPercentage = ((operation.price - entryPrice) / entryPrice) * 100;
+    }
+  } 
+  // Para compras o cuando no hay operación específica, calcular basándose en precio actual vs entrada
+  else if (priceValue && (alert.entryPrice || alert.entryPriceRange)) {
+    const entryPrice = alert.entryPriceRange?.min || alert.entryPrice;
+    if (entryPrice != null && entryPrice > 0) {
+      if (action === 'BUY') {
+        profitPercentage = ((priceValue - entryPrice) / entryPrice) * 100;
+      } else {
+        profitPercentage = ((entryPrice - priceValue) / entryPrice) * 100;
+      }
+    }
+  } 
+  // Si no se puede calcular, usar el profit de la alerta si existe
+  else if (alert.profit != null) {
+    profitPercentage = alert.profit;
+  }
+
+  const takeProfitNum = typeof alert.takeProfit === 'string' ? parseFloat(alert.takeProfit) : alert.takeProfit;
+  const stopLossNum = typeof alert.stopLoss === 'string' ? parseFloat(alert.stopLoss) : alert.stopLoss;
+  const liquidityPercentage = operation?.portfolioPercentage || alert.liquidityPercentage || null;
+
+  // Usar fecha de la alerta o de la operación
+  const fechaAlerta = alert.date || alert.createdAt;
+  const fechaParaMostrar = fechaAlerta ? formatDateForDisplay(fechaAlerta) : formatDateForDisplay(new Date());
+
+  return (
+    <div style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      gap: '16px',
+      fontSize: '0.9375rem',
+      lineHeight: '1.75',
+      color: '#374151'
+    }}>
+      {/* Título */}
+      <div style={{ 
+        fontSize: '1.25rem', 
+        fontWeight: '700', 
+        color: '#1f2937',
+        marginBottom: '8px'
+      }}>
+        {titleEmoji} <strong>{titleAction} {alert.symbol}</strong>
+      </div>
+
+      {/* Tipo de venta (si aplica) */}
+      {soldPercentage !== undefined && (
+        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+          <div style={{ fontWeight: '600', color: isCompleteSale ? '#dc2626' : '#d97706' }}>
+            {isCompleteSale ? '🔴 Venta TOTAL' : '🟡 Venta PARCIAL'}
+          </div>
+        </div>
+      )}
+
+      {/* Precio */}
+      <div>
+        <span style={{ fontWeight: '600' }}>💰 Precio: </span>
+        <span>{priceDisplay}</span>
+      </div>
+
+      {/* Porcentaje vendido/a vender (solo para ventas con porcentaje) */}
+      {soldPercentage !== undefined && (
+        <div>
+          <span style={{ fontWeight: '600' }}>📊 {isExecutedSale ? 'Porcentaje vendido' : 'Porcentaje a vender'}: </span>
+          <span>{soldPercentage}%</span>
+        </div>
+      )}
+
+      {/* Rendimiento (para ventas con porcentaje) */}
+      {soldPercentage !== undefined && profitPercentage != null && !isNaN(profitPercentage) && (
+        <div>
+          <span style={{ fontWeight: '600' }}>
+            {profitPercentage >= 0 ? '💲' : '📉'} {isExecutedSale ? 'Rendimiento' : 'Rendimiento aproximado'}: 
+          </span>
+          <span style={{ fontWeight: '700' }}>
+            {profitPercentage >= 0 ? '+' : ''}{profitPercentage.toFixed(2)}%
+          </span>
+        </div>
+      )}
+
+      {/* Precio de Venta (para ventas sin porcentaje específico) */}
+      {action === 'SELL' && operation?.price != null && soldPercentage === undefined && (
+        <>
+          <div>
+            <span style={{ fontWeight: '600' }}>💰 Precio de Venta: </span>
+            <span>{priceDisplay}</span>
+          </div>
+          {alert.entryPrice != null && !isNaN(alert.entryPrice) && (
+            <div>
+              <span style={{ fontWeight: '600' }}>📥 Precio de Entrada: </span>
+              <span>${alert.entryPrice.toFixed(2)}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Take Profit y Stop Loss (para compras) */}
+      {action === 'BUY' && (
+        <>
+          {takeProfitNum != null && !isNaN(takeProfitNum) && takeProfitNum > 0 && (
+            <div>
+              <span style={{ fontWeight: '600' }}>🎯 Take Profit: </span>
+              <span>${takeProfitNum.toFixed(2)}</span>
+            </div>
+          )}
+          {stopLossNum != null && !isNaN(stopLossNum) && stopLossNum > 0 && (
+            <div>
+              <span style={{ fontWeight: '600' }}>🛑 Stop Loss: </span>
+              <span>${stopLossNum.toFixed(2)}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Liquidez */}
+      {liquidityPercentage != null && (
+        <div>
+          <span style={{ fontWeight: '600' }}>💧 Liquidez: </span>
+          <span>{liquidityPercentage}%</span>
+        </div>
+      )}
+
+      {/* Profit/Loss genérico (solo si NO es una venta con porcentaje) */}
+      {soldPercentage === undefined && profitPercentage != null && !isNaN(profitPercentage) && (
+        <div>
+          <span style={{ fontWeight: '600' }}>
+            {profitPercentage >= 0 ? '💰' : '📉'} Profit/Loss: 
+          </span>
+          <span>{profitPercentage >= 0 ? '+' : ''}{profitPercentage.toFixed(2)}%</span>
+        </div>
+      )}
+
+      {/* Análisis (solo si no hay mensaje personalizado en las notas) */}
+      {alert.analysis && !operation?.notes && (
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '8px' }}>📊 Análisis:</div>
+          <div style={{ 
+            whiteSpace: 'pre-wrap',
+            padding: '12px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb'
+          }}>
+            {alert.analysis.length > 200 
+              ? alert.analysis.substring(0, 200) + '...' 
+              : alert.analysis}
+          </div>
+        </div>
+      )}
+
+      {/* Mensaje personalizado desde notas de la operación (tiene prioridad sobre análisis) */}
+      {operation?.notes && (
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '8px' }}>💬 Mensaje:</div>
+          <div style={{ 
+            whiteSpace: 'pre-wrap',
+            padding: '12px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb'
+          }}>
+            {operation.notes}
+          </div>
+        </div>
+      )}
+
+      {/* Motivo de desestimación */}
+      {alert.status === 'DESESTIMADA' && alert.desestimacionMotivo && (
+        <div style={{ marginTop: '16px' }}>
+          <div style={{ fontWeight: '600', marginBottom: '8px' }}>📋 Motivo:</div>
+          <div style={{ 
+            padding: '12px',
+            backgroundColor: '#fef2f2',
+            borderRadius: '8px',
+            border: '1px solid #fecaca',
+            color: '#991b1b'
+          }}>
+            {alert.desestimacionMotivo}
+          </div>
+        </div>
+      )}
+
+      {/* Fecha */}
+      <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+        <span style={{ fontWeight: '600' }}>📅 </span>
+        <span>{fechaParaMostrar}</span>
+      </div>
+    </div>
+  );
+}
+
 interface OperationsTableProps {
   system: 'TraderCall' | 'SmartMoney';
   className?: string;
@@ -1984,7 +2245,54 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
 
             {/* Content */}
             <div style={{ padding: '24px' }}>
-              {/* ✅ NUEVO: Imagen de la operación (si existe) */}
+              {/* ✅ Imagen principal (igual que Telegram: foto primero con caption debajo) */}
+              {selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url) ? (
+                <div style={{ marginBottom: '24px' }}>
+                  <div style={{
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    border: '1px solid #e5e7eb',
+                    backgroundColor: '#f9fafb',
+                    marginBottom: '16px'
+                  }}>
+                    <img 
+                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || ''} 
+                      alt="Gráfico de la alerta"
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block'
+                      }}
+                      onError={(e) => {
+                        console.error('Error cargando imagen del gráfico:', selectedAlert.chartImage);
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  {/* ✅ Información formateada igual que Telegram (como caption de la imagen) */}
+                  <div style={{
+                    padding: '20px',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
+                  </div>
+                </div>
+              ) : (
+                /* Si no hay imagen, mostrar solo la información */
+                <div style={{
+                  padding: '20px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb',
+                  marginBottom: '24px'
+                }}>
+                  {renderAlertInfoTelegramFormat(selectedAlert, selectedOperation)}
+                </div>
+              )}
+
+              {/* ✅ Imagen de la operación (si existe, adicional) */}
               {selectedOperation?.image && (
                 <div style={{ marginBottom: '24px' }}>
                   <h3 style={{ 
@@ -2012,92 +2320,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                         objectFit: 'contain'
                       }}
                     />
-                  </div>
-                </div>
-              )}
-
-              {/* ✅ NUEVO: Notas de la operación (si existen) */}
-              {selectedOperation?.notes && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ 
-                    margin: '0 0 16px 0', 
-                    fontSize: '1.125rem', 
-                    fontWeight: '600', 
-                    color: '#374151' 
-                  }}>
-                    📝 Notas de la Operación
-                  </h3>
-                  <div style={{
-                    padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    lineHeight: '1.75',
-                    color: '#374151',
-                    whiteSpace: 'pre-wrap',
-                    fontSize: '0.9375rem'
-                  }}>
-                    {selectedOperation.notes}
-                  </div>
-                </div>
-              )}
-
-              {/* Gráfico */}
-              {selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url) && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ 
-                    margin: '0 0 16px 0', 
-                    fontSize: '1.125rem', 
-                    fontWeight: '600', 
-                    color: '#374151' 
-                  }}>
-                    📈 Gráfico de TradingView
-                  </h3>
-                  <div style={{
-                    borderRadius: '12px',
-                    overflow: 'hidden',
-                    border: '1px solid #e5e7eb',
-                    backgroundColor: '#f9fafb'
-                  }}>
-                    <img 
-                      src={selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || ''} 
-                      alt="Gráfico de la alerta"
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block'
-                      }}
-                      onError={(e) => {
-                        console.error('Error cargando imagen del gráfico:', selectedAlert.chartImage);
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Fundamento Técnico */}
-              {selectedAlert.analysis && (
-                <div style={{ marginBottom: '24px' }}>
-                  <h3 style={{ 
-                    margin: '0 0 16px 0', 
-                    fontSize: '1.125rem', 
-                    fontWeight: '600', 
-                    color: '#374151' 
-                  }}>
-                    📝 Fundamento Técnico
-                  </h3>
-                  <div style={{
-                    padding: '16px',
-                    backgroundColor: '#f9fafb',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    lineHeight: '1.75',
-                    color: '#374151',
-                    whiteSpace: 'pre-wrap',
-                    fontSize: '0.9375rem'
-                  }}>
-                    {selectedAlert.analysis}
                   </div>
                 </div>
               )}
@@ -2156,20 +2378,6 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Mensaje si no hay información */}
-              {!selectedOperation?.image && !selectedOperation?.notes && !selectedAlert.chartImage && !selectedAlert.analysis && (!selectedAlert.images || selectedAlert.images.length === 0) && (
-                <div style={{
-                  padding: '32px',
-                  textAlign: 'center',
-                  color: '#6b7280'
-                }}>
-                  <AlertCircle className="w-12 h-12 mx-auto mb-4" style={{ color: '#9ca3af' }} />
-                  <p style={{ margin: 0, fontSize: '1rem' }}>
-                    No hay información adicional disponible para esta alerta.
-                  </p>
                 </div>
               )}
             </div>
