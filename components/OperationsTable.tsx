@@ -243,20 +243,61 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
       )}
 
       {/* Mensaje personalizado desde notas de la operación (tiene prioridad sobre análisis) */}
-      {operation?.notes && (
-        <div style={{ marginTop: '16px' }}>
-          <div style={{ fontWeight: '600', marginBottom: '8px' }}>💬 Mensaje:</div>
-          <div style={{ 
-            whiteSpace: 'pre-wrap',
-            padding: '12px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb'
-          }}>
-            {operation.notes}
-          </div>
-        </div>
-      )}
+      {operation?.notes && (() => {
+        const updateSeparator = '\n\n--- Actualización 16:30 ---\n';
+        const hasUpdate = operation.notes.includes(updateSeparator);
+        const parts = hasUpdate ? operation.notes.split(updateSeparator) : [operation.notes];
+        const originalMessage = parts[0]?.trim() || '';
+        const updateMessage = parts[1]?.trim() || '';
+        
+        return (
+          <>
+            {/* Mensaje original */}
+            {originalMessage && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px' }}>💬 Mensaje:</div>
+                <div style={{ 
+                  whiteSpace: 'pre-wrap',
+                  padding: '12px',
+                  backgroundColor: '#f9fafb',
+                  borderRadius: '8px',
+                  border: '1px solid #e5e7eb'
+                }}>
+                  {originalMessage}
+                </div>
+              </div>
+            )}
+            
+            {/* Actualización 16:30 */}
+            {updateMessage && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ 
+                  fontWeight: '700', 
+                  marginBottom: '8px',
+                  fontSize: '1rem',
+                  color: '#1f2937'
+                }}>
+                  ⏰ Actualización 16:30
+                </div>
+                <div style={{ 
+                  whiteSpace: 'pre-wrap',
+                  padding: '12px',
+                  backgroundColor: updateMessage.includes('❌') || updateMessage.includes('NO ejecutada') 
+                    ? '#fef2f2' 
+                    : '#f0fdf4',
+                  borderRadius: '8px',
+                  border: `1px solid ${updateMessage.includes('❌') || updateMessage.includes('NO ejecutada') ? '#fecaca' : '#bbf7d0'}`,
+                  color: updateMessage.includes('❌') || updateMessage.includes('NO ejecutada') 
+                    ? '#991b1b' 
+                    : '#166534'
+                }}>
+                  {updateMessage}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      })()}
 
       {/* Motivo de desestimación */}
       {alert.status === 'DESESTIMADA' && alert.desestimacionMotivo && (

@@ -1037,7 +1037,22 @@ async function registerSaleOperation(
         entryPrice: entryPrice,
         realizedProfit: realizedProfit
       };
-      pendingOperation.notes = `Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice} - ${alert.symbol}`;
+      
+      // ✅ CORREGIDO: Preservar el texto original y agregar actualización 16:30
+      const originalNotes = pendingOperation.notes || '';
+      // Separar el texto original de cualquier actualización previa
+      const updateSeparator = '\n\n--- Actualización 16:30 ---\n';
+      const originalText = originalNotes.includes(updateSeparator) 
+        ? originalNotes.split(updateSeparator)[0].trim()
+        : originalNotes.trim();
+      
+      // Mensaje de actualización
+      const updateMessage = `✅ Venta ${isCompleteSale ? 'completa' : 'parcial'} (${percentage}%) ejecutada automáticamente a precio de cierre $${closePrice.toFixed(2)}`;
+      
+      // Construir las notas: texto original + separador + actualización
+      pendingOperation.notes = originalText 
+        ? `${originalText}${updateSeparator}${updateMessage}`
+        : updateMessage;
       
       await pendingOperation.save();
       console.log(`✅ ${alert.symbol}: Operación de venta actualizada (precio confirmado: $${closePrice})`);
@@ -1345,6 +1360,22 @@ async function cancelPendingSaleOperationForAlert(
   const oldPrice = pendingOperation.price;
   const range = pendingOperation.priceRange;
 
+  // ✅ CORREGIDO: Preservar el texto original y agregar actualización 16:30
+  const originalNotes = pendingOperation.notes || '';
+  // Separar el texto original de cualquier actualización previa
+  const updateSeparator = '\n\n--- Actualización 16:30 ---\n';
+  const originalText = originalNotes.includes(updateSeparator) 
+    ? originalNotes.split(updateSeparator)[0].trim()
+    : originalNotes.trim();
+  
+  // Mensaje de actualización (venta NO ejecutada)
+  const updateMessage = `❌ Venta NO ejecutada: ${motivo} | Precio evaluado: $${evaluatedPrice.toFixed(2)} (anterior: $${(oldPrice ?? 0).toFixed(2)}) | Rango original: $${range?.min?.toFixed(2) || 'N/A'} - $${range?.max?.toFixed(2) || 'N/A'}`;
+  
+  // Construir las notas: texto original + separador + actualización
+  const finalNotes = originalText 
+    ? `${originalText}${updateSeparator}${updateMessage}`
+    : updateMessage;
+
   await Operation.updateOne(
     { _id: pendingOperation._id },
     {
@@ -1354,7 +1385,7 @@ async function cancelPendingSaleOperationForAlert(
         price: evaluatedPrice,
         // Nota: amount/quantity no representan ejecución real, pero mostramos el precio evaluado para auditoría/UI.
         amount: Math.abs(pendingOperation.quantity || 0) * evaluatedPrice,
-        notes: `❌ VENTA DESCARTADA: ${motivo} | Precio evaluado: $${evaluatedPrice.toFixed(2)} (anterior: $${(oldPrice ?? 0).toFixed(2)}) | Rango original: $${range?.min?.toFixed(2) || 'N/A'} - $${range?.max?.toFixed(2) || 'N/A'}`.trim(),
+        notes: finalNotes.trim(),
       },
       $unset: {
         priceRange: '',
