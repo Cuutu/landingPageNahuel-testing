@@ -112,9 +112,11 @@ function formatAlertMessage(alert: IAlert, options?: {
     
     // ✅ CORREGIDO: Orden según solicitud - TIPO DE VENTA primero (justo después del título), luego PRECIO
     // Para ventas con porcentaje, mostrar tipo de venta primero
-    if (options?.soldPercentage) {
-      // Determinar si es venta parcial o total
-      const tipoVenta = options.isCompleteSale || options.soldPercentage >= 100 
+    if (options?.soldPercentage !== undefined) {
+      // Determinar si es venta parcial o total (tolerancia para redondeos)
+      const soldPct = options.soldPercentage ?? 0;
+      const isTotalSale = options.isCompleteSale || soldPct >= 99.9;
+      const tipoVenta = isTotalSale
         ? '🔴 Venta TOTAL' 
         : '🟡 Venta PARCIAL';
       
@@ -129,7 +131,7 @@ function formatAlertMessage(alert: IAlert, options?: {
         ? 'Porcentaje vendido' 
         : 'Porcentaje a vender';
       
-      message += `📊 ${textoVenta}: ${options.soldPercentage}%\n`;
+      message += `📊 ${textoVenta}: ${soldPct}%\n`;
       
       // ✅ NUEVO: Mostrar rendimiento aproximado prominentemente para ventas
       if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
@@ -285,8 +287,10 @@ export function formatOperationNotes(alert: IAlert, options?: {
     let notes = `${titleAction} ${alert.symbol}\n`;
     
     // Para ventas con porcentaje
-    if (options?.soldPercentage) {
-      const tipoVenta = options.isCompleteSale || options.soldPercentage >= 100 
+    if (options?.soldPercentage !== undefined) {
+      const soldPct = options.soldPercentage ?? 0;
+      const isTotalSale = options.isCompleteSale || soldPct >= 99.9;
+      const tipoVenta = isTotalSale
         ? 'Venta TOTAL' 
         : 'Venta PARCIAL';
       
@@ -297,7 +301,7 @@ export function formatOperationNotes(alert: IAlert, options?: {
         ? 'Porcentaje vendido' 
         : 'Porcentaje a vender';
       
-      notes += `${textoVenta}: ${options.soldPercentage}%\n`;
+      notes += `${textoVenta}: ${soldPct}%\n`;
       
       if (options?.profitPercentage != null && !isNaN(options.profitPercentage)) {
         const profitSign = options.profitPercentage >= 0 ? '+' : '';

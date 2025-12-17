@@ -89,3 +89,83 @@ export function calculateReturnPercentage(valorActual: number, valorHistorico: n
   return ((valorActual / valorHistorico) - 1) * 100;
 }
 
+/**
+ * ✅ NUEVO: Calcula el rendimiento acumulado considerando todas las ventas parciales previas + la venta actual
+ * Este cálculo usa contribución ponderada: Σ(porcentaje_vendido × ganancia_porcentual) / 100
+ * 
+ * @param alert - La alerta con el historial de ventas parciales
+ * @param currentSalePercentage - Porcentaje vendido en la venta actual
+ * @param currentSalePrice - Precio de venta de la venta actual
+ * @returns Porcentaje de rendimiento acumulado (ej: 43.75 = 43.75%)
+ * 
+ * @example
+ * // Primera venta: 25% a $50 (entrada: $40) → rendimiento: +25%
+ * // Segunda venta: 75% a $60 (entrada: $40) → rendimiento: +50%
+ * // Rendimiento acumulado: (25 × 25 + 75 × 50) / 100 = 43.75%
+ */
+export function calculateAccumulatedProfitPercentage(
+  alert: any,
+  currentSalePercentage: number,
+  currentSalePrice: number
+): number {
+  const entryPrice = alert.entryPriceRange?.min || alert.entryPrice || 0;
+  
+  if (entryPrice <= 0 || currentSalePrice <= 0) {
+    return 0;
+  }
+  
+  // Calcular rendimiento de la venta actual
+  const currentSaleProfitPercentage = ((currentSalePrice - entryPrice) / entryPrice) * 100;
+  
+  // Inicializar suma ponderada con la venta actual
+  let weightedProfitSum = currentSalePercentage * currentSaleProfitPercentage;
+  
+  // Procesar ventas parciales ejecutadas previas (sistema nuevo)
+  // ✅ IMPORTANTE: Solo contar ventas ejecutadas ANTES de la venta actual
+  // Si la venta actual ya está guardada en partialSales, la excluimos para evitar duplicados
+  if (alert.liquidityData?.partialSales && Array.isArray(alert.liquidityData.partialSales)) {
+    const executedSales = alert.liquidityData.partialSales.filter(
+      (sale: any) => {
+        // Solo incluir ventas ejecutadas y no descartadas
+        if (!sale.executed || sale.discarded) return false;
+        
+        // ✅ EXCLUIR la venta actual si coincide (mismo porcentaje y precio aproximado)
+        // Esto evita contar la venta dos veces si ya está guardada en el historial
+        const isCurrentSale = Math.abs(sale.percentage - currentSalePercentage) < 0.01 &&
+                              Math.abs(sale.sellPrice - currentSalePrice) < 0.01;
+        return !isCurrentSale;
+      }
+    );
+    
+    executedSales.forEach((sale: any) => {
+      const salePercentage = sale.percentage || 0;
+      const saleSellPrice = sale.sellPrice || 0;
+      
+      if (saleSellPrice > 0 && entryPrice > 0) {
+        // Calcular ganancia porcentual de esta venta específica
+        const saleProfitPercentage = ((saleSellPrice - entryPrice) / entryPrice) * 100;
+        
+        // Acumular para contribución ponderada
+        weightedProfitSum += salePercentage * saleProfitPercentage;
+      }
+    });
+  }
+  
+  // Procesar ventas de ventasParciales (sistema legacy) - COMBINAR con las anteriores
+  if (alert.ventasParciales && Array.isArray(alert.ventasParciales) && alert.ventasParciales.length > 0) {
+    alert.ventasParciales.forEach((venta: any) => {
+      const ventaPercentage = venta.porcentajeVendido || 0;
+      const ventaProfitPercentage = venta.gananciaRealizada || 0;
+      
+      // Acumular para contribución ponderada
+      weightedProfitSum += ventaPercentage * ventaProfitPercentage;
+    });
+  }
+  
+  // Calcular contribución ponderada dividiendo por 100 (inversión original)
+  // Ejemplo: Si vendí 25% a +25% y 75% a +50% → (25 × 25 + 75 × 50) / 100 = 43.75%
+  const accumulatedProfit = weightedProfitSum / 100;
+  
+  return accumulatedProfit;
+}
+

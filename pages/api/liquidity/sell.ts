@@ -118,15 +118,19 @@ export default async function handler(
     try {
       const { notifyAlertSubscribers } = await import('@/lib/notificationUtils');
       const isTotal = remainingShares === 0;
+      const soldPercentageForNotif = isTotal ? 100 : soldPercentage;
       const message = emailMessage || (isTotal
         ? `Cierre total en ${alert.symbol}: vendido 100% a $${price}.`
         : `Venta parcial en ${alert.symbol}: vendidos ${shares} shares a $${price}.`);
       const imageUrl = emailImageUrl || undefined;
       
-      // ✅ NUEVO: Calcular profitPercentage basado en entryPrice y precio de venta
+      // ✅ CORREGIDO: Calcular profitPercentage acumulado considerando todas las ventas parciales previas
       let profitPercentage: number | undefined = undefined;
-      if (distribution.entryPrice > 0) {
-        profitPercentage = ((price - distribution.entryPrice) / distribution.entryPrice) * 100;
+      if (distribution.entryPrice > 0 && price > 0) {
+        const { calculateAccumulatedProfitPercentage } = await import('@/lib/portfolioCalculator');
+        // Calcular el porcentaje vendido total (incluyendo esta venta)
+        const totalSoldPercentage = isTotal ? 100 : soldPercentage;
+        profitPercentage = calculateAccumulatedProfitPercentage(alert, totalSoldPercentage, price);
       }
       
       await notifyAlertSubscribers(alert as any, {
@@ -134,10 +138,11 @@ export default async function handler(
         imageUrl,
         price,
         action: 'SELL',
-        soldPercentage: soldPercentage, // ✅ NUEVO: Pasar el porcentaje vendido
-        profitPercentage: profitPercentage // ✅ NUEVO: Pasar el P&L porcentual
+        soldPercentage: soldPercentageForNotif, // ✅ NUEVO: Pasar el porcentaje vendido
+        profitPercentage: profitPercentage, // ✅ NUEVO: Pasar el P&L porcentual
+        isCompleteSale: isTotal // ✅ NUEVO: Marcar venta total cuando no quedan acciones
       });
-      console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl, soldPercentage: soldPercentage.toFixed(2) });
+      console.log('✅ Notificación de venta enviada', { isTotal, image: !!imageUrl, soldPercentage: soldPercentageForNotif.toFixed(2) });
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de venta:', notifyErr);
     }

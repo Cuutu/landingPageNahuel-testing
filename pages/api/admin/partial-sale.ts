@@ -787,10 +787,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Importar y usar la función de notificaciones
         const { notifyAlertSubscribers } = await import('../../../lib/notificationUtils');
         
-        // ✅ NUEVO: Calcular profitPercentage si es venta ejecutada (no programada)
+        // ✅ CORREGIDO: Calcular profitPercentage acumulado considerando todas las ventas parciales previas
         let profitPercentage: number | undefined = undefined;
-        if (entryPrice > 0) {
-          profitPercentage = ((sellPrice - entryPrice) / entryPrice) * 100;
+        if (entryPrice > 0 && sellPrice > 0) {
+          const { calculateAccumulatedProfitPercentage } = await import('../../../lib/portfolioCalculator');
+          profitPercentage = calculateAccumulatedProfitPercentage(alert, percentage, sellPrice);
         }
         
         // Enviar notificación usando el sistema existente
