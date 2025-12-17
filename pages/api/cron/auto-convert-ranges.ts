@@ -2069,6 +2069,6 @@ async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen
     console.log(`✅ [TELEGRAM] Resumen enviado para ${tipoAlerta} con botón de operaciones`);
     
   } catch (error) {
-    console.error(`❌ [TELEGRAM] Error enviando resumen:`, error);
+    console.error(`❌ [TELEGRAM] Error enviando resumen:`, error); 
   }
 }
