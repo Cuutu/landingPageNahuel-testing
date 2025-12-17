@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Liquidity from '../../../models/Liquidity';
+import { respondWithMongoCache } from '@/lib/apiMongoCache';
 
 interface LiquiditySummaryResponse {
   success: boolean;
@@ -40,10 +41,6 @@ interface LiquiditySummaryResponse {
   error?: string;
 }
 
-// Cache en memoria simple por proceso (TTL en ms)
-const CACHE_TTL_MS = 30 * 1000; // 30s
-const summaryCache: Record<string, { expiresAt: number; payload: LiquiditySummaryResponse['data'] }> = {};
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<LiquiditySummaryResponse>
@@ -53,20 +50,18 @@ export default async function handler(
   }
 
   try {
-    // Validar parámetro pool
-    const pool = (req.query.pool as string) as ('TraderCall' | 'SmartMoney');
-    if (!pool || !['TraderCall', 'SmartMoney'].includes(pool)) {
-      return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
-    }
+    await respondWithMongoCache(
+      req,
+      res,
+      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      async () => {
+        // Validar parámetro pool
+        const pool = (req.query.pool as string) as 'TraderCall' | 'SmartMoney';
+        if (!pool || !['TraderCall', 'SmartMoney'].includes(pool)) {
+          return { success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" } as LiquiditySummaryResponse;
+        }
 
-    // Responder desde cache si está válido
-    const cached = summaryCache[pool];
-    if (cached && cached.expiresAt > Date.now()) {
-      res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
-      return res.status(200).json({ success: true, data: cached.payload });
-    }
-
-    await dbConnect();
+        await dbConnect();
 
     // Obtener TODAS las liquidez del pool
     const liquidityDocs: any[] = await Liquidity.find({ pool })
@@ -247,13 +242,10 @@ export default async function handler(
       individualDistributions: allDistributions  // ✅ NUEVO: Distribuciones individuales por alertId
     };
 
-    // Guardar en cache
-    summaryCache[pool] = { expiresAt: Date.now() + CACHE_TTL_MS, payload };
-
-    // Cache-Control para CDN (Vercel) y clientes
-    res.setHeader('Cache-Control', 's-maxage=30, stale-while-revalidate=60');
-
-    return res.status(200).json({ success: true, data: payload });
+        return { success: true, data: payload } as LiquiditySummaryResponse;
+      }
+    );
+    return;
   } catch (error) {
     console.error('Error en liquidity summary:', error);
     return res.status(500).json({ success: false, error: 'Error interno del servidor' });

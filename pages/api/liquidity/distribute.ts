@@ -6,6 +6,7 @@ import Liquidity from "@/models/Liquidity";
 import Alert from "@/models/Alert";
 import User from "@/models/User";
 import { validateOriginMiddleware } from "@/lib/securityValidation";
+import { invalidateLiquidityCache } from "@/lib/apiMongoCache";
 
 interface DistributeLiquidityRequest {
   alertId: string;
@@ -189,6 +190,9 @@ export default async function handler(
         console.error('❌ Error enviando notificación de asignación incrementada:', notifyErr);
       }
 
+      // ✅ Invalidar cache de liquidez para este pool
+      await invalidateLiquidityCache(pool);
+
       return res.status(200).json({
         success: true,
         distribution: {
@@ -281,6 +285,9 @@ export default async function handler(
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de asignación:', notifyErr);
     }
+
+    // ✅ Invalidar cache de liquidez para este pool
+    await invalidateLiquidityCache(pool);
 
     return res.status(200).json({
       success: true,

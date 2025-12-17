@@ -11,6 +11,7 @@ import Liquidity from '@/models/Liquidity';
 import PortfolioSnapshot from '@/models/PortfolioSnapshot';
 import PortfolioMetrics from '@/models/PortfolioMetrics';
 import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
+import { respondWithMongoCache } from '@/lib/apiMongoCache';
 
 interface SP500DataPoint {
   date: string;
@@ -78,63 +79,61 @@ export default async function handler(
     return res.status(405).json({ error: 'Método no permitido.' });
   }
 
+  // ✅ Cache Mongo 60s (muy pesado: Yahoo + múltiples queries)
   try {
-    // Conectar a la base de datos
-    await dbConnect();
+    await respondWithMongoCache(
+      req,
+      res,
+      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      async () => {
+        try {
+          await dbConnect();
 
-    // ✅ CAMBIO: No verificar autenticación - datos globales para todos los usuarios
+          // ✅ CAMBIO: No verificar autenticación - datos globales para todos los usuarios
 
-    // Extraer parámetros de query
-    const { days = '30', tipo } = req.query;
-    const daysNum = parseInt(days as string);
+          const { days = '30', tipo } = req.query;
+          const daysNum = parseInt(days as string);
 
-    // Calcular fecha de inicio
-    const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - daysNum * 24 * 60 * 60 * 1000);
+          const endDate = new Date();
+          const startDate = new Date(endDate.getTime() - daysNum * 24 * 60 * 60 * 1000);
 
-    // Obtener datos del S&P 500
-    const sp500Data = await getSP500Data(startDate, endDate);
-    const sp500Map = new Map(sp500Data.map((item: SP500DataPoint) => [item.date, item]));
+          const sp500Data = await getSP500Data(startDate, endDate);
+          const sp500Map = new Map(sp500Data.map((item: SP500DataPoint) => [item.date, item]));
 
-    // Construir query de alertas con filtro opcional por tipo
-    const alertQuery: any = {
-      $or: [
-        { createdAt: { $gte: startDate, $lte: endDate } },
-        { exitDate: { $gte: startDate, $lte: endDate } }
-      ]
-    };
+          const alertQuery: any = {
+            $or: [
+              { createdAt: { $gte: startDate, $lte: endDate } },
+              { exitDate: { $gte: startDate, $lte: endDate } },
+            ],
+          };
 
-    // ✅ CORREGIDO: Filtrar por tipo - SIEMPRE debe tener un valor para diferenciar entre servicios
-    // Si no se proporciona tipo, usar 'TraderCall' por defecto
-    const poolType = tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney') ? tipo : 'TraderCall';
-    
-    // ✅ CORREGIDO: SIEMPRE filtrar alertas por tipo para evitar mezclar servicios
-    alertQuery.tipo = poolType;
+          const poolType = tipo && (tipo === 'TraderCall' || tipo === 'SmartMoney') ? tipo : 'TraderCall';
+          alertQuery.tipo = poolType;
 
-    // ✅ OPTIMIZADO: Intentar obtener métricas pre-calculadas primero
-    let metrics = await PortfolioMetrics.findOne({ pool: poolType });
-    const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : Infinity;
-    const shouldRecalculate = !metrics || metricsAge > 2;
+          // ✅ OPTIMIZADO: Intentar obtener métricas pre-calculadas primero
+          let metrics = await PortfolioMetrics.findOne({ pool: poolType });
+          const metricsAge = metrics ? (Date.now() - new Date(metrics.lastUpdated).getTime()) / 1000 / 60 : Infinity;
+          const shouldRecalculate = !metrics || metricsAge > 2;
 
-    let currentPortfolioValue;
-    let valorTotalCarteraActual: number;
-    let initialLiquidity: number;
-    let totalProfitLoss: number;
+          let currentPortfolioValue;
+          let valorTotalCarteraActual: number;
+          let initialLiquidity: number;
+          let totalProfitLoss: number;
 
-    if (shouldRecalculate || !metrics) {
-      console.log(`⚠️ [PORTFOLIO] Métricas de ${poolType} son antiguas (${metricsAge.toFixed(1)} min) o no existen, calculando...`);
-      // Calcular como fallback
-      currentPortfolioValue = await calculateCurrentPortfolioValue(poolType);
-      valorTotalCarteraActual = currentPortfolioValue.valorTotalCartera;
-      initialLiquidity = currentPortfolioValue.liquidezInicial;
-      totalProfitLoss = currentPortfolioValue.totalProfitLoss;
-    } else {
-      console.log(`✅ [PORTFOLIO] Usando métricas pre-calculadas de ${poolType} (actualizadas hace ${metricsAge.toFixed(1)} min)`);
-      // Usar métricas pre-calculadas
-      valorTotalCarteraActual = metrics.valorTotalCartera;
-      initialLiquidity = metrics.liquidezInicial;
-      totalProfitLoss = metrics.totalProfitLoss;
-    }
+          if (shouldRecalculate || !metrics) {
+            console.log(
+              `⚠️ [PORTFOLIO] Métricas de ${poolType} son antiguas (${metricsAge.toFixed(1)} min) o no existen, calculando...`
+            );
+            currentPortfolioValue = await calculateCurrentPortfolioValue(poolType);
+            valorTotalCarteraActual = currentPortfolioValue.valorTotalCartera;
+            initialLiquidity = currentPortfolioValue.liquidezInicial;
+            totalProfitLoss = currentPortfolioValue.totalProfitLoss;
+          } else {
+            console.log(`✅ [PORTFOLIO] Usando métricas pre-calculadas de ${poolType} (actualizadas hace ${metricsAge.toFixed(1)} min)`);
+            valorTotalCarteraActual = metrics.valorTotalCartera;
+            initialLiquidity = metrics.liquidezInicial;
+            totalProfitLoss = metrics.totalProfitLoss;
+          }
 
     console.log(`📊 [PORTFOLIO] Pool: ${poolType}, valorTotalCartera: $${valorTotalCarteraActual.toFixed(2)}`);
     console.log(`📊 [PORTFOLIO] Liquidez Inicial: $${initialLiquidity.toFixed(2)}`);
@@ -541,18 +540,24 @@ export default async function handler(
       baseValue: initialLiquidity // ✅ NUEVO: Usar liquidez inicial como base
     };
 
-    return res.status(200).json({
-      success: true,
-      data: evolutionData,
-      stats,
-      message: `Evolución del portfolio calculada para ${daysNum} días`
-    });
-
+          return {
+            success: true,
+            data: evolutionData,
+            stats,
+            message: `Evolución del portfolio calculada para ${daysNum} días`,
+          } as PortfolioEvolutionResponse;
+        } catch (error) {
+          console.error('Error al calcular evolución del portfolio:', error);
+          return {
+            error: 'Error interno del servidor',
+            message: 'No se pudo calcular la evolución del portfolio',
+          } as PortfolioEvolutionResponse;
+        }
+      }
+    );
+    return;
   } catch (error) {
-    console.error('Error al calcular evolución del portfolio:', error);
-    return res.status(500).json({ 
-      error: 'Error interno del servidor',
-      message: 'No se pudo calcular la evolución del portfolio'
-    });
+    console.error('Error en cache Mongo (portfolio-evolution):', error);
+    return res.status(500).json({ error: 'Error interno del servidor' });
   }
-} 
+}

@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Liquidity from '@/models/Liquidity';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import { invalidateLiquidityCache } from '@/lib/apiMongoCache';
 
 interface SellLiquidityRequest {
   alertId: string;
@@ -140,6 +141,9 @@ export default async function handler(
     } catch (notifyErr) {
       console.error('❌ Error enviando notificación de venta:', notifyErr);
     }
+
+    // ✅ Invalidar cache de liquidez para este pool
+    await invalidateLiquidityCache(pool);
 
     return res.status(200).json({
       success: true,

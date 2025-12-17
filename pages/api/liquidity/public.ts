@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import Liquidity from '../../../models/Liquidity';
 import User from '@/models/User';
+import { respondWithMongoCache } from '@/lib/apiMongoCache';
 
 interface PublicLiquidityResponse {
   success: boolean;
@@ -23,10 +24,6 @@ interface PublicLiquidityResponse {
   error?: string;
 }
 
-// Cache en memoria simple por proceso (TTL en ms)
-const CACHE_TTL_MS = 60 * 1000; // 60s
-const liquidityCache: Record<string, { expiresAt: number; payload: PublicLiquidityResponse['data'] }> = {};
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<PublicLiquidityResponse>
@@ -36,21 +33,18 @@ export default async function handler(
   }
 
   try {
-    // Validar parámetro pool
-    const pool = (req.query.pool as string) as ('TraderCall' | 'SmartMoney');
-    if (!pool || !['TraderCall', 'SmartMoney'].includes(pool)) {
-      return res.status(400).json({ success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" });
-    }
+    await respondWithMongoCache(
+      req,
+      res,
+      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      async () => {
+        // Validar parámetro pool
+        const pool = (req.query.pool as string) as 'TraderCall' | 'SmartMoney';
+        if (!pool || !['TraderCall', 'SmartMoney'].includes(pool)) {
+          return { success: false, error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)" } as PublicLiquidityResponse;
+        }
 
-    // Responder desde cache si está válido
-    const cached = liquidityCache[pool];
-    if (cached && cached.expiresAt > Date.now()) {
-      // Permitir caché público en Vercel/Edge
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-      return res.status(200).json({ success: true, data: cached.payload });
-    }
-
-    await dbConnect();
+        await dbConnect();
 
     // ✅ CAMBIO: Obtener TODAS las liquidez del pool, sin importar quién las creó
     const liquidityDocs: any[] = await Liquidity.find({ pool })
@@ -116,13 +110,10 @@ export default async function handler(
       distributions: consolidatedDistributions
     };
 
-    // Guardar en cache
-    liquidityCache[pool] = { expiresAt: Date.now() + CACHE_TTL_MS, payload };
-
-    // Cache-Control para CDN (Vercel) y clientes
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
-
-    return res.status(200).json({ success: true, data: payload });
+        return { success: true, data: payload } as PublicLiquidityResponse;
+      }
+    );
+    return;
   } catch (error) {
     console.error('Error en liquidity public:', error);
     return res.status(500).json({ success: false, error: 'Error interno del servidor' });

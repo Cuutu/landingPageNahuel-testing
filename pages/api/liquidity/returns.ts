@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import dbConnect from "@/lib/mongodb";
 import { calculateReturns } from "@/lib/liquiditySnapshotService";
+import { respondWithMongoCache } from "@/lib/apiMongoCache";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -8,21 +9,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    await dbConnect();
+    await respondWithMongoCache(
+      req,
+      res,
+      { ttlSeconds: 60, scope: 'public', cacheControl: 's-maxage=60, stale-while-revalidate=120' },
+      async () => {
+        await dbConnect();
 
-    const { pool } = req.query;
+        const { pool } = req.query;
 
-    if (!pool || (pool !== "TraderCall" && pool !== "SmartMoney")) {
-      return res.status(400).json({ error: "Pool inválido. Debe ser 'TraderCall' o 'SmartMoney'" });
-    }
+        if (!pool || (pool !== "TraderCall" && pool !== "SmartMoney")) {
+          return { error: "Pool inválido. Debe ser 'TraderCall' o 'SmartMoney'" };
+        }
 
-    const data = await calculateReturns(pool as "TraderCall" | "SmartMoney");
+        const data = await calculateReturns(pool as "TraderCall" | "SmartMoney");
 
-    if (!data) {
-      return res.status(404).json({ error: `No se encontró liquidez para el pool ${pool}` });
-    }
+        if (!data) {
+          return { error: `No se encontró liquidez para el pool ${pool}` };
+        }
 
-    return res.status(200).json(data);
+        return data;
+      }
+    );
+    return;
   } catch (error) {
     console.error("Error al obtener rendimientos de liquidez:", error);
     return res.status(500).json({ error: "Error interno del servidor" });

@@ -5,6 +5,7 @@ import dbConnect from '@/lib/mongodb';
 import Liquidity from '@/models/Liquidity';
 import User from '@/models/User';
 import Alert from '@/models/Alert';
+import { invalidateLiquidityCache } from '@/lib/apiMongoCache';
 
 interface RemoveDistributionRequest {
   alertId: string;
@@ -67,6 +68,9 @@ export default async function handler(
     // removeDistribution ya ajusta available y distributed
     liquidity.removeDistribution(alertId);
     await liquidity.save();
+
+    // ✅ Invalidar cache de liquidez para este pool
+    await invalidateLiquidityCache(pool);
 
     return res.status(200).json({ success: true, message: `Distribución removida en ${pool}` });
   } catch (error) {

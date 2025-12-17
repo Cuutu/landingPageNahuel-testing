@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import dbConnect from '@/lib/mongodb';
 import { calculateCurrentPortfolioValue } from '@/lib/portfolioCalculator';
+import { respondWithMongoCache } from '@/lib/apiMongoCache';
 
 interface CurrentPortfolioValueResponse {
   success: boolean;
@@ -33,34 +34,45 @@ export default async function handler(
   }
 
   try {
-    await dbConnect();
+    await respondWithMongoCache(
+      req,
+      res,
+      {
+        ttlSeconds: 60,
+        scope: 'public',
+        cacheControl: 's-maxage=60, stale-while-revalidate=120',
+      },
+      async () => {
+        await dbConnect();
 
-    const { pool } = req.query;
-    
-    if (!pool || (pool !== 'TraderCall' && pool !== 'SmartMoney')) {
-      return res.status(400).json({
-        success: false,
-        error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)"
-      });
-    }
+        const { pool } = req.query;
 
-    const poolType = pool as 'TraderCall' | 'SmartMoney';
+        if (!pool || (pool !== 'TraderCall' && pool !== 'SmartMoney')) {
+          return {
+            success: false,
+            error: "Parámetro 'pool' requerido (TraderCall|SmartMoney)",
+          } satisfies CurrentPortfolioValueResponse;
+        }
 
-    // Calcular valor actual de la cartera (tiempo real)
-    const portfolioValue = await calculateCurrentPortfolioValue(poolType);
+        const poolType = pool as 'TraderCall' | 'SmartMoney';
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        valorActualCartera: portfolioValue.valorTotalCartera,
-        liquidezInicial: portfolioValue.liquidezInicial,
-        liquidezTotal: portfolioValue.liquidezTotal,
-        liquidezDisponible: portfolioValue.liquidezDisponible,
-        liquidezDistribuida: portfolioValue.liquidezDistribuida,
-        totalProfitLoss: portfolioValue.totalProfitLoss,
-        totalProfitLossPercentage: portfolioValue.totalProfitLossPercentage
+        const portfolioValue = await calculateCurrentPortfolioValue(poolType);
+
+        return {
+          success: true,
+          data: {
+            valorActualCartera: portfolioValue.valorTotalCartera,
+            liquidezInicial: portfolioValue.liquidezInicial,
+            liquidezTotal: portfolioValue.liquidezTotal,
+            liquidezDisponible: portfolioValue.liquidezDisponible,
+            liquidezDistribuida: portfolioValue.liquidezDistribuida,
+            totalProfitLoss: portfolioValue.totalProfitLoss,
+            totalProfitLossPercentage: portfolioValue.totalProfitLossPercentage,
+          },
+        } satisfies CurrentPortfolioValueResponse;
       }
-    });
+    );
+    return;
 
   } catch (error) {
     console.error('Error calculando valor actual de cartera:', error);
