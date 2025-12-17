@@ -89,8 +89,24 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
   const calculateServicePerformance = async (selectedPeriod: string) => {
     try {
       // console.log(`📊 [SP500] Calculando rendimiento para serviceType: ${serviceType}, período: ${selectedPeriod}`);
-      // ✅ NUEVO: Usar el nuevo endpoint de rendimientos basado en valorTotalCartera y valorActualCartera
-      const response = await fetch(`/api/portfolio/returns?pool=${serviceType}`);
+      
+      // ✅ CORREGIDO: Convertir período a días (igual que PortfolioTimeRange)
+      const periodToDays = (period: string): number => {
+        switch (period) {
+          case '1d': return 1;
+          case '7d': return 7;
+          case '15d': return 15;
+          case '30d': return 30;
+          case '6m': return 180;
+          case '1y': return 365; 
+          default: return 30;
+        }
+      };
+      
+      const days = periodToDays(selectedPeriod);
+      
+      // ✅ CORREGIDO: Pasar days como parámetro (igual que PortfolioTimeRange) para mantener consistencia
+      const response = await fetch(`/api/portfolio/returns?pool=${serviceType}&days=${days}`);
 
       if (!response.ok) {
         throw new Error('Error al obtener métricas del servicio');
@@ -103,19 +119,6 @@ export function useSP500Performance(period: string = '1m', serviceType: 'TraderC
       }
 
       // Obtener datos del portfolio-evolution PRIMERO (igual que PortfolioTimeRange)
-      const periodToDays = (period: string): number => {
-        switch (period) {
-          case '1d': return 1;
-          case '7d': return 7;
-          case '15d': return 15;
-          case '30d': return 30;
-          case '6m': return 180;
-          case '1y': return 365; 
-          default: return 30;
-        }
-      };
-
-      const days = periodToDays(selectedPeriod);
       // console.log(`📊 [SP500] Obteniendo portfolio-evolution para tipo: ${serviceType}, días: ${days}`);
       const portfolioResponse = await fetch(`/api/alerts/portfolio-evolution?days=${days}&tipo=${serviceType}`);
       

@@ -154,16 +154,17 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
         setPortfolioData(evolutionResult.data || []);
         
         // ✅ CORREGIDO: Usar el rendimiento del servicio desde /api/portfolio/returns para consistencia
-        // Convertir días a clave de período
+        // Convertir días a clave de período (igual que useSP500Performance)
         let periodKey = '30d';
         if (days === 1) periodKey = '1d';
         else if (days === 7) periodKey = '7d';
         else if (days === 15) periodKey = '15d';
         else if (days === 30) periodKey = '30d';
-        else if (days === 180) periodKey = '180d';
-        else if (days === 365) periodKey = '365d';
+        else if (days === 180) periodKey = '180d'; // 6 meses
+        else if (days === 365) periodKey = '365d'; // 1 año
         
-        const serviceReturnValue = returnsResult.success && returnsResult.data?.returns?.[periodKey] 
+        // ✅ CORREGIDO: Obtener el rendimiento usando la misma clave que useSP500Performance
+        const serviceReturnValue = returnsResult.success && returnsResult.data?.returns?.[periodKey] !== null && returnsResult.data?.returns?.[periodKey] !== undefined
           ? returnsResult.data.returns[periodKey] 
           : null;
         
