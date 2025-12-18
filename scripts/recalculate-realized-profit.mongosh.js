@@ -59,7 +59,7 @@ alerts.forEach((alert) => {
       
       executedSales.forEach((sale) => {
         const saleEntryPrice = entryPrice || 0;
-        const saleSellPrice = sale.sellPrice || 0;
+        const saleSellPrice = sale.sellPrice || 0; 
         
         // Calcular ganancia porcentual de esta venta 
         let saleProfitPercentage = 0;
