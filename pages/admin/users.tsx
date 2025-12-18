@@ -1032,7 +1032,12 @@ export default function AdminUsersPage({ user }: AdminUsersProps) {
                                 }}>(PRUEBA)</span>}
                               </span>
                               <span>${sub.precio}/mes</span>
-                              <span>Desde: {new Date(sub.fechaInicio).toLocaleDateString('es-ES')}</span>
+                              <span>
+                                Desde: {new Date(sub.fechaInicio).toLocaleDateString('es-ES')}
+                                {sub.fechaFin && (
+                                  <> • Hasta: {new Date(sub.fechaFin).toLocaleDateString('es-ES')}</>
+                                )}
+                              </span>
                             </div>
                           ))
                         }
