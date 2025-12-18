@@ -11,7 +11,7 @@ Esta guía te explica paso a paso cómo:
 ## 📑 Tabla de Contenidos
 
 1. [Variables de Entorno a Configurar](#-variables-de-entorno-a-configurar)
-2. [Guía Completa: Cómo Obtener Todas las Credenciales](#-guía-completa-cómo-obtener-todas-las-credenciales)
+2. [Guía Completa: Cómo Obtener Todas las Credenciales(#-guía-completa-cómo-obtener-todas-las-credenciales)
    - [Parte 1: Obtener SMTP Password (Gmail)](#parte-1-obtener-smtp-password-gmail)
    - [Parte 2: Obtener Google Client ID y Client Secret](#parte-2-obtener-google-client-id-y-client-secret)
    - [Parte 3: Obtener Tokens de Google Calendar para el Admin](#parte-3-obtener-tokens-de-google-calendar-para-el-admin)
