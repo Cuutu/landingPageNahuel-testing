@@ -48,8 +48,8 @@ alerts.forEach((alert) => {
       return;
     }
     
-    // Inicializar suma ponderada
-    let weightedProfitSum = 0;
+    // ✅ CORREGIDO: Calcular PROMEDIO SIMPLE de rendimientos de ventas ejecutadas
+    const profitPercentages = [];
     
     // Procesar ventas de liquidityData.partialSales (sistema nuevo)
     if (alert.liquidityData?.partialSales && Array.isArray(alert.liquidityData.partialSales)) {
@@ -60,32 +60,34 @@ alerts.forEach((alert) => {
       executedSales.forEach((sale) => {
         const saleEntryPrice = entryPrice || 0;
         const saleSellPrice = sale.sellPrice || 0;
-        const salePercentage = sale.percentage || 0;
         
         // Calcular ganancia porcentual de esta venta
         let saleProfitPercentage = 0;
         if (saleEntryPrice > 0 && saleSellPrice > 0) {
           saleProfitPercentage = ((saleSellPrice - saleEntryPrice) / saleEntryPrice) * 100;
+          profitPercentages.push(saleProfitPercentage);
         }
-        
-        // Acumular contribución ponderada: percentage * profitPercentage
-        weightedProfitSum += salePercentage * saleProfitPercentage;
       });
     }
     
     // Procesar ventas de ventasParciales (sistema legacy)
     if (alert.ventasParciales && Array.isArray(alert.ventasParciales) && alert.ventasParciales.length > 0) {
       alert.ventasParciales.forEach((venta) => {
-        const ventaPercentage = venta.porcentajeVendido || 0;
         const ventaProfitPercentage = venta.gananciaRealizada || 0;
         
-        // Acumular contribución ponderada
-        weightedProfitSum += ventaPercentage * ventaProfitPercentage;
+        // Agregar el rendimiento al array
+        if (ventaProfitPercentage !== 0) {
+          profitPercentages.push(ventaProfitPercentage);
+        }
       });
     }
     
-    // Dividir por 100 para obtener el porcentaje total ponderado
-    const gananciaRealizada = weightedProfitSum / 100;
+    // Calcular promedio simple: suma de rendimientos / cantidad de ventas
+    let gananciaRealizada = 0;
+    if (profitPercentages.length > 0) {
+      const sum = profitPercentages.reduce((acc, val) => acc + val, 0);
+      gananciaRealizada = sum / profitPercentages.length;
+    }
     
     // Obtener valor anterior para comparación
     const oldValue = alert.gananciaRealizada || 0;

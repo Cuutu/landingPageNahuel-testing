@@ -28,7 +28,8 @@ alerts.forEach((alert) => {
     return;
   }
   
-  let weightedSum = 0;
+  // ✅ CORREGIDO: Calcular PROMEDIO SIMPLE de rendimientos de ventas ejecutadas
+  const profitPercentages = [];
   
   // Sistema nuevo: liquidityData.partialSales
   if (alert.liquidityData?.partialSales) {
@@ -37,7 +38,7 @@ alerts.forEach((alert) => {
     executedSales.forEach(sale => {
       if (entryPrice > 0 && sale.sellPrice > 0) {
         const profitPct = ((sale.sellPrice - entryPrice) / entryPrice) * 100;
-        weightedSum += (sale.percentage || 0) * profitPct;
+        profitPercentages.push(profitPct);
       }
     });
   }
@@ -45,11 +46,19 @@ alerts.forEach((alert) => {
   // Sistema legacy: ventasParciales
   if (alert.ventasParciales && Array.isArray(alert.ventasParciales)) {
     alert.ventasParciales.forEach(venta => {
-      weightedSum += (venta.porcentajeVendido || 0) * (venta.gananciaRealizada || 0);
+      const ventaProfit = venta.gananciaRealizada || 0;
+      if (ventaProfit !== 0) {
+        profitPercentages.push(ventaProfit);
+      }
     });
   }
   
-  const newValue = weightedSum / 100;
+  // Calcular promedio simple
+  let newValue = 0;
+  if (profitPercentages.length > 0) {
+    const sum = profitPercentages.reduce((acc, val) => acc + val, 0);
+    newValue = sum / profitPercentages.length;
+  }
   const oldValue = alert.gananciaRealizada || 0;
   const diff = Math.abs(oldValue - newValue);
   
