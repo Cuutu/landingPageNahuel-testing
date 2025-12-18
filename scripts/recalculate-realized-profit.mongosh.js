@@ -61,7 +61,7 @@ alerts.forEach((alert) => {
         const saleEntryPrice = entryPrice || 0;
         const saleSellPrice = sale.sellPrice || 0;
         
-        // Calcular ganancia porcentual de esta venta
+        // Calcular ganancia porcentual de esta venta 
         let saleProfitPercentage = 0;
         if (saleEntryPrice > 0 && saleSellPrice > 0) {
           saleProfitPercentage = ((saleSellPrice - saleEntryPrice) / saleEntryPrice) * 100;
