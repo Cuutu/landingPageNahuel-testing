@@ -21,12 +21,13 @@ import {
 } from 'lucide-react';
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import styles from '@/styles/OperationsTable.module.css';
+import { getGlobalTimezone } from '@/lib/timeConfig';
 
 // ✅ Helper para formatear fecha en la misma zona horaria que Telegram
 function formatDateForDisplay(date: Date | string): string {
   const fecha = typeof date === 'string' ? new Date(date) : date;
-  // Usar la misma lógica que Telegram: zona horaria de variable de entorno o default
-  const zonaHoraria = 'America/Argentina/Buenos_Aires'; // Mismo default que getGlobalTimezone()
+  // ✅ CORREGIDO: Usar la zona horaria de la variable de entorno (igual que Telegram)
+  const zonaHoraria = getGlobalTimezone();
   
   return fecha.toLocaleString('es-AR', { 
     timeZone: zonaHoraria,
@@ -50,15 +51,17 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
   const actionText = action === 'BUY' ? 'COMPRA' : 'VENTA';
 
   // Determinar precio a mostrar (misma lógica que Telegram)
-  // ✅ PRIORIDAD: Si hay price en operation (venta/cierre), usar ese primero
+  // ✅ CORREGIDO: Priorizar rangos cuando existan
+  // ✅ PRIORIDAD: Si hay priceRange en operation, usar ese primero (para mostrar rangos)
   let priceDisplay = 'N/A';
   let priceValue: number | null = null;
   
-  if (operation?.price != null && !isNaN(operation.price)) {
+  if (operation?.priceRange?.min != null && operation?.priceRange?.max != null) {
+    priceDisplay = `$${operation.priceRange.min.toFixed(2)} - $${operation.priceRange.max.toFixed(2)}`;
+    priceValue = operation.priceRange.min;
+  } else if (operation?.price != null && !isNaN(operation.price)) {
     priceValue = operation.price;
     priceDisplay = `$${operation.price.toFixed(2)}`;
-  } else if (operation?.priceRange?.min != null && operation?.priceRange?.max != null) {
-    priceDisplay = `$${operation.priceRange.min.toFixed(2)} - $${operation.priceRange.max.toFixed(2)}`;
   } else if (alert.entryPriceRange?.min != null && alert.entryPriceRange?.max != null) {
     priceValue = alert.entryPriceRange.min;
     priceDisplay = `$${alert.entryPriceRange.min.toFixed(2)} - $${alert.entryPriceRange.max.toFixed(2)}`;
@@ -114,8 +117,9 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
   const stopLossNum = typeof alert.stopLoss === 'string' ? parseFloat(alert.stopLoss) : alert.stopLoss;
   const liquidityPercentage = operation?.portfolioPercentage || alert.liquidityPercentage || null;
 
-  // Usar fecha de la alerta o de la operación
-  const fechaAlerta = alert.date || alert.createdAt;
+  // ✅ CORREGIDO: Usar fecha de la operación (createdAt) si existe, sino de la alerta
+  // La fecha de la operación es la misma que se usó en Telegram y email
+  const fechaAlerta = operation?.createdAt || operation?.date || alert.date || alert.createdAt;
   const fechaParaMostrar = fechaAlerta ? formatDateForDisplay(fechaAlerta) : formatDateForDisplay(new Date());
 
   return (
@@ -224,26 +228,11 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
         </div>
       )}
 
-      {/* Análisis (solo si no hay mensaje personalizado en las notas) */}
-      {alert.analysis && !operation?.notes && (
-        <div style={{ marginTop: '16px' }}>
-          <div style={{ fontWeight: '600', marginBottom: '8px' }}>📊 Análisis:</div>
-          <div style={{ 
-            whiteSpace: 'pre-wrap',
-            padding: '12px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px',
-            border: '1px solid #e5e7eb'
-          }}>
-            {alert.analysis.length > 200 
-              ? alert.analysis.substring(0, 200) + '...' 
-              : alert.analysis}
-          </div>
-        </div>
-      )}
-
-      {/* Mensaje personalizado desde notas de la operación (tiene prioridad sobre análisis) */}
-      {operation?.notes && (() => {
+      {/* ✅ CORREGIDO: Usar el mensaje de operation.notes (mismo que Telegram y email) 
+          Si no existe, mostrar análisis de la alerta como fallback */}
+      {operation?.notes ? (() => {
+        // ✅ El mensaje en operation.notes es el mismo formato que Telegram y email
+        // Separar si hay actualización 16:30
         const updateSeparator = '\n\n--- Actualización 16:30 ---\n';
         const hasUpdate = operation.notes.includes(updateSeparator);
         const parts = hasUpdate ? operation.notes.split(updateSeparator) : [operation.notes];
@@ -252,7 +241,7 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
         
         return (
           <>
-            {/* Mensaje original */}
+            {/* Mensaje original (mismo que Telegram y email) */}
             {originalMessage && (
               <div style={{ marginTop: '16px' }}>
                 <div style={{ fontWeight: '600', marginBottom: '8px' }}>💬 Mensaje:</div>
@@ -297,7 +286,25 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
             )}
           </>
         );
-      })()}
+      })() : (
+        // Fallback: mostrar análisis si no hay mensaje en notas
+        alert.analysis && (
+          <div style={{ marginTop: '16px' }}>
+            <div style={{ fontWeight: '600', marginBottom: '8px' }}>📊 Análisis:</div>
+            <div style={{ 
+              whiteSpace: 'pre-wrap',
+              padding: '12px',
+              backgroundColor: '#f9fafb',
+              borderRadius: '8px',
+              border: '1px solid #e5e7eb'
+            }}>
+              {alert.analysis.length > 200 
+                ? alert.analysis.substring(0, 200) + '...' 
+                : alert.analysis}
+            </div>
+          </div>
+        )
+      )}
 
       {/* Motivo de desestimación */}
       {alert.status === 'DESESTIMADA' && alert.desestimacionMotivo && (

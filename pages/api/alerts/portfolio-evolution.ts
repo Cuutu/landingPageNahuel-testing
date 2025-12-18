@@ -355,8 +355,14 @@ export default async function handler(
       }
     }
     
-    // Inicializar todos los días en el rango
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    // ✅ CORREGIDO: Inicializar solo los días dentro del período seleccionado
+    // Usar startDate y endDate para asegurar que solo se incluyan días del período
+    const periodStartDate = new Date(startDate);
+    periodStartDate.setHours(0, 0, 0, 0);
+    const periodEndDate = new Date(endDate);
+    periodEndDate.setHours(23, 59, 59, 999);
+    
+    for (let d = new Date(periodStartDate); d <= periodEndDate; d.setDate(d.getDate() + 1)) {
       const dateKey = d.toISOString().split('T')[0];
       const sp500Day = sp500Map.get(dateKey);
       dailyData.set(dateKey, {
@@ -383,10 +389,17 @@ export default async function handler(
       if (isToday) {
         dayData.value = valorTotalCarteraActual;
         dayData.profit = valorTotalCarteraActual - initialLiquidity;
-        // Contar alertas activas y cerradas
+        // ✅ CORREGIDO: Contar solo alertas ejecutadas (no desestimadas) creadas en este día específico
+        const dayStart = new Date(currentDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(currentDate);
+        dayEnd.setHours(23, 59, 59, 999);
         dayData.alertsCount = allAlerts.filter((alert: any) => {
           const alertCreatedAt = new Date(alert.createdAt);
-          return alertCreatedAt <= currentDate;
+          // Solo contar alertas ejecutadas (no desestimadas) creadas en este día específico
+          return alert.status !== 'DESESTIMADA' && 
+                 alertCreatedAt >= dayStart && 
+                 alertCreatedAt <= dayEnd;
         }).length;
       } else {
         // ✅ CORREGIDO: Para días pasados, intentar usar snapshot guardado
@@ -415,10 +428,17 @@ export default async function handler(
           dayData.value = snapshot.valorTotalCartera;
           dayData.profit = snapshot.valorTotalCartera - snapshot.liquidezInicial;
           
-          // Contar alertas que existían en ese día
+          // ✅ CORREGIDO: Contar solo alertas ejecutadas (no desestimadas) creadas en este día específico
+          const dayStart = new Date(currentDate);
+          dayStart.setHours(0, 0, 0, 0);
+          const dayEnd = new Date(currentDate);
+          dayEnd.setHours(23, 59, 59, 999);
           dayData.alertsCount = allAlerts.filter((alert: any) => {
             const alertCreatedAt = new Date(alert.createdAt);
-            return alertCreatedAt <= currentDate;
+            // Solo contar alertas ejecutadas (no desestimadas) creadas en este día específico
+            return alert.status !== 'DESESTIMADA' && 
+                   alertCreatedAt >= dayStart && 
+                   alertCreatedAt <= dayEnd;
           }).length;
         } else {
           // Fallback: calcular P&L acumulado hasta este día (método anterior)
@@ -426,11 +446,20 @@ export default async function handler(
           let dayUnrealizedPL = 0;
           let dayAlertsCount = 0;
           
+          // ✅ CORREGIDO: Contar solo alertas ejecutadas (no desestimadas) creadas en este día específico
+          const dayStart = new Date(currentDate);
+          dayStart.setHours(0, 0, 0, 0);
+          const dayEnd = new Date(currentDate);
+          dayEnd.setHours(23, 59, 59, 999);
+          
           alertsWithPL.forEach((alert: any) => {
             const alertCreatedAt = new Date(alert.createdAt);
             const alertExitDate = alert.exitDate ? new Date(alert.exitDate) : null;
             
-            if (alertCreatedAt <= currentDate) {
+            // Solo contar alertas ejecutadas (no desestimadas) creadas en este día específico
+            if (alert.status !== 'DESESTIMADA' && 
+                alertCreatedAt >= dayStart && 
+                alertCreatedAt <= dayEnd) {
               dayAlertsCount++;
               
               if (alert.status === 'ACTIVE') {
