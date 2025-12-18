@@ -682,16 +682,18 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
   const entryPrice = this.entryPriceRange?.min || this.entryPrice || 0;
   const currentPrice = this.currentPrice || 0;
   
-  // ✅ CORREGIDO: Ganancia realizada = suma acumulada de realizedProfit de ventas parciales ejecutadas
+  // ✅ CORREGIDO: Ganancia realizada = suma ponderada de ganancias de ventas parciales ejecutadas
+  // Cada venta contribuye según el porcentaje de la posición que representa
   // Usar liquidityData.partialSales que tiene el P&L real calculado en dólares para cada venta
   let gananciaRealizadaUSD = 0; // Ganancia realizada en dólares
   let gananciaRealizada = 0; // Ganancia realizada en porcentaje
   
-  // ✅ CORREGIDO: Calcular ganancia realizada como SUMA SIMPLE de porcentajes de ventas
-  // (igual que en las notificaciones de Telegram de cierre de mercado)
-  // Cada venta muestra su porcentaje simple: (precioVenta - precioEntrada) / precioEntrada * 100
-  // La ganancia realizada total es la suma simple de estos porcentajes (no ponderada)
-  let totalProfitPercentage = 0;
+  // ✅ CORREGIDO: Calcular ganancia realizada como SUMA PONDERADA de porcentajes de ventas
+  // Cada venta se pondera por su percentage (porcentaje de la posición vendida)
+  // Fórmula: Suma de (percentage * profitPercentage) / 100
+  // Ejemplo: Si vendí 25% a +5.32% y luego 25% a +7.65%:
+  // Ganancia realizada = (25 * 5.32 + 25 * 7.65) / 100 = (133 + 191.25) / 100 = 3.24%
+  let weightedProfitSum = 0;
   
   // Procesar ventas de liquidityData.partialSales (sistema nuevo)
   if (this.liquidityData?.partialSales && Array.isArray(this.liquidityData.partialSales)) {
@@ -700,17 +702,18 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
     executedSales.forEach((sale: any) => {
       const saleEntryPrice = entryPrice || 0;
       const saleSellPrice = sale.sellPrice || 0;
+      const salePercentage = sale.percentage || 0;
       
-      // ✅ Calcular ganancia porcentual simple (igual que en Telegram)
+      // ✅ Calcular ganancia porcentual de esta venta específica
       // Fórmula: (precioVenta - precioEntrada) / precioEntrada * 100
       let saleProfitPercentage = 0;
       if (saleEntryPrice > 0 && saleSellPrice > 0) {
         saleProfitPercentage = ((saleSellPrice - saleEntryPrice) / saleEntryPrice) * 100;
       }
       
-      // ✅ Sumar el porcentaje simple (no ponderado)
-      // Si hay múltiples ventas, se suman los porcentajes simples
-      totalProfitPercentage += saleProfitPercentage;
+      // ✅ Acumular contribución ponderada: percentage * profitPercentage
+      // Si vendí 25% de la posición a +5.32%, contribuye 25 * 5.32 = 133
+      weightedProfitSum += salePercentage * saleProfitPercentage;
       
       // También acumular ganancia en USD
       gananciaRealizadaUSD += (sale.realizedProfit || 0);
@@ -720,16 +723,19 @@ AlertSchema.methods.calculateTotalProfit = function(this: IAlert) {
   // Procesar ventas de ventasParciales (sistema legacy) - COMBINAR con las anteriores
   if (this.ventasParciales && Array.isArray(this.ventasParciales) && this.ventasParciales.length > 0) {
     this.ventasParciales.forEach((venta: any) => {
+      const ventaPercentage = venta.porcentajeVendido || 0;
       const ventaProfitPercentage = venta.gananciaRealizada || 0;
       
-      // ✅ Sumar el porcentaje simple (ya viene calculado en gananciaRealizada)
-      totalProfitPercentage += ventaProfitPercentage;
+      // ✅ Acumular contribución ponderada (ya viene calculado en gananciaRealizada)
+      weightedProfitSum += ventaPercentage * ventaProfitPercentage;
     });
   }
   
-  // ✅ CORREGIDO: Usar suma simple de porcentajes (igual que Telegram)
-  // Ejemplo: Si vendí 25% a +5.32% y luego 25% a +7.65%, la ganancia realizada es +5.32% + +7.65% = +12.97%
-  gananciaRealizada = totalProfitPercentage;
+  // ✅ CORREGIDO: Dividir por 100 para obtener el porcentaje total ponderado
+  // Ejemplo: Si vendí 25% a +5.32% y luego 25% a +7.65%:
+  // weightedProfitSum = (25 * 5.32) + (25 * 7.65) = 133 + 191.25 = 324.25
+  // gananciaRealizada = 324.25 / 100 = 3.24%
+  gananciaRealizada = weightedProfitSum / 100;
   
   // Ganancia no realizada (posición actual)
   // Calculada como: (precioActual - precioEntrada) / precioEntrada * porcentajeRestante

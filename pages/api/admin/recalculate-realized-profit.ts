@@ -41,13 +41,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log('🔄 [RECALCULATE] Iniciando recálculo de ganancias realizadas...');
 
-    // Buscar todas las alertas con ventas parciales ejecutadas
+    // Buscar todas las alertas con ventas parciales ejecutadas (sistema nuevo o legacy)
     const alerts = await Alert.find({
-      'liquidityData.partialSales': {
-        $exists: true,
-        $ne: null,
-        $not: { $size: 0 }
-      }
+      $or: [
+        {
+          'liquidityData.partialSales': {
+            $exists: true,
+            $ne: null,
+            $not: { $size: 0 }
+          }
+        },
+        {
+          'ventasParciales': {
+            $exists: true,
+            $ne: null,
+            $not: { $size: 0 }
+          }
+        }
+      ]
     });
 
     console.log(`📊 [RECALCULATE] Encontradas ${alerts.length} alertas con ventas parciales`);
@@ -58,12 +69,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     for (const alert of alerts) {
       try {
-        // Verificar que tenga ventas ejecutadas
+        // Verificar que tenga ventas ejecutadas (sistema nuevo o legacy)
         const executedSales = alert.liquidityData?.partialSales?.filter(
           (sale: any) => sale.executed === true && !sale.discarded
         ) || [];
+        
+        const legacySales = alert.ventasParciales || [];
 
-        if (executedSales.length === 0) {
+        if (executedSales.length === 0 && legacySales.length === 0) {
           continue; // Saltar si no hay ventas ejecutadas
         }
 
