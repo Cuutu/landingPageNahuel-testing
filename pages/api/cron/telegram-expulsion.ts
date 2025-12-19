@@ -82,24 +82,57 @@ export default async function handler(
     const now = new Date();
     const results: ExpulsionResult[] = [];
 
-    // Buscar usuarios con Telegram vinculado que tengan suscripciones expiradas
-    // o que ya no tengan suscripciones activas
-    const usersWithTelegram = await User.find({
-      telegramUserId: { $exists: true, $ne: null },
-      telegramChannelAccess: { $exists: true, $ne: [] }
-    });
+    // ✅ CORREGIDO: Buscar TODOS los usuarios con Telegram vinculado
+    // No solo los que tienen telegramChannelAccess, porque algunos pueden haberse unido manualmente
+    const allUsersWithTelegram = await User.find({
+      telegramUserId: { $exists: true, $ne: null }
+    }).select('telegramUserId telegramChannelAccess email role suscripciones subscriptions activeSubscriptions');
 
-    console.log(`📊 [TELEGRAM EXPULSION] Verificando ${usersWithTelegram.length} usuarios con Telegram vinculado`);
+    console.log(`📊 [TELEGRAM EXPULSION] Encontrados ${allUsersWithTelegram.length} usuarios con Telegram vinculado`);
+    
+    // ✅ NUEVO: Determinar qué servicios verificar para cada usuario
+    // Si tiene telegramChannelAccess, usar esos servicios
+    // Si no, verificar ambos servicios (TraderCall y SmartMoney) para ver si está en algún canal
+    const usersToProcess: Array<{
+      user: any;
+      servicesToCheck: Array<'TraderCall' | 'SmartMoney'>;
+    }> = [];
+    
+    for (const user of allUsersWithTelegram) {
+      const servicesToCheck: Array<'TraderCall' | 'SmartMoney'> = [];
+      
+      // Si tiene telegramChannelAccess, usar esos servicios
+      if (user.telegramChannelAccess && user.telegramChannelAccess.length > 0) {
+        user.telegramChannelAccess.forEach((access: any) => {
+          if (access.service && !servicesToCheck.includes(access.service)) {
+            servicesToCheck.push(access.service);
+          }
+        });
+      } else {
+        // Si no tiene telegramChannelAccess, verificar ambos servicios
+        // (puede haberse unido manualmente al canal)
+        // Nota: Esto se verificará más adelante con la API de Telegram
+        servicesToCheck.push('TraderCall', 'SmartMoney');
+      }
+      
+      if (servicesToCheck.length > 0) {
+        usersToProcess.push({ user, servicesToCheck });
+      }
+    }
+    
+    console.log(`📊 [TELEGRAM EXPULSION] Verificando ${usersToProcess.length} usuarios con servicios a verificar`);
 
-    for (const user of usersWithTelegram) {
-      if (!user.telegramUserId || !user.telegramChannelAccess) {
-        console.log(`⚠️ [TELEGRAM EXPULSION] Usuario ${user.email} sin telegramUserId o telegramChannelAccess`);
+    for (const { user, servicesToCheck } of usersToProcess) {
+      if (!user.telegramUserId) {
+        console.log(`⚠️ [TELEGRAM EXPULSION] Usuario ${user.email} sin telegramUserId`);
         continue;
       }
 
       console.log(`🔍 [TELEGRAM EXPULSION] Procesando usuario: ${user.email} (rol: ${user.role})`);
       console.log(`   - telegramUserId: ${user.telegramUserId}`);
-      console.log(`   - telegramChannelAccess:`, JSON.stringify(user.telegramChannelAccess, null, 2));
+      console.log(`   - telegramChannelAccess:`, user.telegramChannelAccess && user.telegramChannelAccess.length > 0 
+        ? JSON.stringify(user.telegramChannelAccess, null, 2) 
+        : 'NINGUNO (verificando si está en canales manualmente)');
       
       // ✅ DEBUG: Mostrar TODAS las suscripciones (activas e inactivas) para debugging
       console.log(`   📋 TODAS las suscripciones del usuario:`);
@@ -142,9 +175,39 @@ export default async function handler(
       
       console.log(`   🕐 Fecha actual (now): ${now.toISOString()}`);
 
-      // Verificar cada canal al que tiene acceso
-      for (const access of user.telegramChannelAccess) {
-        const service = access.service as 'TraderCall' | 'SmartMoney';
+      // Verificar cada servicio para este usuario
+      for (const service of servicesToCheck) {
+        const channelId = CHANNEL_MAP[service];
+        
+        // ✅ NUEVO: Si el usuario no tiene telegramChannelAccess para este servicio,
+        // verificar si realmente está en el canal usando la API de Telegram
+        const hasAccessInDB = user.telegramChannelAccess?.some((a: any) => a.service === service);
+        
+        if (!hasAccessInDB && channelId) {
+          try {
+            const member = await bot.getChatMember(channelId, user.telegramUserId);
+            // Si el usuario NO está en el canal (left o kicked), saltar este servicio
+            if (member.status === 'left' || member.status === 'kicked') {
+              console.log(`   ⚠️ Usuario ${user.email} NO está en canal ${service} (status: ${member.status}) - saltando`);
+              continue;
+            }
+            // Si está en el canal, agregar a telegramChannelAccess para futuras verificaciones
+            console.log(`   ✅ Usuario ${user.email} está en canal ${service} (status: ${member.status}) pero no tiene telegramChannelAccess - agregando`);
+            if (!user.telegramChannelAccess) {
+              user.telegramChannelAccess = [];
+            }
+            user.telegramChannelAccess.push({
+              service,
+              channelId,
+              joinedAt: new Date(),
+              inviteLink: undefined
+            });
+          } catch (error: any) {
+            // Si hay error (usuario no encontrado, sin permisos, etc.), asumir que no está en el canal
+            console.log(`   ⚠️ No se pudo verificar si ${user.email} está en ${service}: ${error.message} - saltando`);
+            continue;
+          }
+        }
         
         console.log(`   🔎 Verificando servicio: ${service}`);
         
