@@ -203,8 +203,15 @@ export default async function handler(
               inviteLink: undefined
             });
           } catch (error: any) {
-            // Si hay error (usuario no encontrado, sin permisos, etc.), asumir que no está en el canal
-            console.log(`   ⚠️ No se pudo verificar si ${user.email} está en ${service}: ${error.message} - saltando`);
+            // ✅ MEJORADO: Manejar diferentes tipos de errores
+            if (error.message?.includes('PARTICIPANT_ID_INVALID')) {
+              console.log(`   ⚠️ telegramUserId inválido para ${user.email} (${user.telegramUserId}) en ${service} - el usuario puede haber eliminado su cuenta de Telegram`);
+            } else if (error.message?.includes('USER_NOT_PARTICIPANT')) {
+              console.log(`   ⚠️ Usuario ${user.email} no está en el canal ${service}`);
+            } else {
+              console.log(`   ⚠️ No se pudo verificar si ${user.email} está en ${service}: ${error.message}`);
+            }
+            // Saltar este servicio para este usuario
             continue;
           }
         }
@@ -278,8 +285,62 @@ export default async function handler(
           }
 
           try {
+            // ✅ NUEVO: Verificar que el bot tenga permisos de administrador antes de intentar expulsar
+            let botHasAdminRights = false;
+            try {
+              const botInfo = await bot.getMe();
+              const botMember = await bot.getChatMember(channelId, botInfo.id);
+              
+              console.log(`   🔍 Verificando permisos del bot en ${service}:`);
+              console.log(`      - Bot ID: ${botInfo.id}`);
+              console.log(`      - Bot username: ${botInfo.username}`);
+              console.log(`      - Status en canal: ${botMember.status}`);
+              
+              if (botMember.status === 'administrator') {
+                const canRestrict = (botMember as any).can_restrict_members === true;
+                console.log(`      - can_restrict_members: ${canRestrict}`);
+                botHasAdminRights = canRestrict;
+              } else {
+                console.log(`      - Bot NO es administrador (status: ${botMember.status})`);
+                botHasAdminRights = false;
+              }
+              
+              if (!botHasAdminRights) {
+                const errorMsg = `Bot NO tiene permisos de administrador en ${service} (canal: ${channelId}). El bot debe ser administrador y tener el permiso 'can_restrict_members' habilitado.`;
+                console.error(`❌ [TELEGRAM EXPULSION] ${errorMsg}`);
+                
+                results.push({
+                  userId: user._id.toString(),
+                  email: user.email,
+                  telegramUserId: user.telegramUserId,
+                  service,
+                  success: false,
+                  error: errorMsg
+                });
+                continue;
+              }
+              
+              console.log(`   ✅ Bot tiene permisos de administrador en ${service}`);
+            } catch (permError: any) {
+              console.error(`❌ [TELEGRAM EXPULSION] Error verificando permisos del bot en ${service}:`, permError.message);
+              const errorMsg = permError.message?.includes('CHAT_ADMIN_REQUIRED') 
+                ? `Bot no tiene permisos de administrador en ${service}. Verificar que el bot sea admin del canal.`
+                : `Error verificando permisos: ${permError.message}`;
+              
+              results.push({
+                userId: user._id.toString(),
+                email: user.email,
+                telegramUserId: user.telegramUserId,
+                service,
+                success: false,
+                error: errorMsg
+              });
+              continue;
+            }
+
             // Expulsar usuario del canal
             // Usamos banChatMember y luego unbanChatMember para permitir reingreso futuro
+            console.log(`   🔨 Intentando expulsar usuario ${user.email} (${user.telegramUserId}) del canal ${service}...`);
             await bot.banChatMember(channelId, user.telegramUserId);
             
             // Esperar un poco y desbanear para permitir reingreso si renueva
@@ -319,13 +380,23 @@ export default async function handler(
           } catch (error: any) {
             console.error(`❌ [TELEGRAM EXPULSION] Error expulsando ${user.email} de ${service}:`, error.message);
             
+            // ✅ MEJORADO: Mensajes de error más descriptivos
+            let errorMessage = error.message;
+            if (error.message?.includes('CHAT_ADMIN_REQUIRED')) {
+              errorMessage = `Bot no tiene permisos de administrador en el canal ${service}. Verificar que el bot sea admin y tenga permiso 'can_restrict_members'`;
+            } else if (error.message?.includes('PARTICIPANT_ID_INVALID')) {
+              errorMessage = `telegramUserId inválido o usuario no encontrado en el canal: ${user.telegramUserId}`;
+            } else if (error.message?.includes('USER_NOT_PARTICIPANT')) {
+              errorMessage = `Usuario no está en el canal ${service}`;
+            }
+            
             results.push({
               userId: user._id.toString(),
               email: user.email,
               telegramUserId: user.telegramUserId,
               service,
               success: false,
-              error: error.message
+              error: errorMessage
             });
           }
         }
