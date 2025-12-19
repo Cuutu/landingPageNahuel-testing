@@ -126,8 +126,11 @@ export default async function handler(
         // Si tiene suscripción activa en cualquiera de los tres sistemas, NO expulsar
         const hasActiveSubscription = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
 
+        // ✅ TEMPORALMENTE COMENTADO PARA TESTEO: Protección de admins deshabilitada
         // Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
-        if (!hasActiveSubscription && user.role !== 'admin') {
+        // if (!hasActiveSubscription && user.role !== 'admin') {
+        // TEMPORAL: Para testeo, también procesar admins
+        if (!hasActiveSubscription) {
           const channelId = CHANNEL_MAP[service];
           
           if (!channelId) {
