@@ -98,13 +98,36 @@ export default async function handler(
       for (const access of user.telegramChannelAccess) {
         const service = access.service as 'TraderCall' | 'SmartMoney';
         
-        // Verificar si tiene suscripción activa para este servicio
-        const activeSub = user.activeSubscriptions?.find(
-          (sub: any) => sub.service === service && sub.isActive && new Date(sub.expiryDate) > now
+        // ✅ CORREGIDO: Verificar suscripción activa en los TRES sistemas (igual que subscriptionAuth.ts)
+        // 1. Verificar en suscripciones (array antiguo/legacy)
+        const suscripcionActiva = user.suscripciones?.find(
+          (sub: any) => 
+            sub.servicio === service && 
+            sub.activa === true && 
+            new Date(sub.fechaVencimiento) > now
         );
+        
+        // 2. Verificar en subscriptions (array intermedio/admin)
+        const subscriptionActiva = user.subscriptions?.find(
+          (sub: any) => 
+            sub.tipo === service && 
+            sub.activa === true &&
+            (!sub.fechaFin || new Date(sub.fechaFin) > now)
+        );
+        
+        // 3. Verificar en activeSubscriptions (MercadoPago - incluye trials y full)
+        const activeSubscription = user.activeSubscriptions?.find(
+          (sub: any) => 
+            sub.service === service && 
+            sub.isActive === true &&
+            new Date(sub.expiryDate) > now
+        );
+        
+        // Si tiene suscripción activa en cualquiera de los tres sistemas, NO expulsar
+        const hasActiveSubscription = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
 
-        // Si no tiene suscripción activa y no es admin, expulsar
-        if (!activeSub && user.role !== 'admin') {
+        // Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
+        if (!hasActiveSubscription && user.role !== 'admin') {
           const channelId = CHANNEL_MAP[service];
           
           if (!channelId) {
