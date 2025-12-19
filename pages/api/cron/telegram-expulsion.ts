@@ -92,45 +92,121 @@ export default async function handler(
     console.log(`📊 [TELEGRAM EXPULSION] Verificando ${usersWithTelegram.length} usuarios con Telegram vinculado`);
 
     for (const user of usersWithTelegram) {
-      if (!user.telegramUserId || !user.telegramChannelAccess) continue;
+      if (!user.telegramUserId || !user.telegramChannelAccess) {
+        console.log(`⚠️ [TELEGRAM EXPULSION] Usuario ${user.email} sin telegramUserId o telegramChannelAccess`);
+        continue;
+      }
+
+      console.log(`🔍 [TELEGRAM EXPULSION] Procesando usuario: ${user.email} (rol: ${user.role})`);
+      console.log(`   - telegramUserId: ${user.telegramUserId}`);
+      console.log(`   - telegramChannelAccess:`, JSON.stringify(user.telegramChannelAccess, null, 2));
+      
+      // ✅ DEBUG: Mostrar TODAS las suscripciones (activas e inactivas) para debugging
+      console.log(`   📋 TODAS las suscripciones del usuario:`);
+      if (user.suscripciones && user.suscripciones.length > 0) {
+        console.log(`      - suscripciones (legacy):`, JSON.stringify(user.suscripciones.map((s: any) => ({
+          servicio: s.servicio,
+          activa: s.activa,
+          fechaVencimiento: s.fechaVencimiento,
+          fechaVencimientoDate: new Date(s.fechaVencimiento),
+          esFutura: new Date(s.fechaVencimiento) > now
+        })), null, 2));
+      } else {
+        console.log(`      - suscripciones (legacy): []`);
+      }
+      
+      if (user.subscriptions && user.subscriptions.length > 0) {
+        console.log(`      - subscriptions (intermedio):`, JSON.stringify(user.subscriptions.map((s: any) => ({
+          tipo: s.tipo,
+          activa: s.activa,
+          fechaFin: s.fechaFin,
+          fechaFinDate: s.fechaFin ? new Date(s.fechaFin) : null,
+          esFutura: s.fechaFin ? new Date(s.fechaFin) > now : false
+        })), null, 2));
+      } else {
+        console.log(`      - subscriptions (intermedio): []`);
+      }
+      
+      if (user.activeSubscriptions && user.activeSubscriptions.length > 0) {
+        console.log(`      - activeSubscriptions (nuevo):`, JSON.stringify(user.activeSubscriptions.map((s: any) => ({
+          service: s.service,
+          isActive: s.isActive,
+          expiryDate: s.expiryDate,
+          expiryDateDate: new Date(s.expiryDate),
+          esFutura: new Date(s.expiryDate) > now,
+          subscriptionType: s.subscriptionType
+        })), null, 2));
+      } else {
+        console.log(`      - activeSubscriptions (nuevo): []`);
+      }
+      
+      console.log(`   🕐 Fecha actual (now): ${now.toISOString()}`);
 
       // Verificar cada canal al que tiene acceso
       for (const access of user.telegramChannelAccess) {
         const service = access.service as 'TraderCall' | 'SmartMoney';
         
+        console.log(`   🔎 Verificando servicio: ${service}`);
+        
         // ✅ CORREGIDO: Verificar suscripción activa en los TRES sistemas (igual que subscriptionAuth.ts)
         // 1. Verificar en suscripciones (array antiguo/legacy)
         const suscripcionActiva = user.suscripciones?.find(
-          (sub: any) => 
-            sub.servicio === service && 
-            sub.activa === true && 
-            new Date(sub.fechaVencimiento) > now
+          (sub: any) => {
+            const matchesService = sub.servicio === service;
+            const isActive = sub.activa === true;
+            const fechaVenc = sub.fechaVencimiento ? new Date(sub.fechaVencimiento) : null;
+            const isFuture = fechaVenc ? fechaVenc > now : false;
+            
+            console.log(`      🔍 Verificando suscripción legacy: servicio=${sub.servicio}, activa=${sub.activa}, fechaVenc=${sub.fechaVencimiento}, esFutura=${isFuture}`);
+            
+            return matchesService && isActive && isFuture;
+          }
         );
         
         // 2. Verificar en subscriptions (array intermedio/admin)
         const subscriptionActiva = user.subscriptions?.find(
-          (sub: any) => 
-            sub.tipo === service && 
-            sub.activa === true &&
-            (!sub.fechaFin || new Date(sub.fechaFin) > now)
+          (sub: any) => {
+            const matchesService = sub.tipo === service;
+            const isActive = sub.activa === true;
+            const fechaFin = sub.fechaFin ? new Date(sub.fechaFin) : null;
+            const isFuture = fechaFin ? fechaFin > now : (!sub.fechaFin); // Si no tiene fechaFin, considerar activa
+            
+            console.log(`      🔍 Verificando subscription intermedio: tipo=${sub.tipo}, activa=${sub.activa}, fechaFin=${sub.fechaFin}, esFutura=${isFuture}`);
+            
+            return matchesService && isActive && isFuture;
+          }
         );
         
         // 3. Verificar en activeSubscriptions (MercadoPago - incluye trials y full)
         const activeSubscription = user.activeSubscriptions?.find(
-          (sub: any) => 
-            sub.service === service && 
-            sub.isActive === true &&
-            new Date(sub.expiryDate) > now
+          (sub: any) => {
+            const matchesService = sub.service === service;
+            const isActive = sub.isActive === true;
+            const expiryDate = sub.expiryDate ? new Date(sub.expiryDate) : null;
+            const isFuture = expiryDate ? expiryDate > now : false;
+            
+            console.log(`      🔍 Verificando activeSubscription: service=${sub.service}, isActive=${sub.isActive}, expiryDate=${sub.expiryDate}, esFutura=${isFuture}, type=${sub.subscriptionType}`);
+            
+            return matchesService && isActive && isFuture;
+          }
         );
+        
+        console.log(`   📊 Resultados de verificación para ${service}:`);
+        console.log(`      - suscripcionActiva (legacy):`, suscripcionActiva ? `SÍ (vence: ${suscripcionActiva.fechaVencimiento}, fecha: ${new Date(suscripcionActiva.fechaVencimiento).toISOString()})` : 'NO');
+        console.log(`      - subscriptionActiva (intermedio):`, subscriptionActiva ? `SÍ (vence: ${subscriptionActiva.fechaFin || 'sin fecha'}, fecha: ${subscriptionActiva.fechaFin ? new Date(subscriptionActiva.fechaFin).toISOString() : 'N/A'})` : 'NO');
+        console.log(`      - activeSubscription (nuevo):`, activeSubscription ? `SÍ (vence: ${activeSubscription.expiryDate}, fecha: ${new Date(activeSubscription.expiryDate).toISOString()}, type: ${activeSubscription.subscriptionType})` : 'NO');
         
         // Si tiene suscripción activa en cualquiera de los tres sistemas, NO expulsar
         const hasActiveSubscription = !!(suscripcionActiva || subscriptionActiva || activeSubscription);
+        
+        console.log(`   ✅ Tiene suscripción activa: ${hasActiveSubscription}`);
 
         // ✅ TEMPORALMENTE COMENTADO PARA TESTEO: Protección de admins deshabilitada
         // Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
         // if (!hasActiveSubscription && user.role !== 'admin') {
         // TEMPORAL: Para testeo, también procesar admins
         if (!hasActiveSubscription) {
+          console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} - PROCESANDO EXPULSIÓN`);
           const channelId = CHANNEL_MAP[service];
           
           if (!channelId) {
