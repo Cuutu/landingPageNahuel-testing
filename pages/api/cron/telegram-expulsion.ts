@@ -346,7 +346,7 @@ export default async function handler(
       success: true,
       message: `Cronjob de expulsión completado`,
       summary: {
-        totalChecked: usersWithTelegram.length,
+        totalChecked: allUsersWithTelegram.length,
         expelled: successCount,
         errors: failCount
       },
