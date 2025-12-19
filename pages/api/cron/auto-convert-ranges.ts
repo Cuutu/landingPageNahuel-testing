@@ -1602,142 +1602,148 @@ export async function enviarResumenOperaciones(acciones: AccionResumen[]): Promi
     const servicios = ['SmartMoney', 'TraderCall'];
     
     for (const tipoAlerta of servicios) {
-      console.log(`🔄 [RESUMEN] Procesando servicio: ${tipoAlerta}`);
-      
-      // Obtener acciones para este servicio (puede ser array vacío)
-      const accionesTipo = accionesPorTipo[tipoAlerta] || [];
-      
-      // ✅ OPTIMIZADO: Usar usuarios del cache en lugar de buscar de nuevo
-      const subscribedUsers = usersCache[tipoAlerta] || [];
-      
-      // ✅ OPTIMIZADO: Los usuarios ya están filtrados en el cache
-      const validUsers = subscribedUsers;
-      
-      console.log(`👥 [RESUMEN] ${validUsers.length} usuarios válidos para ${tipoAlerta}`);
-      console.log(`📊 [RESUMEN] ${accionesTipo.length} acciones para ${tipoAlerta}`);
-      
-      if (validUsers.length === 0) {
-        console.log(`⚠️ [RESUMEN] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
-        continue;
-      }
-      
-      // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
-      const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
-      const usersToEmail = TESTING_MODE 
-        ? validUsers.filter((user: any) => user.role === 'admin')
-        : validUsers;
-      
-      if (TESTING_MODE) {
-        console.log(`🧪 [RESUMEN] MODO TESTING - Solo enviando a ${usersToEmail.length} admins`);
-      }
-      
-      if (usersToEmail.length === 0) {
-        console.log(`⚠️ [RESUMEN] No hay usuarios para enviar emails de ${tipoAlerta}, saltando...`);
-        continue;
-      }
-      
-      // ✅ CORREGIDO: Si NO hay acciones para este servicio, enviar mensaje de "sin operaciones"
-      if (accionesTipo.length === 0) {
-        console.log(`📧 [RESUMEN] No hay acciones para ${tipoAlerta} - Enviando mensaje de "sin operaciones"...`);
-        try {
-          // Enviar a Telegram
-          const { sendMessageToChannel } = await import('@/lib/telegramBot');
-          const mensaje = "👋🏻 ¡Buenas a todos! ¿Cómo están? Hoy no tenemos activos para comprar ni para vender. Por lo que mantenemos la cartera tal cual como la tenemos hasta ahora.";
-          await sendMessageToChannel(tipoAlerta, mensaje);
-          console.log(`✅ [RESUMEN] Telegram "sin operaciones" enviado para ${tipoAlerta}`);
-          
-          // Enviar emails
-          const fechaHoy = new Date().toLocaleDateString('es-AR', { 
-            weekday: 'long',
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric'  
-          });
-          
-          const htmlEmail = `
-            <!DOCTYPE html>
-            <html lang="es">
-            <head>
-              <meta charset="utf-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Sin Operaciones - ${tipoAlerta}</title>
-            </head>
-            <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
-              
-              <!-- Header -->
-              <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 30px 25px; text-align: center;">
-                <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
-                  👋🏻 Actualización del Día
-                </h1>
-                <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 15px;">
-                  ${tipoAlerta} • ${fechaHoy}
-                </p>
-              </div>
-              
-              <!-- Content -->
-              <div style="padding: 30px 25px; background: white;">
-                <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #334155;">
-                  ${mensaje}
-                </p>
-              </div>
-              
-              <!-- Footer -->
-              <div style="text-align: center; padding: 20px 25px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
-                <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
-                  Este es un email automático de <strong>Nahuel Lozano Trading</strong>
-                </p>
-                <p style="margin: 0; font-size: 13px; color: #94a3b8;">
-                  Para configurar tus preferencias de notificación, visita tu <a href="/perfil" style="color: #3b82f6;">perfil</a>
-                </p>
-              </div>
-              
-            </body>
-            </html>
-          `;
-          
-          // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
-          const emailsSent = await sendEmailsInParallel(
-            usersToEmail,
-            `👋🏻 Actualización ${tipoAlerta} - ${fechaHoy}`,
-            htmlEmail,
-            10 // 10 emails a la vez
-          );
-          
-          console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails "sin operaciones" enviados`);
-        } catch (error) {
-          console.error(`❌ [RESUMEN] Error enviando "sin operaciones" para ${tipoAlerta}:`, error);
-        }
-        continue; // Continuar con el siguiente servicio
-      }
-      
-      // Si hay acciones, procesar normalmente
-      console.log(`📧 [RESUMEN] Procesando ${accionesTipo.length} acciones para ${tipoAlerta}...`);
-      console.log(`📤 [RESUMEN] Preparando envío a ${usersToEmail.length} usuarios de ${tipoAlerta}...`);
-      
-      // Generar HTML del resumen
-      const htmlResumen = generarEmailResumenHTML(tipoAlerta, accionesTipo);
-      const fechaHoy = new Date().toLocaleDateString('es-AR', { 
-        day: 'numeric', 
-        month: 'long', 
-        year: 'numeric' 
-      });
-      
-      // Enviar a Telegram primero (un solo mensaje consolidado)
+      // ✅ CORREGIDO: Agregar try-catch por servicio para que si falla uno, continúe con el otro
       try {
-        await enviarResumenTelegram(tipoAlerta, accionesTipo);
-      } catch (telegramError) {
-        console.error(`❌ [RESUMEN] Error enviando a Telegram:`, telegramError);
+        console.log(`🔄 [RESUMEN] Procesando servicio: ${tipoAlerta}`);
+        
+        // Obtener acciones para este servicio (puede ser array vacío)
+        const accionesTipo = accionesPorTipo[tipoAlerta] || [];
+        
+        // ✅ OPTIMIZADO: Usar usuarios del cache en lugar de buscar de nuevo
+        const subscribedUsers = usersCache[tipoAlerta] || [];
+        
+        // ✅ OPTIMIZADO: Los usuarios ya están filtrados en el cache
+        const validUsers = subscribedUsers;
+        
+        console.log(`👥 [RESUMEN] ${validUsers.length} usuarios válidos para ${tipoAlerta}`);
+        console.log(`📊 [RESUMEN] ${accionesTipo.length} acciones para ${tipoAlerta}`);
+        
+        if (validUsers.length === 0) {
+          console.log(`⚠️ [RESUMEN] No hay usuarios válidos para ${tipoAlerta}, saltando...`);
+          continue;
+        }
+        
+        // ✅ TESTING MODE: Solo enviar emails a administradores si está activado
+        const TESTING_MODE = process.env.EMAIL_TESTING_MODE === 'true';
+        const usersToEmail = TESTING_MODE 
+          ? validUsers.filter((user: any) => user.role === 'admin')
+          : validUsers;
+        
+        if (TESTING_MODE) {
+          console.log(`🧪 [RESUMEN] MODO TESTING - Solo enviando a ${usersToEmail.length} admins`);
+        }
+        
+        if (usersToEmail.length === 0) {
+          console.log(`⚠️ [RESUMEN] No hay usuarios para enviar emails de ${tipoAlerta}, saltando...`);
+          continue;
+        }
+        
+        // ✅ CORREGIDO: Si NO hay acciones para este servicio, enviar mensaje de "sin operaciones"
+        if (accionesTipo.length === 0) {
+          console.log(`📧 [RESUMEN] No hay acciones para ${tipoAlerta} - Enviando mensaje de "sin operaciones"...`);
+          try {
+            // Enviar a Telegram
+            const { sendMessageToChannel } = await import('@/lib/telegramBot');
+            const mensaje = "👋🏻 ¡Buenas a todos! ¿Cómo están? Hoy no tenemos activos para comprar ni para vender. Por lo que mantenemos la cartera tal cual como la tenemos hasta ahora.";
+            await sendMessageToChannel(tipoAlerta, mensaje);
+            console.log(`✅ [RESUMEN] Telegram "sin operaciones" enviado para ${tipoAlerta}`);
+            
+            // Enviar emails
+            const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+              weekday: 'long',
+              day: 'numeric', 
+              month: 'long', 
+              year: 'numeric'  
+            });
+            
+            const htmlEmail = `
+              <!DOCTYPE html>
+              <html lang="es">
+              <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Sin Operaciones - ${tipoAlerta}</title>
+              </head>
+              <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+                
+                <!-- Header -->
+                <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); color: white; padding: 30px 25px; text-align: center;">
+                  <h1 style="margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+                    👋🏻 Actualización del Día
+                  </h1>
+                  <p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 15px;">
+                    ${tipoAlerta} • ${fechaHoy}
+                  </p>
+                </div>
+                
+                <!-- Content -->
+                <div style="padding: 30px 25px; background: white;">
+                  <p style="margin: 0; font-size: 16px; line-height: 1.8; color: #334155;">
+                    ${mensaje}
+                  </p>
+                </div>
+                
+                <!-- Footer -->
+                <div style="text-align: center; padding: 20px 25px; background: #f1f5f9; border-top: 1px solid #e2e8f0;">
+                  <p style="margin: 0 0 10px 0; font-size: 14px; color: #64748b;">
+                    Este es un email automático de <strong>Nahuel Lozano Trading</strong>
+                  </p>
+                  <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                    Para configurar tus preferencias de notificación, visita tu <a href="/perfil" style="color: #3b82f6;">perfil</a>
+                  </p>
+                </div>
+                
+              </body>
+              </html>
+            `;
+            
+            // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
+            const emailsSent = await sendEmailsInParallel(
+              usersToEmail,
+              `👋🏻 Actualización ${tipoAlerta} - ${fechaHoy}`,
+              htmlEmail,
+              10 // 10 emails a la vez
+            );
+            
+            console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails "sin operaciones" enviados`);
+          } catch (error) {
+            console.error(`❌ [RESUMEN] Error enviando "sin operaciones" para ${tipoAlerta}:`, error);
+          }
+          continue; // Continuar con el siguiente servicio
+        }
+        
+        // Si hay acciones, procesar normalmente
+        console.log(`📧 [RESUMEN] Procesando ${accionesTipo.length} acciones para ${tipoAlerta}...`);
+        console.log(`📤 [RESUMEN] Preparando envío a ${usersToEmail.length} usuarios de ${tipoAlerta}...`);
+        
+        // Generar HTML del resumen
+        const htmlResumen = generarEmailResumenHTML(tipoAlerta, accionesTipo);
+        const fechaHoy = new Date().toLocaleDateString('es-AR', { 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric' 
+        });
+        
+        // Enviar a Telegram primero (un solo mensaje consolidado)
+        try {
+          await enviarResumenTelegram(tipoAlerta, accionesTipo);
+        } catch (telegramError) {
+          console.error(`❌ [RESUMEN] Error enviando a Telegram:`, telegramError);
+        }
+        
+        // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
+        const emailsSent = await sendEmailsInParallel(
+          usersToEmail,
+          `📊 Resumen de Operaciones ${tipoAlerta} - ${fechaHoy}`,
+          htmlResumen,
+          10 // 10 emails a la vez
+        );
+        
+        console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails enviados`);
+      } catch (error) {
+        console.error(`❌ [RESUMEN] Error procesando servicio ${tipoAlerta}:`, error);
+        // Continuar con el siguiente servicio en lugar de detener todo
       }
-      
-      // ✅ OPTIMIZADO: Enviar emails en paralelo con chunks
-      const emailsSent = await sendEmailsInParallel(
-        usersToEmail,
-        `📊 Resumen de Operaciones ${tipoAlerta} - ${fechaHoy}`,
-        htmlResumen,
-        10 // 10 emails a la vez
-      );
-      
-      console.log(`✅ [RESUMEN] ${tipoAlerta}: ${emailsSent}/${usersToEmail.length} emails enviados`);
     }
     
     console.log('🎉 [RESUMEN] Resumen de operaciones enviado completamente');
