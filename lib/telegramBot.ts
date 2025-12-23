@@ -112,7 +112,8 @@ function formatAlertMessage(alert: IAlert, options?: {
     
     // ✅ CORREGIDO: Orden según solicitud - TIPO DE VENTA primero (justo después del título), luego PRECIO
     // Para ventas con porcentaje, mostrar tipo de venta primero
-    if (options?.soldPercentage !== undefined) {
+    // ✅ CORREGIDO: Solo mostrar información de venta parcial/total cuando la acción es 'SELL'
+    if (action === 'SELL' && options?.soldPercentage !== undefined) {
       // Determinar si es venta parcial o total (tolerancia para redondeos)
       const soldPct = options.soldPercentage ?? 0;
       const isTotalSale = options.isCompleteSale || soldPct >= 99.9;
@@ -152,7 +153,12 @@ function formatAlertMessage(alert: IAlert, options?: {
       }
     } else {
       // Compra o alerta sin venta
-      message += `\n💰 Precio: ${priceDisplay}\n`;
+      // ✅ NUEVO: Mostrar "🟢 COMPRA" como segundo párrafo cuando es compra
+      if (action === 'BUY') {
+        message += `🟢 COMPRA\n\n`;
+      }
+      
+      message += `💰 Precio: ${priceDisplay}\n`;
       
       // ✅ CORREGIDO: Mostrar Take Profit y Stop Loss INMEDIATAMENTE después del precio para COMPRAS
       if (action === 'BUY') {
@@ -287,7 +293,8 @@ export function formatOperationNotes(alert: IAlert, options?: {
     let notes = `${titleAction} ${alert.symbol}\n`;
     
     // Para ventas con porcentaje
-    if (options?.soldPercentage !== undefined) {
+    // ✅ CORREGIDO: Solo mostrar información de venta parcial/total cuando la acción es 'SELL'
+    if (action === 'SELL' && options?.soldPercentage !== undefined) {
       const soldPct = options.soldPercentage ?? 0;
       const isTotalSale = options.isCompleteSale || soldPct >= 99.9;
       const tipoVenta = isTotalSale
@@ -316,7 +323,12 @@ export function formatOperationNotes(alert: IAlert, options?: {
         notes += `Precio de Entrada: $${alert.entryPrice.toFixed(2)}\n`;
       }
     } else {
-      notes += `\nPrecio: ${priceDisplay}\n`;
+      // ✅ NUEVO: Mostrar "COMPRA" como segundo párrafo cuando es compra (sin emoji en notas)
+      if (action === 'BUY') {
+        notes += `COMPRA\n\n`;
+      }
+      
+      notes += `Precio: ${priceDisplay}\n`;
       
       if (action === 'BUY') {
         const takeProfitNum = typeof alert.takeProfit === 'string' ? parseFloat(alert.takeProfit) : alert.takeProfit;

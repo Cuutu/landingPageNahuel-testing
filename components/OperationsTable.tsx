@@ -141,11 +141,21 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
         {titleEmoji} <strong>{titleAction} {alert.symbol}</strong>
       </div>
 
-      {/* Tipo de venta (si aplica) */}
-      {soldPercentage !== undefined && (
+      {/* Tipo de venta (si aplica) - Solo para ventas */}
+      {/* ✅ CORREGIDO: Solo mostrar información de venta parcial/total cuando la acción es 'SELL' */}
+      {action === 'SELL' && soldPercentage !== undefined && (
         <div style={{ marginTop: '8px', marginBottom: '8px' }}>
           <div style={{ fontWeight: '600', color: isCompleteSale ? '#dc2626' : '#d97706' }}>
             {isCompleteSale ? '🔴 Venta TOTAL' : '🟡 Venta PARCIAL'}
+          </div>
+        </div>
+      )}
+      
+      {/* ✅ NUEVO: Mostrar "COMPRA" con emoji verde cuando es compra (segundo párrafo después del título) */}
+      {action === 'BUY' && (
+        <div style={{ marginTop: '8px', marginBottom: '8px' }}>
+          <div style={{ fontWeight: '600', color: '#10b981' }}>
+            🟢 COMPRA
           </div>
         </div>
       )}
@@ -157,7 +167,8 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
       </div>
 
       {/* Porcentaje vendido/a vender (solo para ventas con porcentaje) */}
-      {soldPercentage !== undefined && (
+      {/* ✅ CORREGIDO: Solo mostrar cuando la acción es 'SELL' */}
+      {action === 'SELL' && soldPercentage !== undefined && (
         <div>
           <span style={{ fontWeight: '600' }}>📊 {isExecutedSale ? 'Porcentaje vendido' : 'Porcentaje a vender'}: </span>
           <span>{soldPercentage}%</span>
@@ -165,7 +176,8 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
       )}
 
       {/* Rendimiento (para ventas con porcentaje) */}
-      {soldPercentage !== undefined && profitPercentage != null && !isNaN(profitPercentage) && (
+      {/* ✅ CORREGIDO: Solo mostrar cuando la acción es 'SELL' */}
+      {action === 'SELL' && soldPercentage !== undefined && profitPercentage != null && !isNaN(profitPercentage) && (
         <div>
           <span style={{ fontWeight: '600' }}>
             {profitPercentage >= 0 ? '💲' : '📉'} {isExecutedSale ? 'Rendimiento' : 'Rendimiento aproximado'}: 
@@ -219,7 +231,8 @@ function renderAlertInfoTelegramFormat(alert: any, operation: any): React.ReactN
       )}
 
       {/* Profit/Loss genérico (solo si NO es una venta con porcentaje) */}
-      {soldPercentage === undefined && profitPercentage != null && !isNaN(profitPercentage) && (
+      {/* ✅ CORREGIDO: Solo mostrar cuando NO es una venta con porcentaje */}
+      {!(action === 'SELL' && soldPercentage !== undefined) && profitPercentage != null && !isNaN(profitPercentage) && (
         <div>
           <span style={{ fontWeight: '600' }}>
             {profitPercentage >= 0 ? '💰' : '📉'} Profit/Loss: 
