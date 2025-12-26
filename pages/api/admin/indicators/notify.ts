@@ -260,14 +260,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       html
     });
 
-    // Actualizar el pago con la información de que se envió la notificación
-    if (!payment.metadata) {
-      payment.metadata = {};
-    }
-    payment.metadata.notificationSent = true;
-    payment.metadata.notificationSentAt = new Date();
-    payment.metadata.notificationSentBy = session.user.email;
-
+    // ✅ CORREGIDO: Actualizar el pago con la información de que se envió la notificación
+    // Para campos Mixed en Mongoose, necesitamos crear un nuevo objeto o usar markModified()
+    const currentMetadata = payment.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      notificationSent: true,
+      notificationSentAt: new Date(),
+      notificationSentBy: session.user.email
+    };
+    
+    // ✅ CORREGIDO: Asignar el objeto completo y marcar como modificado
+    payment.metadata = updatedMetadata;
+    payment.markModified('metadata'); // ✅ CRÍTICO: Indicar a Mongoose que el campo Mixed fue modificado
+    
     await payment.save();
 
     console.log('✅ Notificación enviada exitosamente:', {

@@ -55,15 +55,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // Marcar como notificado sin enviar email
-    if (!payment.metadata) {
-      payment.metadata = {};
-    }
-    payment.metadata.notificationSent = true;
-    payment.metadata.notificationSentAt = new Date();
-    payment.metadata.notificationSentBy = session.user.email;
-    payment.metadata.markedAsNotifiedManually = true; // ✅ Flag para indicar que fue marcado manualmente
-
+    // ✅ CORREGIDO: Marcar como notificado sin enviar email
+    // Para campos Mixed en Mongoose, necesitamos crear un nuevo objeto o usar markModified()
+    const currentMetadata = payment.metadata || {};
+    const updatedMetadata = {
+      ...currentMetadata,
+      notificationSent: true,
+      notificationSentAt: new Date(),
+      notificationSentBy: session.user.email,
+      markedAsNotifiedManually: true // ✅ Flag para indicar que fue marcado manualmente
+    };
+    
+    // ✅ CORREGIDO: Asignar el objeto completo y marcar como modificado
+    payment.metadata = updatedMetadata;
+    payment.markModified('metadata'); // ✅ CRÍTICO: Indicar a Mongoose que el campo Mixed fue modificado
+    
     await payment.save();
 
     // ✅ DEBUG: Verificar que se guardó correctamente
