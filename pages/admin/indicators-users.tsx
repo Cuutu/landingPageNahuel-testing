@@ -20,7 +20,8 @@ import {
   RefreshCw,
   Search,
   Filter,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -49,6 +50,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
   const [loading, setLoading] = useState(true);
   const [indicatorUsers, setIndicatorUsers] = useState<IndicatorUser[]>([]);
   const [notifyingUser, setNotifyingUser] = useState<string | null>(null);
+  const [markingAsNotified, setMarkingAsNotified] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubmitted, setFilterSubmitted] = useState<'all' | 'new' | 'without-notification' | 'notified'>('all');
 
@@ -118,6 +120,37 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
       toast.error('Error de conexión');
     } finally {
       setNotifyingUser(null);
+    }
+  };
+
+  // ✅ NUEVO: Función para marcar como notificado sin enviar email
+  const handleMarkAsNotified = async (paymentId: string, userName: string) => {
+    if (!confirm(`¿Marcar a ${userName} como notificado sin enviar email?\n\nEsto hará que desaparezca de la lista de usuarios a notificar.`)) {
+      return;
+    }
+
+    setMarkingAsNotified(paymentId);
+    try {
+      const response = await fetch('/api/admin/indicators/mark-notified', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentId })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Usuario marcado como notificado (sin enviar email)');
+        // Recargar la lista para que desaparezca
+        await fetchIndicatorUsers();
+      } else {
+        toast.error(data.error || 'Error al marcar como notificado.');
+      }
+    } catch (error) {
+      console.error('Error marking as notified:', error);
+      toast.error('Error de conexión');
+    } finally {
+      setMarkingAsNotified(null);
     }
   };
 
@@ -411,7 +444,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                       )}
                     </div>
 
-                    <div className={styles.userCardFooter}>
+                    <div className={styles.userCardFooter} style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => handleNotifyUser(
                           indicatorUser.paymentId,
@@ -439,6 +472,55 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                           </>
                         )}
                       </button>
+                      
+                      {/* ✅ NUEVO: Botón para marcar como notificado sin enviar email */}
+                      {!indicatorUser.notificationSent && (
+                        <button
+                          onClick={() => handleMarkAsNotified(
+                            indicatorUser.paymentId,
+                            indicatorUser.userName
+                          )}
+                          disabled={markingAsNotified === indicatorUser.paymentId}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.625rem 1rem',
+                            backgroundColor: markingAsNotified === indicatorUser.paymentId ? '#9ca3af' : '#6b7280',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: markingAsNotified === indicatorUser.paymentId ? 'not-allowed' : 'pointer',
+                            fontSize: '0.875rem',
+                            fontWeight: '500',
+                            transition: 'all 0.2s',
+                            whiteSpace: 'nowrap'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (markingAsNotified !== indicatorUser.paymentId) {
+                              e.currentTarget.style.backgroundColor = '#4b5563';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (markingAsNotified !== indicatorUser.paymentId) {
+                              e.currentTarget.style.backgroundColor = '#6b7280';
+                            }
+                          }}
+                          title="Marcar como notificado sin enviar email (para limpiar usuarios antiguos)"
+                        >
+                          {markingAsNotified === indicatorUser.paymentId ? (
+                            <>
+                              <RefreshCw size={16} className={styles.spinning} />
+                              Marcando...
+                            </>
+                          ) : (
+                            <>
+                              <X size={16} />
+                              Quitar de lista
+                            </>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 ))}
