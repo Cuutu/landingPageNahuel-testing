@@ -57,17 +57,29 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
   const fetchIndicatorUsers = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/indicators/users');
+      // ✅ CORREGIDO: Agregar timestamp para evitar caché
+      const response = await fetch(`/api/admin/indicators/users?t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       const data = await response.json();
 
       if (data.success) {
         const previousCount = indicatorUsers.length;
         const newUsers = data.users || [];
+        
+        // ✅ DEBUG: Verificar usuarios notificados
+        const notifiedUsers = newUsers.filter((u: IndicatorUser) => u.notificationSent);
+        console.log('📊 Usuarios cargados:', {
+          total: newUsers.length,
+          notificados: notifiedUsers.length,
+          sinNotificar: newUsers.length - notifiedUsers.length
+        });
+        
         setIndicatorUsers(newUsers);
         
         // ✅ NUEVO: Mostrar mensaje informativo si se actualizó la lista
         if (previousCount > 0) {
-          const notifiedCount = newUsers.filter((u: IndicatorUser) => u.notificationSent).length;
+          const notifiedCount = notifiedUsers.length;
           toast.success(`Lista actualizada: ${newUsers.length} usuarios (${notifiedCount} notificados)`, {
             duration: 3000
           });
@@ -141,6 +153,8 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
       if (data.success) {
         toast.success('Usuario marcado como notificado (sin enviar email)');
+        // ✅ CORREGIDO: Esperar un momento antes de recargar para asegurar que el servidor guardó
+        await new Promise(resolve => setTimeout(resolve, 500));
         // Recargar la lista para que desaparezca
         await fetchIndicatorUsers();
       } else {

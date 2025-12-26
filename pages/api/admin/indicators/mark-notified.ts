@@ -66,9 +66,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await payment.save();
 
+    // ✅ DEBUG: Verificar que se guardó correctamente
+    const savedPayment = await Payment.findById(paymentId);
     console.log('✅ Pago marcado como notificado manualmente:', {
       paymentId,
-      userEmail: payment.userEmail
+      userEmail: payment.userEmail,
+      metadataAfterSave: savedPayment?.metadata,
+      notificationSentValue: savedPayment?.metadata?.notificationSent,
+      notificationSentType: typeof savedPayment?.metadata?.notificationSent
     });
 
     return res.status(200).json({

@@ -32,11 +32,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await dbConnect();
 
+    // ✅ CORREGIDO: No usar .lean() para asegurar que metadata se lea correctamente
     // Buscar todos los pagos del servicio de indicadores que estén aprobados
     const payments = await Payment.find({
       service: 'MediasMovilesAutomaticas',
       status: 'approved'
-    }).sort({ transactionDate: -1 }).lean();
+    }).sort({ transactionDate: -1 });
 
     console.log(`📊 Encontrados ${payments.length} pagos de indicadores`);
 
@@ -45,6 +46,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       payments.map(async (payment: any) => {
         const paymentUser = await User.findOne({ email: payment.userEmail }).lean();
         
+        // ✅ CORREGIDO: Leer metadata correctamente (sin .lean() el payment es un documento de Mongoose)
+        const metadata = payment.metadata || {};
+        const notificationSent = metadata.notificationSent === true || metadata.notificationSent === 'true';
+        
+        // ✅ DEBUG: Log para verificar estado
+        if (payment.userEmail === 'lozanonahuel@gmail.com') {
+          console.log('🔍 DEBUG - Pago encontrado:', {
+            paymentId: payment._id.toString(),
+            userEmail: payment.userEmail,
+            metadata: metadata,
+            notificationSent: notificationSent,
+            metadataNotificationSent: metadata.notificationSent,
+            metadataType: typeof metadata.notificationSent,
+            metadataRaw: JSON.stringify(metadata)
+          });
+        }
+        
         return {
           _id: payment._id.toString(),
           userEmail: payment.userEmail,
@@ -52,15 +70,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           amount: payment.amount,
           currency: payment.currency,
           transactionDate: payment.transactionDate,
-          tradingViewUser: payment.metadata?.tradingViewUser || null,
-          formSubmitted: payment.metadata?.formSubmitted || false,
-          notificationSent: payment.metadata?.notificationSent || false,
+          tradingViewUser: metadata.tradingViewUser || null,
+          formSubmitted: metadata.formSubmitted || false,
+          notificationSent: notificationSent, // ✅ CORREGIDO: Usar comparación estricta
           paymentId: payment._id.toString()
         };
       })
     );
 
-    console.log(`✅ Datos de usuarios obtenidos exitosamente`);
+    // ✅ DEBUG: Contar usuarios notificados
+    const notifiedCount = usersWithIndicatorData.filter(u => u.notificationSent).length;
+    console.log(`✅ Datos de usuarios obtenidos: ${usersWithIndicatorData.length} total, ${notifiedCount} notificados`);
 
     return res.status(200).json({
       success: true,
