@@ -59,7 +59,17 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
       const data = await response.json();
 
       if (data.success) {
-        setIndicatorUsers(data.users || []);
+        const previousCount = indicatorUsers.length;
+        const newUsers = data.users || [];
+        setIndicatorUsers(newUsers);
+        
+        // ✅ NUEVO: Mostrar mensaje informativo si se actualizó la lista
+        if (previousCount > 0) {
+          const notifiedCount = newUsers.filter((u: IndicatorUser) => u.notificationSent).length;
+          toast.success(`Lista actualizada: ${newUsers.length} usuarios (${notifiedCount} notificados)`, {
+            duration: 3000
+          });
+        }
       } else {
         toast.error(data.error || 'Error al cargar usuarios');
       }
@@ -97,12 +107,9 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
 
       if (data.success) {
         toast.success('Notificación enviada exitosamente');
-        // ✅ CORREGIDO: Actualizar el estado de notificación en lugar de remover
-        setIndicatorUsers(prev => prev.map(user => 
-          user.paymentId === paymentId 
-            ? { ...user, notificationSent: true }
-            : user
-        ));
+        // ✅ CORREGIDO: Recargar la lista completa desde el servidor para asegurar sincronización
+        // Esto hace que el usuario desaparezca automáticamente si el filtro está en 'new' o 'without-notification'
+        await fetchIndicatorUsers();
       } else {
         toast.error(data.error || 'Error al enviar notificación.');
       }
@@ -188,6 +195,7 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                   onClick={fetchIndicatorUsers}
                   disabled={loading}
                   className={styles.actionButton}
+                  title="Actualizar lista de usuarios"
                 >
                   <RefreshCw size={20} className={loading ? styles.spinning : ''} />
                   Actualizar
@@ -269,6 +277,42 @@ export default function AdminIndicatorsUsersPage({ user }: AdminIndicatorsUsersP
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={styles.searchInput}
                 />
+                {/* ✅ NUEVO: Botón de actualizar más visible */}
+                <button 
+                  onClick={fetchIndicatorUsers}
+                  disabled={loading}
+                  className={styles.refreshButton}
+                  title="Actualizar lista desde el servidor"
+                  style={{
+                    marginLeft: '1rem',
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: loading ? '#9ca3af' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    fontWeight: '600',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.backgroundColor = '#2563eb';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!loading) {
+                      e.currentTarget.style.backgroundColor = '#3b82f6';
+                    }
+                  }}
+                >
+                  <RefreshCw size={18} className={loading ? styles.spinning : ''} />
+                  {loading ? 'Actualizando...' : 'Actualizar Lista'}
+                </button>
               </div>
 
               <div className={styles.filterButtons}>
