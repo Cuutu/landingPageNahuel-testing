@@ -17,7 +17,9 @@ import {
   Edit,
   Trash2,
   MoreVertical,
-  Eye
+  Eye,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import ImageUploader, { CloudinaryImage } from '@/components/ImageUploader';
 import styles from '@/styles/OperationsTable.module.css';
@@ -411,17 +413,38 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
   const [filterType, setFilterType] = useState<'ALL' | 'COMPRA' | 'VENTA'>('ALL');
   const [sortBy, setSortBy] = useState<'date' | 'ticker'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
+  // ✅ NUEVO: Estado para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+
+  // ✅ MODIFICADO: Calcular skip basado en la página actual
+  const skip = (currentPage - 1) * itemsPerPage;
 
   useEffect(() => {
-    fetchOperations(system);
-  }, [system, fetchOperations]);
+    // Resetear a la primera página cuando cambia el sistema
+    setCurrentPage(1);
+    fetchOperations(system, itemsPerPage, 0);
+  }, [system, fetchOperations, itemsPerPage]);
 
-  // Refrescar cuando cambia el refreshTrigger
+  // ✅ MODIFICADO: Refrescar cuando cambia el refreshTrigger, manteniendo la página actual
   useEffect(() => {
     if (refreshTrigger > 0) {
-      fetchOperations(system);
+      fetchOperations(system, itemsPerPage, skip);
     }
-  }, [refreshTrigger, system, fetchOperations]);
+  }, [refreshTrigger, system, fetchOperations, itemsPerPage, skip]);
+
+  // ✅ NUEVO: Función para cambiar de página
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    const newSkip = (newPage - 1) * itemsPerPage;
+    fetchOperations(system, itemsPerPage, newSkip);
+    // Scroll al inicio de la tabla
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // ✅ NUEVO: Calcular número total de páginas
+  const totalPages = Math.ceil(total / itemsPerPage);
 
   const filteredOperations = operations
     .filter(op => {
@@ -592,13 +615,13 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       const result = await updateOperation(editingOperation._id, updateData);
       
       if (result) {
-        // ✅ Actualizar las operaciones refrescando desde el servidor
-        await refreshOperations();
+        // ✅ Actualizar las operaciones refrescando desde el servidor con paginación
+        await fetchOperations(system, itemsPerPage, skip);
         
         alert('✅ Operación actualizada exitosamente');
         setShowEditModal(false);
         setEditImage(null);
-        await fetchOperations(system);
+        await fetchOperations(system, itemsPerPage, skip);
       } else {
         throw new Error('No se pudo actualizar la operación');
       }
@@ -626,7 +649,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       }
 
       alert('✅ Operación eliminada exitosamente');
-      await fetchOperations(system);
+      // ✅ Si eliminamos la última operación de la página y no es la primera página, volver a la anterior
+      if (filteredOperations.length === 1 && currentPage > 1) {
+        const newPage = currentPage - 1;
+        setCurrentPage(newPage);
+        await fetchOperations(system, itemsPerPage, (newPage - 1) * itemsPerPage);
+      } else {
+        await fetchOperations(system, itemsPerPage, skip);
+      }
     } catch (error) {
       console.error('Error deleting operation:', error);
       alert('❌ Error al eliminar operación');
@@ -715,7 +745,9 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           notes: '',
           alertId: ''
         });
-        await fetchOperations(system);
+        // ✅ Resetear a la primera página para ver la nueva operación
+        setCurrentPage(1);
+        await fetchOperations(system, itemsPerPage, 0);
       } else {
         alert('❌ Error al crear la operación');
       }
@@ -887,7 +919,10 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           <p>Error al cargar operaciones</p>
           <p className="text-sm mb-4">{error}</p>
           <button
-            onClick={() => fetchOperations(system)}
+            onClick={() => {
+              setCurrentPage(1);
+              fetchOperations(system, itemsPerPage, 0);
+            }}
             className={styles.paginationButton}
           >
             Reintentar
@@ -959,7 +994,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
             type="text"
             placeholder="Buscar por ticker..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              // ✅ NUEVO: Resetear a la primera página al buscar
+              if (currentPage !== 1) {
+                setCurrentPage(1);
+                fetchOperations(system, itemsPerPage, 0);
+              }
+            }}
             className={styles.filterInput}
           />
         </div>
@@ -968,7 +1010,14 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           <Filter className="w-4 h-4" />
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as 'ALL' | 'COMPRA' | 'VENTA')}
+            onChange={(e) => {
+              setFilterType(e.target.value as 'ALL' | 'COMPRA' | 'VENTA');
+              // ✅ NUEVO: Resetear a la primera página al cambiar filtro
+              if (currentPage !== 1) {
+                setCurrentPage(1);
+                fetchOperations(system, itemsPerPage, 0);
+              }
+            }}
             className={styles.filterSelect}
           >
             <option value="ALL">Todas</option>
@@ -985,6 +1034,11 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
               const [field, order] = e.target.value.split('-');
               setSortBy(field as 'date' | 'ticker');
               setSortOrder(order as 'asc' | 'desc');
+              // ✅ NUEVO: Resetear a la primera página al cambiar orden
+              if (currentPage !== 1) {
+                setCurrentPage(1);
+                fetchOperations(system, itemsPerPage, 0);
+              }
             }}
             className={styles.filterSelect}
           >
@@ -1168,6 +1222,194 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
           </tbody>
         </table>
       </div>
+
+      {/* ✅ NUEVO: Controles de paginación */}
+      {total > itemsPerPage && (
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: '2rem',
+          padding: '1rem',
+          backgroundColor: '#f9fafb',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb',
+          flexWrap: 'wrap',
+          gap: '1rem'
+        }}>
+          {/* Información de paginación */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.875rem',
+            color: '#6b7280'
+          }}>
+            <span>
+              Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, total)} de {total} operaciones
+            </span>
+          </div>
+
+          {/* Controles de navegación */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            {/* Botón Anterior */}
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: currentPage === 1 ? '#e5e7eb' : '#ffffff',
+                color: currentPage === 1 ? '#9ca3af' : '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+                opacity: currentPage === 1 ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (currentPage > 1) {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage > 1) {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }
+              }}
+            >
+              <ChevronLeft size={16} />
+              Anterior
+            </button>
+
+            {/* Números de página */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.25rem'
+            }}>
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    style={{
+                      minWidth: '2.5rem',
+                      height: '2.5rem',
+                      padding: '0.5rem',
+                      backgroundColor: currentPage === pageNum ? '#3b82f6' : '#ffffff',
+                      color: currentPage === pageNum ? '#ffffff' : '#374151',
+                      border: '1px solid #d1d5db',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem',
+                      fontWeight: currentPage === pageNum ? '600' : '500',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (currentPage !== pageNum) {
+                        e.currentTarget.style.backgroundColor = '#f3f4f6';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (currentPage !== pageNum) {
+                        e.currentTarget.style.backgroundColor = '#ffffff';
+                      }
+                    }}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Botón Siguiente */}
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 1rem',
+                backgroundColor: currentPage === totalPages ? '#e5e7eb' : '#ffffff',
+                color: currentPage === totalPages ? '#9ca3af' : '#374151',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                fontSize: '0.875rem',
+                fontWeight: '500',
+                transition: 'all 0.2s',
+                opacity: currentPage === totalPages ? 0.6 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (currentPage < totalPages) {
+                  e.currentTarget.style.backgroundColor = '#f3f4f6';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage < totalPages) {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                }
+              }}
+            >
+              Siguiente
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          {/* Selector de items por página */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.875rem'
+          }}>
+            <label style={{ color: '#6b7280' }}>Mostrar:</label>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                const newItemsPerPage = parseInt(e.target.value);
+                setItemsPerPage(newItemsPerPage);
+                setCurrentPage(1);
+                fetchOperations(system, newItemsPerPage, 0);
+              }}
+              style={{
+                padding: '0.5rem',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
+                backgroundColor: '#ffffff',
+                fontSize: '0.875rem',
+                cursor: 'pointer'
+              }}
+            >
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
+              <option value={200}>200</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Modal para crear operación manual */}
       {showCreateModal && (
