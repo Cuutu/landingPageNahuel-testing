@@ -607,7 +607,19 @@ export default async function handler(
                 status: esOperacionHistorica ? 'COMPLETED' : 'ACTIVE', // ✅ Solo operaciones históricas aparecen como "Completado"
                 notes: esOperacionHistorica 
                   ? `Operación histórica importada - ${liquidityPercentage}% de la cartera - Entrada: ${fechaEntrada}`
-                  : `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`
+                  : `Compra automática al crear alerta - ${liquidityPercentage}% de la cartera`,
+                // ✅ NUEVO: Copiar la imagen de la alerta a la operación
+                image: newAlert.chartImage ? {
+                  public_id: newAlert.chartImage.public_id,
+                  url: newAlert.chartImage.url,
+                  secure_url: newAlert.chartImage.secure_url,
+                  width: newAlert.chartImage.width,
+                  height: newAlert.chartImage.height,
+                  format: newAlert.chartImage.format,
+                  bytes: newAlert.chartImage.bytes,
+                  caption: newAlert.chartImage.caption,
+                  order: newAlert.chartImage.order || 0
+                } : undefined
               });
 
               await operation.save();
