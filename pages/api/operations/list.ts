@@ -126,55 +126,59 @@ export default async function handler(
             alertKeys: Object.keys(alertPopulated)
           });
           
-          const chartImageSerialized = serializeChartImage(alertPopulated.chartImage);
-          
-          // ✅ DEBUG: Log para verificar chartImage
-          if (chartImageSerialized) {
-            console.log(`📸 [OPERATIONS LIST] chartImage encontrado para operación ${op._id}:`, {
-              hasSecureUrl: !!chartImageSerialized.secure_url,
-              hasUrl: !!chartImageSerialized.url,
-              public_id: chartImageSerialized.public_id
-            });
-          } else {
-            console.warn(`⚠️ [OPERATIONS LIST] chartImage es null/undefined para operación ${op._id}, alertId: ${alertPopulated._id}`);
+          // ✅ CORREGIDO: Siempre buscar chartImage manualmente porque el populate puede no traer subdocumentos correctamente
+          let chartImageFinal = null;
+          try {
+            console.log(`🔄 [OPERATIONS LIST] Buscando chartImage manualmente para alertId: ${alertPopulated._id}`);
+            const alertManual = await Alert.findById(alertPopulated._id).select('chartImage').lean();
             
-            // ✅ NUEVO: Si chartImage no viene en el populate, buscar manualmente
-            try {
-              console.log(`🔄 [OPERATIONS LIST] Buscando chartImage manualmente para alertId: ${alertPopulated._id}`);
-              const alertManual = await Alert.findById(alertPopulated._id).select('chartImage').lean();
-              
-              console.log(`🔍 [OPERATIONS LIST] Resultado búsqueda manual:`, {
-                alertFound: !!alertManual,
-                hasChartImage: !!(alertManual && (alertManual as any).chartImage),
-                chartImageValue: alertManual ? (alertManual as any).chartImage : null,
-                chartImageType: alertManual && (alertManual as any).chartImage ? typeof (alertManual as any).chartImage : null
-              });
-              
-              if (alertManual && (alertManual as any).chartImage) {
-                console.log(`🔄 [OPERATIONS LIST] chartImage encontrado en búsqueda manual para operación ${op._id}`);
-                const chartImageFromManual = serializeChartImage((alertManual as any).chartImage);
-                if (chartImageFromManual) {
-                  alertPopulated.chartImage = chartImageFromManual;
-                  console.log(`✅ [OPERATIONS LIST] chartImage recuperado manualmente y asignado:`, {
-                    hasSecureUrl: !!chartImageFromManual.secure_url,
-                    public_id: chartImageFromManual.public_id
-                  });
-                } else {
-                  console.warn(`⚠️ [OPERATIONS LIST] chartImage existe en BD pero no se pudo serializar`);
-                }
+            console.log(`🔍 [OPERATIONS LIST] Resultado búsqueda manual:`, {
+              alertFound: !!alertManual,
+              hasChartImage: !!(alertManual && (alertManual as any).chartImage),
+              chartImageValue: alertManual ? (alertManual as any).chartImage : null,
+              chartImageType: alertManual && (alertManual as any).chartImage ? typeof (alertManual as any).chartImage : null,
+              chartImageIsNull: alertManual && (alertManual as any).chartImage === null,
+              chartImageIsUndefined: alertManual && (alertManual as any).chartImage === undefined
+            });
+            
+            if (alertManual && (alertManual as any).chartImage) {
+              console.log(`🔄 [OPERATIONS LIST] chartImage encontrado en búsqueda manual para operación ${op._id}`);
+              const chartImageFromManual = serializeChartImage((alertManual as any).chartImage);
+              if (chartImageFromManual) {
+                chartImageFinal = chartImageFromManual;
+                console.log(`✅ [OPERATIONS LIST] chartImage recuperado manualmente y asignado:`, {
+                  hasSecureUrl: !!chartImageFromManual.secure_url,
+                  public_id: chartImageFromManual.public_id
+                });
               } else {
-                console.warn(`⚠️ [OPERATIONS LIST] chartImage NO existe en la BD para alertId: ${alertPopulated._id}`);
+                console.warn(`⚠️ [OPERATIONS LIST] chartImage existe en BD pero no se pudo serializar`);
               }
-            } catch (manualError) {
-              console.error(`❌ [OPERATIONS LIST] Error en búsqueda manual de chartImage:`, manualError);
+            } else {
+              console.warn(`⚠️ [OPERATIONS LIST] chartImage NO existe en la BD para alertId: ${alertPopulated._id}`);
+            }
+          } catch (manualError) {
+            console.error(`❌ [OPERATIONS LIST] Error en búsqueda manual de chartImage:`, manualError);
+            // Fallback: intentar usar el chartImage del populate si existe
+            const chartImageSerialized = serializeChartImage(alertPopulated.chartImage);
+            if (chartImageSerialized) {
+              chartImageFinal = chartImageSerialized;
+              console.log(`📸 [OPERATIONS LIST] Usando chartImage del populate como fallback`);
+            }
+          }
+          
+          // Si no se encontró en búsqueda manual, intentar con el populate
+          if (!chartImageFinal) {
+            const chartImageSerialized = serializeChartImage(alertPopulated.chartImage);
+            if (chartImageSerialized) {
+              chartImageFinal = chartImageSerialized;
+              console.log(`📸 [OPERATIONS LIST] chartImage encontrado en populate para operación ${op._id}:`, {
+                hasSecureUrl: !!chartImageSerialized.secure_url,
+                hasUrl: !!chartImageSerialized.url,
+                public_id: chartImageSerialized.public_id
+              });
             }
           }
 
-          // ✅ CORREGIDO: Usar alertPopulated que puede tener chartImage recuperado manualmente
-          const finalChartImage = alertPopulated.chartImage && typeof alertPopulated.chartImage === 'object' && !alertPopulated.chartImage.toObject 
-            ? serializeChartImage(alertPopulated.chartImage) 
-            : chartImageSerialized;
-          
           alertData = {
             _id: alertPopulated._id,
             symbol: alertPopulated.symbol,
@@ -185,7 +189,7 @@ export default async function handler(
             descartadaAt: alertPopulated.descartadaAt,
             date: alertPopulated.date,
             createdAt: alertPopulated.createdAt,
-            chartImage: finalChartImage, // ✅ CORREGIDO: Usar versión final (puede ser recuperada manualmente)
+            chartImage: chartImageFinal, // ✅ CORREGIDO: Usar chartImage recuperado manualmente (si existe)
             analysis: alertPopulated.analysis,
             images: alertPopulated.images ? (Array.isArray(alertPopulated.images) ? alertPopulated.images.map((img: any) => serializeChartImage(img)) : []) : [],
             entryPrice: alertPopulated.entryPrice,
@@ -199,7 +203,9 @@ export default async function handler(
           // ✅ DEBUG: Verificar que chartImage se incluyó en alertData
           console.log(`✅ [OPERATIONS LIST] alertData construido para operación ${op._id}:`, {
             hasChartImage: !!alertData.chartImage,
-            chartImageValue: alertData.chartImage
+            chartImageValue: alertData.chartImage,
+            chartImageType: typeof alertData.chartImage,
+            chartImageIsNull: alertData.chartImage === null
           });
         } 
         // Si alertId es un string (ObjectId), intentar buscar la alerta manualmente
