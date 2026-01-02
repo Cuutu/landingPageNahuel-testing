@@ -140,14 +140,30 @@ export default async function handler(
             
             // ✅ NUEVO: Si chartImage no viene en el populate, buscar manualmente
             try {
+              console.log(`🔄 [OPERATIONS LIST] Buscando chartImage manualmente para alertId: ${alertPopulated._id}`);
               const alertManual = await Alert.findById(alertPopulated._id).select('chartImage').lean();
+              
+              console.log(`🔍 [OPERATIONS LIST] Resultado búsqueda manual:`, {
+                alertFound: !!alertManual,
+                hasChartImage: !!(alertManual && (alertManual as any).chartImage),
+                chartImageValue: alertManual ? (alertManual as any).chartImage : null,
+                chartImageType: alertManual && (alertManual as any).chartImage ? typeof (alertManual as any).chartImage : null
+              });
+              
               if (alertManual && (alertManual as any).chartImage) {
                 console.log(`🔄 [OPERATIONS LIST] chartImage encontrado en búsqueda manual para operación ${op._id}`);
                 const chartImageFromManual = serializeChartImage((alertManual as any).chartImage);
                 if (chartImageFromManual) {
                   alertPopulated.chartImage = chartImageFromManual;
-                  console.log(`✅ [OPERATIONS LIST] chartImage recuperado manualmente y asignado`);
+                  console.log(`✅ [OPERATIONS LIST] chartImage recuperado manualmente y asignado:`, {
+                    hasSecureUrl: !!chartImageFromManual.secure_url,
+                    public_id: chartImageFromManual.public_id
+                  });
+                } else {
+                  console.warn(`⚠️ [OPERATIONS LIST] chartImage existe en BD pero no se pudo serializar`);
                 }
+              } else {
+                console.warn(`⚠️ [OPERATIONS LIST] chartImage NO existe en la BD para alertId: ${alertPopulated._id}`);
               }
             } catch (manualError) {
               console.error(`❌ [OPERATIONS LIST] Error en búsqueda manual de chartImage:`, manualError);

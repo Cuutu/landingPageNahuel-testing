@@ -2597,8 +2597,18 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 } else if (!imageUrl) {
                   console.warn('⚠️ [MODAL] No hay chartImage en selectedAlert:', {
                     hasChartImage: !!selectedAlert.chartImage,
+                    chartImageValue: selectedAlert.chartImage,
+                    chartImageType: typeof selectedAlert.chartImage,
+                    chartImageIsNull: selectedAlert.chartImage === null,
+                    chartImageIsUndefined: selectedAlert.chartImage === undefined,
                     selectedAlertKeys: Object.keys(selectedAlert || {})
                   });
+                  
+                  // ✅ NUEVO: Intentar obtener chartImage directamente desde la BD si está disponible
+                  if (selectedAlert._id) {
+                    console.log('🔄 [MODAL] Intentando obtener chartImage directamente desde la BD para alertId:', selectedAlert._id);
+                    // Esto se puede hacer con una llamada a la API, pero por ahora solo logueamos
+                  }
                 }
                 
                 // Si hay imagen, mostrarla
