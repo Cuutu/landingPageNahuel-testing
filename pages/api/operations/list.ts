@@ -138,7 +138,7 @@ export default async function handler(
             const alert = await Alert.findById(alertIdString).select('symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss liquidityData').lean();
             
             if (alert) {
-              const chartImageSerialized = serializeChartImage(alert.chartImage);
+              const chartImageSerialized = serializeChartImage((alert as any).chartImage);
               
               // ✅ DEBUG: Log para verificar chartImage
               if (chartImageSerialized) {
@@ -152,24 +152,24 @@ export default async function handler(
               }
 
               alertData = {
-                _id: alert._id,
-                symbol: alert.symbol,
-                action: alert.action,
-                status: alert.status,
-                availableForPurchase: alert.availableForPurchase,
-                finalPriceSetAt: alert.finalPriceSetAt,
-                descartadaAt: alert.descartadaAt,
-                date: alert.date,
-                createdAt: alert.createdAt,
+                _id: (alert as any)._id,
+                symbol: (alert as any).symbol,
+                action: (alert as any).action,
+                status: (alert as any).status,
+                availableForPurchase: (alert as any).availableForPurchase,
+                finalPriceSetAt: (alert as any).finalPriceSetAt,
+                descartadaAt: (alert as any).descartadaAt,
+                date: (alert as any).date,
+                createdAt: (alert as any).createdAt,
                 chartImage: chartImageSerialized, // ✅ CORREGIDO: Usar versión serializada
-                analysis: alert.analysis,
-                images: alert.images ? (Array.isArray(alert.images) ? alert.images.map((img: any) => serializeChartImage(img)) : []) : [],
-                entryPrice: alert.entryPrice,
-                entryPriceRange: alert.entryPriceRange,
-                currentPrice: alert.currentPrice,
-                takeProfit: alert.takeProfit,
-                stopLoss: alert.stopLoss,
-                liquidityData: alert.liquidityData
+                analysis: (alert as any).analysis,
+                images: (alert as any).images ? (Array.isArray((alert as any).images) ? (alert as any).images.map((img: any) => serializeChartImage(img)) : []) : [],
+                entryPrice: (alert as any).entryPrice,
+                entryPriceRange: (alert as any).entryPriceRange,
+                currentPrice: (alert as any).currentPrice,
+                takeProfit: (alert as any).takeProfit,
+                stopLoss: (alert as any).stopLoss,
+                liquidityData: (alert as any).liquidityData
               };
             } else {
               console.warn(`⚠️ Alerta no encontrada para operación ${op._id}, alertId: ${alertIdString}`);
