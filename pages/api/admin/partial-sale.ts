@@ -374,7 +374,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const realizedProfit = marketValue - liquidityReleased;
     
     // ✅ NUEVO: Calcular el porcentaje que QUEDARÁ después de la venta
-    const newParticipation = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
+    let newParticipation = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
+    
+    // ✅ NUEVO: Si la participación restante es muy baja (< 5%), considerar como venta completa
+    // Esto evita dejar posiciones residuales muy pequeñas que no tienen sentido práctico
+    const MIN_PARTICIPATION_THRESHOLD = 5; // Umbral mínimo de participación (5%)
+    if (!isCompleteSale && newParticipation > 0 && newParticipation < MIN_PARTICIPATION_THRESHOLD) {
+      console.log(`⚠️ Participación restante muy baja (${newParticipation.toFixed(2)}% < ${MIN_PARTICIPATION_THRESHOLD}%) - Marcando como venta completa`);
+      isCompleteSale = true;
+      newParticipation = 0;
+      // Ajustar sharesToSell y sharesRemaining para reflejar venta completa
+      sharesToSell = shares;
+      sharesRemaining = 0;
+    }
     
     console.log(`💰 Venta ${isCompleteSale ? 'COMPLETA' : 'PARCIAL'} ${percentage}%:`);
     console.log(`📊 Participación actual: ${currentParticipation}%`);
@@ -591,15 +603,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // ✅ EJECUTAR VENTA INMEDIATAMENTE: Solo cuando NO hay rango de precios
       console.log(`💰 Ejecutando venta INMEDIATA (sin rango de precios)`);
       
-      // ✅ CORREGIDO: Actualizar el porcentaje de participación basándose en el ACTUAL, no el original
-      if (isCompleteSale) {
-        alert.participationPercentage = 0;
-      } else {
-        // Para ventas parciales, reducir el porcentaje basándose en la posición ACTUAL
-        const currentPercentage = alert.participationPercentage ?? 100;
-        const newParticipationPercentage = Math.max(0, currentPercentage - percentage);
-        alert.participationPercentage = newParticipationPercentage;
-      }
+      // ✅ CORREGIDO: Actualizar el porcentaje de participación usando newParticipation (ya incluye validación de umbral mínimo)
+      // newParticipation ya fue calculado antes y ya incluye la validación de umbral mínimo
+      alert.participationPercentage = newParticipation;
       console.log(`📊 Porcentaje de participación actualizado: ${alert.participationPercentage}%`);
       
       // ✅ NUEVO: Calcular ganancia porcentual simple y agregar a ventasParciales
@@ -651,14 +657,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ]
       };
 
-      // Si se vendió todo (100% o situación similar), cerrar la alerta
-      if (sharesRemaining <= 0 || alert.participationPercentage <= 0) {
+      // ✅ MEJORADO: Si se vendió todo (100% o situación similar), o si la participación restante es muy baja, cerrar la alerta
+      // newParticipation ya fue calculado antes y ya incluye la validación de umbral mínimo (si es < 5%, ya está en 0)
+      const shouldCloseAlert = sharesRemaining <= 0 || 
+                                newParticipation <= 0 || 
+                                isCompleteSale;
+      
+      if (shouldCloseAlert) {
         alert.status = 'CLOSED';
         alert.exitPrice = sellPrice; // Usar el valor numérico, no el string
         alert.exitDate = new Date();
         alert.exitReason = 'MANUAL';
         alert.participationPercentage = 0; // Asegurar que esté en 0
-        console.log(`🔒 Alerta cerrada completamente - participación: ${alert.participationPercentage}%`);
+        console.log(`🔒 Alerta cerrada completamente - participación anterior: ${newParticipation.toFixed(2)}%, participación restante muy baja o cero`);
+        
+        // ✅ NUEVO: Verificar si realmente quedó tenencia en la distribución de liquidez
+        try {
+          const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+          const liquidity = await Liquidity.findOne({ 
+            pool: pool,
+            'distributions.alertId': alert._id
+          });
+          
+          if (liquidity) {
+            const distribution = liquidity.distributions.find((d: any) => d.alertId.toString() === alert._id.toString());
+            if (distribution) {
+              const remainingSharesInLiquidity = distribution.shares || 0;
+              if (remainingSharesInLiquidity > 0.001) {
+                console.log(`⚠️ [VERIFICACIÓN] Quedan ${remainingSharesInLiquidity.toFixed(4)} shares en la distribución de liquidez después de cerrar la alerta`);
+                console.log(`⚠️ [VERIFICACIÓN] Esto podría indicar que hay tenencia residual en la billetera`);
+              } else {
+                console.log(`✅ [VERIFICACIÓN] No quedan shares en la distribución de liquidez (${remainingSharesInLiquidity.toFixed(4)})`);
+              }
+            }
+          }
+        } catch (liquidityCheckError) {
+          console.error('⚠️ Error verificando tenencia en distribución de liquidez:', liquidityCheckError);
+        }
       }
       
       // ✅ NUEVO: Calcular ganancia realizada acumulada después de registrar la venta

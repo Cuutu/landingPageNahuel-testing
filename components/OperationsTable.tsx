@@ -1161,6 +1161,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                         {operation.alertId && operation.alert && (
                           <button
                             onClick={() => {
+                              // ✅ DEBUG: Log para verificar datos antes de abrir modal
+                              console.log('🔍 [OPERATIONS TABLE] Abriendo modal "Ver alerta":', {
+                                operationId: operation._id,
+                                alertId: operation.alertId,
+                                hasAlert: !!operation.alert,
+                                hasChartImage: !!operation.alert?.chartImage,
+                                chartImage: operation.alert?.chartImage,
+                                alertKeys: Object.keys(operation.alert || {})
+                              });
+                              
                               setSelectedAlert(operation.alert);
                               setSelectedOperation(operation);
                               setShowAlertModal(true);
@@ -2569,8 +2579,26 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
                 }
                 
                 // Si no hay emailImageUrl en ventas parciales, usar chartImage como fallback
-                if (!imageUrl && selectedAlert.chartImage && (selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url)) {
+                if (!imageUrl && selectedAlert.chartImage) {
+                  // ✅ DEBUG: Log para verificar estructura de chartImage
+                  console.log('🔍 [MODAL] Verificando chartImage:', {
+                    chartImage: selectedAlert.chartImage,
+                    hasSecureUrl: !!(selectedAlert.chartImage.secure_url),
+                    hasUrl: !!(selectedAlert.chartImage.url),
+                    type: typeof selectedAlert.chartImage,
+                    keys: Object.keys(selectedAlert.chartImage || {})
+                  });
+                  
                   imageUrl = selectedAlert.chartImage.secure_url || selectedAlert.chartImage.url || null;
+                  
+                  if (!imageUrl) {
+                    console.warn('⚠️ [MODAL] chartImage existe pero no tiene secure_url ni url:', selectedAlert.chartImage);
+                  }
+                } else if (!imageUrl) {
+                  console.warn('⚠️ [MODAL] No hay chartImage en selectedAlert:', {
+                    hasChartImage: !!selectedAlert.chartImage,
+                    selectedAlertKeys: Object.keys(selectedAlert || {})
+                  });
                 }
                 
                 // Si hay imagen, mostrarla

@@ -71,8 +71,45 @@ export default async function handler(
       operations.map(async (op) => {
         let alertData = null;
 
+        // Función auxiliar para convertir chartImage a objeto plano
+        const serializeChartImage = (chartImage: any): any => {
+          if (!chartImage) return null;
+          // Si es un objeto de Mongoose, convertirlo a objeto plano
+          if (chartImage.toObject) {
+            return chartImage.toObject();
+          }
+          // Si ya es un objeto plano, retornarlo
+          if (typeof chartImage === 'object') {
+            return {
+              public_id: chartImage.public_id,
+              url: chartImage.url,
+              secure_url: chartImage.secure_url,
+              width: chartImage.width,
+              height: chartImage.height,
+              format: chartImage.format,
+              bytes: chartImage.bytes,
+              caption: chartImage.caption,
+              order: chartImage.order
+            };
+          }
+          return null;
+        };
+
         // Si el populate funcionó y alertId es un objeto
         if (op.alertId && typeof op.alertId === 'object' && op.alertId._id) {
+          const chartImageSerialized = serializeChartImage(op.alertId.chartImage);
+          
+          // ✅ DEBUG: Log para verificar chartImage
+          if (chartImageSerialized) {
+            console.log(`📸 [OPERATIONS LIST] chartImage encontrado para operación ${op._id}:`, {
+              hasSecureUrl: !!chartImageSerialized.secure_url,
+              hasUrl: !!chartImageSerialized.url,
+              public_id: chartImageSerialized.public_id
+            });
+          } else {
+            console.warn(`⚠️ [OPERATIONS LIST] chartImage es null/undefined para operación ${op._id}, alertId: ${op.alertId._id}`);
+          }
+
           alertData = {
             _id: op.alertId._id,
             symbol: op.alertId.symbol,
@@ -83,9 +120,9 @@ export default async function handler(
             descartadaAt: op.alertId.descartadaAt,
             date: op.alertId.date,
             createdAt: op.alertId.createdAt,
-            chartImage: op.alertId.chartImage,
+            chartImage: chartImageSerialized, // ✅ CORREGIDO: Usar versión serializada
             analysis: op.alertId.analysis,
-            images: op.alertId.images,
+            images: op.alertId.images ? (Array.isArray(op.alertId.images) ? op.alertId.images.map((img: any) => serializeChartImage(img)) : []) : [],
             entryPrice: op.alertId.entryPrice,
             entryPriceRange: op.alertId.entryPriceRange,
             currentPrice: op.alertId.currentPrice,
@@ -98,9 +135,22 @@ export default async function handler(
         else if (op.alertId) {
           try {
             const alertIdString = typeof op.alertId === 'string' ? op.alertId : op.alertId.toString();
-            const alert = await Alert.findById(alertIdString).select('symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss liquidityData');
+            const alert = await Alert.findById(alertIdString).select('symbol action status profit availableForPurchase finalPriceSetAt descartadaAt date createdAt chartImage analysis images entryPrice entryPriceRange currentPrice takeProfit stopLoss liquidityData').lean();
             
             if (alert) {
+              const chartImageSerialized = serializeChartImage(alert.chartImage);
+              
+              // ✅ DEBUG: Log para verificar chartImage
+              if (chartImageSerialized) {
+                console.log(`📸 [OPERATIONS LIST] chartImage encontrado (búsqueda manual) para operación ${op._id}:`, {
+                  hasSecureUrl: !!chartImageSerialized.secure_url,
+                  hasUrl: !!chartImageSerialized.url,
+                  public_id: chartImageSerialized.public_id
+                });
+              } else {
+                console.warn(`⚠️ [OPERATIONS LIST] chartImage es null/undefined (búsqueda manual) para operación ${op._id}, alertId: ${alertIdString}`);
+              }
+
               alertData = {
                 _id: alert._id,
                 symbol: alert.symbol,
@@ -111,9 +161,9 @@ export default async function handler(
                 descartadaAt: alert.descartadaAt,
                 date: alert.date,
                 createdAt: alert.createdAt,
-                chartImage: alert.chartImage,
+                chartImage: chartImageSerialized, // ✅ CORREGIDO: Usar versión serializada
                 analysis: alert.analysis,
-                images: alert.images,
+                images: alert.images ? (Array.isArray(alert.images) ? alert.images.map((img: any) => serializeChartImage(img)) : []) : [],
                 entryPrice: alert.entryPrice,
                 entryPriceRange: alert.entryPriceRange,
                 currentPrice: alert.currentPrice,
