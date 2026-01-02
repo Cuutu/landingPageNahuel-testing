@@ -61,8 +61,24 @@ export default async function handler(
         ticker: operations[0].ticker,
         system: operations[0].system,
         date: operations[0].date,
-        operationType: operations[0].operationType
+        operationType: operations[0].operationType,
+        hasAlertId: !!operations[0].alertId,
+        alertIdType: typeof operations[0].alertId,
+        alertIdValue: operations[0].alertId
       });
+      
+      // ✅ DEBUG: Verificar chartImage en el populate
+      if (operations[0].alertId && typeof operations[0].alertId === 'object') {
+        const firstAlert = operations[0].alertId as any;
+        console.log(`🔍 [OPERATIONS LIST] DEBUG primera alerta populada:`, {
+          _id: firstAlert._id,
+          symbol: firstAlert.symbol,
+          hasChartImage: !!firstAlert.chartImage,
+          chartImageType: typeof firstAlert.chartImage,
+          chartImageValue: firstAlert.chartImage,
+          chartImageKeys: firstAlert.chartImage ? Object.keys(firstAlert.chartImage) : null
+        });
+      }
     }
 
     // ✅ MEJORADO: Obtener información de alertas que no se populan correctamente
@@ -97,7 +113,20 @@ export default async function handler(
 
         // Si el populate funcionó y alertId es un objeto
         if (op.alertId && typeof op.alertId === 'object' && op.alertId._id) {
-          const chartImageSerialized = serializeChartImage(op.alertId.chartImage);
+          const alertPopulated = op.alertId as any;
+          
+          // ✅ DEBUG: Log detallado antes de serializar
+          console.log(`🔍 [OPERATIONS LIST] Procesando operación ${op._id}:`, {
+            alertId: alertPopulated._id,
+            symbol: alertPopulated.symbol,
+            chartImageRaw: alertPopulated.chartImage,
+            chartImageType: typeof alertPopulated.chartImage,
+            chartImageIsNull: alertPopulated.chartImage === null,
+            chartImageIsUndefined: alertPopulated.chartImage === undefined,
+            alertKeys: Object.keys(alertPopulated)
+          });
+          
+          const chartImageSerialized = serializeChartImage(alertPopulated.chartImage);
           
           // ✅ DEBUG: Log para verificar chartImage
           if (chartImageSerialized) {
@@ -107,29 +136,55 @@ export default async function handler(
               public_id: chartImageSerialized.public_id
             });
           } else {
-            console.warn(`⚠️ [OPERATIONS LIST] chartImage es null/undefined para operación ${op._id}, alertId: ${op.alertId._id}`);
+            console.warn(`⚠️ [OPERATIONS LIST] chartImage es null/undefined para operación ${op._id}, alertId: ${alertPopulated._id}`);
+            
+            // ✅ NUEVO: Si chartImage no viene en el populate, buscar manualmente
+            try {
+              const alertManual = await Alert.findById(alertPopulated._id).select('chartImage').lean();
+              if (alertManual && (alertManual as any).chartImage) {
+                console.log(`🔄 [OPERATIONS LIST] chartImage encontrado en búsqueda manual para operación ${op._id}`);
+                const chartImageFromManual = serializeChartImage((alertManual as any).chartImage);
+                if (chartImageFromManual) {
+                  alertPopulated.chartImage = chartImageFromManual;
+                  console.log(`✅ [OPERATIONS LIST] chartImage recuperado manualmente y asignado`);
+                }
+              }
+            } catch (manualError) {
+              console.error(`❌ [OPERATIONS LIST] Error en búsqueda manual de chartImage:`, manualError);
+            }
           }
 
+          // ✅ CORREGIDO: Usar alertPopulated que puede tener chartImage recuperado manualmente
+          const finalChartImage = alertPopulated.chartImage && typeof alertPopulated.chartImage === 'object' && !alertPopulated.chartImage.toObject 
+            ? serializeChartImage(alertPopulated.chartImage) 
+            : chartImageSerialized;
+          
           alertData = {
-            _id: op.alertId._id,
-            symbol: op.alertId.symbol,
-            action: op.alertId.action,
-            status: op.alertId.status,
-            availableForPurchase: op.alertId.availableForPurchase,
-            finalPriceSetAt: op.alertId.finalPriceSetAt,
-            descartadaAt: op.alertId.descartadaAt,
-            date: op.alertId.date,
-            createdAt: op.alertId.createdAt,
-            chartImage: chartImageSerialized, // ✅ CORREGIDO: Usar versión serializada
-            analysis: op.alertId.analysis,
-            images: op.alertId.images ? (Array.isArray(op.alertId.images) ? op.alertId.images.map((img: any) => serializeChartImage(img)) : []) : [],
-            entryPrice: op.alertId.entryPrice,
-            entryPriceRange: op.alertId.entryPriceRange,
-            currentPrice: op.alertId.currentPrice,
-            takeProfit: op.alertId.takeProfit,
-            stopLoss: op.alertId.stopLoss,
-            liquidityData: op.alertId.liquidityData
+            _id: alertPopulated._id,
+            symbol: alertPopulated.symbol,
+            action: alertPopulated.action,
+            status: alertPopulated.status,
+            availableForPurchase: alertPopulated.availableForPurchase,
+            finalPriceSetAt: alertPopulated.finalPriceSetAt,
+            descartadaAt: alertPopulated.descartadaAt,
+            date: alertPopulated.date,
+            createdAt: alertPopulated.createdAt,
+            chartImage: finalChartImage, // ✅ CORREGIDO: Usar versión final (puede ser recuperada manualmente)
+            analysis: alertPopulated.analysis,
+            images: alertPopulated.images ? (Array.isArray(alertPopulated.images) ? alertPopulated.images.map((img: any) => serializeChartImage(img)) : []) : [],
+            entryPrice: alertPopulated.entryPrice,
+            entryPriceRange: alertPopulated.entryPriceRange,
+            currentPrice: alertPopulated.currentPrice,
+            takeProfit: alertPopulated.takeProfit,
+            stopLoss: alertPopulated.stopLoss,
+            liquidityData: alertPopulated.liquidityData
           };
+          
+          // ✅ DEBUG: Verificar que chartImage se incluyó en alertData
+          console.log(`✅ [OPERATIONS LIST] alertData construido para operación ${op._id}:`, {
+            hasChartImage: !!alertData.chartImage,
+            chartImageValue: alertData.chartImage
+          });
         } 
         // Si alertId es un string (ObjectId), intentar buscar la alerta manualmente
         else if (op.alertId) {
