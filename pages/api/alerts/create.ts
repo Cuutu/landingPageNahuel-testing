@@ -133,6 +133,20 @@ export default async function handler(
       ventasParciales = []
     }: AlertRequest & { emailMessage?: string; emailImageUrl?: string } = req.body;
 
+    // ✅ DEBUG: Log para verificar chartImage recibido
+    console.log(`🔍 [ALERTS CREATE] Datos recibidos para crear alerta:`, {
+      symbol,
+      action,
+      hasChartImage: !!chartImage,
+      chartImageType: typeof chartImage,
+      chartImageValue: chartImage,
+      chartImageIsNull: chartImage === null,
+      chartImageIsUndefined: chartImage === undefined,
+      hasImages: !!(images && images.length > 0),
+      imagesCount: images ? images.length : 0,
+      emailImageUrl: emailImageUrl
+    });
+
     if (!symbol || !action || !stopLoss || !takeProfit) {
       return res.status(400).json({ error: 'Todos los campos básicos son requeridos' });
     }
@@ -284,6 +298,16 @@ export default async function handler(
       gananciaRealizada: gananciaRealizadaTotal,
       gananciaNoRealizada: 0 // Se calculará después
     };
+
+    // ✅ DEBUG: Log para verificar qué se está guardando
+    console.log(`🔍 [ALERTS CREATE] Datos que se guardarán en alertData:`, {
+      symbol: alertData.symbol,
+      hasChartImage: !!alertData.chartImage,
+      chartImageValue: alertData.chartImage,
+      chartImageType: typeof alertData.chartImage,
+      hasImages: !!(alertData.images && alertData.images.length > 0),
+      imagesCount: alertData.images ? alertData.images.length : 0
+    });
 
     // Agregar campos específicos según el tipo de alerta
     if (tipoAlerta === 'precio') {
