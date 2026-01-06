@@ -2558,17 +2558,27 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // Esto refleja el cambio porcentual en el tamaño del segmento
     const totalCurrentValue = chartData.reduce((sum, alert) => sum + Math.abs(alert.currentValue || 0), 0);
     
-    // ✅ NUEVO: Usar liquidezTotal del resumen (que incluye ganancias/pérdidas) como base
-    // Si no hay resumen, usar el total de valores actuales
-    const totalBase = (liquiditySummary.liquidezTotal && liquiditySummary.liquidezTotal > 0) 
+    // ✅ CORREGIDO: Usar SIEMPRE liquidezTotal del resumen (que incluye ganancias/pérdidas) como base
+    // El resumen tiene los valores más precisos calculados desde el backend
+    const totalBase = (liquiditySummary && liquiditySummary.liquidezTotal && liquiditySummary.liquidezTotal > 0) 
       ? liquiditySummary.liquidezTotal 
       : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalCurrentValue);
     
-    // ✅ CORREGIDO: Calcular liquidez disponible ANTES de calcular los segmentos
-    // para asegurar que la suma sea exacta
+    // ✅ CORREGIDO: Usar SIEMPRE liquidezDisponible del resumen (más preciso que calcular localmente)
+    // La liquidez disponible es: Inicial - Distribuida + Ganancias Realizadas
     const available = (liquiditySummary && liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
       ? Math.max(liquiditySummary.liquidezDisponible, 0)
       : Math.max((totalBase || 0) - totalCurrentValue, 0);
+    
+    // ✅ DEBUG: Log para verificar valores (descomentar si es necesario)
+    // console.log('📊 [PIE CHART] Valores de liquidez:', {
+    //   liquidezTotal: liquiditySummary?.liquidezTotal,
+    //   liquidezDisponible: liquiditySummary?.liquidezDisponible,
+    //   liquidezDistribuida: liquiditySummary?.liquidezDistribuida,
+    //   totalBase,
+    //   available,
+    //   porcentajeDisponible: totalBase > 0 ? (available / totalBase) * 100 : 0
+    // });
     
     // ✅ CORREGIDO: Calcular el total real que se va a distribuir (alertas + liquidez disponible)
     const totalToDistribute = totalCurrentValue + available;
@@ -2619,6 +2629,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         color: '#9CA3AF',
         darkColor: '#9CA3AF80',
         // ✅ CORREGIDO: Calcular porcentaje de liquidez disponible basado en liquidez total actual
+        // La liquidez disponible representa el dinero SIN asignar a ninguna alerta
+        // Porcentaje = (Liquidez Disponible / Liquidez Total) * 100
         size: totalBase > 0 ? (available / totalBase) * 100 : (remainingAngle / 360) * 100,
         startAngle: liqStart,
         endAngle: liqEnd,
