@@ -707,7 +707,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     availableForPurchase: false,
     // ✅ NUEVO: Campos para liquidez y venta rápida
     liquidityPercentage: 0,
-    quickSellPercentage: 0
+    quickSellPercentage: 0,
+    // ✅ NUEVO: Campos para rango de venta
+    sellRangeMin: '',
+    sellRangeMax: ''
   });
   const [editLoading, setEditLoading] = useState(false);
   
@@ -2070,7 +2073,10 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       availableForPurchase: alert.availableForPurchase || false,
       // ✅ NUEVO: Inicializar campos de liquidez y venta rápida
       liquidityPercentage: 0,
-      quickSellPercentage: 0
+      quickSellPercentage: 0,
+      // ✅ NUEVO: Inicializar campos de rango de venta
+      sellRangeMin: alert.sellRangeMin ? String(alert.sellRangeMin) : '',
+      sellRangeMax: alert.sellRangeMax ? String(alert.sellRangeMax) : ''
     });
 
     // Mostrar el modal de edición
@@ -2313,6 +2319,23 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       // ✅ NUEVO: Preparar datos de liquidez y venta rápida
       const liquidityAmount = editAlert.liquidityPercentage > 0 ? (liquidityTotal * editAlert.liquidityPercentage / 100) : 0;
       
+      // ✅ NUEVO: Preparar datos de rango de venta si es alerta SELL
+      const sellRangeData: any = {};
+      if (editingAlert?.action === 'SELL') {
+        if (editAlert.sellRangeMin && editAlert.sellRangeMax) {
+          const sellMin = parseFloat(editAlert.sellRangeMin);
+          const sellMax = parseFloat(editAlert.sellRangeMax);
+          if (!isNaN(sellMin) && !isNaN(sellMax) && sellMin >= 0 && sellMax >= 0 && sellMin <= sellMax) {
+            sellRangeData.sellRangeMin = sellMin;
+            sellRangeData.sellRangeMax = sellMax;
+          }
+        } else if (!editAlert.sellRangeMin && !editAlert.sellRangeMax) {
+          // Si ambos están vacíos, eliminar el rango de venta
+          sellRangeData.sellRangeMin = undefined;
+          sellRangeData.sellRangeMax = undefined;
+        }
+      }
+      
       // console.log('🔍 [DEBUG] Datos de edición con liquidez:', {
       //   alertId: editingAlert.id,
       //   liquidityPercentage: editAlert.liquidityPercentage,
@@ -2340,6 +2363,8 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
           liquidityPercentage: editAlert.liquidityPercentage,
           liquidityAmount: liquidityAmount,
           quickSellPercentage: editAlert.quickSellPercentage,
+          // ✅ NUEVO: Campos de rango de venta
+          ...sellRangeData,
           reason: 'Edición por administrador desde panel de control'
         }),
       });
@@ -4286,6 +4311,41 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 className={styles.input}
               />
             </div>
+
+            {/* ✅ NUEVO: Campos para rango de venta (solo para alertas SELL) */}
+            {editingAlert?.action === 'SELL' && (
+              <>
+                <div className={styles.inputGroup}>
+                  <label>Precio Mínimo de Venta (Rango)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ej: 180.00"
+                    value={editAlert.sellRangeMin}
+                    onChange={(e) => setEditAlert(prev => ({ ...prev, sellRangeMin: e.target.value }))}
+                    className={styles.input}
+                  />
+                  <small style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    Precio mínimo del rango de venta
+                  </small>
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label>Precio Máximo de Venta (Rango)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="Ej: 187.00"
+                    value={editAlert.sellRangeMax}
+                    onChange={(e) => setEditAlert(prev => ({ ...prev, sellRangeMax: e.target.value }))}
+                    className={styles.input}
+                  />
+                  <small style={{ color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.85rem', marginTop: '0.25rem', display: 'block' }}>
+                    Precio máximo del rango de venta
+                  </small>
+                </div>
+              </>
+            )}
 
             <div className={styles.inputGroup}>
               <label>Análisis / Descripción</label>

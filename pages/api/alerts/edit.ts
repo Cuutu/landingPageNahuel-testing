@@ -36,6 +36,9 @@ interface EditAlertRequest {
   esOperacionHistorica?: boolean;
   fechaEntrada?: string;
   ventasParciales?: VentaParcialEdit[];
+  // ✅ NUEVO: Campos para rango de venta
+  sellRangeMin?: number;
+  sellRangeMax?: number;
 }
 
 interface AlertResponse {
@@ -99,7 +102,10 @@ export default async function handler(
       // ✅ NUEVO: Campos para operaciones históricas
       esOperacionHistorica,
       fechaEntrada,
-      ventasParciales
+      ventasParciales,
+      // ✅ NUEVO: Campos para rango de venta
+      sellRangeMin,
+      sellRangeMax
     }: EditAlertRequest = req.body;
 
     if (!alertId) {
@@ -277,6 +283,44 @@ export default async function handler(
       changes.gananciaRealizada = gananciaRealizadaTotal;
     }
 
+    // ✅ NUEVO: Procesar rangos de venta
+    if (sellRangeMin !== undefined || sellRangeMax !== undefined) {
+      // Si se proporciona solo uno de los dos, mantener el otro existente
+      const newSellRangeMin = sellRangeMin !== undefined ? sellRangeMin : alert.sellRangeMin;
+      const newSellRangeMax = sellRangeMax !== undefined ? sellRangeMax : alert.sellRangeMax;
+      
+      // Validar que ambos valores sean válidos
+      if (newSellRangeMin !== undefined && newSellRangeMax !== undefined) {
+        if (isNaN(newSellRangeMin) || newSellRangeMin < 0) {
+          return res.status(400).json({ error: 'El precio mínimo de venta debe ser mayor o igual a 0' });
+        }
+        if (isNaN(newSellRangeMax) || newSellRangeMax < 0) {
+          return res.status(400).json({ error: 'El precio máximo de venta debe ser mayor o igual a 0' });
+        }
+        if (newSellRangeMin > newSellRangeMax) {
+          return res.status(400).json({ error: 'El precio mínimo de venta no puede ser mayor al máximo' });
+        }
+        
+        // Solo actualizar si hay cambios
+        if (newSellRangeMin !== alert.sellRangeMin || newSellRangeMax !== alert.sellRangeMax) {
+          oldValues.sellRangeMin = alert.sellRangeMin;
+          oldValues.sellRangeMax = alert.sellRangeMax;
+          changes.sellRangeMin = newSellRangeMin;
+          changes.sellRangeMax = newSellRangeMax;
+          // Si se establece un rango de venta, limpiar el precio fijo de venta
+          if (alert.sellPrice) {
+            changes.sellPrice = undefined;
+          }
+        }
+      } else if (sellRangeMin === undefined && sellRangeMax === undefined && (alert.sellRangeMin || alert.sellRangeMax)) {
+        // Si se envían ambos como undefined/null, eliminar el rango de venta
+        oldValues.sellRangeMin = alert.sellRangeMin;
+        oldValues.sellRangeMax = alert.sellRangeMax;
+        changes.sellRangeMin = undefined;
+        changes.sellRangeMax = undefined;
+      }
+    }
+
     // Verificar que haya al menos un cambio
     if (Object.keys(changes).length === 0) {
       return res.status(400).json({ error: 'No se detectaron cambios en la alerta' });
@@ -297,8 +341,22 @@ export default async function handler(
       userAgent
     });
 
-    // Aplicar cambios a la alerta
-    Object.assign(alert, changes);
+    // ✅ NUEVO: Separar campos para actualizar ($set) y eliminar ($unset)
+    const fieldsToSet: any = {};
+    const fieldsToUnset: any = {};
+    
+    Object.keys(changes).forEach(key => {
+      if (changes[key] === undefined || changes[key] === null) {
+        fieldsToUnset[key] = '';
+      } else {
+        fieldsToSet[key] = changes[key];
+      }
+    });
+    
+    // Aplicar cambios a la alerta (solo campos definidos)
+    if (Object.keys(fieldsToSet).length > 0) {
+      Object.assign(alert, fieldsToSet);
+    }
 
     // Si cambió el precio de entrada, recalcular profit
     if (changes.entryPrice || changes.currentPrice) {
@@ -329,8 +387,25 @@ export default async function handler(
       });
     }
 
-    // Guardar la alerta actualizada
-    await alert.save();
+    // ✅ NUEVO: Guardar usando updateOne con $set y $unset para eliminar campos correctamente
+    const updateQuery: any = {};
+    if (Object.keys(fieldsToSet).length > 0) {
+      updateQuery.$set = fieldsToSet;
+    }
+    if (Object.keys(fieldsToUnset).length > 0) {
+      updateQuery.$unset = fieldsToUnset;
+    }
+    
+    if (Object.keys(updateQuery).length > 0) {
+      await Alert.updateOne({ _id: alert._id }, updateQuery);
+      // Recargar la alerta desde la base de datos para tener los datos actualizados
+      const updatedAlertDoc = await Alert.findById(alert._id);
+      if (updatedAlertDoc) {
+        Object.assign(alert, updatedAlertDoc.toObject());
+      }
+    } else {
+      await alert.save();
+    }
 
     // ✅ NUEVO: Manejar asignación de liquidez
     if (liquidityPercentage !== undefined && liquidityPercentage > 0 && liquidityAmount && liquidityAmount > 0) {

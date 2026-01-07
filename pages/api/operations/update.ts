@@ -119,7 +119,21 @@ export default async function handler(
         : Math.abs(quantity);
     }
     if (price !== undefined) updateData.price = price;
-    if (date !== undefined) updateData.date = new Date(date);
+    if (date !== undefined) {
+      // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
+      const nuevaFecha = (() => {
+        if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const [year, month, day] = date.split('-').map(Number);
+          // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
+          // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
+          // Esto es equivalente a crear la fecha a las 03:00:00 UTC
+          const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
+          return fechaUTC;
+        }
+        return new Date(date);
+      })();
+      updateData.date = nuevaFecha;
+    }
     
     // ✅ NUEVO: Si hay alerta asociada y no se proporcionaron notas personalizadas, regenerar automáticamente
     if (notes !== undefined) {

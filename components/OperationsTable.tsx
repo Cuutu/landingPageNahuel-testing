@@ -541,6 +541,16 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
     
     setEditPriceType(hasValidPriceRange ? 'range' : 'specific');
     
+    // ✅ CORREGIDO: Formatear fecha preservando la zona horaria correcta
+    const formatDateForInput = (dateValue: Date | string): string => {
+      const fecha = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
+      // Obtener año, mes y día en la zona horaria local para evitar desfases
+      const year = fecha.getFullYear();
+      const month = String(fecha.getMonth() + 1).padStart(2, '0');
+      const day = String(fecha.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     setEditFormData({
       ticker: operation.ticker,
       operationType: operation.operationType,
@@ -548,7 +558,7 @@ const OperationsTable: React.FC<OperationsTableProps> = ({ system, className = '
       price: operation.price?.toString() || '',
       priceMin: hasValidPriceRange ? operation.priceRange.min.toString() : '',
       priceMax: hasValidPriceRange ? operation.priceRange.max.toString() : '',
-      date: new Date(operation.date).toISOString().split('T')[0],
+      date: formatDateForInput(operation.date),
       notes: operation.notes || '',
       status: operation.status || 'ACTIVE'
     });
