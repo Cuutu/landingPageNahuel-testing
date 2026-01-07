@@ -4313,7 +4313,7 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
             </div>
 
             {/* ✅ NUEVO: Campos para rango de venta (solo para alertas SELL) */}
-            {editingAlert?.action === 'SELL' && (
+            {(editingAlert?.action === 'SELL' || editAlert.action === 'SELL') && (
               <>
                 <div className={styles.inputGroup}>
                   <label>Precio Mínimo de Venta (Rango)</label>

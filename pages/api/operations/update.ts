@@ -7,6 +7,7 @@ import User from "@/models/User";
 import Alert from "@/models/Alert";
 import { validateOriginMiddleware } from "@/lib/securityValidation";
 import { formatOperationNotes } from "@/lib/telegramBot";
+import { getGlobalTimezone } from "@/lib/timeConfig";
 
 interface CloudinaryImage {
   public_id: string;
@@ -120,15 +121,29 @@ export default async function handler(
     }
     if (price !== undefined) updateData.price = price;
     if (date !== undefined) {
-      // ✅ CORREGIDO: Crear fecha en UTC-3 (Argentina) para evitar desfase de 1 día
+      // ✅ CORREGIDO: Crear fecha usando la zona horaria de la variable de entorno
       const nuevaFecha = (() => {
         if (typeof date === 'string' && date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          const timezone = getGlobalTimezone();
           const [year, month, day] = date.split('-').map(Number);
-          // Crear fecha en UTC-3 (Argentina) - usar Date.UTC y luego ajustar a UTC-3
-          // Argentina está en UTC-3, así que creamos la fecha a las 00:00:00 en UTC-3
-          // Esto es equivalente a crear la fecha a las 03:00:00 UTC
-          const fechaUTC = new Date(Date.UTC(year, month - 1, day, 3, 0, 0, 0));
-          return fechaUTC;
+          
+          // Crear fecha a las 00:00:00 en la zona horaria configurada
+          const yyyy = year;
+          const mm = String(month).padStart(2, '0');
+          const dd = String(day).padStart(2, '0');
+          
+          // Calcular offset de la TZ para esa fecha/hora
+          const anchorUtc = new Date(`${yyyy}-${mm}-${dd}T00:00:00Z`);
+          const utc = new Date(anchorUtc.toLocaleString('en-US', { timeZone: 'UTC' }));
+          const local = new Date(anchorUtc.toLocaleString('en-US', { timeZone: timezone }));
+          const diffMinutes = Math.round((local.getTime() - utc.getTime()) / 60000);
+          const sign = diffMinutes >= 0 ? '+' : '-';
+          const abs = Math.abs(diffMinutes);
+          const offH = String(Math.floor(abs / 60)).padStart(2, '0');
+          const offM = String(abs % 60).padStart(2, '0');
+          const offset = `${sign}${offH}:${offM}`;
+          
+          return new Date(`${yyyy}-${mm}-${dd}T00:00:00${offset}`);
         }
         return new Date(date);
       })();
