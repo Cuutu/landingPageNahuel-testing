@@ -2065,7 +2065,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     setEditingAlert(alert);
     setEditAlert({
       symbol: alert.symbol || '',
-      action: alert.action || 'BUY',
+      // ✅ CORREGIDO: Preservar el action original de la alerta
+      // Si alert.action existe y es válido, usarlo; sino usar BUY por defecto
+      action: (alert.action === 'BUY' || alert.action === 'SELL') ? alert.action : 'BUY',
       entryPrice: alert.entryPrice ? (typeof alert.entryPrice === 'string' ? alert.entryPrice.replace('$', '') : String(alert.entryPrice)) : '',
       stopLoss: alert.stopLoss ? (typeof alert.stopLoss === 'string' ? alert.stopLoss.replace('$', '') : String(alert.stopLoss)) : '',
       takeProfit: alert.takeProfit ? (typeof alert.takeProfit === 'string' ? alert.takeProfit.replace('$', '') : String(alert.takeProfit)) : '',
@@ -2353,7 +2355,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
         body: JSON.stringify({
           alertId: alertId,
           symbol: editAlert.symbol,
-          action: editAlert.action,
+          // ✅ CORREGIDO: Usar el action original de la alerta, no el del estado editAlert
+          // Solo enviar action si realmente cambió (aunque no debería cambiar nunca)
+          action: editingAlert?.action || editAlert.action,
           entryPrice: entryPriceValue,
           stopLoss: parseFloat(editAlert.stopLoss),
           takeProfit: parseFloat(editAlert.takeProfit),
