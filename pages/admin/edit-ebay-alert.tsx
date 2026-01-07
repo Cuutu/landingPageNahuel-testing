@@ -48,32 +48,44 @@ export default function EditEBAYAlert({ user }: EditEBAYAlertProps) {
       setLoading(true);
       setError(null);
       
-      // Buscar todas las alertas activas y filtrar por EBAY y SELL
-      const response = await fetch('/api/alerts/list?status=ACTIVE&limit=100', {
-        credentials: 'same-origin'
-      });
-      const data = await response.json();
+      // Buscar en ambos tipos (TraderCall y SmartMoney) y sin restricción de estado
+      const [responseTraderCall, responseSmartMoney] = await Promise.all([
+        fetch('/api/alerts/list?status=ALL&tipo=TraderCall&limit=200', {
+          credentials: 'same-origin'
+        }),
+        fetch('/api/alerts/list?status=ALL&tipo=SmartMoney&limit=200', {
+          credentials: 'same-origin'
+        })
+      ]);
       
-      if (data.success && data.alerts) {
-        // Filtrar alertas de EBAY de tipo SELL
-        const ebayAlerts = data.alerts.filter((a: any) => 
-          a.symbol === 'EBAY' && a.action === 'SELL'
-        );
+      const dataTraderCall = await responseTraderCall.json();
+      const dataSmartMoney = await responseSmartMoney.json();
+      
+      // Combinar alertas de ambos tipos
+      const allAlerts = [
+        ...(dataTraderCall.success && dataTraderCall.alerts ? dataTraderCall.alerts : []),
+        ...(dataSmartMoney.success && dataSmartMoney.alerts ? dataSmartMoney.alerts : [])
+      ];
+      
+      // Filtrar alertas de EBAY de tipo SELL (sin importar el estado)
+      const ebayAlerts = allAlerts.filter((a: any) => 
+        a.symbol && a.symbol.toUpperCase() === 'EBAY' && a.action === 'SELL'
+      );
+      
+      if (ebayAlerts.length > 0) {
+        // Priorizar alertas activas, sino tomar la más reciente
+        const activeAlert = ebayAlerts.find((a: any) => a.status === 'ACTIVE');
+        const ebayAlert = activeAlert || ebayAlerts[0];
         
-        if (ebayAlerts.length > 0) {
-          const ebayAlert = ebayAlerts[0]; // Tomar la primera si hay múltiples
-          setAlert(ebayAlert);
-          setSellRangeMin(ebayAlert.sellRangeMin ? String(ebayAlert.sellRangeMin) : '');
-          setSellRangeMax(ebayAlert.sellRangeMax ? String(ebayAlert.sellRangeMax) : '');
-        } else {
-          setError('No se encontró una alerta de venta activa para EBAY');
-        }
+        setAlert(ebayAlert);
+        setSellRangeMin(ebayAlert.sellRangeMin ? String(ebayAlert.sellRangeMin) : '');
+        setSellRangeMax(ebayAlert.sellRangeMax ? String(ebayAlert.sellRangeMax) : '');
       } else {
-        setError('Error al obtener las alertas');
+        setError('No se encontró una alerta de venta para EBAY. Verifica que exista una alerta de tipo SELL para EBAY en el sistema.');
       }
     } catch (err) {
       console.error('Error cargando alerta:', err);
-      setError('Error al cargar la alerta de EBAY');
+      setError('Error al cargar la alerta de EBAY: ' + (err instanceof Error ? err.message : 'Error desconocido'));
     } finally {
       setLoading(false);
     }
