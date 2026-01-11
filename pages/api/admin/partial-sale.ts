@@ -332,21 +332,71 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
     
-    // ✅ NUEVO: Lógica de venta mejorada - vender posiciones completas
+    // ✅ CRÍTICO CORREGIDO: Obtener acciones ORIGINALES para calcular el porcentaje correcto
+    // El porcentaje se refiere a la posición ORIGINAL, no a la posición actual
+    // Ejemplo: Si originalmente había 100 acciones (100%) y queremos vender 50%, debemos vender 50 acciones
+    // NO 50% de las acciones actuales (que podrían ser menos si ya hubo ventas previas)
+    const originalParticipation = alert.originalParticipationPercentage || alert.participationPercentage || 100;
+    const currentParticipation = alert.participationPercentage ?? originalParticipation;
+    
+    // Obtener acciones originales: si existen en liquidityData, usarlas; sino, calcularlas desde la participación
+    let originalShares: number;
+    let originalAllocatedAmount: number;
+    
+    if (liquidityData.originalShares && liquidityData.originalShares > 0) {
+      // Si ya tenemos las acciones originales guardadas, usarlas
+      originalShares = liquidityData.originalShares;
+      originalAllocatedAmount = liquidityData.originalAllocatedAmount || (originalShares * entryPrice);
+      console.log(`✅ Usando acciones originales guardadas: ${originalShares.toFixed(4)} acciones`);
+    } else {
+      // Si no tenemos acciones originales guardadas, calcularlas desde la participación actual
+      // Si la participación actual es 100%, entonces las acciones actuales SON las originales
+      // Si la participación actual es menor, calcular las originales
+      if (currentParticipation >= 99.9) {
+        // Participación completa = acciones actuales son las originales
+        originalShares = shares;
+        originalAllocatedAmount = allocatedAmount;
+        console.log(`✅ Participación completa (${currentParticipation}%) - acciones actuales son las originales`);
+      } else {
+        // Calcular acciones originales desde la participación actual
+        // Si tengo 50 acciones y tengo 50% de participación, entonces originalmente tenía 100 acciones
+        originalShares = shares / (currentParticipation / 100);
+        originalAllocatedAmount = allocatedAmount / (currentParticipation / 100);
+        console.log(`✅ Calculando acciones originales: ${shares.toFixed(4)} acciones actuales ÷ ${currentParticipation}% = ${originalShares.toFixed(4)} acciones originales`);
+      }
+    }
+    
+    console.log(`🔍 [DEBUG] Participación original: ${originalParticipation}%, Participación actual: ${currentParticipation}%`);
+    console.log(`🔍 [DEBUG] Acciones originales: ${originalShares.toFixed(4)}, Acciones actuales: ${shares.toFixed(4)}`);
+    
+    // ✅ NUEVO: Lógica de venta mejorada - usar acciones ORIGINALES para calcular porcentaje
     let sharesToSell: number;
     let sharesRemaining: number;
     let isCompleteSale = false;
     
     if (percentage >= 100) {
-      // Venta completa - vender todas las acciones
+      // Venta completa - vender todas las acciones ACTUALES (las que quedan)
       sharesToSell = shares;
       sharesRemaining = 0;
       isCompleteSale = true;
-      console.log(`💰 Venta COMPLETA (${percentage}%): Vendiendo todas las acciones`);
+      console.log(`💰 Venta COMPLETA (${percentage}%): Vendiendo todas las acciones restantes (${shares.toFixed(4)})`);
     } else {
-      // ✅ CORREGIDO: Calcular basándose en las acciones CALCULADAS, no en valores viejos
-      sharesToSell = shares * (percentage / 100);
+      // ✅ CRÍTICO CORREGIDO: Calcular basándose en las acciones ORIGINALES y el porcentaje solicitado
+      // El porcentaje se refiere al porcentaje de la posición ORIGINAL, no de la posición actual
+      // Ejemplo: Si originalmente había 100 acciones y queremos vender 50%, vendemos 50 acciones (no 50% de las que quedan)
+      const sharesToSellFromOriginal = originalShares * (percentage / 100);
+      
+      // Pero no podemos vender más acciones de las que tenemos actualmente
+      sharesToSell = Math.min(sharesToSellFromOriginal, shares);
       sharesRemaining = shares - sharesToSell;
+      
+      console.log(`💰 Cálculo de venta parcial:`);
+      console.log(`   - Acciones originales: ${originalShares.toFixed(4)}`);
+      console.log(`   - Porcentaje solicitado: ${percentage}%`);
+      console.log(`   - Acciones a vender (basado en originales): ${sharesToSellFromOriginal.toFixed(4)}`);
+      console.log(`   - Acciones disponibles actualmente: ${shares.toFixed(4)}`);
+      console.log(`   - Acciones a vender (limitado a disponibles): ${sharesToSell.toFixed(4)}`);
+      console.log(`   - Acciones restantes: ${sharesRemaining.toFixed(4)}`);
       
       // Si vendemos todo lo que queda, es venta completa
       if (sharesRemaining <= 0.0001) {
@@ -355,12 +405,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         isCompleteSale = true;
         console.log(`💰 Ajustando a venta completa: vendiendo todas las acciones restantes`);
       }
+      
+      // ✅ NUEVO: Validar que el porcentaje calculado sea razonable
+      // Si el porcentaje solicitado es mayor que las acciones disponibles, advertir
+      if (sharesToSellFromOriginal > shares) {
+        const actualPercentageSold = (sharesToSell / originalShares) * 100;
+        console.log(`⚠️ ADVERTENCIA: Se solicitó vender ${percentage}% pero solo hay ${((shares / originalShares) * 100).toFixed(2)}% disponible`);
+        console.log(`⚠️ Se venderá ${actualPercentageSold.toFixed(2)}% de la posición original (todas las acciones disponibles)`);
+      }
     }
     
     // ✅ CORREGIDO: Calcular liquidez liberada basándose en el % de participación actual y precio actual
     // La liquidez liberada = (participationPercentage / 100) * currentPrice * sharesToSell
-    const currentParticipation = alert.participationPercentage ?? 100;
-    
     // Calcular el valor actual de la posición basado en participationPercentage y precio actual
     // Si participationPercentage es 50%, significa que tenemos el 50% de la posición original
     // La liquidez liberada debe ser proporcional al valor actual de esa porción vendida
@@ -373,8 +429,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Nota: En este caso, como usamos el precio actual, la ganancia puede ser diferente
     const realizedProfit = marketValue - liquidityReleased;
     
-    // ✅ NUEVO: Calcular el porcentaje que QUEDARÁ después de la venta
-    let newParticipation = isCompleteSale ? 0 : Math.max(0, currentParticipation - percentage);
+    // ✅ CRÍTICO CORREGIDO: Calcular el porcentaje que QUEDARÁ después de la venta
+    // El porcentaje debe calcularse basándose en las acciones ORIGINALES, no en la participación actual
+    // Ejemplo: Si originalmente había 100% (100 acciones) y vendemos 50 acciones, quedan 50% (no 100% - 50% = 50%)
+    const actualPercentageSold = originalShares > 0 ? (sharesToSell / originalShares) * 100 : 0;
+    let newParticipation = isCompleteSale ? 0 : Math.max(0, originalParticipation - actualPercentageSold);
+    
+    console.log(`📊 Cálculo de participación:`);
+    console.log(`   - Participación original: ${originalParticipation}%`);
+    console.log(`   - Acciones vendidas: ${sharesToSell.toFixed(4)} de ${originalShares.toFixed(4)} originales`);
+    console.log(`   - Porcentaje realmente vendido: ${actualPercentageSold.toFixed(2)}%`);
+    console.log(`   - Nueva participación: ${newParticipation.toFixed(2)}%`);
     
     // ✅ NUEVO: Si la participación restante es muy baja (< 5%), considerar como venta completa
     // Esto evita dejar posiciones residuales muy pequeñas que no tienen sentido práctico
@@ -418,32 +483,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       // ✅ NUEVO: Guardar información de venta programada (NO ejecutada)
       // NO modificar allocatedAmount ni shares todavía - se mantienen iguales
-      // ✅ CORREGIDO: Si calculamos la liquidez desde portfolioPercentage, ese ES el original
-      // No usar valores viejos incorrectos (como $1000 cuando debería ser $50)
-      const validOriginalAllocated = (liquidityData.originalAllocatedAmount && 
-        liquidityData.originalAllocatedAmount <= allocatedAmount * 1.1) // Permitir hasta 10% más (por rebalanceos)
-        ? liquidityData.originalAllocatedAmount 
-        : allocatedAmount; // Si no existe o es incorrecto, usar el calculado
-      
-      const validOriginalShares = (liquidityData.originalShares && 
-        liquidityData.originalShares <= shares * 1.1) // Permitir hasta 10% más
-        ? liquidityData.originalShares 
-        : shares; // Si no existe o es incorrecto, usar el calculado
+      // ✅ CRÍTICO CORREGIDO: Usar los valores calculados arriba de originalShares y originalAllocatedAmount
+      const finalOriginalShares = Math.max(0, liquidityData.originalShares || originalShares);
+      const finalOriginalAllocated = Math.max(0, liquidityData.originalAllocatedAmount || originalAllocatedAmount);
       
       alert.liquidityData = {
         ...liquidityData,
         allocatedAmount: Math.max(0, allocatedAmount), // ✅ CORREGIDO: Asegurar que no sea negativo
         shares: Math.max(0, shares), // ✅ CORREGIDO: Asegurar que no sea negativo
-        // ✅ CORREGIDO: Usar valores válidos, no valores incorrectos viejos
-        originalAllocatedAmount: Math.max(0, validOriginalAllocated),
-        originalShares: Math.max(0, validOriginalShares),
+        // ✅ CRÍTICO CORREGIDO: Usar valores calculados arriba, no valores incorrectos viejos
+        originalAllocatedAmount: finalOriginalAllocated,
+        originalShares: finalOriginalShares,
         // Guardar el porcentaje de participación original
-        originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+        originalParticipationPercentage: alert.originalParticipationPercentage || originalParticipation,
         partialSales: [
           ...(liquidityData.partialSales || []),
           {
             date: new Date(),
-            percentage: percentage,
+            percentage: actualPercentageSold, // ✅ CORREGIDO: Guardar porcentaje realmente vendido
             sharesToSell: sharesToSell,
             sellPrice: sellPrice, // Precio estimado, se usará el precio real cuando se ejecute
             liquidityReleased: liquidityReleased, // Estimado, se calculará cuando se ejecute
@@ -619,29 +676,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (!alert.ventasParciales) {
         alert.ventasParciales = [];
       }
+      // ✅ CORREGIDO: Usar el porcentaje realmente vendido, no el solicitado
       alert.ventasParciales.push({
         fecha: new Date(),
         precio: sellPrice,
-        porcentajeVendido: percentage,
+        porcentajeVendido: actualPercentageSold, // ✅ Usar porcentaje realmente vendido
         gananciaRealizada: gananciaPorcentual, // ✅ Ganancia porcentual simple
         sharesVendidos: sharesToSell
       });
       
       // ✅ NUEVO: Guardar información de liquidez mejorada
+      // ✅ CRÍTICO: Asegurar que originalShares se guarde correctamente (usar el valor calculado arriba)
+      const finalOriginalShares = Math.max(0, liquidityData.originalShares || originalShares);
+      const finalOriginalAllocated = Math.max(0, liquidityData.originalAllocatedAmount || originalAllocatedAmount);
+      
       alert.liquidityData = {
         ...liquidityData,
         allocatedAmount: Math.max(0, newAllocatedAmount), // ✅ CORREGIDO: Asegurar que no sea negativo
         shares: Math.max(0, validSharesRemaining), // ✅ CORREGIDO: Asegurar que no sea negativo
-        // Guardar el monto original para referencia (importante para ventas futuras)
-        originalAllocatedAmount: Math.max(0, liquidityData.originalAllocatedAmount || allocatedAmount),
-        originalShares: Math.max(0, liquidityData.originalShares || (liquidityData.shares || shares)),
+        // ✅ CRÍTICO CORREGIDO: Guardar el monto original usando los valores calculados arriba
+        originalAllocatedAmount: finalOriginalAllocated,
+        originalShares: finalOriginalShares,
         // Guardar el porcentaje de participación original
-        originalParticipationPercentage: alert.originalParticipationPercentage || 100,
+        originalParticipationPercentage: alert.originalParticipationPercentage || originalParticipation,
         partialSales: [
           ...(liquidityData.partialSales || []),
           {
             date: new Date(),
-            percentage: percentage,
+            percentage: actualPercentageSold, // ✅ CORREGIDO: Guardar porcentaje realmente vendido
             sharesToSell: sharesToSell,
             sellPrice: sellPrice,
             liquidityReleased: liquidityReleased,
