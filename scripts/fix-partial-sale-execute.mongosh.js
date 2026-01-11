@@ -15,7 +15,7 @@ print('🔄 EJECUTANDO - Corregir venta parcial incorrecta\n');
 print('='.repeat(60) + '\n');
 
 // ============================================
-// CONFIGURACIÓN - CAMBIAR ESTOS VALORES
+// CONFIGURACIÓN - CAMBIAR ESTOS VALORES 
 // ============================================
 const SYMBOL = 'INTC'; // ⚠️ CAMBIAR: Símbolo de la alerta
 const EXPECTED_PERCENTAGE = 50; // ⚠️ CAMBIAR: Porcentaje que se intentó vender
