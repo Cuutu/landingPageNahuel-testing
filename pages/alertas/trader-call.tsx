@@ -2634,42 +2634,33 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // ✅ NUEVO: Calcular el tamaño de cada segmento basado en el VALOR ACTUAL (allocatedAmount + P&L)
-    // Esto refleja el cambio porcentual en el tamaño del segmento
-    const totalCurrentValue = chartData.reduce((sum, alert) => sum + Math.abs(alert.currentValue || 0), 0);
+    // ✅ CORREGIDO: Calcular el tamaño de cada segmento basado en ALLOCATEDAMOUNT (monto invertido)
+    // NO usar currentValue (que incluye P&L) para que el % refleje el monto real asignado
+    const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
     
-    // ✅ CORREGIDO: Usar SIEMPRE liquidezTotal del resumen (que incluye ganancias/pérdidas) como base
-    // El resumen tiene los valores más precisos calculados desde el backend
-    const totalBase = (liquiditySummary && liquiditySummary.liquidezTotal && liquiditySummary.liquidezTotal > 0) 
-      ? liquiditySummary.liquidezTotal 
-      : ((liquidityTotal && liquidityTotal > 0) ? liquidityTotal : totalCurrentValue);
-    
-    // ✅ CORREGIDO: Usar SIEMPRE liquidezDisponible del resumen (más preciso que calcular localmente)
-    // La liquidez disponible es: Inicial - Distribuida + Ganancias Realizadas
+    // ✅ CORREGIDO: Usar liquidezDisponible del resumen + total asignado como base
+    // Esto asegura que los porcentajes sumen 100% correctamente
     const available = (liquiditySummary && liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
       ? Math.max(liquiditySummary.liquidezDisponible, 0)
-      : Math.max((totalBase || 0) - totalCurrentValue, 0);
+      : 0;
+    
+    // El total base es la suma de lo asignado + lo disponible (para que sume 100%)
+    const totalBase = totalAllocated + available;
     
     // ✅ DEBUG: Log para verificar valores (descomentar si es necesario)
     // console.log('📊 [PIE CHART] Valores de liquidez:', {
-    //   liquidezTotal: liquiditySummary?.liquidezTotal,
+    //   totalAllocated,
     //   liquidezDisponible: liquiditySummary?.liquidezDisponible,
-    //   liquidezDistribuida: liquiditySummary?.liquidezDistribuida,
     //   totalBase,
     //   available,
     //   porcentajeDisponible: totalBase > 0 ? (available / totalBase) * 100 : 0
     // });
-    
-    // ✅ CORREGIDO: Calcular el total real que se va a distribuir (alertas + liquidez disponible)
-    const totalToDistribute = totalCurrentValue + available;
 
     let cumulativeAngle = 0;
     const chartSegments = chartData.map((alert) => {
-      // ✅ NUEVO: Usar valor actual (allocatedAmount + P&L) para calcular el tamaño del segmento
-      const segmentBase = Math.abs(alert.currentValue || 0);
-      // ✅ CORREGIDO: Calcular porcentaje basado en liquidez TOTAL actual (inicial + ganancias)
-      // Esto refleja el porcentaje real de la cartera considerando el P&L
-      // Ejemplo: Si asignas 5% de $1000 = $50, y sube 10% = $55, entonces el % es ($55 / $1005) * 100 = 5.47%
+      // ✅ CORREGIDO: Usar allocatedAmount (monto invertido) para calcular el tamaño del segmento
+      // Esto refleja el % real del monto asignado, sin considerar ganancias/pérdidas no realizadas
+      const segmentBase = Math.abs(alert.allocatedAmount || 0);
       const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
       const angle = (segmentBase / (totalBase || 1)) * 360;
       const startAngle = cumulativeAngle;
