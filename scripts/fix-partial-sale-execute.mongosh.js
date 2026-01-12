@@ -42,6 +42,7 @@ if (!alert) {
   const currentShares = alert.liquidityData?.shares || 0;
   const originalParticipation = alert.originalParticipationPercentage || alert.participationPercentage || 100;
   const currentParticipation = alert.participationPercentage || 100;
+  const entryPrice = alert.entryPrice || 0;
   
   // Buscar la venta parcial incorrecta
   const partialSales = alert.liquidityData?.partialSales || [];
@@ -61,20 +62,27 @@ if (!alert) {
     const sharesDifference = expectedSharesToSell - actualSharesSold;
     const correctParticipation = originalParticipation - EXPECTED_PERCENTAGE;
     
-    print(`\n🔄 PASO 1: Actualizando participación de la alerta...\n`);
-    print(`   ${currentParticipation}% → ${correctParticipation}%\n`);
+    // ✅ CRÍTICO: Calcular acciones correctas basándose en acciones ORIGINALES
+    // Si vendimos 50% de las originales, las acciones restantes = originalShares * (correctParticipation / 100)
+    const correctShares = originalShares * (correctParticipation / 100);
+    
+    print(`\n🔄 PASO 1: Actualizando participación y acciones de la alerta...\n`);
+    print(`   Participación: ${currentParticipation}% → ${correctParticipation}%\n`);
+    print(`   Acciones: ${currentShares.toFixed(4)} → ${correctShares.toFixed(4)}\n`);
+    print(`   (Basado en acciones originales: ${originalShares.toFixed(4)} * ${correctParticipation}% = ${correctShares.toFixed(4)})\n`);
     
     db.alerts.updateOne(
       { _id: alert._id },
       { 
         $set: { 
           participationPercentage: correctParticipation,
-          'liquidityData.shares': currentShares - sharesDifference
+          'liquidityData.shares': correctShares,
+          'liquidityData.allocatedAmount': correctShares * entryPrice
         } 
       }
     );
     
-    print(`✅ Participación actualizada\n`);
+    print(`✅ Participación y acciones actualizadas\n`);
     
     print(`\n🔄 PASO 2: Actualizando venta parcial en liquidityData...\n`);
     
@@ -177,12 +185,64 @@ if (!alert) {
       }
     }
     
+    // Actualizar distribución de liquidez si existe
+    const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+    print(`\n🔄 PASO 5: Verificando distribución de liquidez (Pool: ${pool})...\n`);
+    
+    const liquidity = db.liquidity.findOne({
+      pool: pool,
+      'distributions.alertId': alert._id.toString()
+    });
+    
+    if (liquidity) {
+      const distributionIndex = liquidity.distributions.findIndex(
+        d => d.alertId && d.alertId.toString() === alert._id.toString()
+      );
+      
+      if (distributionIndex >= 0) {
+        const distribution = liquidity.distributions[distributionIndex];
+        const entryPriceForLiquidity = distribution.entryPrice || entryPrice;
+        
+        // Actualizar la distribución
+        liquidity.distributions[distributionIndex].shares = correctShares;
+        liquidity.distributions[distributionIndex].allocatedAmount = correctShares * entryPriceForLiquidity;
+        
+        // ✅ CORREGIDO: Actualizar soldShares sumando todas las ventas parciales ejecutadas
+        // Usar las ventas parciales DESPUÉS de la corrección (ya actualizadas arriba)
+        const totalSoldShares = partialSales
+          .filter(s => s.executed && !s.discarded)
+          .reduce((sum, s) => sum + (s.sharesToSell || 0), 0);
+        liquidity.distributions[distributionIndex].soldShares = totalSoldShares;
+        
+        // Recalcular si está activa
+        liquidity.distributions[distributionIndex].isActive = correctShares > 0.0001;
+        
+        db.liquidity.updateOne(
+          { _id: liquidity._id },
+          { 
+            $set: { 
+              [`distributions.${distributionIndex}`]: liquidity.distributions[distributionIndex]
+            } 
+          }
+        );
+        
+        print(`✅ Distribución de liquidez actualizada:\n`);
+        print(`   Shares: ${correctShares.toFixed(4)}\n`);
+        print(`   Allocated Amount: $${(correctShares * entryPriceForLiquidity).toFixed(2)}\n`);
+        print(`   Sold Shares: ${totalSoldShares.toFixed(4)}\n`);
+      } else {
+        print(`⚠️  No se encontró distribución para esta alerta en el documento de liquidez\n`);
+      }
+    } else {
+      print(`⚠️  No se encontró documento de liquidez para el pool ${pool}\n`);
+    }
+    
     print(`\n` + '='.repeat(60) + '\n');
     print('✅ CORRECCIÓN COMPLETADA\n');
     print('='.repeat(60) + '\n');
     print('📋 RESUMEN DE CAMBIOS:\n');
     print(`   ✅ Participación: ${currentParticipation}% → ${correctParticipation}%\n`);
-    print(`   ✅ Acciones: ${currentShares.toFixed(4)} → ${(currentShares - sharesDifference).toFixed(4)}\n`);
+    print(`   ✅ Acciones: ${currentShares.toFixed(4)} → ${correctShares.toFixed(4)}\n`);
     print(`   ✅ Porcentaje vendido: ${ACTUAL_PERCENTAGE}% → ${EXPECTED_PERCENTAGE}%\n`);
     print(`   ✅ Acciones vendidas: ${actualSharesSold.toFixed(4)} → ${expectedSharesToSell.toFixed(4)}\n`);
     print('='.repeat(60) + '\n');

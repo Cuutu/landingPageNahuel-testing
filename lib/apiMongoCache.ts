@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import dbConnect from '@/lib/mongodb';
 import ApiCache from '@/models/ApiCache';
 
-const IGNORED_QUERY_KEYS = new Set(['_t', 't', 'ts', 'timestamp', 'cacheBust', 'cachebuster']);
+const IGNORED_QUERY_KEYS = new Set(['_t', 't', 'ts', 'timestamp', 'cacheBust', 'cachebuster', '_nocache', 'nocache']);
 
 function normalizeQuery(query: NextApiRequest['query']): Record<string, any> {
   const out: Record<string, any> = {};
@@ -52,12 +52,20 @@ export async function respondWithMongoCache<T>(
   const query = normalizeQuery(req.query);
   const { key, keyParts } = buildMongoCacheKey({ path, query, scope: opts.scope });
 
+  // ✅ NUEVO: Si hay parámetro _nocache o nocache, invalidar caché y forzar recarga
+  const forceNoCache = req.query._nocache === '1' || req.query.nocache === '1';
+  
   const now = new Date();
   const cached = (await ApiCache.findOne({ key, expiresAt: { $gt: now } }).lean()) as any;
-  if (cached?.payload !== undefined) {
+  if (cached?.payload !== undefined && !forceNoCache) {
     if (opts.cacheControl) res.setHeader('Cache-Control', opts.cacheControl);
     res.status(200).json(cached.payload);
     return;
+  }
+  
+  // Si se fuerza sin caché, eliminar la entrada existente
+  if (forceNoCache && cached) {
+    await ApiCache.deleteOne({ key });
   }
 
   const payload = await compute();

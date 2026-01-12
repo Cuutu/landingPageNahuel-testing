@@ -1476,13 +1476,15 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
   }, [realAlerts.length, lastPriceUpdate, updatePrices]); // ✅ CORREGIDO: Usar realAlerts.length en lugar de realAlerts para evitar re-ejecuciones
 
   // ✅ NUEVO: Cargar resumen completo de liquidez con los 5 conceptos
-  const loadLiquidity = async () => {
+  const loadLiquidity = async (forceRefresh = false) => {
     try {
       // console.log('🔄 [LIQUIDITY] Iniciando carga de resumen de liquidez para TraderCall...');
-      
+
       // Agregar timestamp para evitar cache del browser
+      // Si forceRefresh es true, agregar parámetro para invalidar caché de la API también
       const timestamp = new Date().getTime();
-      const res = await fetch(`/api/liquidity/summary?pool=TraderCall&_t=${timestamp}`);
+      const cacheBuster = forceRefresh ? '&_nocache=1' : '';
+      const res = await fetch(`/api/liquidity/summary?pool=TraderCall&_t=${timestamp}${cacheBuster}`);
       
       if (res.ok) {
         const json = await res.json();
@@ -2932,10 +2934,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 📈 Ir a alertas
               </button>
               {/* ✅ Botón de recarga para debug */}
-              <button 
-                onClick={() => loadLiquidity()} 
+              <button
+                onClick={() => loadLiquidity(true)}
                 className={styles.refreshButton}
                 style={{ padding: '5px 10px', fontSize: '12px' }}
+                title="Forzar recarga sin caché"
               >
                 🔄 Recargar
               </button>
@@ -2951,10 +2954,11 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
                 <div className={styles.emptyChartIcon}>⏳</div>
                 <h4>Cargando datos de liquidez...</h4>
                 <p>Por favor espera mientras se cargan los datos del gráfico.</p>
-                <button 
-                  onClick={() => loadLiquidity()} 
+                <button
+                  onClick={() => loadLiquidity(true)}
                   className={styles.refreshButton}
                   style={{ marginTop: '10px' }}
+                  title="Forzar recarga sin caché"
                 >
                   🔄 Reintentar
                 </button>
