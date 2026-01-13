@@ -2541,15 +2541,23 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       // ✅ CORREGIDO: Usar distribuciones individuales por alertId en lugar de consolidadas por símbolo
       const liquidity = liquidityMapByAlertId?.[alertId];
       const allocated = Number(liquidity?.allocatedAmount || 0);
+      const shares = Number(liquidity?.shares || 0);
+      const liquidityCurrentPrice = Number(liquidity?.currentPrice || 0);
+      const liquidityProfitLoss = Number(liquidity?.profitLoss || 0);
       
-      // ✅ NUEVO: Calcular P&L en dólares usando allocatedAmount y cambio porcentual
-      // P&L = (cambio porcentual / 100) × allocatedAmount
-      const profitLoss = allocated > 0 && profitValue !== 0
-        ? (profitValue / 100) * allocated
-        : Number(liquidity?.profitLoss || 0);
+      // ✅ CORREGIDO: Calcular P&L en dólares
+      // Preferir profitLoss de liquidity, sino calcularlo
+      const profitLoss = liquidityProfitLoss !== 0
+        ? liquidityProfitLoss
+        : (allocated > 0 && profitValue !== 0
+          ? (profitValue / 100) * allocated
+          : 0);
       
-      // ✅ NUEVO: Calcular valor actual = allocatedAmount + P&L
-      const currentValue = allocated + profitLoss;
+      // ✅ CORREGIDO: Calcular valor actual de la posición (valor de entrada + P&L actual)
+      // Usar shares * currentPrice si está disponible (más preciso), sino allocated + profitLoss
+      const currentValue = shares > 0 && liquidityCurrentPrice > 0
+        ? shares * liquidityCurrentPrice
+        : allocated + profitLoss;
       
       // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
       // El precio actual viene como string con formato "$XX.XX" desde la API
@@ -2583,18 +2591,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       };
     });
 
-    // ✅ CORREGIDO: Calcular el tamaño de cada segmento basado en ALLOCATEDAMOUNT (monto invertido)
-    // NO usar currentValue (que incluye P&L) para que el % refleje el monto real asignado
-    const totalAllocated = chartData.reduce((sum, alert) => sum + Math.abs(alert.allocatedAmount || 0), 0);
+    // ✅ CORREGIDO: Calcular el tamaño de cada segmento basado en VALOR ACTUAL (valor de entrada + P&L actual)
+    // Usar currentValue para reflejar el valor real actual de cada posición
+    const totalCurrentValue = chartData.reduce((sum, alert) => sum + Math.abs(alert.currentValue || 0), 0);
     
-    // ✅ CORREGIDO: Usar liquidezDisponible del resumen + total asignado como base
+    // ✅ CORREGIDO: Usar liquidezDisponible del resumen + total de valores actuales como base
     // Esto asegura que los porcentajes sumen 100% correctamente
     const available = (liquiditySummary && liquiditySummary.liquidezDisponible !== undefined && liquiditySummary.liquidezDisponible !== null)
       ? Math.max(liquiditySummary.liquidezDisponible, 0)
       : 0;
     
-    // El total base es la suma de lo asignado + lo disponible (para que sume 100%)
-    const totalBase = totalAllocated + available;
+    // El total base es la suma de los valores actuales + lo disponible (para que sume 100%)
+    const totalBase = totalCurrentValue + available;
     
     // ✅ DEBUG: Log para verificar valores (descomentar si es necesario)
     // console.log('📊 [PIE CHART] Valores de liquidez:', {
@@ -2607,9 +2615,9 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
 
     let cumulativeAngle = 0;
     const chartSegments = chartData.map((alert) => {
-      // ✅ CORREGIDO: Usar allocatedAmount (monto invertido) para calcular el tamaño del segmento
-      // Esto refleja el % real del monto asignado, sin considerar ganancias/pérdidas no realizadas
-      const segmentBase = Math.abs(alert.allocatedAmount || 0);
+      // ✅ CORREGIDO: Usar currentValue (valor actual de la posición) para calcular el tamaño del segmento
+      // Esto refleja el % real actual basado en el valor de entrada + P&L actual
+      const segmentBase = Math.abs(alert.currentValue || 0);
       const size = totalBase > 0 ? (segmentBase / totalBase) * 100 : 0;
       const angle = (segmentBase / (totalBase || 1)) * 360;
       const startAngle = cumulativeAngle;
