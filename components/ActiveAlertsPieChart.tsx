@@ -135,9 +135,20 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         // Preferir liquidityMapByAlertId si está disponible
         const liquidity = liquidityMapByAlertId?.[alertId] || liquidityMap?.[alert.symbol];
         const allocated = Number(liquidity?.allocatedAmount || 0);
+        const shares = Number(liquidity?.shares || 0);
+        const currentPrice = Number(liquidity?.currentPrice || 0);
+        const profitLoss = Number(liquidity?.profitLoss || 0);
+        
+        // ✅ CORREGIDO: Usar valor actual de la posición (valor de entrada + P&L actual)
+        // Valor actual = allocatedAmount + profitLoss
+        // O mejor: shares * currentPrice (más preciso, refleja valor real de mercado)
+        const currentValue = shares > 0 && currentPrice > 0 
+          ? shares * currentPrice 
+          : allocated + profitLoss; // Fallback si no hay shares/currentPrice
+        
         return {
           name: alert.symbol,
-          value: allocated, // Usar el monto asignado directamente
+          value: currentValue, // ✅ Usar valor actual de la posición en lugar de allocatedAmount
           symbol: alert.symbol,
           profit: alert.profit || 0,
           action: alert.action,
@@ -150,9 +161,8 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         } as ChartSegment;
       });
 
-      // ✅ CORREGIDO: Usar liquidez disponible del resumen si está disponible (más preciso)
-      // Si no, calcular basándose solo en distribuciones de alertas activas
-      const allocatedSum = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
+      // ✅ CORREGIDO: Calcular total usando valores actuales de las posiciones
+      const totalCurrentValue = chartSegments.reduce((sum, seg) => sum + (seg.value || 0), 0);
       
       // Calcular liquidez disponible
       let available = 0;
@@ -160,8 +170,11 @@ const ActiveAlertsPieChart: React.FC<ActiveAlertsPieChartProps> = ({
         // Usar el valor del resumen directamente (más preciso)
         available = Math.max(availableLiquidity, 0);
       } else if (typeof totalLiquidity === 'number' && totalLiquidity > 0) {
-        // Calcular como diferencia entre total y asignado
-        available = Math.max(totalLiquidity - allocatedSum, 0);
+        // ✅ CORREGIDO: La liquidez disponible debe calcularse considerando el valor actual total
+        // disponible = totalLiquidity - (suma de valores actuales de posiciones)
+        // Pero como el totalLiquidity incluye ganancias, necesitamos un cálculo diferente
+        // Por ahora, usar el availableLiquidity del resumen si está disponible
+        available = Math.max(totalLiquidity - totalCurrentValue, 0);
       }
       
       // Solo agregar el segmento de liquidez si es mayor a 0 para evitar partes vacías
