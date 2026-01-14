@@ -381,9 +381,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       isCompleteSale = true;
       console.log(`💰 Venta COMPLETA (${percentage}%): Vendiendo todas las acciones restantes (${shares.toFixed(4)})`);
     } else {
-      // ✅ CRÍTICO CORREGIDO: Calcular basándose en las acciones ORIGINALES y el porcentaje solicitado
-      // El porcentaje se refiere al porcentaje de la posición ORIGINAL, no de la posición actual
-      // Ejemplo: Si originalmente había 100 acciones y queremos vender 50%, vendemos 50 acciones (no 50% de las que quedan)
+      // ✅ CORREGIDO: El porcentaje ingresado se refiere al TOTAL ORIGINAL, no a la posición restante
+      // Ejemplo: Si originalmente había 100 acciones (100%) y quieres vender 25%, vendes 25 acciones (25% del total original)
+      // Esto permite que el % mostrado en telegram/email sea consistente (siempre basado en el 100% inicial)
       const sharesToSellFromOriginal = originalShares * (percentage / 100);
       
       // Pero no podemos vender más acciones de las que tenemos actualmente
@@ -392,11 +392,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       console.log(`💰 Cálculo de venta parcial:`);
       console.log(`   - Acciones originales: ${originalShares.toFixed(4)}`);
-      console.log(`   - Porcentaje solicitado: ${percentage}%`);
-      console.log(`   - Acciones a vender (basado en originales): ${sharesToSellFromOriginal.toFixed(4)}`);
       console.log(`   - Acciones disponibles actualmente: ${shares.toFixed(4)}`);
+      console.log(`   - Porcentaje solicitado (del total original): ${percentage}%`);
+      console.log(`   - Acciones a vender (${percentage}% de ${originalShares.toFixed(4)} originales): ${sharesToSellFromOriginal.toFixed(4)}`);
       console.log(`   - Acciones a vender (limitado a disponibles): ${sharesToSell.toFixed(4)}`);
-      console.log(`   - Acciones restantes: ${sharesRemaining.toFixed(4)}`);
+      console.log(`   - Acciones restantes después de venta: ${sharesRemaining.toFixed(4)}`);
       
       // Si vendemos todo lo que queda, es venta completa
       if (sharesRemaining <= 0.0001) {

@@ -333,7 +333,7 @@ const NonSubscriberView: React.FC<{
                 Smart Money
               </h1>
               <p className={styles.heroDescription}>
-                Servicio de alertas de compra y venta con estrategia de corto plazo, informes detallados y seguimiento activo, para que puedas invertir en CEDEARs y acciones de forma simple y estratégica. Ideal para quienes buscan grandes rendimientos.
+                Servicio de alertas de compra y venta con estrategia de mediano/largo plazo, informes detallados y seguimiento activo, para que puedas invertir en CEDEARs y acciones de forma simple y estratégica. Ideal para quienes buscan grandes rendimientos.
               </p>
               <div className={styles.heroFeatures}>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
