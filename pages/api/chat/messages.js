@@ -77,10 +77,10 @@ export default async function handler(req, res) {
         });
       }
 
-      if (message.length > 200) {
+      if (message.length > 1000) {
         return res.status(400).json({ 
           success: false, 
-          error: 'El mensaje no puede tener más de 200 caracteres' 
+          error: 'El mensaje no puede tener más de 1000 caracteres' 
         });
       }
 
