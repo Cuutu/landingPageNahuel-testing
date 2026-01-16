@@ -309,6 +309,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
 
   const performance = calculatePerformance();
   const isPositive = performance.percentage >= 0;
+  const totalAlertsInRange = portfolioData.reduce((sum, d) => sum + d.alertsCount, 0);
 
 
   const formatPercentage = (value: number) => {
@@ -405,7 +406,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Total alertas:</span>
                 <span className={styles.statValue}>
-                  {portfolioData.reduce((sum, d) => sum + d.alertsCount, 0)}
+                  {totalAlertsInRange}
                 </span>
               </div>
             </div>
@@ -439,7 +440,7 @@ const PortfolioTimeRange: React.FC<PortfolioTimeRangeProps> = ({
                 <div className={styles.globalStatItem}>
                   <span className={styles.globalStatLabel}>Total de Alertas:</span>
                   <span className={styles.globalStatValue}>
-                    {portfolioStats.closedAlerts}
+                    {totalAlertsInRange}
                   </span>
                 </div>
               </div>
