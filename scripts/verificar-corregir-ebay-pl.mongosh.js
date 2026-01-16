@@ -5,7 +5,7 @@
 // ============================================
 
 // ⚠️ MODO DRY RUN: Cambiar a false para aplicar cambios reales
-const DRY_RUN = true;
+const DRY_RUN = false;
 
 print('🔍 VERIFICACIÓN Y CORRECCIÓN - EBAY P&L\n');
 if (DRY_RUN) {
@@ -17,7 +17,7 @@ const symbol = 'EBAY';
 const pool = 'TraderCall';
 
 // 1. Buscar la alerta de EBAY
-const alert = db.alerts.findOne({ 
+const alert = db.alerts.findOne({    
   symbol: symbol,
   status: { $in: ['ACTIVE', 'CLOSED'] }
 });
