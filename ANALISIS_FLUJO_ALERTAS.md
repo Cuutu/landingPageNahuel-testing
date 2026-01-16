@@ -4,8 +4,7 @@
 
 Este documento analiza todo el tráfico y flujo de datos desde que se crea una alerta (de venta o compra) hasta que se visualiza mediante el botón "Ver alerta" en la tabla de operaciones.
 
----
-
+----
 ## 🔄 Flujo Completo: De la Creación de la Alerta al Botón "Ver Alerta"
 
 ### 1. CREACIÓN DE ALERTA (Venta o Compra)
