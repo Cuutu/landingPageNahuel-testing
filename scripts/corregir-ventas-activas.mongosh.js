@@ -4,7 +4,7 @@
  * Cambia el estado de ventas ACTIVE a COMPLETED
  * cuando están marcadas como ejecutadas en las alerts
  *******************************/
-const DRY_RUN = true; // Cambiar a false para aplicar cambios
+const DRY_RUN = false; // Cambiar a false para aplicar cambios
 const POOL = "TraderCall";
 
 const alertsColl = db.getCollection("alerts");
@@ -160,7 +160,7 @@ if (DRY_RUN) {
     }
   });
   
-  print(`\n=== RESUMEN ===");
+  print(`\n=== RESUMEN ===`);
   print(`Ventas actualizadas: ${actualizadas}`);
   print(`Errores: ${errores}`);
   print(`Total procesadas: ${ventasParaCompletar.length}`);

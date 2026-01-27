@@ -6,7 +6,7 @@
  * - Alerts más antiguas cuando hay una más nueva del mismo símbolo
  * - Solo si no tienen operations activas asociadas
  *******************************/
-const DRY_RUN = true; // Cambiar a false para ejecutar las correcciones
+const DRY_RUN = false; // Cambiar a false para ejecutar las correcciones
 const POOL = "TraderCall";
 
 const alertsColl = db.getCollection("alerts");

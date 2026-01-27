@@ -4,7 +4,7 @@
  * Actualiza el profitLoss de todas las distributions
  * basándose en el currentPrice de las alerts
  *******************************/
-const DRY_RUN = true; // Cambiar a false para aplicar cambios
+const DRY_RUN = false; // Cambiar a false para aplicar cambios
 const POOL = "TraderCall";
 
 const alertsColl = db.getCollection("alerts");

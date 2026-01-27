@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { SessionProvider } from 'next-auth/react';
@@ -14,6 +14,18 @@ export default function App({
   Component,
   pageProps: { session, ...pageProps },
 }: AppProps) {
+  // 🔍 DEBUG: Verificar si hay meta tags problemáticos en el DOM
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const problematicMeta = document.querySelector('meta[http-equiv="X-Frame-Options"]');
+      if (problematicMeta) {
+        console.error('❌ [DEBUG] Meta tag X-Frame-Options encontrado en el DOM:', problematicMeta);
+        problematicMeta.remove();
+        console.log('✅ [DEBUG] Meta tag removido del DOM');
+      }
+    }
+  }, []);
+
   return (
     <SessionProvider 
       session={session}
@@ -31,8 +43,7 @@ export default function App({
         {/* ✅ OPTIMIZADO: Fuentes movidas a _document.tsx para no bloquear renderización */}
         {/* Meta tags adicionales para protección */}
         <meta name="robots" content="noindex, nofollow" />
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
-        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        {/* ✅ REMOVIDO: X-Frame-Options y X-Content-Type-Options ya están configurados como headers HTTP en next.config.js */}
       </Head>
       <ToasterProvider>
         <ContactProvider>

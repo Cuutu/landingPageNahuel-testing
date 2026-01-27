@@ -7,7 +7,7 @@
  * 1) Primero corré en DRY_RUN = true (solo muestra lo que haría).
  * 2) Si estás conforme, ponelo en false para escribir.
  *******************************/
-const DRY_RUN = true; // Cambiar a false para aplicar cambios
+const DRY_RUN = false; // Cambiar a false para aplicar cambios
 const POOL = "TraderCall";
 
 const alertsColl = db.getCollection("alerts");

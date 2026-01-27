@@ -2604,6 +2604,19 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       // El valor actual es lo que tenemos ahora + lo que ganamos/perdimos (no realizado)
       const currentValue = allocated + profitLoss;
       
+      // 🔍 DEBUG TEMPORAL: Log para ALAB
+      if (alert.symbol === 'ALAB') {
+        console.log('🔍 [DEBUG ALAB] Datos recibidos:', {
+          alertId: alertId,
+          symbol: alert.symbol,
+          liquidity: liquidity,
+          allocated: allocated,
+          profitLoss: profitLoss,
+          currentValue: currentValue,
+          alertProfit: profitValue
+        });
+      }
+      
       // ✅ CORREGIDO: Asegurar que el precio actual sea un número válido
       // El precio actual viene como string con formato "$XX.XX" desde la API
       const currentPrice = alert.currentPrice ? 
@@ -2649,6 +2662,18 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
     // El total base es la suma de los valores actuales + lo disponible (para que sume 100%)
     const totalBase = totalCurrentValue + available;
     
+    // 🔍 DEBUG TEMPORAL: Log para verificar cálculos del donut
+    const alabData = chartData.find(a => a.symbol === 'ALAB');
+    if (alabData) {
+      console.log('🔍 [DEBUG ALAB] Cálculos del donut:', {
+        alabCurrentValue: alabData.currentValue,
+        totalCurrentValue: totalCurrentValue,
+        available: available,
+        totalBase: totalBase,
+        expectedPercentage: totalBase > 0 ? (alabData.currentValue / totalBase) * 100 : 0
+      });
+    }
+    
     // ✅ DEBUG: Log para verificar valores (descomentar si es necesario)
     // console.log('📊 [PIE CHART] Valores de liquidez:', {
     //   totalCurrentValue,
@@ -2668,6 +2693,17 @@ const SubscriberView: React.FC<{ faqs: FAQ[] }> = ({ faqs }) => {
       const startAngle = cumulativeAngle;
       const endAngle = startAngle + angle;
       cumulativeAngle = endAngle;
+
+      // 🔍 DEBUG TEMPORAL: Log para ALAB
+      if (alert.symbol === 'ALAB') {
+        console.log('🔍 [DEBUG ALAB] Segmento creado:', {
+          symbol: alert.symbol,
+          segmentBase: segmentBase,
+          totalBase: totalBase,
+          size: size,
+          angle: angle
+        });
+      }
 
       return {
         ...alert,
