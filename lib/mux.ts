@@ -142,12 +142,13 @@ export async function uploadImageToMux(file: Buffer, filename: string = 'report-
     const upload = await createMuxImageUpload(filename);
     
     // Subir el archivo directamente a MUX
+    // Convertir Buffer a Uint8Array para compatibilidad con BodyInit
     const uploadResponse = await fetch(upload.uploadUrl, {
       method: 'PUT',
       headers: {
         'Content-Type': 'image/jpeg'
       },
-      body: file
+      body: new Uint8Array(file)
     });
 
     if (!uploadResponse.ok) {

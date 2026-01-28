@@ -1,43 +1,51 @@
 import { GetServerSideProps } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
-import { useEffect, useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { signIn } from 'next-auth/react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 
 interface SignInProps {
   callbackUrl: string;
   error?: string;
 }
 
-export default function SignInPage({ callbackUrl, error }: SignInProps) {
-  const [isRedirecting, setIsRedirecting] = useState(false);
+export default function SignInPage({ callbackUrl, error: initialError }: SignInProps) {
+  const router = useRouter();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(initialError || '');
+  
   const safeCallback = callbackUrl?.includes('/auth/signin') ? '/' : (callbackUrl || '/');
 
-  // Redirigir automáticamente a Google usando signIn() de NextAuth
-  // Esto garantiza que NextAuth genere el state y la cookie correctamente
-  useEffect(() => {
-    if (isRedirecting) return;
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
-    const redirectToGoogle = async () => {
-      setIsRedirecting(true);
-      try {
-        // Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
-        await signIn('google', { 
-          callbackUrl: safeCallback,
-          redirect: true // NextAuth redirigirá automáticamente
-        });
-      } catch (error) {
-        console.error('❌ [SIGNIN] Error al redirigir a Google:', error);
-        setIsRedirecting(false);
+    try {
+      const result = await signIn('credentials', {
+        username,
+        password,
+        redirect: false,
+        callbackUrl: safeCallback,
+      });
+
+      if (result?.error) {
+        setError('Usuario o contraseña incorrectos');
+        setIsLoading(false);
+      } else if (result?.ok) {
+        // Redirigir manualmente después del login exitoso
+        router.push(safeCallback);
       }
-    };
-
-    // Pequeño delay para asegurar que el componente esté montado
-    const timer = setTimeout(redirectToGoogle, 100);
-    
-    return () => clearTimeout(timer);
-  }, [safeCallback, isRedirecting]);
+    } catch (err) {
+      console.error('❌ [SIGNIN] Error en login:', err);
+      setError('Error al iniciar sesión. Intentá de nuevo.');
+      setIsLoading(false);
+    }
+  };
 
   return (
     <>
@@ -72,7 +80,7 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
             marginBottom: '1.5rem',
             fontSize: '0.95rem'
           }}>
-            Serás redirigido automáticamente a Google para iniciar sesión
+            Ingresá tus credenciales para acceder
           </p>
 
           {error && (
@@ -85,43 +93,140 @@ export default function SignInPage({ callbackUrl, error }: SignInProps) {
               fontSize: '0.875rem',
               color: '#fca5a5'
             }}>
-              Hubo un problema. Redirigiendo de nuevo...
+              {error}
             </div>
           )}
 
-          <div style={{
+          <form onSubmit={handleSubmit} style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
             gap: '1rem',
             padding: '1.5rem',
             background: 'rgba(255, 255, 255, 0.05)',
-            borderRadius: '8px',
+            borderRadius: '12px',
             border: '1px solid rgba(255, 255, 255, 0.1)'
           }}>
-            <div style={{
-              width: '40px',
-              height: '40px',
-              border: '3px solid rgba(255, 255, 255, 0.2)',
-              borderTopColor: '#3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 1s linear infinite'
-            }} />
-            <p style={{
-              color: 'rgba(255,255,255,0.9)',
-              fontSize: '1rem',
-              fontWeight: 500,
-              margin: 0
-            }}>
-              Redirigiendo a Google...
-            </p>
-          </div>
+            <div style={{ textAlign: 'left' }}>
+              <label 
+                htmlFor="username" 
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: 'rgba(255,255,255,0.8)'
+                }}
+              >
+                Usuario
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ingresá tu usuario"
+                required
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ textAlign: 'left' }}>
+              <label 
+                htmlFor="password" 
+                style={{
+                  display: 'block',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.875rem',
+                  color: 'rgba(255,255,255,0.8)'
+                }}
+              >
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingresá tu contraseña"
+                required
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'white',
+                  fontSize: '1rem',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              style={{
+                width: '100%',
+                padding: '0.875rem 1rem',
+                borderRadius: '8px',
+                border: 'none',
+                background: isLoading ? '#4b5563' : '#3b82f6',
+                color: 'white',
+                fontSize: '1rem',
+                fontWeight: 600,
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                marginTop: '0.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: 'background 0.2s ease',
+              }}
+            >
+              {isLoading ? (
+                <>
+                  <span style={{
+                    width: '18px',
+                    height: '18px',
+                    border: '2px solid rgba(255, 255, 255, 0.3)',
+                    borderTopColor: 'white',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }} />
+                  Ingresando...
+                </>
+              ) : (
+                'Iniciar sesión'
+              )}
+            </button>
+          </form>
         </div>
       </div>
       <style jsx>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        input:focus {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+        input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+        button:hover:not(:disabled) {
+          background: #2563eb !important;
         }
       `}</style>
     </>
