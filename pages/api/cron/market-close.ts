@@ -160,7 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               alert.desestimacionMotivo = reason;
               alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
               
-              // ✅ NUEVO: Liberar liquidez cuando se desestima la alerta
+              // ✅ NUEVO: Liberar liquidez cuando se desestima la alerta 
               try {
                 const Liquidity = (await import('@/models/Liquidity')).default;
                 const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
