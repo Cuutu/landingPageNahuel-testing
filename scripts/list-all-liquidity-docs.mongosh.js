@@ -5,9 +5,9 @@
 print('🔍 Listando TODOS los documentos de liquidez...\n');
 print('='.repeat(70) + '\n');
 
-const allDocs = db.liquidity.find({}).toArray();
+const allDocs = db.liquidities.find({}).toArray(); // ✅ Colección real (Mongoose pluraliza)
 
-print(`📊 Total documentos en colección 'liquidity': ${allDocs.length}\n\n`);
+print(`📊 Total documentos en colección 'liquidities': ${allDocs.length}\n\n`);
 
 for (let i = 0; i < allDocs.length; i++) {
   const doc = allDocs[i];
@@ -36,7 +36,7 @@ for (let i = 0; i < allDocs.length; i++) {
 const problematicId = '69643cd92bc61ad2f7f33dc4';
 print(`\n🔍 Buscando documento problemático (${problematicId})...\n`);
 try {
-  const problematic = db.liquidity.findOne({ _id: ObjectId(problematicId) });
+  const problematic = db.liquidities.findOne({ _id: ObjectId(problematicId) });
   if (problematic) {
     print(`   ⚠️  EXISTE! Pool: ${problematic.pool}, Distributions: ${(problematic.distributions || []).length}\n`);
   } else {

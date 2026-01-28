@@ -160,6 +160,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               alert.desestimacionMotivo = reason;
               alert.profit = 0; // Desestimada, no hay profit/loss real de la operación
               
+              // ✅ NUEVO: Liberar liquidez cuando se desestima la alerta
+              try {
+                const Liquidity = (await import('@/models/Liquidity')).default;
+                const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+                
+                const liquidity = await Liquidity.findOne({ 
+                  pool,
+                  'distributions.alertId': alert._id.toString()
+                });
+                
+                if (liquidity) {
+                  const distribution = liquidity.distributions.find((d: any) => 
+                    d.alertId && d.alertId.toString() === alert._id.toString()
+                  );
+                  
+                  if (distribution && distribution.allocatedAmount > 0) {
+                    console.log(`💰 ${alert.symbol}: Liberando liquidez por desestimación: $${distribution.allocatedAmount.toFixed(2)}`);
+                    liquidity.removeDistribution(alert._id.toString());
+                    await liquidity.save();
+                    console.log(`✅ ${alert.symbol}: Liquidez liberada correctamente`);
+                  }
+                }
+              } catch (liquidityError) {
+                console.error(`⚠️ Error liberando liquidez para ${alert.symbol}:`, liquidityError);
+              }
+              
               // ✅ NUEVO: Crear operación CANCELLED para que aparezca en la tabla de operaciones
               try {
                 const Operation = (await import('@/models/Operation')).default;

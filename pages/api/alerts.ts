@@ -241,13 +241,51 @@ async function handleDelete(req: NextApiRequest, res: NextApiResponse) {
       return res.status(400).json({ error: 'ID de alerta requerido' });
     }
 
-    const alertaEliminada = await Alert.findByIdAndDelete(id);
-
-    if (!alertaEliminada) {
+    // ✅ CORREGIDO: Buscar la alerta primero para obtener el tipo (pool)
+    const alert = await Alert.findById(id);
+    if (!alert) {
       return res.status(404).json({ error: 'Alerta no encontrada' });
     }
 
-    console.log('✅ Alerta eliminada:', alertaEliminada._id);
+    // ✅ NUEVO: Liberar la liquidez ANTES de eliminar la alerta
+    try {
+      const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+      const Liquidity = (await import('@/models/Liquidity')).default;
+      
+      const liquidity = await Liquidity.findOne({ 
+        pool,
+        'distributions.alertId': id.toString()
+      });
+      
+      if (liquidity) {
+        const distribution = liquidity.distributions.find((d: any) => 
+          d.alertId && d.alertId.toString() === id.toString()
+        );
+        
+        if (distribution) {
+          console.log(`💰 Liberando liquidez antes de eliminar alerta ${alert.symbol}: $${distribution.allocatedAmount?.toFixed(2) || 0}`);
+          liquidity.removeDistribution(id.toString());
+          await liquidity.save();
+          console.log(`✅ Liquidez liberada para ${alert.symbol}`);
+        }
+      }
+    } catch (liquidityError) {
+      console.error(`⚠️ Error liberando liquidez para alerta ${id}:`, liquidityError);
+      // Continuar con la eliminación aunque falle la liberación de liquidez
+    }
+
+    // ✅ NUEVO: También eliminar las operaciones asociadas (opcional, para limpieza)
+    try {
+      const Operation = (await import('@/models/Operation')).default;
+      await Operation.deleteMany({ alertId: id });
+      console.log(`🗑️ Operaciones asociadas eliminadas para alerta ${id}`);
+    } catch (opError) {
+      console.error(`⚠️ Error eliminando operaciones para alerta ${id}:`, opError);
+    }
+
+    const alertaEliminada = await Alert.findByIdAndDelete(id);
+
+    console.log('✅ Alerta eliminada:', alertaEliminada?._id, alert.symbol);
 
     return res.status(200).json({
       success: true,

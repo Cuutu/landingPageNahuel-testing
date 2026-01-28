@@ -415,8 +415,9 @@ export default async function handler(
         // Determinar el pool según el tipo de alerta
         const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
         
-        // Buscar liquidez existente
-        let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+        // ✅ CORREGIDO: Buscar liquidez del pool (sin filtrar por createdBy)
+        // Esto permite que cualquier admin use el documento de liquidez existente
+        let liquidity = await Liquidity.findOne({ pool }).sort({ updatedAt: -1 });
         if (!liquidity) {
           // Si no existe, crear uno con liquidez por defecto
           liquidity = await Liquidity.create({

@@ -348,9 +348,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                 const LiquidityModule = await import('@/models/Liquidity');
                 const Liquidity = LiquidityModule.default;
                 
+                // ✅ CORREGIDO: Buscar liquidez por pool Y que contenga la distribución del alertId
+                // Esto asegura que encontremos el documento correcto sin importar quién lo creó
                 const liquidity = await Liquidity.findOne({ 
-                  createdBy: adminUser._id, 
-                  pool: pool 
+                  pool: pool,
+                  'distributions.alertId': alert._id.toString()
                 });
                 
                 if (liquidity) {
@@ -364,6 +366,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
                     await liquidity.save();
                     console.log(`✅ ${alert.symbol}: Liquidez devuelta al pool`);
                   }
+                } else {
+                  console.log(`⚠️ ${alert.symbol}: No se encontró documento de liquidez con distribución para alertId ${alert._id}`);
                 }
               } catch (liquidityError) {
                 console.error(`⚠️ Error devolviendo liquidez para ${alert.symbol}:`, liquidityError);

@@ -90,6 +90,42 @@ export default async function handler(
         // Marcar como cerrada si está en rango
         if (isInRange) {
           alert.status = 'CLOSED';
+          
+          // ✅ NUEVO: Liberar liquidez cuando se cierra la alerta
+          try {
+            const Liquidity = (await import('@/models/Liquidity')).default;
+            const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
+            
+            const liquidity = await Liquidity.findOne({ 
+              pool,
+              'distributions.alertId': alert._id.toString()
+            });
+            
+            if (liquidity) {
+              const dist = liquidity.distributions.find((d: any) => 
+                d.alertId && d.alertId.toString() === alert._id.toString()
+              );
+              
+              if (dist && dist.shares > 0) {
+                // Vender todas las shares al precio de cierre
+                const { realized, returnedCash, remainingShares } = liquidity.sellShares(
+                  alert._id.toString(), 
+                  dist.shares, 
+                  currentMarketPrice
+                );
+                
+                // Si se vendieron todas, remover la distribución
+                if (remainingShares === 0) {
+                  liquidity.removeDistribution(alert._id.toString());
+                }
+                
+                await liquidity.save();
+                console.log(`💰 ${alert.symbol}: Liquidez liberada - Shares vendidas: ${dist.shares}, Efectivo: $${returnedCash.toFixed(2)}, P&L: $${realized.toFixed(2)}`);
+              }
+            }
+          } catch (liquidityError) {
+            console.error(`⚠️ Error liberando liquidez para ${alert.symbol}:`, liquidityError);
+          }
         }
 
         // Marcar email de cierre como enviado

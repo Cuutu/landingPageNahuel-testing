@@ -54,9 +54,10 @@ export default async function handler(
     }
     const pool = alert.tipo === 'SmartMoney' ? 'SmartMoney' : 'TraderCall';
 
-    const liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+    // ✅ CORREGIDO: Buscar liquidez por pool Y que contenga la distribución del alertId
+    const liquidity = await Liquidity.findOne({ pool, 'distributions.alertId': alertId });
     if (!liquidity) {
-      return res.status(404).json({ success: false, error: `No hay liquidez configurada para ${pool}` });
+      return res.status(404).json({ success: false, error: `No hay distribución para esta alerta en ${pool}` });
     }
 
     const dist = liquidity.distributions.find((d: any) => d.alertId === alertId);

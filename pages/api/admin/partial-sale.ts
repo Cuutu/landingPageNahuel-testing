@@ -177,10 +177,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       try {
         console.log(`🔍 Buscando liquidez para alerta ${alertId} (${alert.symbol}) en pool ${tipo}`);
         
-        // Buscar directamente en la base de datos sin fetch interno
+        // ✅ CORREGIDO: Buscar liquidez por pool Y que contenga la distribución del alertId
+        // Esto permite que cualquier admin pueda operar sin importar quién creó la distribución
         const liquidity = await Liquidity.findOne({ 
-          createdBy: user._id, 
-          pool: tipo 
+          pool: tipo,
+          'distributions.alertId': alertId.toString()
         });
         
         if (liquidity && liquidity.distributions) {

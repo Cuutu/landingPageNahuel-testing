@@ -75,7 +75,9 @@ export default async function handler(
 
     const pool = alert.tipo === "SmartMoney" ? "SmartMoney" : "TraderCall";
 
-    let liquidity = await Liquidity.findOne({ createdBy: user._id, pool });
+    // ✅ CORREGIDO: Buscar liquidez del pool (sin filtrar por createdBy)
+    // Esto permite que cualquier admin use el documento de liquidez existente
+    let liquidity = await Liquidity.findOne({ pool }).sort({ updatedAt: -1 });
     if (!liquidity) {
       return res.status(400).json({ success: false, error: `No hay liquidez configurada para el pool ${pool}. Configure la liquidez total primero.` });
     }
