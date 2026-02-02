@@ -43,46 +43,99 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .populate('userId', 'name email')
     .sort({ transactionDate: -1 });
 
-    // 2. ✅ NUEVO: Obtener usuarios con activeSubscriptions activas
+    // 2. ✅ Obtener usuarios con activeSubscriptions (activas O expiradas recientemente)
     const usersWithActiveSubscriptions = await User.find({
-      'activeSubscriptions.0': { $exists: true }, // Tiene al menos 1 suscripción
-      'activeSubscriptions.isActive': true
+      'activeSubscriptions.0': { $exists: true }
     }).select('name email activeSubscriptions');
 
+    // 3. ✅ NUEVO: Obtener usuarios con subscriptions del admin (activas O expiradas recientemente)
+    const usersWithAdminSubscriptions = await User.find({
+      'subscriptions.0': { $exists: true }
+    }).select('name email subscriptions');
+
     // Procesar suscripciones activas
-    const subscriptions = [];
+    const subscriptions: any[] = [];
     const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const services = ['TraderCall', 'SmartMoney', 'CashFlow', 'SwingTrading', 'DowJones'];
 
-    // ✅ NUEVO: Procesar activeSubscriptions de usuarios
+    // ✅ Procesar activeSubscriptions de usuarios (activas y expiradas recientes)
     for (const user of usersWithActiveSubscriptions) {
       for (const activeSub of user.activeSubscriptions || []) {
-        if (!activeSub.isActive) continue;
-        
         const expiryDate = new Date(activeSub.expiryDate);
-        const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        const status = expiryDate > now ? 'active' : 'expired';
+        const isExpired = expiryDate < now;
+        const expiredRecently = expiryDate > thirtyDaysAgo;
+        
+        // Incluir si está activa O si expiró recientemente
+        if (activeSub.isActive || (isExpired && expiredRecently)) {
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          const status = isExpired ? 'expired' : 'active';
 
-        subscriptions.push({
-          id: activeSub._id || `active_${user._id}_${activeSub.service}`,
-          userEmail: user.email,
-          userName: user.name || user.email.split('@')[0],
-          service: activeSub.service,
-          status,
-          startDate: activeSub.startDate.toISOString(),
-          expiryDate: activeSub.expiryDate.toISOString(),
-          amount: activeSub.amount || 0,
-          currency: activeSub.currency || 'ARS',
-          paymentMethod: activeSub.mercadopagoPaymentId ? 'MercadoPago' : 'Manual',
-          transactionId: activeSub.mercadopagoPaymentId || 'N/A',
-          daysUntilExpiry,
-          source: 'activeSubscriptions' // Para debug
-        });
+          subscriptions.push({
+            id: activeSub._id || `active_${user._id}_${activeSub.service}`,
+            userEmail: user.email,
+            userName: user.name || user.email.split('@')[0],
+            service: activeSub.service,
+            status,
+            startDate: activeSub.startDate.toISOString(),
+            expiryDate: activeSub.expiryDate.toISOString(),
+            amount: activeSub.amount || 0,
+            currency: activeSub.currency || 'ARS',
+            paymentMethod: activeSub.mercadopagoPaymentId ? 'MercadoPago' : 'Manual',
+            transactionId: activeSub.mercadopagoPaymentId || 'N/A',
+            daysUntilExpiry,
+            source: 'activeSubscriptions'
+          });
+        }
+      }
+    }
+
+    // ✅ NUEVO: Procesar subscriptions del admin (activas y expiradas recientes)
+    for (const user of usersWithAdminSubscriptions) {
+      for (const adminSub of user.subscriptions || []) {
+        const expiryDate = adminSub.fechaFin ? new Date(adminSub.fechaFin) : null;
+        if (!expiryDate) continue;
+        
+        const isExpired = expiryDate < now;
+        const expiredRecently = expiryDate > thirtyDaysAgo;
+        
+        // Verificar si ya existe en subscriptions (evitar duplicados)
+        const alreadyExists = subscriptions.some(
+          s => s.userEmail === user.email && s.service === adminSub.tipo
+        );
+        
+        // Incluir si está activa O si expiró recientemente (y no es duplicada)
+        if (!alreadyExists && (adminSub.activa || (isExpired && expiredRecently))) {
+          const daysUntilExpiry = Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          const status = isExpired ? 'expired' : 'active';
+
+          subscriptions.push({
+            id: adminSub._id || `admin_${user._id}_${adminSub.tipo}`,
+            userEmail: user.email,
+            userName: user.name || user.email.split('@')[0],
+            service: adminSub.tipo,
+            status,
+            startDate: adminSub.fechaInicio.toISOString(),
+            expiryDate: expiryDate.toISOString(),
+            amount: adminSub.precio || 0,
+            currency: 'ARS',
+            paymentMethod: 'Manual',
+            transactionId: 'N/A',
+            daysUntilExpiry,
+            source: 'subscriptions (admin)'
+          });
+        }
       }
     }
 
     for (const payment of payments) {
       if (payment.expiryDate > now) {
+        // Evitar duplicados si ya existe desde activeSubscriptions o subscriptions
+        const alreadyExists = subscriptions.some(
+          s => s.userEmail === payment.userEmail && s.service === payment.service
+        );
+        if (alreadyExists) continue;
+        
         const daysUntilExpiry = Math.ceil((payment.expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         
         subscriptions.push({
@@ -102,8 +155,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Obtener suscripciones expiradas recientemente (últimos 30 días)
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    // Obtener suscripciones expiradas recientemente desde Payments (últimos 30 días)
+    // (thirtyDaysAgo ya está definido arriba)
     const expiredPayments = await Payment.find({
       status: 'approved',
       expiryDate: { $lt: now, $gt: thirtyDaysAgo }
@@ -112,6 +165,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .sort({ expiryDate: -1 });
 
     for (const payment of expiredPayments) {
+      // Evitar duplicados si ya existe desde activeSubscriptions o subscriptions
+      const alreadyExists = subscriptions.some(
+        s => s.userEmail === payment.userEmail && s.service === payment.service
+      );
+      if (alreadyExists) continue;
+      
       const daysSinceExpiry = Math.ceil((now.getTime() - payment.expiryDate.getTime()) / (1000 * 60 * 60 * 24));
       
       subscriptions.push({
