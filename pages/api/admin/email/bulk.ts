@@ -48,7 +48,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       expiryDate,
       buttonText,
       buttonUrl,
-      images = []
+      images = [],
+      dryRun = false // Si true, solo devuelve destinatarios sin enviar
     } = req.body;
 
     // Manejar diferentes formatos de datos del frontend
@@ -210,6 +211,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (targetEmails.length === 0) {
       console.error('❌ [BULK EMAIL] No se encontraron destinatarios válidos');
       return res.status(400).json({ error: 'No se encontraron destinatarios válidos' });
+    }
+
+    // DRY RUN: solo devolver lista de destinatarios sin enviar
+    if (dryRun) {
+      console.log(`🔍 [BULK EMAIL] DRY RUN - Se enviaría a ${targetEmails.length} destinatarios (no se envió ningún email)`);
+      return res.status(200).json({
+        dryRun: true,
+        recipientCount: targetEmails.length,
+        recipients: targetEmails,
+        message: `[DRY RUN] Se enviaría a ${targetEmails.length} destinatarios. No se envió ningún email.`
+      });
     }
 
     console.log(`📧 [BULK EMAIL] Preparando envío masivo a ${targetEmails.length} destinatarios`);

@@ -523,8 +523,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             
             console.log(`🔍 ${alert.symbol}: Buscando ventas programadas (total: ${partialSales.length})`);
             
-            // Buscar cualquier venta pendiente (no ejecutada)
-            const pendingSale = partialSales.find((sale: any) => !sale.executed);
+            // ✅ CORREGIDO: Buscar venta pendiente que NO esté ejecutada NI descartada
+            // Bug anterior: no verificaba !sale.discarded, causando que ventas desestimadas 
+            // se ejecutaran cuando se programaba una nueva venta
+            const pendingSale = partialSales.find((sale: any) => !sale.executed && !sale.discarded);
           
           if (pendingSale) {
               console.log(`✅ ${alert.symbol}: Ejecutando venta programada: ${pendingSale.percentage}%`);
@@ -622,9 +624,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             const liquidityData = alert.liquidityData || {};
             const partialSales = liquidityData.partialSales || [];
                     
-            // Marcar todas las ventas pendientes como descartadas
+            // Marcar todas las ventas pendientes como descartadas (que no estén ya descartadas)
             const updatedPartialSales = partialSales.map((sale: any) => {
-              if (!sale.executed) {
+              if (!sale.executed && !sale.discarded) {
                 return {
                   ...sale,
                   executed: false,
@@ -1813,7 +1815,7 @@ function generarEmailResumenHTML(tipoAlerta: string, acciones: AccionResumen[]):
             <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px 15px; margin-bottom: 10px; border-radius: 0 8px 8px 0;">
               <div style="font-weight: 600; color: #dc2626; font-size: 15px;">📉 ${a.symbol}</div>
               <div style="color: #b91c1c; margin-top: 5px;">
-                ${a.detalles.posicionCerrada ? 'Posición cerrada' : `Vendido ${a.detalles.porcentajeVendido}%`} a <strong>$${a.precio.toFixed(2)}</strong>
+                ${a.detalles.posicionCerrada ? 'Venta TOTAL - Posición cerrada' : `Venta parcial (${a.detalles.porcentajeVendido || 0}%)`} a <strong>$${a.precio.toFixed(2)}</strong>
                 <br><span style="color: ${profitColor}; font-weight: 600;">Profit: ${profitSign}${(a.detalles.profitPorcentaje || 0).toFixed(2)}%</span>
               </div>
             </div>
@@ -2067,7 +2069,7 @@ async function enviarResumenTelegram(tipoAlerta: string, acciones: AccionResumen
         const profitSign = profitPorcentaje >= 0 ? '+' : '';
         const profitEmoji = profitPorcentaje >= 0 ? '📈' : '📉';
         const ventaInfo = a.detalles.posicionCerrada 
-          ? 'Posición cerrada'
+          ? 'Venta TOTAL - Posición cerrada'
           : (a.detalles.porcentajeVendido 
               ? `Venta parcial (${a.detalles.porcentajeVendido}%)`
               : 'Venta ejecutada');
