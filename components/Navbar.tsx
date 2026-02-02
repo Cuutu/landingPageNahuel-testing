@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, Menu, X, User, LogOut, Settings, Bell, MessageCircle, DollarSign, Users } from 'lucide-react';
 import NotificationDropdown from '@/components/NotificationDropdown';
 import ContactForm from '@/components/ContactForm';
@@ -166,15 +166,9 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
   };
 
   const handleLogin = async () => {
-    // ✅ Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
-    try {
-      await signIn('google', { 
-        callbackUrl: window.location.href,
-        redirect: true // NextAuth redirigirá automáticamente
-      });
-    } catch (error) {
-      console.error('❌ [NAVBAR] Error al iniciar sesión:', error);
-    }
+    // Redirigir a la página de login con credenciales (usuario/contraseña)
+    const callbackUrl = encodeURIComponent(window.location.href);
+    window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
   };
 
   const handleLogout = async () => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { GetServerSideProps } from 'next';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 import { generateCircularAvatarDataURL } from '@/lib/utils';
 import Navbar from '@/components/Navbar';
@@ -567,7 +567,8 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
   };
 
   const handleLogin = () => {
-    signIn('google');
+    const callbackUrl = encodeURIComponent(window.location.href);
+    window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
     setShowLoginAlert(false);
   };
 
@@ -666,7 +667,7 @@ const ConsultorioFinancieroPage: React.FC<ConsultorioPageProps> = ({
                         <ClassCalendar
                           events={calendarEvents}
                           onDateSelect={handleCalendarDateSelect}
-                          isAdmin={true}
+                          isAdmin={session?.user?.role === 'admin'}
                           initialDate={earliestDate}
                           selectedDate={selectedDate ? (() => {
                             // Crear fecha directamente en zona horaria local para evitar desfases

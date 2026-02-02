@@ -25,12 +25,13 @@ export async function verifyAdminAccess(context: GetServerSidePropsContext): Pro
     console.log('🔍 [ADMIN AUTH] Sesión obtenida:', !!session);
     console.log('🔍 [ADMIN AUTH] Email en sesión:', session?.user?.email || 'NO HAY');
     
-    // 2. Si no hay sesión o email, redirigir a login
+    // 2. Si no hay sesión o email, redirigir a login (página de credenciales)
     if (!session?.user?.email) {
       console.log('❌ [ADMIN AUTH] No hay sesión válida - redirigiendo a login');
+      const callbackUrl = context.resolvedUrl ? encodeURIComponent(context.resolvedUrl) : encodeURIComponent('/admin/dashboard');
       return {
         isAdmin: false,
-        redirectTo: '/api/auth/signin'
+        redirectTo: `/auth/signin?callbackUrl=${callbackUrl}`
       };
     }
 
@@ -45,7 +46,16 @@ export async function verifyAdminAccess(context: GetServerSidePropsContext): Pro
       console.log('🗄️ [ADMIN AUTH] Usuario encontrado en BD:', !!dbUser);
       
       if (!dbUser) {
-        console.log('❌ [ADMIN AUTH] Usuario no existe en BD');
+        // ✅ Login por credenciales: admin puede no existir en BD; confiar en rol de sesión JWT
+        if (session.user.role === 'admin') {
+          console.log('✅ [ADMIN AUTH] Usuario admin por credenciales (sin registro en BD)');
+          return {
+            isAdmin: true,
+            user: { ...session.user, role: 'admin' },
+            session: session
+          };
+        }
+        console.log('❌ [ADMIN AUTH] Usuario no existe en BD y no es admin en sesión');
         return {
           isAdmin: false,
           redirectTo: '/',
@@ -102,7 +112,7 @@ export async function verifyAdminAccess(context: GetServerSidePropsContext): Pro
     console.error('💥 [ADMIN AUTH] Error general:', error);
     return {
       isAdmin: false,
-      redirectTo: '/api/auth/signin'
+      redirectTo: '/auth/signin?callbackUrl=' + encodeURIComponent('/admin/dashboard')
     };
   }
 }

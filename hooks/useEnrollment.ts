@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Session } from 'next-auth';
-import { signIn } from 'next-auth/react';
 import { toast } from 'react-hot-toast';
 
 interface FormData {
@@ -64,7 +63,8 @@ export const useEnrollment = (session: Session | null, trainingType: string) => 
   const handleEnroll = async () => {
     if (!session) {
       toast.error('Debes iniciar sesión primero para inscribirte');
-      signIn('google');
+      const callbackUrl = encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '/');
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
     

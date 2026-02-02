@@ -67,7 +67,8 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
       if (status === 'unauthenticated') {
         console.log('❌ [ADMIN GUARD] No autenticado - redirigiendo a login');
         hasCheckedRef.current = true;
-        router.push('/api/auth/signin');
+        const callbackUrl = encodeURIComponent(router.asPath || '/admin/dashboard');
+        router.push(`/auth/signin?callbackUrl=${callbackUrl}`);
         return;
       }
 
@@ -139,7 +140,8 @@ const AdminRouteGuard: React.FC<AdminRouteGuardProps> = ({
         console.log('❌ [ADMIN GUARD] No se pudo obtener email después de reintentos');
         hasCheckedRef.current = true;
         setIsChecking(false);
-        router.push('/api/auth/signin');
+        const callbackUrl = encodeURIComponent(router.asPath || '/admin/dashboard');
+        router.push(`/auth/signin?callbackUrl=${callbackUrl}`);
         return;
       }
 

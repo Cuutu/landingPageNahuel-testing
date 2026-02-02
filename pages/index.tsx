@@ -1,5 +1,5 @@
 import { GetServerSideProps } from 'next';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/googleAuth';
 import Head from 'next/head';
@@ -391,11 +391,8 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
       // Si no está autenticado, iniciar sesión con Google directamente
       // ✅ Guardar flag para detectar el retorno del login
       sessionStorage.setItem('pending_login', 'true');
-      // ✅ Usar signIn() de NextAuth para que maneje el state y las cookies correctamente
-      signIn('google', { 
-        callbackUrl: window.location.origin + window.location.pathname,
-        redirect: true // NextAuth redirigirá automáticamente
-      });
+      const callbackUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
     }
   };
 
@@ -440,11 +437,9 @@ export default function Home({ session: serverSession, siteConfig, entrenamiento
   const handleMercadoPagoCheckout = async (type: 'subscription' | 'training', service: string, amount: number, currency: string) => {
     if (!session) {
       toast.error('Debes iniciar sesión primero');
-      // ✅ Guardar flag para detectar el retorno del login
       sessionStorage.setItem('pending_login', 'true');
-      signIn('google', { 
-        callbackUrl: window.location.origin + window.location.pathname
-      });
+      const callbackUrl = encodeURIComponent(window.location.origin + window.location.pathname);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
 

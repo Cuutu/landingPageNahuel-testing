@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { GetServerSideProps } from 'next';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../lib/googleAuth';
@@ -187,7 +187,8 @@ const NonSubscriberView: React.FC<{
 
   const handleTrial = async () => {
     if (!session) {
-      signIn('google', { callbackUrl: window.location.href });
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
 
@@ -229,7 +230,8 @@ const NonSubscriberView: React.FC<{
 
   const handleSubscribe = async () => {
     if (!session) {
-      signIn('google', { callbackUrl: window.location.href });
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
 

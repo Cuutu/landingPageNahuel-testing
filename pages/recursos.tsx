@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { GetServerSideProps } from 'next';
-import { getSession, signIn, useSession } from 'next-auth/react';
+import { getSession, useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -238,8 +238,9 @@ const RecursosPage: React.FC<RecursosPageProps> = ({
       // Si el usuario está autenticado, redirigir a /alertas
       router.push('/alertas');
     } else {
-      // Si no está autenticado, iniciar sesión con Google
-      signIn('google');
+      // Redirigir a login con credenciales
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
     }
   };
 

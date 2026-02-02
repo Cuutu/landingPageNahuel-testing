@@ -705,7 +705,8 @@ const SwingTradingPage: React.FC<TradingPageProps> = ({
   const handleEnroll = async () => {
     if (!session) {
       toast.error('Debes iniciar sesión primero para inscribirte');
-      signIn('google');
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
     

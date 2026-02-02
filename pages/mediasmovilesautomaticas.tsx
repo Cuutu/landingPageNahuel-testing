@@ -105,7 +105,8 @@ export default function MediasMovilesAutomaticasPage() {
 
   const handleBuy = async () => {
     if (!session?.user?.email) {
-      await signIn('google');
+      const callbackUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth/signin?callbackUrl=${callbackUrl}`;
       return;
     }
     
