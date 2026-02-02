@@ -193,6 +193,11 @@
   background: linear-gradient(135deg, #fffbeb, #fef3c7);
 }
 
+.subscriptionCard.expiredCard {
+  border-color: #dc2626;
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+}
+
 .cardHeader {
   display: flex;
   justify-content: space-between;
@@ -258,6 +263,19 @@
   font-weight: 500;
 }
 
+.expiredWarning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fee2e2;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  color: #991b1b;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .paymentInfo {
   display: flex;
   flex-direction: column;
@@ -302,6 +320,40 @@
 
 .expiringSoon .renewButton:hover {
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+/* Botón de renovar para suscripciones expiradas */
+.renewButtonExpired {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #059669, #047857);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.renewButtonExpired:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.4);
+}
+
+.renewButtonExpired:active {
+  transform: translateY(0);
+}
+
+.expiredCard .renewTip {
+  background: rgba(5, 150, 105, 0.1);
+  border-left-color: #059669;
+  color: #065f46;
 }
 
 /* Tip de renovación */

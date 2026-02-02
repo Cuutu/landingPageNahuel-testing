@@ -36,18 +36,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     .sort({ transactionDate: -1 })
     .limit(50);
 
-    // Procesar suscripciones activas
-    const activeSubscriptions = [];
+    // Procesar suscripciones activas y expiradas
+    const activeSubscriptions: any[] = [];
+    const expiredFromUser: any[] = []; // Suscripciones expiradas de los arrays del usuario
     const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    // Verificar suscripciones activas en el array 'subscriptions'
+    // Verificar suscripciones en el array 'subscriptions' (admin manual)
     if (user.subscriptions && user.subscriptions.length > 0) {
       for (const subscription of user.subscriptions) {
-        if (subscription.activa) {
-          // Verificar si la suscripción no ha expirado
+        if (subscription.activa || subscription.fechaFin) {
           const isExpired = subscription.fechaFin && new Date(subscription.fechaFin) < now;
+          const expiredRecently = subscription.fechaFin && new Date(subscription.fechaFin) > thirtyDaysAgo;
           
           if (!isExpired) {
+            // Suscripción activa
             activeSubscriptions.push({
               service: subscription.tipo,
               status: 'active' as const,
@@ -58,6 +61,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               paymentMethod: 'Asignación Manual',
               transactionId: undefined
             });
+          } else if (expiredRecently) {
+            // Suscripción expirada recientemente (últimos 30 días)
+            const alreadyInExpired = expiredFromUser.some(sub => sub.service === subscription.tipo);
+            if (!alreadyInExpired) {
+              expiredFromUser.push({
+                service: subscription.tipo,
+                status: 'expired' as const,
+                startDate: subscription.fechaInicio,
+                expiryDate: subscription.fechaFin,
+                amount: subscription.precio || 0,
+                currency: 'ARS',
+                paymentMethod: 'Asignación Manual',
+                transactionId: undefined
+              });
+            }
           }
         }
       }
@@ -66,21 +84,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // También verificar en el array 'suscripciones' (legacy)
     if (user.suscripciones && user.suscripciones.length > 0) {
       for (const suscripcion of user.suscripciones) {
-        if (suscripcion.activa) {
-          // Verificar si la suscripción no ha expirado
+        if (suscripcion.activa || suscripcion.fechaVencimiento) {
           const isExpired = suscripcion.fechaVencimiento && new Date(suscripcion.fechaVencimiento) < now;
+          const expiredRecently = suscripcion.fechaVencimiento && new Date(suscripcion.fechaVencimiento) > thirtyDaysAgo;
           
           if (!isExpired) {
-            // Verificar si ya no existe en activeSubscriptions
             const alreadyExists = activeSubscriptions.some(sub => sub.service === suscripcion.servicio);
-            
             if (!alreadyExists) {
               activeSubscriptions.push({
                 service: suscripcion.servicio,
                 status: 'active' as const,
                 startDate: suscripcion.fechaInicio,
                 expiryDate: suscripcion.fechaVencimiento,
-                amount: 0, // No hay precio en el array legacy
+                amount: 0,
+                currency: 'ARS',
+                paymentMethod: 'Sistema Anterior',
+                transactionId: undefined
+              });
+            }
+          } else if (expiredRecently) {
+            const alreadyInExpired = expiredFromUser.some(sub => sub.service === suscripcion.servicio);
+            const alreadyInActive = activeSubscriptions.some(sub => sub.service === suscripcion.servicio);
+            if (!alreadyInExpired && !alreadyInActive) {
+              expiredFromUser.push({
+                service: suscripcion.servicio,
+                status: 'expired' as const,
+                startDate: suscripcion.fechaInicio,
+                expiryDate: suscripcion.fechaVencimiento,
+                amount: 0,
                 currency: 'ARS',
                 paymentMethod: 'Sistema Anterior',
                 transactionId: undefined
@@ -94,18 +125,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ✅ IMPORTANTE: Verificar también en activeSubscriptions (MercadoPago)
     if (user.activeSubscriptions && user.activeSubscriptions.length > 0) {
       for (const activeSub of user.activeSubscriptions) {
-        if (activeSub.isActive) {
-          // Verificar si la suscripción no ha expirado
+        if (activeSub.isActive || activeSub.expiryDate) {
           const isExpired = activeSub.expiryDate && new Date(activeSub.expiryDate) < now;
+          const expiredRecently = activeSub.expiryDate && new Date(activeSub.expiryDate) > thirtyDaysAgo;
           
           if (!isExpired) {
-            // Verificar si ya no existe en activeSubscriptions
             const alreadyExists = activeSubscriptions.some(sub => sub.service === activeSub.service);
-            
             if (!alreadyExists) {
               activeSubscriptions.push({
                 service: activeSub.service,
                 status: 'active' as const,
+                startDate: activeSub.startDate,
+                expiryDate: activeSub.expiryDate,
+                amount: activeSub.amount || 0,
+                currency: activeSub.currency || 'ARS',
+                paymentMethod: 'MercadoPago',
+                transactionId: activeSub.mercadopagoPaymentId || 'mp-subscription'
+              });
+            }
+          } else if (expiredRecently) {
+            const alreadyInExpired = expiredFromUser.some(sub => sub.service === activeSub.service);
+            const alreadyInActive = activeSubscriptions.some(sub => sub.service === activeSub.service);
+            if (!alreadyInExpired && !alreadyInActive) {
+              expiredFromUser.push({
+                service: activeSub.service,
+                status: 'expired' as const,
                 startDate: activeSub.startDate,
                 expiryDate: activeSub.expiryDate,
                 amount: activeSub.amount || 0,
@@ -132,12 +176,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       mercadopagoPaymentId: payment.mercadopagoPaymentId
     }));
 
-    // Obtener suscripciones expiradas recientemente
-    const expiredSubscriptions = payments
+    // Obtener suscripciones expiradas recientemente desde pagos
+    const expiredFromPayments = payments
       .filter(payment => 
         payment.status === 'approved' && 
         payment.expiryDate < now &&
-        payment.expiryDate > new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) // Últimos 30 días
+        payment.expiryDate > thirtyDaysAgo
       )
       .map(payment => ({
         service: payment.service,
@@ -150,7 +194,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         transactionId: payment.mercadopagoPaymentId
       }));
 
-    const allSubscriptions = [...activeSubscriptions, ...expiredSubscriptions];
+    // Combinar suscripciones expiradas (de usuario y de pagos), evitando duplicados
+    const allExpired = [...expiredFromUser];
+    for (const expPayment of expiredFromPayments) {
+      const alreadyExists = allExpired.some(e => e.service === expPayment.service);
+      const alreadyActive = activeSubscriptions.some(a => a.service === expPayment.service);
+      if (!alreadyExists && !alreadyActive) {
+        allExpired.push(expPayment);
+      }
+    }
+
+    const allSubscriptions = [...activeSubscriptions, ...allExpired];
 
     return res.status(200).json({
       success: true,

@@ -282,6 +282,84 @@ export default function UserSubscriptions() {
         )}
       </motion.div>
 
+      {/* Suscripciones Expiradas - Con opción de renovar */}
+      {subscriptions.filter(sub => sub.status === 'expired').length > 0 && (
+        <motion.div 
+          className={styles.section}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.15 }}
+        >
+          <div className={styles.sectionHeader}>
+            <h2>Suscripciones Expiradas</h2>
+          </div>
+
+          <div className={styles.subscriptionsGrid}>
+            {subscriptions
+              .filter(sub => sub.status === 'expired')
+              .map((subscription, index) => {
+                const daysSinceExpiry = Math.abs(getDaysUntilExpiry(subscription.expiryDate));
+
+                return (
+                  <motion.div
+                    key={`expired-${subscription.service}-${index}`}
+                    className={`${styles.subscriptionCard} ${styles.expiredCard}`}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <div className={styles.cardHeader}>
+                      <div className={styles.serviceInfo}>
+                        <h3>{getServiceDisplayName(subscription.service)}</h3>
+                        <div className={styles.statusContainer}>
+                          {getStatusIcon(subscription.status)}
+                          <span className={styles.statusText}>
+                            {getStatusText(subscription.status)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className={styles.amount}>
+                        {formatCurrency(subscription.amount, subscription.currency)}
+                      </div>
+                    </div>
+
+                    <div className={styles.cardContent}>
+                      <div className={styles.dateInfo}>
+                        <div className={styles.dateItem}>
+                          <Calendar size={16} />
+                          <span>Inicio: {formatDate(subscription.startDate)}</span>
+                        </div>
+                        <div className={styles.dateItem}>
+                          <Calendar size={16} />
+                          <span>Expiró: {formatDate(subscription.expiryDate)}</span>
+                        </div>
+                      </div>
+
+                      <div className={styles.expiredWarning}>
+                        <XCircle size={16} />
+                        <span>Expiró hace {daysSinceExpiry} día{daysSinceExpiry !== 1 ? 's' : ''}</span>
+                      </div>
+
+                      {/* Botón de renovar para suscripciones expiradas */}
+                      <button
+                        onClick={() => handleRenewSubscription(subscription.service)}
+                        className={styles.renewButtonExpired}
+                      >
+                        <RefreshCw size={16} />
+                        Renovar Suscripción
+                      </button>
+                      
+                      <p className={styles.renewTip}>
+                        💡 Renová ahora para recuperar el acceso a {getServiceDisplayName(subscription.service)}
+                      </p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+          </div>
+        </motion.div>
+      )}
+
       {/* Historial de Pagos */}
       <motion.div 
         className={styles.section}
