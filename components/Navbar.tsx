@@ -429,19 +429,19 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
                       </Link>
                       {sessionUser && sessionUser.role === 'admin' && (
                         <>
-                          <Link href="/admin/dashboard" className={styles.dropdownItem}>
+                          <Link href="/admin/dashboard" className={styles.dropdownItem} prefetch={false}>
                             <Settings size={16} />
                             Panel de Administración
                           </Link>
-                          <Link href="/admin/users" className={styles.dropdownItem}>
+                          <Link href="/admin/users" className={styles.dropdownItem} prefetch={false}>
                             <Users size={16} />
                             Gestión de Usuarios
                           </Link>
-                          <Link href="/admin/notifications" className={styles.dropdownItem}>
+                          <Link href="/admin/notifications" className={styles.dropdownItem} prefetch={false}>
                             <Bell size={16} />
                             Gestión de Notificaciones
                           </Link>
-                          <Link href="/admin/alertas-liquidez" className={styles.dropdownItem}>
+                          <Link href="/admin/alertas-liquidez" className={styles.dropdownItem} prefetch={false}>
                             <DollarSign size={16} />
                             Liquidez
                           </Link>
@@ -590,19 +590,19 @@ const Navbar: React.FC<NavbarProps> = ({ className = '', noSticky = false }) => 
                     </Link>
                     {sessionUser && sessionUser.role === 'admin' && (
                       <>
-                        <Link href="/admin/dashboard" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                        <Link href="/admin/dashboard" className={styles.mobileNavLink} prefetch={false} onClick={() => setIsMenuOpen(false)}>
                           <Settings size={16} />
                           Panel de Administración
                         </Link>
-                        <Link href="/admin/users" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                        <Link href="/admin/users" className={styles.mobileNavLink} prefetch={false} onClick={() => setIsMenuOpen(false)}>
                           <Users size={16} />
                           Gestión de Usuarios
                         </Link>
-                        <Link href="/admin/notifications" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                        <Link href="/admin/notifications" className={styles.mobileNavLink} prefetch={false} onClick={() => setIsMenuOpen(false)}>
                           <Bell size={16} />
                           Gestión de Notificaciones
                         </Link>
-                        <Link href="/admin/alertas-liquidez" className={styles.mobileNavLink} onClick={() => setIsMenuOpen(false)}>
+                        <Link href="/admin/alertas-liquidez" className={styles.mobileNavLink} prefetch={false} onClick={() => setIsMenuOpen(false)}>
                           <DollarSign size={16} />
                           Liquidez
                         </Link>

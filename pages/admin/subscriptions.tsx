@@ -959,9 +959,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   } catch (error) {
     console.error('💥 [SUBSCRIPTIONS] Error en getServerSideProps:', error);
     
+    const callbackUrl = encodeURIComponent(context.resolvedUrl || '/admin/dashboard');
     return {
       redirect: {
-        destination: '/api/auth/signin',
+        destination: `/auth/signin?callbackUrl=${callbackUrl}`,
         permanent: false,
       },
     };

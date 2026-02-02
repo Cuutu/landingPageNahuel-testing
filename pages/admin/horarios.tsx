@@ -511,9 +511,10 @@ export const getServerSideProps: GetServerSideProps = async (context: GetServerS
   } catch (error) {
     console.error('💥 [ENVIAR-LINKS] Error:', error);
     
+    const callbackUrl = encodeURIComponent(context.resolvedUrl || '/admin/dashboard');
     return {
       redirect: {
-        destination: '/api/auth/signin',
+        destination: `/auth/signin?callbackUrl=${callbackUrl}`,
         permanent: false,
       },
     };

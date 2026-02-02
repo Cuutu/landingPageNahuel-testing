@@ -71,27 +71,26 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // Validación de la sesión
-      if (!session || !session.user) {
-        return session;
-      }
-
-      if (token) {
-        if (token.id) {
-          session.user.id = token.id as string;
-        }
-        
+      // Con Credentials + JWT, el servidor puede recibir session con user vacío; construir desde token
+      if (token?.email) {
+        const user = session?.user ?? ({} as any);
+        session = session ?? ({} as any);
+        session.user = {
+          ...user,
+          id: (token.id as string) ?? user.id,
+          email: (token.email as string) ?? user.email,
+          name: (token.name as string) ?? user.name,
+          image: (token.picture as string) ?? user.image,
+          role: (token.role as 'normal' | 'suscriptor' | 'admin') || 'admin',
+          suscripciones: (token.suscripciones as any[]) ?? [],
+        };
+      } else if (session?.user && token) {
+        session.user.id = token.id as string;
         session.user.role = (token.role as 'normal' | 'suscriptor' | 'admin') || 'admin';
         session.user.suscripciones = (token.suscripciones as any[]) || [];
-        
-        if (token.name) {
-          session.user.name = token.name as string;
-        }
-        if (token.email) {
-          session.user.email = token.email as string;
-        }
+        if (token.name) session.user.name = token.name as string;
+        if (token.email) session.user.email = token.email as string;
       }
-      
       return session;
     }
   },
@@ -104,6 +103,8 @@ export const authOptions: NextAuthOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 días
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // En desarrollo (http) no usar cookie segura para que la sesión persista al navegar
+  useSecureCookies: process.env.NEXTAUTH_URL?.startsWith('https://') ?? false,
 };
 
 // Tipos extendidos para NextAuth

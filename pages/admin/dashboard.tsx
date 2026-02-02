@@ -915,11 +915,11 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
               </div>
               
               <div className={styles.headerActions}>
-                <Link href="/admin/users" className={styles.actionButton}>
+                <Link href="/admin/users" className={styles.actionButton} prefetch={false}>
                   <Users size={20} />
                   Gestionar Usuarios
                 </Link>
-                <Link href="/admin/notifications" className={styles.actionButton}>
+                <Link href="/admin/notifications" className={styles.actionButton} prefetch={false}>
                   <Bell size={20} />
                   Notificaciones
                 </Link>
@@ -999,6 +999,7 @@ export default function AdminDashboardPage({ user }: AdminDashboardProps) {
                       <Link
                         key={linkIndex}
                         href={link.href}
+                        prefetch={false}
                         className={`${styles.sectionLink} ${isLinkHidden ? styles.hiddenLink : ''}`}
                       >
                         {link.icon}
@@ -2223,10 +2224,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   } catch (error) {
     console.error('💥 [DASHBOARD] Error en getServerSideProps:', error);
-    
+    const callbackUrl = encodeURIComponent('/admin/dashboard');
     return {
       redirect: {
-        destination: '/api/auth/signin',
+        destination: `/auth/signin?callbackUrl=${callbackUrl}`,
         permanent: false,
       },
     };
