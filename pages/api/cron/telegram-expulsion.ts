@@ -271,11 +271,8 @@ export default async function handler(
         
         console.log(`   ✅ Tiene suscripción activa: ${hasActiveSubscription}`);
 
-        // ✅ TEMPORALMENTE COMENTADO PARA TESTEO: Protección de admins deshabilitada
-        // Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
-        // if (!hasActiveSubscription && user.role !== 'admin') {
-        // TEMPORAL: Para testeo, también procesar admins
-        if (!hasActiveSubscription) {
+        // ✅ CORREGIDO: Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
+        if (!hasActiveSubscription && user.role !== 'admin') {
           console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} - PROCESANDO EXPULSIÓN`);
           const channelId = CHANNEL_MAP[service];
           
@@ -338,56 +335,164 @@ export default async function handler(
               continue;
             }
 
+            // ✅ MEJORADO: Verificar estado del usuario antes de expulsar
+            let memberStatus: string | null = null;
+            try {
+              const member = await bot.getChatMember(channelId, user.telegramUserId);
+              memberStatus = member.status;
+              console.log(`   📊 Estado actual del usuario en ${service}: ${memberStatus}`);
+              
+              // Si el usuario ya no está en el canal (left, kicked, banned), solo limpiar acceso en DB
+              if (memberStatus === 'left' || memberStatus === 'kicked' || memberStatus === 'banned') {
+                console.log(`   ℹ️ Usuario ${user.email} ya no está en el canal ${service} (status: ${memberStatus}) - solo limpiando acceso en DB`);
+                
+                // Remover el acceso del usuario en la base de datos
+                if (user.telegramChannelAccess) {
+                  user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                    (a: any) => a.service !== service
+                  );
+                }
+                
+                results.push({
+                  userId: user._id.toString(),
+                  email: user.email,
+                  telegramUserId: user.telegramUserId,
+                  service,
+                  success: true,
+                  error: `Usuario ya estaba fuera del canal (${memberStatus})`
+                });
+                continue; // Saltar al siguiente servicio
+              }
+            } catch (statusError: any) {
+              // Si no podemos obtener el estado, puede ser que el usuario no esté en el canal
+              if (statusError.message?.includes('USER_NOT_PARTICIPANT') || 
+                  statusError.message?.includes('PARTICIPANT_ID_INVALID')) {
+                console.log(`   ℹ️ Usuario ${user.email} no está en el canal ${service} - solo limpiando acceso en DB`);
+                
+                // Remover el acceso del usuario en la base de datos
+                if (user.telegramChannelAccess) {
+                  user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                    (a: any) => a.service !== service
+                  );
+                }
+                
+                results.push({
+                  userId: user._id.toString(),
+                  email: user.email,
+                  telegramUserId: user.telegramUserId,
+                  service,
+                  success: true,
+                  error: 'Usuario no está en el canal'
+                });
+                continue; // Saltar al siguiente servicio
+              }
+              // Si es otro error, continuar con el intento de expulsión
+              console.log(`   ⚠️ No se pudo verificar estado del usuario, continuando con expulsión: ${statusError.message}`);
+            }
+
             // Expulsar usuario del canal
             // Usamos banChatMember y luego unbanChatMember para permitir reingreso futuro
             console.log(`   🔨 Intentando expulsar usuario ${user.email} (${user.telegramUserId}) del canal ${service}...`);
-            await bot.banChatMember(channelId, user.telegramUserId);
             
-            // Esperar un poco y desbanear para permitir reingreso si renueva
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await bot.unbanChatMember(channelId, user.telegramUserId);
-
-            console.log(`✅ [TELEGRAM EXPULSION] Usuario expulsado: ${user.email} de ${service}`);
-
-            // Remover el acceso del usuario
-            user.telegramChannelAccess = user.telegramChannelAccess.filter(
-              (a: any) => a.service !== service
-            );
-
-            results.push({
-              userId: user._id.toString(),
-              email: user.email,
-              telegramUserId: user.telegramUserId,
-              service,
-              success: true
-            });
-
-            // Notificar al usuario por mensaje directo
             try {
-              await bot.sendMessage(
-                user.telegramUserId,
-                `⚠️ *Suscripción Expirada*\n\n` +
-                `Tu suscripción a *${service}* ha expirado y has sido removido del canal.\n\n` +
-                `Para seguir recibiendo alertas, renueva tu suscripción en:\n` +
-                `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}\n\n` +
-                `¡Gracias por ser parte de nuestra comunidad!`,
-                { parse_mode: 'Markdown' }
-              );
-            } catch (msgError) {
-              console.log(`⚠️ [TELEGRAM EXPULSION] No se pudo notificar a ${user.email}`);
+              // Intentar banear al usuario
+              await bot.banChatMember(channelId, user.telegramUserId, {
+                revoke_messages: false // No eliminar mensajes anteriores
+              });
+              
+              console.log(`   ✅ Usuario baneado exitosamente`);
+              
+              // Esperar un poco y desbanear para permitir reingreso si renueva
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              try {
+                await bot.unbanChatMember(channelId, user.telegramUserId, {
+                  only_if_banned: true // Solo desbanear si está baneado
+                });
+                console.log(`   ✅ Usuario desbaneado (puede reingresar si renueva)`);
+              } catch (unbanError: any) {
+                // Si falla el unban, no es crítico - el usuario puede seguir siendo baneado
+                console.log(`   ⚠️ No se pudo desbanear usuario (no crítico): ${unbanError.message}`);
+              }
+
+              console.log(`✅ [TELEGRAM EXPULSION] Usuario expulsado: ${user.email} de ${service}`);
+
+              // Remover el acceso del usuario
+              if (user.telegramChannelAccess) {
+                user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                  (a: any) => a.service !== service
+                );
+              }
+
+              results.push({
+                userId: user._id.toString(),
+                email: user.email,
+                telegramUserId: user.telegramUserId,
+                service,
+                success: true
+              });
+
+              // Notificar al usuario por mensaje directo
+              try {
+                await bot.sendMessage(
+                  user.telegramUserId,
+                  `⚠️ *Suscripción Expirada*\n\n` +
+                  `Tu suscripción a *${service}* ha expirado y has sido removido del canal.\n\n` +
+                  `Para seguir recibiendo alertas, renueva tu suscripción en:\n` +
+                  `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}\n\n` +
+                  `¡Gracias por ser parte de nuestra comunidad!`,
+                  { parse_mode: 'Markdown' }
+                );
+                console.log(`   ✅ Notificación enviada a ${user.email}`);
+              } catch (msgError: any) {
+                console.log(`   ⚠️ [TELEGRAM EXPULSION] No se pudo notificar a ${user.email}: ${msgError.message}`);
+                // No es crítico si no se puede notificar
+              }
+            } catch (banError: any) {
+              // Si el ban falla, puede ser que el usuario ya esté baneado o haya otro problema
+              throw banError; // Re-lanzar para que se maneje en el catch externo
             }
 
           } catch (error: any) {
             console.error(`❌ [TELEGRAM EXPULSION] Error expulsando ${user.email} de ${service}:`, error.message);
+            console.error(`   Detalles del error:`, {
+              code: error.response?.body?.error_code,
+              description: error.response?.body?.description,
+              parameters: error.response?.body?.parameters
+            });
             
-            // ✅ MEJORADO: Mensajes de error más descriptivos
-            let errorMessage = error.message;
-            if (error.message?.includes('CHAT_ADMIN_REQUIRED')) {
-              errorMessage = `Bot no tiene permisos de administrador en el canal ${service}. Verificar que el bot sea admin y tenga permiso 'can_restrict_members'`;
-            } else if (error.message?.includes('PARTICIPANT_ID_INVALID')) {
+            // ✅ MEJORADO: Mensajes de error más descriptivos y específicos
+            let errorMessage = error.message || 'Error desconocido';
+            let shouldCleanAccess = false; // Si debemos limpiar el acceso en DB aunque falle la expulsión
+            
+            if (error.message?.includes('CHAT_ADMIN_REQUIRED') || 
+                error.response?.body?.error_code === 400) {
+              errorMessage = `Bot no tiene permisos de administrador en el canal ${service}. Verificar que el bot sea admin y tenga permiso 'can_restrict_members' habilitado.`;
+            } else if (error.message?.includes('PARTICIPANT_ID_INVALID') ||
+                       error.response?.body?.error_code === 400) {
               errorMessage = `telegramUserId inválido o usuario no encontrado en el canal: ${user.telegramUserId}`;
-            } else if (error.message?.includes('USER_NOT_PARTICIPANT')) {
+              shouldCleanAccess = true; // Si el ID es inválido, limpiar acceso en DB
+            } else if (error.message?.includes('USER_NOT_PARTICIPANT') ||
+                       error.response?.body?.error_code === 400) {
               errorMessage = `Usuario no está en el canal ${service}`;
+              shouldCleanAccess = true; // Si no está en el canal, limpiar acceso en DB
+            } else if (error.message?.includes('USER_ALREADY_PARTICIPANT')) {
+              // Este error no debería ocurrir, pero si pasa, significa que el usuario sigue en el canal
+              errorMessage = `Usuario sigue en el canal pero no se pudo expulsar. Verificar permisos del bot.`;
+            } else if (error.message?.includes('BOT_NOT_FOUND') || 
+                       error.response?.body?.error_code === 401) {
+              errorMessage = `Bot no encontrado o token inválido. Verificar TELEGRAM_BOT_TOKEN.`;
+            } else if (error.message?.includes('CHAT_NOT_FOUND') ||
+                       error.response?.body?.error_code === 400) {
+              errorMessage = `Canal no encontrado. Verificar que TELEGRAM_CHANNEL_${service.toUpperCase()} esté configurado correctamente.`;
+            }
+            
+            // Si el error indica que el usuario no está en el canal, limpiar acceso en DB
+            if (shouldCleanAccess && user.telegramChannelAccess) {
+              console.log(`   🧹 Limpiando acceso en DB para ${user.email} en ${service}`);
+              user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                (a: any) => a.service !== service
+              );
             }
             
             results.push({
