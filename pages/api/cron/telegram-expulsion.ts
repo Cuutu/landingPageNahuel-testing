@@ -190,40 +190,62 @@ export default async function handler(
       for (const service of servicesToCheck) {
         const channelId = CHANNEL_MAP[service];
         
-        // ✅ MEJORADO: Verificar primero si el usuario está realmente en el canal
+        // ✅ MEJORADO: SIEMPRE verificar si el usuario está realmente en el canal usando la API de Telegram
         // Esto detecta usuarios que volvieron a entrar después de ser expulsados
         const hasAccessInDB = user.telegramChannelAccess?.some((a: any) => a.service === service);
-        let isUserInChannel = hasAccessInDB; // Asumir que está si tiene acceso en DB
+        let isUserInChannel = false;
+        let memberStatus: string | null = null;
         
-        if (!hasAccessInDB && channelId) {
+        // ✅ CRÍTICO: Siempre verificar con la API de Telegram, no confiar solo en DB
+        if (channelId) {
           try {
             const member = await bot.getChatMember(channelId, user.telegramUserId);
-            // Si el usuario NO está en el canal (left o kicked), saltar este servicio
-            if (member.status === 'left' || member.status === 'kicked') {
-              console.log(`   ⚠️ Usuario ${user.email} NO está en canal ${service} (status: ${member.status}) - saltando`);
-              continue;
-            }
-            // Si está en el canal pero no tiene acceso en DB, significa que volvió a entrar
-            isUserInChannel = true;
-            console.log(`   🔍 Usuario ${user.email} está en canal ${service} (status: ${member.status}) pero no tiene telegramChannelAccess - puede haber vuelto a entrar después de expulsión`);
+            memberStatus = member.status;
             
-            // Solo agregar a telegramChannelAccess si tiene suscripción activa
-            // Si no tiene suscripción, lo expulsaremos de todas formas, no tiene sentido agregarlo
+            // Verificar si el usuario está realmente en el canal
+            // Status puede ser: 'creator', 'administrator', 'member', 'restricted', 'left', 'kicked'
+            if (member.status === 'left' || member.status === 'kicked') {
+              isUserInChannel = false;
+              console.log(`   ⚠️ Usuario ${user.email} NO está en canal ${service} (status: ${member.status})`);
+              
+              // Si tiene acceso en DB pero no está en el canal, limpiar acceso
+              if (hasAccessInDB && user.telegramChannelAccess) {
+                user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                  (a: any) => a.service !== service
+                );
+                console.log(`   🧹 Limpiando acceso en DB para ${user.email} en ${service} (no está en canal)`);
+              }
+              continue; // Saltar este servicio
+            } else {
+              // Usuario está en el canal (member, administrator, creator, restricted, etc.)
+              isUserInChannel = true;
+              
+              if (!hasAccessInDB) {
+                console.log(`   🔍 Usuario ${user.email} está en canal ${service} (status: ${member.status}) pero NO tiene telegramChannelAccess - puede haber vuelto a entrar después de expulsión`);
+              } else {
+                console.log(`   ✅ Usuario ${user.email} está en canal ${service} (status: ${member.status}) y tiene acceso en DB`);
+              }
+            }
           } catch (error: any) {
             // ✅ MEJORADO: Manejar diferentes tipos de errores
             if (error.message?.includes('PARTICIPANT_ID_INVALID')) {
               console.log(`   ⚠️ telegramUserId inválido para ${user.email} (${user.telegramUserId}) en ${service} - el usuario puede haber eliminado su cuenta de Telegram`);
             } else if (error.message?.includes('USER_NOT_PARTICIPANT')) {
               console.log(`   ⚠️ Usuario ${user.email} no está en el canal ${service}`);
+              isUserInChannel = false;
             } else {
               console.log(`   ⚠️ No se pudo verificar si ${user.email} está en ${service}: ${error.message}`);
             }
-            // Saltar este servicio para este usuario
-            continue;
+            // Si hay error verificando, asumir que no está en el canal para ser seguro
+            isUserInChannel = false;
+            continue; // Saltar este servicio para este usuario
           }
+        } else {
+          console.log(`   ⚠️ Canal no configurado para ${service}`);
+          continue;
         }
         
-        console.log(`   🔎 Verificando servicio: ${service}`);
+        console.log(`   🔎 Verificando servicio: ${service} - Usuario en canal: ${isUserInChannel}`);
         
         // ✅ CORREGIDO: Verificar suscripción activa en los TRES sistemas (igual que subscriptionAuth.ts)
         // 1. Verificar en suscripciones (array antiguo/legacy)
@@ -290,6 +312,22 @@ export default async function handler(
           });
         }
 
+        // ✅ CORREGIDO: Si tiene suscripción activa, asegurar que tenga acceso en DB
+        if (hasActiveSubscription && isUserInChannel && !hasAccessInDB) {
+          // Usuario tiene suscripción activa y está en el canal pero no tiene acceso en DB
+          // Agregar acceso para futuras verificaciones
+          console.log(`   ✅ Usuario ${user.email} tiene suscripción activa y está en canal ${service} - agregando acceso en DB`);
+          if (!user.telegramChannelAccess) {
+            user.telegramChannelAccess = [];
+          }
+          user.telegramChannelAccess.push({
+            service,
+            channelId: CHANNEL_MAP[service],
+            joinedAt: new Date(),
+            inviteLink: undefined
+          });
+        }
+        
         // ✅ CORREGIDO: Si no tiene suscripción activa en NINGÚN sistema, expulsar (incluye admins)
         if (!hasActiveSubscription) {
           // Solo expulsar si el usuario está realmente en el canal
@@ -300,11 +338,12 @@ export default async function handler(
               user.telegramChannelAccess = user.telegramChannelAccess.filter(
                 (a: any) => a.service !== service
               );
+              console.log(`   🧹 Limpiando acceso en DB para ${user.email} en ${service}`);
             }
             continue;
           }
           
-          console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} y ESTÁ en el canal - PROCESANDO EXPULSIÓN`);
+          console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} y ESTÁ en el canal (status: ${memberStatus}) - PROCESANDO EXPULSIÓN`);
           if (user.role === 'admin') {
             console.log(`   ⚠️ NOTA: Este usuario es ADMIN pero será expulsado por no tener suscripción activa`);
           }
@@ -380,8 +419,8 @@ export default async function handler(
               memberStatus = member.status;
               console.log(`   📊 Estado actual del usuario en ${service}: ${memberStatus}`);
               
-              // Si el usuario ya no está en el canal (left, kicked, banned), solo limpiar acceso en DB
-              if (memberStatus === 'left' || memberStatus === 'kicked' || memberStatus === 'banned') {
+              // Si el usuario ya no está en el canal (left, kicked), solo limpiar acceso en DB
+              if (memberStatus === 'left' || memberStatus === 'kicked') {
                 console.log(`   ℹ️ Usuario ${user.email} ya no está en el canal ${service} (status: ${memberStatus}) - solo limpiando acceso en DB`);
                 
                 // Remover el acceso del usuario en la base de datos
