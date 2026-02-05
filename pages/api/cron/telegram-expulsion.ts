@@ -63,6 +63,17 @@ export default async function handler(
     console.log('⚠️ [TELEGRAM EXPULSION] CRON_SECRET no configurado - acceso sin autenticación');
   }
 
+  // ✅ NUEVO: Modo verbose para ver detalles sin expulsar
+  const verboseMode = req.query.verbose === 'true' || req.body?.verbose === true;
+  const dryRun = req.query.dryRun === 'true' || req.body?.dryRun === true;
+  
+  if (verboseMode) {
+    console.log('📊 [TELEGRAM EXPULSION] Modo verbose activado - se mostrarán detalles de todos los usuarios');
+  }
+  if (dryRun) {
+    console.log('🧪 [TELEGRAM EXPULSION] Modo dry-run activado - NO se expulsará a nadie, solo simulación');
+  }
+
   console.log('🚀 [TELEGRAM EXPULSION] Iniciando cronjob de expulsión...');
 
   try {
@@ -271,9 +282,24 @@ export default async function handler(
         
         console.log(`   ✅ Tiene suscripción activa: ${hasActiveSubscription}`);
 
-        // ✅ CORREGIDO: Si no tiene suscripción activa en NINGÚN sistema y no es admin, expulsar
-        if (!hasActiveSubscription && user.role !== 'admin') {
+        // ✅ NUEVO: En modo verbose, agregar información sobre usuarios con suscripción activa
+        if (verboseMode && hasActiveSubscription) {
+          results.push({
+            userId: user._id.toString(),
+            email: user.email,
+            telegramUserId: user.telegramUserId,
+            service,
+            success: true,
+            error: `Usuario tiene suscripción activa - NO expulsado`
+          });
+        }
+
+        // ✅ CORREGIDO: Si no tiene suscripción activa en NINGÚN sistema, expulsar (incluye admins)
+        if (!hasActiveSubscription) {
           console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} - PROCESANDO EXPULSIÓN`);
+          if (user.role === 'admin') {
+            console.log(`   ⚠️ NOTA: Este usuario es ADMIN pero será expulsado por no tener suscripción activa`);
+          }
           const channelId = CHANNEL_MAP[service];
           
           if (!channelId) {
@@ -393,6 +419,20 @@ export default async function handler(
             // Expulsar usuario del canal
             // Usamos banChatMember y luego unbanChatMember para permitir reingreso futuro
             console.log(`   🔨 Intentando expulsar usuario ${user.email} (${user.telegramUserId}) del canal ${service}...`);
+            
+            // ✅ NUEVO: En modo dry-run, no expulsar realmente
+            if (dryRun) {
+              console.log(`   🧪 [DRY-RUN] Simulando expulsión de ${user.email} de ${service} (NO se ejecutó realmente)`);
+              results.push({
+                userId: user._id.toString(),
+                email: user.email,
+                telegramUserId: user.telegramUserId,
+                service,
+                success: true,
+                error: 'DRY-RUN: Simulación completada (no se expulsó realmente)'
+              });
+              continue; // Saltar al siguiente servicio
+            }
             
             try {
               // Intentar banear al usuario
@@ -520,11 +560,15 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      message: `Cronjob de expulsión completado`,
+      message: dryRun 
+        ? `Cronjob de expulsión completado (DRY-RUN - no se expulsó a nadie)` 
+        : `Cronjob de expulsión completado`,
       summary: {
         totalChecked: allUsersWithTelegram.length,
         expelled: successCount,
-        errors: failCount
+        errors: failCount,
+        dryRun: dryRun || false,
+        verbose: verboseMode || false
       },
       results,
       executedAt: now.toISOString()
