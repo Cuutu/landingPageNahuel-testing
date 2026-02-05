@@ -472,21 +472,144 @@ export default async function handler(
                 success: true
               });
 
-              // Notificar al usuario por mensaje directo
+              // ✅ MEJORADO: Notificar al usuario por mensaje directo con motivo específico
+              let telegramNotificationSent = false;
               try {
+                // Determinar el motivo de la expulsión
+                const hasTelegramLinked = !!user.telegramUserId;
+                const hasAnySubscription = !!(user.suscripciones?.length || user.subscriptions?.length || user.activeSubscriptions?.length);
+                
+                let motivoMensaje = '';
+                let solucionMensaje = '';
+                let motivoEmail = '';
+                let solucionEmail = '';
+                
+                if (!hasAnySubscription) {
+                  // No tiene suscripción activa
+                  motivoMensaje = `Tu suscripción a *${service}* ha *expirado* o *no tienes una suscripción activa*.`;
+                  motivoEmail = `Tu suscripción a ${service} ha expirado o no tienes una suscripción activa.`;
+                  solucionMensaje = `Para seguir recibiendo alertas, necesitas:\n\n` +
+                    `1️⃣ *Renovar tu suscripción* en:\n` +
+                    `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}\n\n` +
+                    `2️⃣ *Vincular tu cuenta de Telegram* (si aún no lo hiciste):\n` +
+                    `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil\n\n` +
+                    `Una vez que renueves y tengas Telegram vinculado, recibirás un nuevo link de invitación automáticamente.`;
+                  solucionEmail = `Para seguir recibiendo alertas, necesitas:\n\n` +
+                    `1. Renovar tu suscripción en: ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}\n\n` +
+                    `2. Vincular tu cuenta de Telegram (si aún no lo hiciste): ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil\n\n` +
+                    `Una vez que renueves y tengas Telegram vinculado, recibirás un nuevo link de invitación automáticamente.`;
+                } else if (!hasTelegramLinked) {
+                  // Tiene suscripción pero no tiene Telegram vinculado
+                  motivoMensaje = `Tienes una suscripción activa a *${service}*, pero *no tienes tu cuenta de Telegram vinculada*.`;
+                  motivoEmail = `Tienes una suscripción activa a ${service}, pero no tienes tu cuenta de Telegram vinculada.`;
+                  solucionMensaje = `Para recibir las alertas, necesitas:\n\n` +
+                    `1️⃣ *Vincular tu cuenta de Telegram*:\n` +
+                    `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil\n\n` +
+                    `2️⃣ Una vez vinculado, genera un nuevo link de invitación desde tu perfil.`;
+                  solucionEmail = `Para recibir las alertas, necesitas vincular tu cuenta de Telegram:\n\n` +
+                    `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil\n\n` +
+                    `Una vez vinculado, genera un nuevo link de invitación desde tu perfil.`;
+                } else {
+                  // Caso por defecto (suscripción expirada)
+                  motivoMensaje = `Tu suscripción a *${service}* ha *expirado*.`;
+                  motivoEmail = `Tu suscripción a ${service} ha expirado.`;
+                  solucionMensaje = `Para seguir recibiendo alertas, renueva tu suscripción en:\n` +
+                    `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}\n\n` +
+                    `Una vez renovada, recibirás un nuevo link de invitación automáticamente.`;
+                  solucionEmail = `Para seguir recibiendo alertas, renueva tu suscripción en:\n\n` +
+                    `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}\n\n` +
+                    `Una vez renovada, recibirás un nuevo link de invitación automáticamente.`;
+                }
+                
+                const mensajeCompleto = `⚠️ *Has sido removido del canal de ${service}*\n\n` +
+                  `${motivoMensaje}\n\n` +
+                  `*¿Qué hacer ahora?*\n\n` +
+                  `${solucionMensaje}\n\n` +
+                  `💡 *¿Necesitas ayuda?*\n` +
+                  `Contacta a soporte desde tu perfil o responde a este mensaje.\n\n` +
+                  `¡Gracias por ser parte de nuestra comunidad! 🚀`;
+                
                 await bot.sendMessage(
                   user.telegramUserId,
-                  `⚠️ *Suscripción Expirada*\n\n` +
-                  `Tu suscripción a *${service}* ha expirado y has sido removido del canal.\n\n` +
-                  `Para seguir recibiendo alertas, renueva tu suscripción en:\n` +
-                  `🔗 ${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}\n\n` +
-                  `¡Gracias por ser parte de nuestra comunidad!`,
+                  mensajeCompleto,
                   { parse_mode: 'Markdown' }
                 );
-                console.log(`   ✅ Notificación enviada a ${user.email}`);
+                telegramNotificationSent = true;
+                console.log(`   ✅ Notificación de Telegram enviada a ${user.email} con motivo específico`);
               } catch (msgError: any) {
-                console.log(`   ⚠️ [TELEGRAM EXPULSION] No se pudo notificar a ${user.email}: ${msgError.message}`);
-                // No es crítico si no se puede notificar
+                console.log(`   ⚠️ [TELEGRAM EXPULSION] No se pudo notificar por Telegram a ${user.email}: ${msgError.message}`);
+                // Enviar email como respaldo
+              }
+              
+              // ✅ NUEVO: Enviar email de notificación (siempre, como respaldo o información adicional)
+              try {
+                const { sendEmail } = await import('@/lib/emailNotifications');
+                const serviceName = service === 'TraderCall' ? 'Trader Call' : service === 'SmartMoney' ? 'Smart Money' : service;
+                const renewalUrl = `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}`;
+                const profileUrl = `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil`;
+                
+                const hasAnySubscription = !!(user.suscripciones?.length || user.subscriptions?.length || user.activeSubscriptions?.length);
+                const hasTelegramLinked = !!user.telegramUserId;
+                
+                let motivoEmail = '';
+                let solucionEmail = '';
+                
+                if (!hasAnySubscription) {
+                  motivoEmail = `Tu suscripción a ${serviceName} ha expirado o no tienes una suscripción activa.`;
+                  solucionEmail = `<p>Para seguir recibiendo alertas, necesitas:</p>
+                    <ol>
+                      <li><strong>Renovar tu suscripción</strong> en: <a href="${renewalUrl}">${renewalUrl}</a></li>
+                      <li><strong>Vincular tu cuenta de Telegram</strong> (si aún no lo hiciste): <a href="${profileUrl}">${profileUrl}</a></li>
+                    </ol>
+                    <p>Una vez que renueves y tengas Telegram vinculado, recibirás un nuevo link de invitación automáticamente.</p>`;
+                } else if (!hasTelegramLinked) {
+                  motivoEmail = `Tienes una suscripción activa a ${serviceName}, pero no tienes tu cuenta de Telegram vinculada.`;
+                  solucionEmail = `<p>Para recibir las alertas, necesitas vincular tu cuenta de Telegram:</p>
+                    <p><a href="${profileUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0088cc; color: white; text-decoration: none; border-radius: 6px;">Vincular Telegram</a></p>
+                    <p>Una vez vinculado, genera un nuevo link de invitación desde tu perfil.</p>`;
+                } else {
+                  motivoEmail = `Tu suscripción a ${serviceName} ha expirado.`;
+                  solucionEmail = `<p>Para seguir recibiendo alertas, renueva tu suscripción:</p>
+                    <p><a href="${renewalUrl}" style="display: inline-block; padding: 12px 24px; background-color: #0088cc; color: white; text-decoration: none; border-radius: 6px;">Renovar Suscripción</a></p>
+                    <p>Una vez renovada, recibirás un nuevo link de invitación automáticamente.</p>`;
+                }
+                
+                const emailHtml = `
+                  <!DOCTYPE html>
+                  <html>
+                  <head>
+                    <meta charset="utf-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  </head>
+                  <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+                    <div style="background-color: #f8f9fa; border-left: 4px solid #dc3545; padding: 20px; margin-bottom: 20px; border-radius: 4px;">
+                      <h2 style="margin-top: 0; color: #dc3545;">⚠️ Has sido removido del canal de ${serviceName}</h2>
+                      <p style="margin-bottom: 0;"><strong>${motivoEmail}</strong></p>
+                    </div>
+                    
+                    <div style="background-color: #e7f3ff; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+                      <h3 style="margin-top: 0; color: #0066cc;">¿Qué hacer ahora?</h3>
+                      ${solucionEmail}
+                    </div>
+                    
+                    <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 14px; color: #666;">
+                      <p>💡 <strong>¿Necesitas ayuda?</strong></p>
+                      <p>Contacta a soporte desde tu perfil: <a href="${profileUrl}">${profileUrl}</a></p>
+                      <p style="margin-top: 20px;">¡Gracias por ser parte de nuestra comunidad! 🚀</p>
+                    </div>
+                  </body>
+                  </html>
+                `;
+                
+                await sendEmail({
+                  to: user.email,
+                  subject: `⚠️ Has sido removido del canal de ${serviceName}`,
+                  html: emailHtml
+                });
+                
+                console.log(`   ✅ Email de notificación enviado a ${user.email}${telegramNotificationSent ? ' (además del mensaje de Telegram)' : ' (como respaldo, Telegram falló)'}`);
+              } catch (emailError: any) {
+                console.log(`   ⚠️ [TELEGRAM EXPULSION] No se pudo enviar email a ${user.email}: ${emailError.message}`);
               }
             } catch (banError: any) {
               // Si el ban falla, puede ser que el usuario ya esté baneado o haya otro problema
