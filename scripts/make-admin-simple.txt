@@ -1,0 +1,36 @@
+═══════════════════════════════════════════════════════════════════════════════
+  SCRIPT SIMPLE PARA MONGOSH - ASIGNAR ADMIN
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Conectate a MongoDB
+   mongosh "TU_CONNECTION_STRING"
+
+PASO 2: Copia y pega esto (REEMPLAZA "TU_EMAIL_AQUI" con el email real):
+
+───────────────────────────────────────────────────────────────────────────────
+
+const email = "TU_EMAIL_AQUI";
+db.users.updateOne(
+  { email: email },
+  { $set: { role: "admin" } }
+);
+print("✅ Usuario " + email + " ahora es administrador");
+
+───────────────────────────────────────────────────────────────────────────────
+
+EJEMPLO REAL (cambia el email):
+
+const email = "nahuel@ejemplo.com";
+db.users.updateOne(
+  { email: email },
+  { $set: { role: "admin" } }
+);
+print("✅ Usuario " + email + " ahora es administrador");
+
+───────────────────────────────────────────────────────────────────────────────
+
+VERIFICAR QUE FUNCIONÓ:
+
+db.users.findOne({ email: "TU_EMAIL_AQUI" }, { role: 1, email: 1, name: 1 })
+
+═══════════════════════════════════════════════════════════════════════════════

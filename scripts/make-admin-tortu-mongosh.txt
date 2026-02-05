@@ -1,0 +1,94 @@
+═══════════════════════════════════════════════════════════════════════════════
+  SCRIPT PARA EL USUARIO DE PRUEBA: admin / tortu123
+═══════════════════════════════════════════════════════════════════════════════
+
+El usuario de prueba usa el email: admin@nahuellozano.com
+
+───────────────────────────────────────────────────────────────────────────────
+OPCIÓN 1: Actualizar usuario existente (si ya existe en la BD)
+───────────────────────────────────────────────────────────────────────────────
+
+db.users.updateOne(
+  { email: "admin@nahuellozano.com" },
+  { $set: { role: "admin" } }
+);
+print("✅ Usuario admin@nahuellozano.com ahora es administrador");
+
+───────────────────────────────────────────────────────────────────────────────
+OPCIÓN 2: Crear o actualizar (upsert) - RECOMENDADO
+───────────────────────────────────────────────────────────────────────────────
+
+db.users.updateOne(
+  { email: "admin@nahuellozano.com" },
+  { 
+    $set: { 
+      role: "admin",
+      name: "Administrador",
+      updatedAt: new Date()
+    },
+    $setOnInsert: {
+      email: "admin@nahuellozano.com",
+      name: "Administrador",
+      googleId: "admin-user-id",
+      createdAt: new Date()
+    }
+  },
+  { upsert: true }
+);
+print("✅ Usuario admin@nahuellozano.com configurado como administrador");
+
+───────────────────────────────────────────────────────────────────────────────
+OPCIÓN 3: Script completo con verificación
+───────────────────────────────────────────────────────────────────────────────
+
+const email = "admin@nahuellozano.com";
+
+// Buscar usuario
+const user = db.users.findOne({ email: email });
+
+if (user) {
+  print("✅ Usuario encontrado:");
+  print("   Nombre: " + user.name);
+  print("   Email: " + user.email);
+  print("   Rol actual: " + (user.role || "normal"));
+  
+  if (user.role === "admin") {
+    print("ℹ️ El usuario ya es administrador");
+  } else {
+    db.users.updateOne(
+      { email: email },
+      { $set: { role: "admin", updatedAt: new Date() } }
+    );
+    print("🎉 ¡Usuario promovido a administrador!");
+  }
+} else {
+  print("⚠️ Usuario no encontrado, creando nuevo usuario admin...");
+  db.users.insertOne({
+    email: email,
+    name: "Administrador",
+    googleId: "admin-user-id",
+    role: "admin",
+    createdAt: new Date(),
+    updatedAt: new Date()
+  });
+  print("✅ Usuario admin creado exitosamente");
+}
+
+// Verificar resultado
+const finalUser = db.users.findOne({ email: email }, { role: 1, email: 1, name: 1 });
+print("\n📊 Estado final:");
+print("   Email: " + finalUser.email);
+print("   Nombre: " + finalUser.name);
+print("   Rol: " + finalUser.role);
+
+───────────────────────────────────────────────────────────────────────────────
+VERIFICAR QUE FUNCIONÓ:
+───────────────────────────────────────────────────────────────────────────────
+
+db.users.findOne({ email: "admin@nahuellozano.com" }, { role: 1, email: 1, name: 1 })
+
+Deberías ver: { "email": "admin@nahuellozano.com", "name": "Administrador", "role": "admin" }
+
+───────────────────────────────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════════════════════════

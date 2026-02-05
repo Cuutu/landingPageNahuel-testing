@@ -1,5 +1,7 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
 
 // ✅ CREDENCIALES HARDCODEADAS PARA LOGIN
 const ADMIN_USERNAME = 'admin';
@@ -59,12 +61,54 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.role = (user as any).role || 'admin';
+        
+        // ✅ NUEVO: Consultar rol desde la base de datos para admin@nahuellozano.com
+        if (user.email === 'admin@nahuellozano.com') {
+          try {
+            await dbConnect();
+            const dbUser = await User.findOne({ email: user.email }).lean();
+            if (dbUser) {
+              token.role = dbUser.role || 'admin';
+              if (isDev) {
+                console.log('🔍 [JWT] Rol obtenido de BD para admin:', token.role);
+              }
+            } else {
+              token.role = (user as any).role || 'admin';
+            }
+          } catch (error) {
+            console.error('❌ [JWT] Error consultando BD para admin:', error);
+            token.role = (user as any).role || 'admin';
+          }
+        } else {
+          token.role = (user as any).role || 'admin';
+        }
+        
         token.suscripciones = [];
         token.lastRefresh = Date.now();
         
         if (isDev) {
           console.log('🔑 [JWT] Token creado para:', token.email, 'rol:', token.role);
+        }
+      } else if (token.email === 'admin@nahuellozano.com') {
+        // ✅ NUEVO: Refrescar rol desde BD en cada request (cada 5 minutos por updateAge)
+        const now = Date.now();
+        const lastRefresh = token.lastRefresh || 0;
+        const refreshInterval = 5 * 60 * 1000; // 5 minutos
+        
+        if (now - lastRefresh > refreshInterval) {
+          try {
+            await dbConnect();
+            const dbUser = await User.findOne({ email: token.email }).lean();
+            if (dbUser) {
+              token.role = dbUser.role || 'admin';
+              token.lastRefresh = now;
+              if (isDev) {
+                console.log('🔄 [JWT] Rol refrescado desde BD:', token.role);
+              }
+            }
+          } catch (error) {
+            console.error('❌ [JWT] Error refrescando rol desde BD:', error);
+          }
         }
       }
       
