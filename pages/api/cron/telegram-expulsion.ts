@@ -112,17 +112,24 @@ export default async function handler(
     for (const user of allUsersWithTelegram) {
       const servicesToCheck: Array<'TraderCall' | 'SmartMoney'> = [];
       
-      // Si tiene telegramChannelAccess, usar esos servicios
+      // ✅ MEJORADO: Siempre verificar ambos servicios para detectar usuarios que volvieron a entrar
+      // Si tiene telegramChannelAccess, usar esos servicios PERO también verificar el otro servicio
       if (user.telegramChannelAccess && user.telegramChannelAccess.length > 0) {
         user.telegramChannelAccess.forEach((access: any) => {
           if (access.service && !servicesToCheck.includes(access.service)) {
             servicesToCheck.push(access.service);
           }
         });
+        // ✅ NUEVO: También verificar el servicio que NO tiene en DB (puede haber vuelto a entrar)
+        const allServices: Array<'TraderCall' | 'SmartMoney'> = ['TraderCall', 'SmartMoney'];
+        allServices.forEach((service) => {
+          if (!servicesToCheck.includes(service)) {
+            servicesToCheck.push(service);
+          }
+        });
       } else {
         // Si no tiene telegramChannelAccess, verificar ambos servicios
         // (puede haberse unido manualmente al canal)
-        // Nota: Esto se verificará más adelante con la API de Telegram
         servicesToCheck.push('TraderCall', 'SmartMoney');
       }
       
@@ -419,6 +426,21 @@ export default async function handler(
               memberStatus = member.status;
               console.log(`   📊 Estado actual del usuario en ${service}: ${memberStatus}`);
               
+              // ✅ NUEVO: Si el usuario es administrador o creador del canal, no se puede expulsar
+              if (memberStatus === 'administrator' || memberStatus === 'creator') {
+                console.log(`   ⚠️ Usuario ${user.email} es ${memberStatus} del canal ${service} - NO se puede expulsar (limitación de Telegram)`);
+                
+                results.push({
+                  userId: user._id.toString(),
+                  email: user.email,
+                  telegramUserId: user.telegramUserId,
+                  service,
+                  success: false,
+                  error: `Usuario es ${memberStatus} del canal - no se puede expulsar (limitación de Telegram API). Debe ser removido manualmente como administrador.`
+                });
+                continue; // Saltar al siguiente servicio
+              }
+              
               // Si el usuario ya no está en el canal (left, kicked), solo limpiar acceso en DB
               if (memberStatus === 'left' || memberStatus === 'kicked') {
                 console.log(`   ℹ️ Usuario ${user.email} ya no está en el canal ${service} (status: ${memberStatus}) - solo limpiando acceso en DB`);
@@ -664,8 +686,24 @@ export default async function handler(
                 console.log(`   ⚠️ [TELEGRAM EXPULSION] No se pudo enviar email a ${user.email}: ${emailError.message}`);
               }
             } catch (banError: any) {
-              // Si el ban falla, puede ser que el usuario ya esté baneado o haya otro problema
-              throw banError; // Re-lanzar para que se maneje en el catch externo
+              // ✅ MEJORADO: Manejar error específico de administrador
+              if (banError.message?.includes('user is an administrator') || 
+                  banError.response?.body?.description?.includes('user is an administrator')) {
+                console.log(`   ⚠️ Usuario ${user.email} es administrador del canal ${service} - no se puede expulsar (limitación de Telegram API)`);
+                
+                results.push({
+                  userId: user._id.toString(),
+                  email: user.email,
+                  telegramUserId: user.telegramUserId,
+                  service,
+                  success: false,
+                  error: 'Usuario es administrador del canal - no se puede expulsar automáticamente. Debe ser removido manualmente como administrador desde Telegram.'
+                });
+                continue; // Saltar al siguiente servicio
+              }
+              
+              // Si el ban falla por otro motivo, re-lanzar para que se maneje en el catch externo
+              throw banError;
             }
 
           } catch (error: any) {
