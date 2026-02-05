@@ -190,9 +190,10 @@ export default async function handler(
       for (const service of servicesToCheck) {
         const channelId = CHANNEL_MAP[service];
         
-        // ✅ NUEVO: Si el usuario no tiene telegramChannelAccess para este servicio,
-        // verificar si realmente está en el canal usando la API de Telegram
+        // ✅ MEJORADO: Verificar primero si el usuario está realmente en el canal
+        // Esto detecta usuarios que volvieron a entrar después de ser expulsados
         const hasAccessInDB = user.telegramChannelAccess?.some((a: any) => a.service === service);
+        let isUserInChannel = hasAccessInDB; // Asumir que está si tiene acceso en DB
         
         if (!hasAccessInDB && channelId) {
           try {
@@ -202,17 +203,12 @@ export default async function handler(
               console.log(`   ⚠️ Usuario ${user.email} NO está en canal ${service} (status: ${member.status}) - saltando`);
               continue;
             }
-            // Si está en el canal, agregar a telegramChannelAccess para futuras verificaciones
-            console.log(`   ✅ Usuario ${user.email} está en canal ${service} (status: ${member.status}) pero no tiene telegramChannelAccess - agregando`);
-            if (!user.telegramChannelAccess) {
-              user.telegramChannelAccess = [];
-            }
-            user.telegramChannelAccess.push({
-              service,
-              channelId,
-              joinedAt: new Date(),
-              inviteLink: undefined
-            });
+            // Si está en el canal pero no tiene acceso en DB, significa que volvió a entrar
+            isUserInChannel = true;
+            console.log(`   🔍 Usuario ${user.email} está en canal ${service} (status: ${member.status}) pero no tiene telegramChannelAccess - puede haber vuelto a entrar después de expulsión`);
+            
+            // Solo agregar a telegramChannelAccess si tiene suscripción activa
+            // Si no tiene suscripción, lo expulsaremos de todas formas, no tiene sentido agregarlo
           } catch (error: any) {
             // ✅ MEJORADO: Manejar diferentes tipos de errores
             if (error.message?.includes('PARTICIPANT_ID_INVALID')) {
@@ -296,10 +292,26 @@ export default async function handler(
 
         // ✅ CORREGIDO: Si no tiene suscripción activa en NINGÚN sistema, expulsar (incluye admins)
         if (!hasActiveSubscription) {
-          console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} - PROCESANDO EXPULSIÓN`);
+          // Solo expulsar si el usuario está realmente en el canal
+          if (!isUserInChannel) {
+            console.log(`   ℹ️ Usuario ${user.email} no está en canal ${service} - no es necesario expulsar`);
+            // Limpiar acceso en DB si existe
+            if (hasAccessInDB && user.telegramChannelAccess) {
+              user.telegramChannelAccess = user.telegramChannelAccess.filter(
+                (a: any) => a.service !== service
+              );
+            }
+            continue;
+          }
+          
+          console.log(`   🚨 Usuario ${user.email} NO tiene suscripción activa para ${service} y ESTÁ en el canal - PROCESANDO EXPULSIÓN`);
           if (user.role === 'admin') {
             console.log(`   ⚠️ NOTA: Este usuario es ADMIN pero será expulsado por no tener suscripción activa`);
           }
+          if (!hasAccessInDB) {
+            console.log(`   ⚠️ NOTA: Este usuario volvió a entrar al canal después de ser expulsado - será expulsado nuevamente`);
+          }
+          
           const channelId = CHANNEL_MAP[service];
           
           if (!channelId) {
@@ -457,11 +469,12 @@ export default async function handler(
 
               console.log(`✅ [TELEGRAM EXPULSION] Usuario expulsado: ${user.email} de ${service}`);
 
-              // Remover el acceso del usuario
+              // Remover el acceso del usuario (importante para detectar si vuelve a entrar)
               if (user.telegramChannelAccess) {
                 user.telegramChannelAccess = user.telegramChannelAccess.filter(
                   (a: any) => a.service !== service
                 );
+                console.log(`   🧹 Acceso removido de telegramChannelAccess para ${user.email} en ${service}`);
               }
 
               results.push({
