@@ -66,9 +66,9 @@ export const authOptions: NextAuthOptions = {
         if (user.email === 'admin@nahuellozano.com') {
           try {
             await dbConnect();
-            const dbUser = await User.findOne({ email: user.email }).lean();
-            if (dbUser) {
-              token.role = dbUser.role || 'admin';
+            const dbUser = await User.findOne({ email: user.email }).lean() as any;
+            if (dbUser && dbUser.role) {
+              token.role = dbUser.role;
               if (isDev) {
                 console.log('🔍 [JWT] Rol obtenido de BD para admin:', token.role);
               }
@@ -92,15 +92,15 @@ export const authOptions: NextAuthOptions = {
       } else if (token.email === 'admin@nahuellozano.com') {
         // ✅ NUEVO: Refrescar rol desde BD en cada request (cada 5 minutos por updateAge)
         const now = Date.now();
-        const lastRefresh = token.lastRefresh || 0;
+        const lastRefresh = (token.lastRefresh as number) || 0;
         const refreshInterval = 5 * 60 * 1000; // 5 minutos
         
         if (now - lastRefresh > refreshInterval) {
           try {
             await dbConnect();
-            const dbUser = await User.findOne({ email: token.email }).lean();
-            if (dbUser) {
-              token.role = dbUser.role || 'admin';
+            const dbUser = await User.findOne({ email: token.email }).lean() as any;
+            if (dbUser && dbUser.role) {
+              token.role = dbUser.role;
               token.lastRefresh = now;
               if (isDev) {
                 console.log('🔄 [JWT] Rol refrescado desde BD:', token.role);
