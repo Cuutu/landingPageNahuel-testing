@@ -543,7 +543,7 @@ export default async function handler(
               
               // ✅ NUEVO: Enviar email de notificación (siempre, como respaldo o información adicional)
               try {
-                const { sendEmail } = await import('@/lib/emailNotifications');
+                const { sendEmail } = await import('@/lib/emailService');
                 const serviceName = service === 'TraderCall' ? 'Trader Call' : service === 'SmartMoney' ? 'Smart Money' : service;
                 const renewalUrl = `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/alertas/${service.toLowerCase().replace('call', 'call')}`;
                 const profileUrl = `${process.env.NEXTAUTH_URL || 'https://lozanonahuel.com'}/perfil`;
