@@ -37,33 +37,62 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  // Verificar autorización del cron
+  // ✅ MEJORADO: Verificar autorización del cron con protección mejorada
   const authHeader = req.headers.authorization;
   const querySecret = req.query.secret as string; // Secret en URL para cronjob.org
   const cronSecret = process.env.CRON_SECRET;
+  const userAgent = req.headers['user-agent'] || '';
+  const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
   
   // Permitir ejecución si:
   // 1. Viene de Vercel Cron (header de Vercel)
   // 2. Tiene el secret correcto en header Authorization
   // 3. Tiene el secret correcto en query string (?secret=xxx) - para cronjob.org
   // 4. Es una llamada local en desarrollo
-  // 5. NO hay CRON_SECRET configurado (permite acceso libre - NO RECOMENDADO en producción)
+  // 5. Viene de cron-job.org CON secret (no sin secret)
   const isVercelCron = req.headers['x-vercel-cron'] === '1';
   const hasValidHeaderSecret = cronSecret && authHeader === `Bearer ${cronSecret}`;
   const hasValidQuerySecret = cronSecret && querySecret === cronSecret;
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const noCronSecretConfigured = !cronSecret; // Si no hay secret configurado, permitir acceso
   
-  if (!isVercelCron && !hasValidHeaderSecret && !hasValidQuerySecret && !isDevelopment && !noCronSecretConfigured) {
-    console.log('⚠️ [TELEGRAM EXPULSION] Acceso no autorizado');
+  // ✅ CORREGIDO: Requerir autenticación en producción, incluso desde cron-job.org
+  const isAuthorized = isVercelCron || hasValidHeaderSecret || hasValidQuerySecret || isDevelopment;
+  
+  if (!isAuthorized) {
+    console.log('⚠️ [TELEGRAM EXPULSION] Acceso no autorizado', {
+      hasVercelCron: isVercelCron,
+      hasHeaderSecret: !!hasValidHeaderSecret,
+      hasQuerySecret: !!hasValidQuerySecret,
+      isDevelopment,
+      isCronJobOrg,
+      userAgent: userAgent.substring(0, 100)
+    });
     return res.status(401).json({ error: 'No autorizado' });
   }
   
-  if (noCronSecretConfigured) {
-    console.log('⚠️ [TELEGRAM EXPULSION] CRON_SECRET no configurado - acceso sin autenticación');
-  }
+  // ✅ DESHABILITADO: Cronjob deshabilitado temporalmente
+  console.log('⚠️ [TELEGRAM EXPULSION] Cronjob DESHABILITADO - retornando sin ejecutar');
+  return res.status(200).json({
+    success: true,
+    message: 'Cronjob de expulsión de Telegram está deshabilitado',
+    disabled: true,
+    timestamp: new Date().toISOString()
+  });
 
-  console.log('🚀 [TELEGRAM EXPULSION] Iniciando cronjob de expulsión...');
+  /* CÓDIGO DESHABILITADO - Descomentar para reactivar
+  // ✅ NUEVO: Protección contra ejecuciones duplicadas muy frecuentes
+  // Solo permitir ejecución máximo una vez cada 30 minutos
+  const now = Date.now();
+  const lastExecutionKey = 'telegram_expulsion_last_execution';
+  const MIN_INTERVAL_MS = 30 * 60 * 1000; // 30 minutos
+  
+  // En producción, usar una colección de MongoDB para tracking (más robusto)
+  // Por ahora, solo loguear para debugging
+  console.log('🚀 [TELEGRAM EXPULSION] Iniciando cronjob de expulsión...', {
+    timestamp: new Date().toISOString(),
+    source: isVercelCron ? 'Vercel Cron' : isCronJobOrg ? 'cron-job.org' : 'Manual/Other',
+    userAgent: userAgent.substring(0, 100)
+  });
 
   try {
     // Verificar que el bot esté configurado
@@ -433,5 +462,6 @@ export default async function handler(
       details: error.message
     });
   }
+  */
 }
 

@@ -10,30 +10,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 
-  // ✅ Detectar cron jobs externos por User-Agent
+  // ✅ MEJORADO: Verificar autorización con protección mejorada
   const authHeader = req.headers.authorization;
   const userAgent = req.headers['user-agent'] || '';
   const isCronJobOrg = userAgent.includes('cron-job.org') || userAgent.includes('curl') || userAgent.includes('wget');
+  const isVercelCron = req.headers['x-vercel-cron'] === '1';
   const cronSecret = process.env.CRON_SECRET_TOKEN || process.env.CRON_SECRET;
   
-  // Permitir cron jobs externos sin token, o con token correcto
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}` && !isCronJobOrg) {
-    console.log('❌ [CRON] Token de autorización inválido o faltante');
+  // ✅ CORREGIDO: Requerir autenticación adecuada
+  // Permitir solo si:
+  // 1. Viene de Vercel Cron (confiable)
+  // 2. Tiene token válido en header Authorization
+  const hasValidToken = cronSecret && authHeader === `Bearer ${cronSecret}`;
+  const isAuthorized = isVercelCron || hasValidToken;
+  
+  if (!isAuthorized) {
+    console.log('❌ [CRON] Token de autorización inválido o faltante', {
+      hasVercelCron: isVercelCron,
+      hasValidToken: !!hasValidToken,
+      isCronJobOrg,
+      hasCronSecret: !!cronSecret,
+      userAgent: userAgent.substring(0, 100)
+    });
     return res.status(401).json({ 
       error: 'No autorizado',
-      message: 'Se requiere token de autorización o acceso desde servicio de cron externo'
+      message: 'Se requiere token de autorización válido o ejecución desde Vercel Cron'
     });
   }
   
-  if (isCronJobOrg) {
-    console.log('🌐 [CRON] CRON PÚBLICO DETECTADO (subscription-notifications):', {
-      timestamp: new Date().toISOString(),
-      userAgent: req.headers['user-agent'],
-      method: req.method,
-      url: req.url
-    });
-  }
+  // ✅ DESHABILITADO: Cronjob deshabilitado temporalmente
+  console.log('⚠️ [CRON] Cronjob de notificaciones de suscripción DESHABILITADO - retornando sin ejecutar');
+  return res.status(200).json({
+    success: true,
+    message: 'Cronjob de notificaciones de suscripción está deshabilitado',
+    disabled: true,
+    timestamp: new Date().toISOString()
+  });
 
+  /* CÓDIGO DESHABILITADO - Descomentar para reactivar
   try {
     console.log('🕐 [CRON] Iniciando procesamiento automático de notificaciones de suscripciones...');
     
@@ -74,4 +88,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       timestamp: new Date().toISOString()
     });
   }
+  */
 }

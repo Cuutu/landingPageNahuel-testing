@@ -1,0 +1,107 @@
+ARCHIVOS APROBADOS PARA DESPLIEGUE A PRODUCCION
+================================================
+
+FUNCIONALIDAD TELEGRAM EXPULSION (CRITICO):
+-------------------------------------------
+[41] pages/admin/telegram-expulsion.tsx
+[50] pages/api/admin/telegram-expulsion.ts
+[53] pages/api/cron/telegram-expulsion.ts
+[166] vercel.json
+
+MEJORAS DE SEGURIDAD Y AUTENTICACION:
+-------------------------------------
+[4] components/AdminRouteGuard.tsx
+[14] lib/adminAuth.ts
+
+MEJORAS DE UI/UX:
+-----------------
+[5] components/Navbar.tsx
+[6] components/UserSubscriptions.tsx
+[7] components/student/StudentTrainingDashboard.tsx
+[164] styles/UserSubscriptions.module.css
+
+PAGINAS DE ADMIN (mejoras generales):
+--------------------------------------
+[18] pages/admin/alertas-liquidez.tsx
+[19] pages/admin/analytics.tsx
+[20] pages/admin/billing/export.tsx
+[21] pages/admin/clean-slots.tsx
+[22] pages/admin/create-slots.tsx
+[23] pages/admin/dashboard.tsx
+[24] pages/admin/database.tsx
+[25] pages/admin/debug-session.tsx
+[26] pages/admin/edit-ebay-alert.tsx
+[27] pages/admin/email/bulk.tsx
+[28] pages/admin/entrenamientos-horarios.tsx
+[29] pages/admin/entrenamientos-solicitudes.tsx
+[30] pages/admin/horarios.tsx
+[31] pages/admin/indicators-users.tsx
+[32] pages/admin/limpiar-reservas.tsx
+[33] pages/admin/migrate-reports.tsx
+[34] pages/admin/monthly-trainings.tsx
+[35] pages/admin/monthly-trainings/[trainingId].tsx
+[36] pages/admin/monthly-trainings/edit/[trainingId].tsx
+[37] pages/admin/monthly-trainings/users.tsx
+[38] pages/admin/notifications.tsx
+[39] pages/admin/reports.tsx
+[40] pages/admin/subscriptions.tsx
+[42] pages/admin/test-training-notifications.tsx
+[43] pages/admin/users.tsx
+[44] pages/admin/users/active.tsx
+[45] pages/admin/users/roles.tsx
+
+APIS (mejoras y nuevas funcionalidades):
+----------------------------------------
+[48] pages/api/admin/email/bulk.ts
+[49] pages/api/admin/subscriptions.ts
+[51] pages/api/cron/auto-convert-ranges.ts
+[54] pages/api/user/subscriptions.ts
+
+PAGINAS PUBLICAS (mejoras):
+---------------------------
+[46] pages/alertas/smart-money.tsx
+[47] pages/alertas/trader-call.tsx
+[55] pages/asesorias/consultorio-financiero.tsx
+[56] pages/entrenamientos/advanced.tsx
+[57] pages/entrenamientos/day-trading.tsx
+[58] pages/entrenamientos/swing-trading.tsx
+[59] pages/entrenamientos/zero2trader.tsx
+[60] pages/index.tsx
+[61] pages/mediasmovilesautomaticas.tsx
+[62] pages/recursos.tsx
+
+HOOKS Y UTILIDADES:
+------------------
+[13] hooks/useEnrollment.ts
+
+CONFIGURACION:
+-------------
+[16] package.json
+[17] package-lock.json
+[165] tsconfig.json
+
+TOTAL: ~60 archivos aprobados
+
+
+ARCHIVOS QUE NO DESPLEGAR (EXCLUIR):
+====================================
+
+SCRIPTS DE MONGODB (solo para testing/debugging):
+-------------------------------------------------
+[8-11] consulta-*.js
+[15] mongodb-debug-operations.js
+[63-163] scripts/*.mongosh.js
+[63-163] scripts/*.js (todos los scripts)
+
+DOCUMENTACION (solo para referencia):
+-------------------------------------
+[1] ANALISIS_FLUJO_ALERTAS.md
+[2] ANALISIS_FLUJO_ALERTAS_IMAGEN.md
+[3] MIGRACION_EMAIL_NOTIFICACIONES.md
+[12] docs/MENSAJE_ACLARACION_OKLO_VENTA_TOTAL.md
+
+ARCHIVO ELIMINADO (no existe en testing):
+------------------------------------------
+[52] pages/api/cron/expire-subscriptions.ts (este archivo fue eliminado, no desplegar)
+
+TOTAL EXCLUIDOS: ~110 archivos
